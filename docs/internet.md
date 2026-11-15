@@ -40,3 +40,7 @@ The firewall opens ports 80 and 443 automatically.
     Internet access is for the web portal and the softphones. Desk phones and SIP apps outside the office still need
     SIP to be allowed in the [firewall](firewall.md). For branch offices, use an [Edge](edge.md): it connects
     through an encrypted tunnel, without opening SIP to the internet.
+
+!!! tip "A separate address for employees"
+    Fill in **Employee portal host name** to give employees their own address with its own certificate, see
+    [Separate host names](hostnames.md).

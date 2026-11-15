@@ -243,10 +243,10 @@ export type WebRTCAccount = { wsPath: string; username: string; password: string
 
 // ---- phase 3: integrations --------------------------------------------------
 
-export type InternetSettings = { enabled: boolean; domain: string; email: string; staging: boolean; useForSip: boolean }
+export type InternetSettings = { enabled: boolean; domain: string; portalDomain: string; email: string; staging: boolean; useForSip: boolean }
 export type CertInfo = { subject: string; issuer: string; notAfter: string; dnsNames: string[] }
 export type InternetData = {
-  settings: InternetSettings; status: { installed: boolean; active: boolean; certificate: CertInfo | null }; helperAvailable: boolean; dns?: string[]
+  settings: InternetSettings; status: { installed: boolean; active: boolean; certificate: CertInfo | null; portalCertificate?: CertInfo | null }; helperAvailable: boolean; dns?: string[]; portalDns?: string[]
 }
 export type GeoStatus = { available: boolean; updatedAt?: string; attribution: string }
 
@@ -305,7 +305,11 @@ export type FaxMail = {
   folder: string; delete: boolean; lastCheck?: string; lastError?: string
 }
 
-export type ProxySettings = { enabled: boolean; trustedProxies: string[]; publicUrl: string }
+export type ProxySettings = { enabled: boolean; trustedProxies: string[]; publicUrl: string; portalUrl: string }
+export type Hostnames = {
+  pbxUrl: string; portalUrl: string; blockAdmin: boolean; pbxHost: string; portalHost: string; separate: boolean; requestHost: string; onPortal: boolean
+}
+export type HostnamesData = { hostnames: Hostnames; ssoCallbacks: string[] }
 export type ProxyData = {
   settings: ProxySettings; remoteAddr: string; clientIp: string; forwardedFor: string; forwardedProto: string; secure: boolean; host: string
 }

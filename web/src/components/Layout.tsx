@@ -98,6 +98,12 @@ export function Layout() {
         </nav>
 
         <div className="mt-auto pt-5">
+          {me?.adminUrl && (
+            <div className="mb-3 rounded-[14px] border border-accent-2/40 bg-accent-2/10 p-3.5 text-xs text-ink-2">
+              <p>{t('hostnames.adminElsewhere')}</p>
+              <a href={me.adminUrl} className="mt-2 inline-flex min-h-9 items-center font-medium text-accent-ink hover:underline">{t('hostnames.toAdmin')} →</a>
+            </div>
+          )}
           <div className="card rounded-[14px] p-3.5">
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted">{t('info.version')}</span>

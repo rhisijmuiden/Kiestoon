@@ -26,6 +26,9 @@ type ProxySettings struct {
 	// PublicURL is the address people use, for example https://pbx.example.com. Identity providers,
 	// passkeys and mails use it.
 	PublicURL string `json:"publicUrl"`
+	// PortalURL is the optional address of the employee portal, for example
+	// https://voipcentrale.example.com. Mails and the softphone send employees there.
+	PortalURL string `json:"portalUrl"`
 }
 
 // Validate cleans up and checks the settings.
@@ -51,16 +54,25 @@ func (p *ProxySettings) Validate() error {
 	}
 	p.TrustedProxies = out
 	p.PublicURL = strings.TrimRight(strings.TrimSpace(p.PublicURL), "/")
-	if p.PublicURL != "" {
-		u, err := url.Parse(p.PublicURL)
-		if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.User != nil || (u.Path != "" && u.Path != "/") || u.RawQuery != "" {
-			return errors.New("publicUrl")
-		}
+	if p.PublicURL != "" && !validBaseURL(p.PublicURL) {
+		return errors.New("publicUrl")
+	}
+	p.PortalURL = strings.TrimRight(strings.TrimSpace(p.PortalURL), "/")
+	if p.PortalURL != "" && (!validBaseURL(p.PortalURL) || p.PublicURL == "") {
+		return errors.New("portalUrl")
+	}
+	if p.PortalURL == p.PublicURL {
+		p.PortalURL = ""
 	}
 	if p.Enabled && len(p.TrustedProxies) == 0 {
 		return errors.New("trustedProxies")
 	}
 	return nil
+}
+
+func validBaseURL(raw string) bool {
+	u, err := url.Parse(raw)
+	return err == nil && (u.Scheme == "https" || u.Scheme == "http") && u.Host != "" && u.User == nil && (u.Path == "" || u.Path == "/") && u.RawQuery == "" && u.Fragment == ""
 }
 
 func parsePrefix(v string) (netip.Prefix, error) {
@@ -150,6 +162,7 @@ func (s *Server) LoadProxySettings(ctx context.Context) {
 	} else {
 		setTrustedProxies(nil)
 	}
+	s.loadHostnames(ctx)
 }
 
 func (s *Server) proxyGet(w http.ResponseWriter, r *http.Request) {
@@ -188,6 +201,7 @@ func (s *Server) proxySave(w http.ResponseWriter, r *http.Request) {
 	case old.PublicURL != "" && pub == old.PublicURL:
 		_ = store.SetSetting(r.Context(), s.DB, "public_url", "")
 	}
+	s.setPortalURL(r.Context(), p.PortalURL, old.PortalURL)
 	if p.Enabled {
 		setTrustedProxies(p.TrustedProxies)
 	} else {

@@ -219,7 +219,7 @@ func (s *Server) ztpGet(w http.ResponseWriter, r *http.Request) {
 	prov, _ := provision.Load(r.Context(), s.DB)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"settings": st, "guides": ztp.Guides,
-		"effectiveUrl": s.ztpServer(r.Context(), s.publicBase(r)+"/prov/"),
+		"effectiveUrl": s.ztpServer(r.Context(), s.pbxBase(r)+"/prov/"),
 		"username":     prov.Username, "password": prov.Password,
 	})
 }
@@ -319,7 +319,7 @@ func (s *Server) ztpPhone(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), time.Minute)
 	defer cancel()
-	if err := s.ztpRegister(ctx, p, s.publicBase(r)+"/prov/"); err != nil {
+	if err := s.ztpRegister(ctx, p, s.pbxBase(r)+"/prov/"); err != nil {
 		if err.Error() == "ztp_not_available" {
 			writeErr(w, http.StatusConflict, "ztp_not_available")
 			return

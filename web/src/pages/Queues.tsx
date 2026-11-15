@@ -5,7 +5,7 @@ import { Badge, Empty, Modal, Select, Table, Toggle, formatDuration, td, useApi 
 import { DestinationLabel, DestinationPicker, IconButton, nextNumber, resetDestinations, useSaver } from '../components/pbx'
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
-import type { Extension, Prompt, Queue, QueueMember, QueueView } from '../lib/types'
+import type { Extension, FederationView, Prompt, Queue, QueueMember, QueueView, RemoteMember } from '../lib/types'
 
 export const queueStrategies = ['rrmemory', 'ringall', 'leastrecent', 'fewestcalls', 'random', 'linear', 'wrandom'] as const
 
@@ -125,6 +125,8 @@ function QueueForm({ value, onClose, onSaved }: { value: Queue; onClose: () => v
         </div>
       </div>
 
+      <RemoteAgents value={q.remoteMembers ?? []} onChange={(v) => set('remoteMembers', v)} />
+
       <div className="grid gap-4 sm:grid-cols-3">
         <Input label={t('queues.agentTimeout')} type="number" min={5} max={120} value={q.agentTimeout} onChange={(e) => set('agentTimeout', Number(e.target.value))} hint={t('common.seconds')} />
         <Input label={t('queues.retry')} type="number" min={0} max={60} value={q.retry} onChange={(e) => set('retry', Number(e.target.value))} hint={t('common.seconds')} />
@@ -147,5 +149,46 @@ function QueueForm({ value, onClose, onSaved }: { value: Queue; onClose: () => v
       <DestinationPicker label={t('queues.overflow')} value={q.overflow} onChange={(d) => set('overflow', d)} exclude={{ type: 'queue', target: String(q.id) }} />
       <Toggle label={t('common.enabled')} checked={q.enabled} onChange={(v) => set('enabled', v)} />
     </Modal>
+  )
+}
+
+/** Agents on linked Kiestoon systems (federation): their phones ring for this queue too. */
+function RemoteAgents({ value, onChange }: { value: RemoteMember[]; onChange: (v: RemoteMember[]) => void }) {
+  const { t } = useTranslation()
+  const fed = useApi<FederationView>('/federation')
+  const peers = (fed.data?.peers ?? []).filter((p) => p.state === 'active' && (p.directory.entries ?? []).some((e) => e.kind === 'extension'))
+  if (!peers.length && !value.length) return null
+  const find = (peerId: number, number: string) => value.find((m) => m.peerId === peerId && m.number === number)
+  const toggle = (peerId: number, number: string, name: string, site: string, on: boolean) =>
+    onChange(on ? [...value, { peerId, number, name, site, penalty: 0 }] : value.filter((m) => !(m.peerId === peerId && m.number === number)))
+  const setPenalty = (m: RemoteMember, penalty: number) => onChange(value.map((x) => (x === m ? { ...x, penalty } : x)))
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-sm font-medium text-ink-2">{t('queues.remoteAgents')}</span>
+      <p className="text-xs text-subtle">{t('queues.remoteAgentsHint')}</p>
+      {peers.map((p) => (
+        <div key={p.id} className="flex flex-col gap-1.5">
+          <span className="text-xs uppercase tracking-[0.08em] text-subtle">{p.name}</span>
+          {(p.directory.entries ?? []).filter((e) => e.kind === 'extension').map((e) => {
+            const m = find(p.id, e.number)
+            return (
+              <div key={e.number} className={`flex flex-wrap items-center gap-3 rounded-lg border px-3 py-1.5 ${m ? 'border-accent/40 bg-accent/[0.06]' : 'border-line'}`}>
+                <label className="flex min-h-9 flex-1 cursor-pointer items-center gap-3 text-sm">
+                  <input type="checkbox" checked={!!m} onChange={(x) => toggle(p.id, e.number, e.name, p.name, x.target.checked)} className="size-4 accent-[var(--color-accent)]" />
+                  <span className="font-mono text-ink">{p.prefix}{e.number}</span> <span className="text-muted">{e.name}</span>
+                </label>
+                {m && (
+                  <label className="flex items-center gap-2 text-xs text-muted">
+                    {t('queues.penalty')}
+                    <input type="number" min={0} max={10} value={m.penalty} onChange={(x) => setPenalty(m, Number(x.target.value))}
+                      className="min-h-9 w-16 rounded-lg border border-line bg-[#0A1224] px-2 font-mono text-sm text-ink" />
+                  </label>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      ))}
+    </div>
   )
 }

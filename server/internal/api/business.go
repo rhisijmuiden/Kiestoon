@@ -401,6 +401,19 @@ func (s *Server) destinations(w http.ResponseWriter, r *http.Request) {
 	for _, f := range fbs {
 		out = append(out, opt{pbx.DestFax, id(f.ID), f.Name})
 	}
+	suns, _ := s.PBX.SunRoutes(ctx)
+	for _, x := range suns {
+		out = append(out, opt{pbx.DestFollowSun, id(x.ID), x.Name})
+	}
+	peers, _ := s.PBX.FedPeers(ctx)
+	for _, p := range peers {
+		if p.State != "active" {
+			continue
+		}
+		for _, e := range p.Directory.Entries {
+			out = append(out, opt{pbx.DestRemote, id(p.ID) + ":" + e.Number, p.Name + " · " + p.Prefix + e.Number + " " + e.Name})
+		}
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"types": pbx.DestinationTypes, "options": out})
 }
 

@@ -14,6 +14,9 @@ type ExtState struct {
 	Status string `json:"status"`
 }
 
+// ExtStatus turns the numeric state of an ExtensionStatus event into a BLF state.
+func ExtStatus(code string) string { return extStatus(code) }
+
 func extStatus(code string) string {
 	n, _ := strconv.Atoi(code)
 	switch {

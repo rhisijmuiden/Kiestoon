@@ -1,5 +1,5 @@
 import {
-  Activity, Archive, AudioLines, AudioWaveform, BookUser, Globe, MonitorPlay, Plug, Printer, Clock, Disc3, GitBranch, Headset, History, KeyRound, LayoutGrid, ListOrdered, Mail, MonitorSmartphone,
+  Activity, Archive, Building2, Network, ServerCog, Sun, AudioLines, AudioWaveform, BookUser, Globe, MonitorPlay, Plug, Printer, Clock, Disc3, GitBranch, Headset, History, KeyRound, LayoutGrid, ListOrdered, Mail, MonitorSmartphone,
   Phone, Presentation, ScrollText, Settings, Shield, ShieldAlert, Smartphone, User, UserCog, UsersRound, Voicemail, Waypoints,
   type LucideIcon,
 } from 'lucide-react'
@@ -45,6 +45,15 @@ export const nav: NavGroup[] = [
       { key: 'prompts', path: '/prompts', icon: AudioLines },
       { key: 'trunks', path: '/trunks', icon: Waypoints },
       { key: 'phones', path: '/phones', icon: Smartphone },
+    ],
+  },
+  {
+    key: 'multisite',
+    items: [
+      { key: 'sites', path: '/sites', icon: Building2 },
+      { key: 'federation', path: '/federation', icon: Network },
+      { key: 'sunRoutes', path: '/follow-the-sun', icon: Sun },
+      { key: 'cluster', path: '/cluster', icon: ServerCog },
     ],
   },
   {

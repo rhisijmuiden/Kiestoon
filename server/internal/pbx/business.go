@@ -33,7 +33,7 @@ const (
 
 // DestinationTypes lists every destination type, in the order the UI offers them.
 var DestinationTypes = []string{DestExtension, DestVoicemail, DestRingGroup, DestQueue, DestIVR, DestTimeCondition,
-	DestConference, DestFax, DestExternal, DestHangup}
+	DestConference, DestFax, DestFollowSun, DestRemote, DestExternal, DestHangup}
 
 // Destination is a place a call goes to. Target is an extension number for extension and voicemail,
 // a phone number for external, and a row ID for the other types.
@@ -83,6 +83,10 @@ func (r *Repo) ValidateDestination(ctx context.Context, d *Destination, field st
 		table = "conferences"
 	case DestFax:
 		table = "fax_boxes"
+	case DestFollowSun:
+		table = "sun_routes"
+	case DestRemote:
+		return r.validateRemote(ctx, d, field)
 	default:
 		return invalid("invalid", field)
 	}
@@ -114,6 +118,7 @@ var destColumns = []struct{ table, typ, target string }{
 	{"time_conditions", "open_type", "open_target"},
 	{"time_conditions", "closed_type", "closed_target"},
 	{"time_conditions", "holiday_type", "holiday_target"},
+	{"sun_routes", "fallback_type", "fallback"},
 }
 
 // replaceDestinations calls fn for every stored destination and saves the ones fn changed. It is
@@ -180,6 +185,38 @@ func replaceDestinations(ctx context.Context, db execQuerier, fn func(*Destinati
 	rows.Close()
 	for _, u := range ups {
 		if _, err := db.ExecContext(ctx, `UPDATE ivrs SET options = ? WHERE id = ?`, u.raw, u.id); err != nil {
+			return err
+		}
+	}
+	// Follow-the-sun rules are a JSON list too.
+	rows, err = db.QueryContext(ctx, `SELECT id, rules FROM sun_routes`)
+	if err != nil {
+		return err
+	}
+	ups = ups[:0]
+	for rows.Next() {
+		var id int64
+		var raw string
+		if err := rows.Scan(&id, &raw); err != nil {
+			rows.Close()
+			return err
+		}
+		var rules []SunRule
+		_ = json.Unmarshal([]byte(raw), &rules)
+		changed := false
+		for i := range rules {
+			if fn(&rules[i].Destination) {
+				changed = true
+			}
+		}
+		if changed {
+			b, _ := json.Marshal(rules)
+			ups = append(ups, upd{id, string(b)})
+		}
+	}
+	rows.Close()
+	for _, u := range ups {
+		if _, err := db.ExecContext(ctx, `UPDATE sun_routes SET rules = ? WHERE id = ?`, u.raw, u.id); err != nil {
 			return err
 		}
 	}
@@ -474,25 +511,27 @@ type QueueMember struct {
 
 // Queue is a call queue: callers wait with music until an agent is free.
 type Queue struct {
-	ID                int64         `json:"id"`
-	Number            string        `json:"number"`
-	Name              string        `json:"name"`
-	Strategy          string        `json:"strategy"`
-	Music             string        `json:"music"`
-	AnnouncePosition  bool          `json:"announcePosition"`
-	AnnounceFrequency int           `json:"announceFrequency"`
-	AgentTimeout      int           `json:"agentTimeout"`
-	Retry             int           `json:"retry"`
-	Wrapup            int           `json:"wrapup"`
-	MaxWait           int           `json:"maxWait"`
-	MaxCallers        int           `json:"maxCallers"`
-	JoinEmpty         bool          `json:"joinEmpty"`
-	Record            bool          `json:"record"`
-	CIDPrefix         string        `json:"cidPrefix"`
-	GreetingPrompt    int64         `json:"greetingPrompt"`
-	Overflow          Destination   `json:"overflow"`
-	Enabled           bool          `json:"enabled"`
-	Members           []QueueMember `json:"members"`
+	ID                int64       `json:"id"`
+	Number            string      `json:"number"`
+	Name              string      `json:"name"`
+	Strategy          string      `json:"strategy"`
+	Music             string      `json:"music"`
+	AnnouncePosition  bool        `json:"announcePosition"`
+	AnnounceFrequency int         `json:"announceFrequency"`
+	AgentTimeout      int         `json:"agentTimeout"`
+	Retry             int         `json:"retry"`
+	Wrapup            int         `json:"wrapup"`
+	MaxWait           int         `json:"maxWait"`
+	MaxCallers        int         `json:"maxCallers"`
+	JoinEmpty         bool        `json:"joinEmpty"`
+	Record            bool        `json:"record"`
+	CIDPrefix         string      `json:"cidPrefix"`
+	GreetingPrompt    int64       `json:"greetingPrompt"`
+	Overflow          Destination `json:"overflow"`
+	// RemoteMembers are agents on linked Kiestoon systems.
+	RemoteMembers []RemoteMember `json:"remoteMembers"`
+	Enabled       bool           `json:"enabled"`
+	Members       []QueueMember  `json:"members"`
 }
 
 // QueueStrategies are the ring strategies Asterisk supports.
@@ -542,7 +581,20 @@ func (r *Repo) Queues(ctx context.Context) ([]Queue, error) {
 			q.Members = append(q.Members, m)
 		}
 	}
-	return qs, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	remote, err := r.remoteMembers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range qs {
+		qs[i].RemoteMembers = remote[qs[i].ID]
+		if qs[i].RemoteMembers == nil {
+			qs[i].RemoteMembers = []RemoteMember{}
+		}
+	}
+	return qs, nil
 }
 
 // Queue returns one queue with its members.
@@ -626,6 +678,9 @@ func (r *Repo) SaveQueue(ctx context.Context, plan NumberPlan, q *Queue) error {
 			return invalid("invalid", "members")
 		}
 	}
+	if err := validateRemoteMembers(ctx, r, q.RemoteMembers); err != nil {
+		return err
+	}
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -679,6 +734,15 @@ func (r *Repo) SaveQueue(ctx context.Context, plan NumberPlan, q *Queue) error {
 		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO queue_members(queue_id, extension_id, penalty, dynamic, logged_in, paused)
 			VALUES (?,?,?,?,?,?)`, q.ID, m.ExtensionID, m.Penalty, b2i(m.Dynamic), li, pa); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM queue_remote_members WHERE queue_id = ?`, q.ID); err != nil {
+		return err
+	}
+	for _, m := range q.RemoteMembers {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO queue_remote_members(queue_id, peer_id, number, penalty) VALUES (?,?,?,?)`,
+			q.ID, m.PeerID, m.Number, m.Penalty); err != nil {
 			return err
 		}
 	}

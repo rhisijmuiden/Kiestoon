@@ -82,6 +82,9 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 		for _, n := range st.LocalNets {
 			x.f("local_net=%s", esc(n))
 		}
+		for _, n := range tunnelNets(s) {
+			x.f("local_net=%s", n)
+		}
 		if st.ExternalAddress != "" {
 			x.f("external_media_address=%s", esc(st.ExternalAddress))
 			x.f("external_signaling_address=%s", esc(st.ExternalAddress))
@@ -168,6 +171,8 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 		x.f("max_contacts=%d", e.MaxContacts)
 		x.f("remove_existing=yes")
 		x.f("qualify_frequency=60")
+		// Phones behind a Kiestoon Edge register through its proxy, which adds a Path header.
+		x.f("support_path=yes")
 		x.nl()
 		if e.WebRTC {
 			genWebRTCEndpoint(&x, s, e)
@@ -282,6 +287,7 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 		}
 		x.nl()
 	}
+	genFederationPJSIP(&x, s)
 	return x.b.String()
 }
 
@@ -401,6 +407,7 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 	if s.Features.ParkingSlots > 0 {
 		x.f("include => kiestoon-parkedcalls")
 	}
+	x.f("include => kiestoon-fed")
 	x.f("include => kiestoon-outbound")
 	x.f("exten => i,1,Playback(ss-noservice)")
 	x.f(" same => n,Hangup()")
@@ -446,6 +453,8 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 	genTimeConditions(&x, s)
 	genConferences(&x, s)
 	genAllowed(&x, s)
+	genFederationDialplan(&x, s)
+	genSunRoutes(&x, s)
 
 	// Outbound: one context per route, included in the order of the routes, so the first
 	// matching route wins regardless of how specific its pattern is.

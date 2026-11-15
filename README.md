@@ -5,8 +5,16 @@
 Open source, lightweight single-tenant VoIP phone system (PBX) for Debian 13, with a modern web portal.
 English by default, fully translated into Dutch. Powered by RHIS.
 
-> Status: **phase 1, core PBX** (v0.2, testing channel): extensions, trunks, routes, 112, voicemail to e-mail,
-> SMTP, call history, firewall, fail2ban, phone provisioning and backups. See the [roadmap](ROADMAP.md).
+> Status: **phase 5, multi-site and high availability** (v0.6, testing channel): everything of a small-business PBX,
+> plus branch offices with Kiestoon Edge, linked Kiestoon systems and an active/passive pair. See the [roadmap](ROADMAP.md).
+
+## Multi-site and high availability
+
+- [Kiestoon Edge](docs/edge.md): a Raspberry Pi, LXC container or Debian machine in a branch office, with a WireGuard
+  tunnel to the central Kiestoon (no port forwarding) and a local SIP proxy and media relay for the phones.
+- [Linked systems](docs/multi-site.md): one phone book, free internal calls, BLF and queues across Kiestoon systems,
+  and follow-the-sun routing.
+- [High availability](docs/high-availability.md): a standby node that copies everything and takes over.
 
 ## Install
 
@@ -37,6 +45,8 @@ Show the setup token again with `sudo kiestoon setup-token`.
 | 8080/tcp, 8443/tcp | Portal (HTTP, HTTPS) and phone provisioning (`/prov/`) |
 | 5060/udp+tcp, 5061/tcp | SIP, SIP over TLS |
 | 10000-20000/udp | Audio (RTP) |
+| 51820/udp | WireGuard for branch offices and linked systems (only when switched on) |
+| 51821/udp | WireGuard between the two nodes of a high-availability pair (only when switched on) |
 
 The firewall page in the portal opens exactly these, with a SIP whitelist and a safe mode that undoes a change
 if you lose access.
@@ -60,7 +70,8 @@ check for updates and install one. The updater makes a backup of `/var/lib/kiest
 | `web/` | React + TypeScript + Tailwind portal, translations in `web/src/i18n/` |
 | `branding/` | House style: tokens, logos, usage rules |
 | `packaging/` | `.deb` (nfpm), systemd units, updater script, Asterisk build (`packaging/asterisk/`) |
-| `lxc/` | Proxmox LXC template build |
+| `lxc/` | Proxmox LXC template build (Kiestoon and Kiestoon Edge) |
+| `packaging/edge/` | Kiestoon Edge package and Raspberry Pi image |
 | `install.sh` | Installer for Debian 13 |
 
 On an installed system:

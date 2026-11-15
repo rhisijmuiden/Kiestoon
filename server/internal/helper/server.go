@@ -86,6 +86,7 @@ type Server struct {
 	fwPrevious string
 	fwRolled   bool
 	jobMu      sync.Mutex // one backup or restore at a time
+	clusterMu  sync.Mutex // one promotion or demotion at a time
 }
 
 const jails = "kiestoon-sip kiestoon-portal"
@@ -111,6 +112,7 @@ func (s *Server) Serve(ctx context.Context, socket string) error {
 	}
 	_ = os.Chmod(socket, 0o660)
 	s.restoreFirewallAtBoot(ctx)
+	s.clusterBoot(ctx)
 	go func() { <-ctx.Done(); l.Close() }()
 	s.Log.Info("kiestoon helper listening", "socket", socket)
 	for {
@@ -240,6 +242,39 @@ func (s *Server) dispatch(ctx context.Context, req Request) (any, error) {
 	case "asterisk.restart":
 		_, err := runCmd(ctx, "systemctl", "restart", "asterisk.service")
 		return nil, err
+	case "wireguard.apply":
+		var a WireGuardArgs
+		if err := json.Unmarshal(req.Args, &a); err != nil {
+			return nil, err
+		}
+		return s.wireguardApply(ctx, a)
+	case "wireguard.status":
+		return s.wireguardStatus(ctx, WireGuardStatus{}), nil
+	case "cluster.apply":
+		return s.clusterApply(ctx)
+	case "cluster.status":
+		return s.clusterStatus(ctx), nil
+	case "cluster.notify":
+		var a struct {
+			State string `json:"state"`
+		}
+		if err := json.Unmarshal(req.Args, &a); err != nil {
+			return nil, err
+		}
+		return nil, s.clusterNotify(ctx, a.State)
+	case "cluster.promote":
+		// Runs after the answer: promotion restarts the portal that asked for it.
+		go func() { _ = s.promote(context.Background(), "manual") }()
+		return map[string]string{"state": "promoting"}, nil
+	case "cluster.release":
+		go func() { _ = s.demote(context.Background(), "switch-over", true) }()
+		return map[string]string{"state": "releasing"}, nil
+	case "portal.restart":
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			_, _ = runCmd(context.Background(), "systemctl", "restart", "kiestoon.service")
+		}()
+		return nil, nil
 	}
 	return nil, fmt.Errorf("unknown command %q", req.Cmd)
 }

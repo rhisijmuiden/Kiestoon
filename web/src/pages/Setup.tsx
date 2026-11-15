@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, ShieldCheck } from 'lucide-react'
+import { Check, Server, ShieldCheck } from 'lucide-react'
 import { AuthShell } from '../components/AuthShell'
 import { Button, ErrorMessage, Input, Alert } from '../components/ui'
 import { languages } from '../i18n'
@@ -18,6 +18,7 @@ export function Setup() {
   const [error, setError] = useState<unknown>(null)
   const [mismatch, setMismatch] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [standby, setStandby] = useState(false)
 
   useEffect(() => {
     api<{ tokenRequired: boolean }>('GET', '/setup/status').then((s) => setTokenRequired(s.tokenRequired)).catch(() => undefined)
@@ -55,6 +56,8 @@ export function Setup() {
       setBusy(false)
     }
   }
+
+  if (standby) return <JoinStandby tokenRequired={tokenRequired} onBack={() => setStandby(false)} />
 
   return (
     <AuthShell wide>
@@ -96,7 +99,12 @@ export function Setup() {
             <Input label={t('setup.tokenLabel')} hint={t('setup.tokenHint')} value={form.token} onChange={set('token')} required autoComplete="off" spellCheck={false} className="font-mono uppercase tracking-widest" placeholder="XXXX-XXXX-XXXX" />
           )}
           <Input label={t('setup.organization')} hint={t('setup.organizationHint')} value={form.organization} onChange={set('organization')} required autoComplete="organization" />
-          <Button type="submit" className="self-end">{t('common.continue')}</Button>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button type="button" onClick={() => setStandby(true)} className="inline-flex items-center gap-2 text-sm text-muted hover:text-ink">
+              <Server className="size-4" aria-hidden /> {t('setup.joinStandby')}
+            </button>
+            <Button type="submit">{t('common.continue')}</Button>
+          </div>
         </form>
       )}
 
@@ -134,6 +142,55 @@ export function Setup() {
           </div>
         </form>
       )}
+    </AuthShell>
+  )
+}
+
+/** Makes this fresh installation the standby node of an existing Kiestoon (high availability). */
+function JoinStandby({ tokenRequired, onBack }: { tokenRequired: boolean; onBack: () => void }) {
+  const { t } = useTranslation()
+  const { refresh } = useSession()
+  const [f, setF] = useState({ token: '', code: '', address: '' })
+  const [error, setError] = useState<unknown>(null)
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState('')
+  async function join(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    try {
+      const r = await api<{ primary: string }>('POST', '/setup/cluster-join', f)
+      setDone(r.primary)
+      // The portal restarts as standby.
+      window.setTimeout(() => { refresh() }, 6000)
+    } catch (err) {
+      setError(err)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <AuthShell wide>
+      <form onSubmit={join} className="flex flex-col gap-5">
+        <div>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">{t('setup.standbyTitle')}</h1>
+          <p className="mt-2 text-sm text-muted">{t('setup.standbyText')}</p>
+        </div>
+        <ErrorMessage error={error} />
+        {done ? <Alert tone="ok">{t('setup.standbyDone', { name: done })}</Alert> : (
+          <>
+            {tokenRequired && (
+              <Input label={t('setup.tokenLabel')} hint={t('setup.tokenHint')} value={f.token} onChange={(e) => setF({ ...f, token: e.target.value })} required autoComplete="off" spellCheck={false} className="font-mono uppercase tracking-widest" placeholder="XXXX-XXXX-XXXX" />
+            )}
+            <Input label={t('setup.standbyCode')} hint={t('setup.standbyCodeHint')} value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} required className="font-mono" placeholder="KT1-H-…" />
+            <Input label={t('cluster.address')} hint={t('setup.standbyAddressHint')} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} className="font-mono" />
+            <div className="flex justify-between gap-2">
+              <Button type="button" variant="ghost" onClick={onBack}>{t('common.back')}</Button>
+              <Button type="submit" busy={busy}>{t('setup.standbyJoin')}</Button>
+            </div>
+          </>
+        )}
+      </form>
     </AuthShell>
   )
 }

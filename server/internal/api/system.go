@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/rhisijmuiden/kiestoon/server/internal/backup"
+	"github.com/rhisijmuiden/kiestoon/server/internal/cluster"
 	"github.com/rhisijmuiden/kiestoon/server/internal/firewall"
 	"github.com/rhisijmuiden/kiestoon/server/internal/helper"
 	"github.com/rhisijmuiden/kiestoon/server/internal/mail"
@@ -189,6 +190,15 @@ func (s *Server) firewallPorts(ctx context.Context) firewall.Ports {
 	if ls := s.ldapSettings(ctx); ls.LDAPEnabled {
 		p.LDAP = ls.Ports()
 	}
+	// Multi-site and high availability tunnels.
+	if h := s.hub(ctx); h.Enabled {
+		p.WireGuard = append(p.WireGuard, h.ListenPort)
+	}
+	if n := cluster.LoadNode(s.Cfg.DataDir); n.Enabled && n.Peer != nil {
+		p.WireGuard = append(p.WireGuard, n.Port)
+		p.ClusterPeer = n.Peer.Address
+	}
+	p.Tunnels = len(s.tunnels(ctx)) > 0
 	return p
 }
 
@@ -1013,6 +1023,15 @@ func (s *Server) ProvisioningHandler() http.Handler {
 		if err != nil {
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
+		}
+		// Phones in a branch office fetch their configuration through the Kiestoon Edge: they
+		// register at the edge's proxy, which is the address they used.
+		if s.edgeFromTunnel(r) != nil {
+			if h, _, err := net.SplitHostPort(r.Host); err == nil {
+				in.Server = h
+			} else {
+				in.Server = r.Host
+			}
 		}
 		body, ct := provision.Render(in)
 		s.PBX.TouchPhone(r.Context(), phone.ID, ip, r.UserAgent())

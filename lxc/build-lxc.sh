@@ -1,5 +1,6 @@
 #!/bin/bash
-# Builds a Proxmox LXC template (Debian 13 + Kiestoon) from a Kiestoon .deb.
+# Builds a Proxmox LXC template (Debian 13 + Kiestoon) from a Kiestoon .deb. It works the same for
+# Kiestoon Edge: pass the kiestoon-edge .deb and nothing else.
 #
 #   sudo ./lxc/build-lxc.sh dist/kiestoon_0.1.0_amd64.deb dist/ [dist/kiestoon-asterisk_22.x_amd64.deb] [dist/kiestoon-sounds-nl_x_all.deb] [dist/kiestoon-speech_x_amd64.deb]
 #
@@ -20,6 +21,7 @@ MIRROR="${MIRROR:-http://deb.debian.org/debian}"
 [ "$(id -u)" = "0" ] || { echo "run as root" >&2; exit 1; }
 command -v debootstrap >/dev/null || { echo "install debootstrap first" >&2; exit 1; }
 
+NAME="$(dpkg-deb -f "$DEB" Package)"
 VERSION="$(dpkg-deb -f "$DEB" Version)"
 ARCH="$(dpkg-deb -f "$DEB" Architecture)"
 VERSION="${VERSION//\~/-}" # 0.1.0~rc.1 -> 0.1.0-rc.1 in the file name
@@ -52,14 +54,14 @@ SRC
 
 # Proxmox writes /etc/network/interfaces and the hostname when it creates the container.
 printf 'auto lo\niface lo inet loopback\n\nauto eth0\niface eth0 inet dhcp\n' >"$ROOT/etc/network/interfaces"
-echo kiestoon >"$ROOT/etc/hostname"
+echo "$NAME" >"$ROOT/etc/hostname"
 echo "en_US.UTF-8 UTF-8" >"$ROOT/etc/locale.gen"
 chroot "$ROOT" locale-gen >/dev/null
 echo 'LANG=en_US.UTF-8' >"$ROOT/etc/default/locale"
 ln -sf /usr/share/zoneinfo/Europe/Amsterdam "$ROOT/etc/localtime"
 echo Europe/Amsterdam >"$ROOT/etc/timezone"
 
-echo "==> installing Kiestoon $VERSION"
+echo "==> installing $NAME $VERSION"
 cp "$DEB" "$ROOT/tmp/kiestoon.deb"
 PKGS=(/tmp/kiestoon.deb)
 if [ -n "$AST_DEB" ]; then
@@ -102,7 +104,7 @@ rm -rf "$ROOT"/var/lib/apt/lists/* "$ROOT"/var/log/*.log "$ROOT"/tmp/* "$ROOT"/r
 for m in dev/pts dev proc sys; do umount -l "$ROOT/$m"; done
 
 mkdir -p "$OUT"
-TARGET="$OUT/kiestoon-${VERSION}-debian-13-${ARCH}.tar.zst"
+TARGET="$OUT/${NAME}-${VERSION}-debian-13-${ARCH}.tar.zst"
 echo "==> writing $TARGET"
 tar --zstd -cpf "$TARGET" -C "$ROOT" --numeric-owner --xattrs .
 ls -lh "$TARGET"

@@ -25,6 +25,10 @@ type Snapshot struct {
 	FaxBoxes       []FaxBox
 	Contacts       []Contact
 	Phonebook      PhonebookSettings
+	// Multi-site (phase 5)
+	Hub       HubSettings
+	Peers     []FedPeer
+	SunRoutes []SunRoute
 	// FraudLocked blocks international and premium calls after a fraud alert.
 	FraudLocked bool
 	// Now decides which year's holidays go into the dialplan (it is regenerated every night).
@@ -81,6 +85,15 @@ func (r *Repo) Snapshot(ctx context.Context) (*Snapshot, error) {
 		return nil, err
 	}
 	if s.Prompts, err = r.Prompts(ctx); err != nil {
+		return nil, err
+	}
+	if s.Hub, err = LoadHub(ctx, r.DB); err != nil {
+		return nil, err
+	}
+	if s.Peers, err = r.FedPeers(ctx); err != nil {
+		return nil, err
+	}
+	if s.SunRoutes, err = r.SunRoutes(ctx); err != nil {
 		return nil, err
 	}
 	locked, _ := store.GetSetting(ctx, r.DB, FraudLockKey, "")

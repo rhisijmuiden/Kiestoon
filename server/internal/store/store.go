@@ -540,6 +540,63 @@ var migrations = []string{
 		next_at      TEXT NOT NULL DEFAULT ''
 	);
 	CREATE INDEX fax_jobs_status ON fax_jobs(status, next_at);`,
+	// 7: phase 5, multi-site. Kiestoon Edge satellites, federated Kiestoon systems (with the agents of
+	// their queues) and follow-the-sun routes. The WireGuard hub is a JSON setting.
+	`CREATE TABLE edge_sites (
+		id           INTEGER PRIMARY KEY AUTOINCREMENT,
+		name         TEXT NOT NULL UNIQUE COLLATE NOCASE,
+		pair_hash    TEXT NOT NULL DEFAULT '',
+		pair_expires TEXT NOT NULL DEFAULT '',
+		public_key   TEXT NOT NULL DEFAULT '',
+		tunnel_ip    TEXT NOT NULL DEFAULT '',
+		token_hash   TEXT NOT NULL DEFAULT '',
+		hostname     TEXT NOT NULL DEFAULT '',
+		version      TEXT NOT NULL DEFAULT '',
+		lan_address  TEXT NOT NULL DEFAULT '',
+		lan_net      TEXT NOT NULL DEFAULT '',
+		services     TEXT NOT NULL DEFAULT '{}',
+		last_seen    TEXT NOT NULL DEFAULT '',
+		paired_at    TEXT NOT NULL DEFAULT '',
+		created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+	CREATE TABLE federation_peers (
+		id             INTEGER PRIMARY KEY AUTOINCREMENT,
+		name           TEXT NOT NULL,
+		prefix         TEXT NOT NULL DEFAULT '',
+		role           TEXT NOT NULL CHECK (role IN ('hosted','joined')),
+		state          TEXT NOT NULL DEFAULT 'invited' CHECK (state IN ('invited','active')),
+		invite_hash    TEXT NOT NULL DEFAULT '',
+		invite_expires TEXT NOT NULL DEFAULT '',
+		public_key     TEXT NOT NULL DEFAULT '',
+		tunnel_ip      TEXT NOT NULL DEFAULT '',
+		local_ip       TEXT NOT NULL DEFAULT '',
+		private_key    TEXT NOT NULL DEFAULT '',
+		endpoint       TEXT NOT NULL DEFAULT '',
+		token_out      TEXT NOT NULL DEFAULT '',
+		token_in_hash  TEXT NOT NULL DEFAULT '',
+		sip_port       INTEGER NOT NULL DEFAULT 5060,
+		portal_port    INTEGER NOT NULL DEFAULT 8080,
+		direct_dial    INTEGER NOT NULL DEFAULT 0,
+		directory      TEXT NOT NULL DEFAULT '{}',
+		version        TEXT NOT NULL DEFAULT '',
+		last_seen      TEXT NOT NULL DEFAULT '',
+		created_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+	CREATE TABLE queue_remote_members (
+		queue_id INTEGER NOT NULL REFERENCES queues(id) ON DELETE CASCADE,
+		peer_id  INTEGER NOT NULL REFERENCES federation_peers(id) ON DELETE CASCADE,
+		number   TEXT NOT NULL,
+		penalty  INTEGER NOT NULL DEFAULT 0,
+		PRIMARY KEY (queue_id, peer_id, number)
+	);
+	CREATE TABLE sun_routes (
+		id            INTEGER PRIMARY KEY AUTOINCREMENT,
+		name          TEXT NOT NULL,
+		rules         TEXT NOT NULL DEFAULT '[]',
+		fallback_type TEXT NOT NULL DEFAULT 'hangup',
+		fallback      TEXT NOT NULL DEFAULT '',
+		enabled       INTEGER NOT NULL DEFAULT 1
+	);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

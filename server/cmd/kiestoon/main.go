@@ -20,6 +20,7 @@ import (
 	"github.com/rhisijmuiden/kiestoon/server/internal/api"
 	"github.com/rhisijmuiden/kiestoon/server/internal/backup"
 	"github.com/rhisijmuiden/kiestoon/server/internal/certs"
+	"github.com/rhisijmuiden/kiestoon/server/internal/cluster"
 	"github.com/rhisijmuiden/kiestoon/server/internal/config"
 	"github.com/rhisijmuiden/kiestoon/server/internal/helper"
 	"github.com/rhisijmuiden/kiestoon/server/internal/mail"
@@ -46,8 +47,10 @@ func main() {
 		err = runHelper(log)
 	case "sendmail":
 		err = sendmail()
+	case "cluster-notify":
+		err = clusterNotify()
 	default:
-		fmt.Fprintf(os.Stderr, "usage: kiestoon [serve|version|setup-token|helper|sendmail]\n")
+		fmt.Fprintf(os.Stderr, "usage: kiestoon [serve|version|setup-token|helper|sendmail|cluster-notify]\n")
 		os.Exit(2)
 	}
 	if err != nil {
@@ -92,6 +95,9 @@ func serve(log *slog.Logger) error {
 	cfg := config.Load()
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+	if cluster.IsStandby(cfg.DataDir) {
+		return serveStandby(ctx, cfg, log)
+	}
 
 	db, err := store.Open(ctx, cfg.DatabasePath())
 	if err != nil {
@@ -112,6 +118,7 @@ func serve(log *slog.Logger) error {
 	go srv.RunIntegrations(ctx)
 	go srv.RunLDAP(ctx)
 	go srv.RunExtensions(ctx)
+	go srv.RunMultisite(ctx)
 	go func() {
 		t := time.NewTicker(time.Hour)
 		defer t.Stop()
@@ -131,14 +138,20 @@ func serve(log *slog.Logger) error {
 	mux.Handle("GET /metrics", srv.MetricsHandler())
 	mux.Handle("/", web.Handler())
 
+	return listen(ctx, cfg, log, mux)
+}
+
+// listen serves the portal on HTTP and HTTPS until ctx ends.
+func listen(ctx context.Context, cfg config.Config, log *slog.Logger, mux http.Handler) error {
 	newServer := func(addr string) *http.Server {
 		return &http.Server{
 			Addr:              addr,
 			Handler:           api.SecurityHeaders(mux),
 			ReadHeaderTimeout: 10 * time.Second,
 			ReadTimeout:       30 * time.Second,
-			WriteTimeout:      120 * time.Second,
-			IdleTimeout:       120 * time.Second,
+			// Long enough for the standby to download a database snapshot or a large recording.
+			WriteTimeout: 30 * time.Minute,
+			IdleTimeout:  120 * time.Second,
 		}
 	}
 	hs := newServer(cfg.Listen)
@@ -177,6 +190,29 @@ func serve(log *slog.Logger) error {
 		_ = tlsSrv.Shutdown(shutdownCtx)
 	}
 	return hs.Shutdown(shutdownCtx)
+}
+
+// serveStandby runs the small status portal of a standby node and replicates from the primary.
+func serveStandby(ctx context.Context, cfg config.Config, log *slog.Logger) error {
+	log.Info("kiestoon runs as standby node of a high-availability pair")
+	sb := api.NewStandby(cfg, log)
+	go sb.Run(ctx)
+	mux := http.NewServeMux()
+	mux.Handle("/api/", sb.Routes())
+	mux.Handle("/", web.Handler())
+	return listen(ctx, cfg, log, mux)
+}
+
+// clusterNotify is called by keepalived when this node becomes master, backup or faulty.
+func clusterNotify() error {
+	if len(os.Args) < 3 {
+		return errors.New("usage: kiestoon cluster-notify master|backup|fault")
+	}
+	cfg := config.Load()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	c := &helper.Client{Socket: cfg.HelperSocket}
+	return c.Call(ctx, "cluster.notify", map[string]string{"state": os.Args[2]}, nil)
 }
 
 // runHelper starts the root helper service (kiestoon-helper.service).

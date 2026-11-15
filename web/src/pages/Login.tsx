@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { KeyRound } from 'lucide-react'
+import { Fingerprint, KeyRound } from 'lucide-react'
 import { AuthShell } from '../components/AuthShell'
 import { Alert, Button, ErrorMessage, Input } from '../components/ui'
 import { api } from '../lib/api'
 import { useSession } from '../lib/session'
+import { getPasskey, passkeysSupported } from '../lib/passkey'
 
 export function Login({ mfa }: { mfa: boolean }) {
   const { t } = useTranslation()
@@ -20,6 +21,22 @@ export function Login({ mfa }: { mfa: boolean }) {
     if (ssoError) window.history.replaceState(null, '', window.location.pathname)
     api<{ id: number; name: string; kind: string }[]>('GET', '/auth/sso/providers').then(setProviders).catch(() => undefined)
   }, [ssoError])
+
+  async function passkey() {
+    setBusy(true)
+    setError(null)
+    try {
+      const begin = await api<{ id: string; options: { publicKey: Record<string, unknown> } }>('POST', '/auth/passkey/begin')
+      const credential = await getPasskey(begin.options)
+      await api('POST', '/auth/passkey/finish', { id: begin.id, credential })
+      await refresh()
+    } catch (err) {
+      // Closing the browser dialog is not an error worth showing.
+      if (!(err instanceof DOMException && err.name === 'NotAllowedError') && !(err instanceof Error && err.message === 'cancelled')) setError(err)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -88,6 +105,9 @@ export function Login({ mfa }: { mfa: boolean }) {
           <Input label={t('login.username')} value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus autoComplete="username" />
           <Input label={t('login.password')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
           <Button type="submit" busy={busy}>{t('login.submit')}</Button>
+          {passkeysSupported() && (
+            <Button type="button" variant="ghost" disabled={busy} onClick={passkey}><Fingerprint className="size-4" aria-hidden />{t('login.passkey')}</Button>
+          )}
         </form>
       )}
     </AuthShell>

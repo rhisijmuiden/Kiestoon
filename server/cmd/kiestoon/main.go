@@ -108,6 +108,8 @@ func serve(log *slog.Logger) error {
 	go srv.RunScheduler(ctx)
 	go srv.ApplySecurityOnStart(ctx)
 	go srv.RunMaintenance(ctx)
+	go srv.RunIntegrations(ctx)
+	go srv.RunLDAP(ctx)
 	go func() {
 		t := time.NewTicker(time.Hour)
 		defer t.Stop()
@@ -144,14 +146,16 @@ func serve(log *slog.Logger) error {
 	}()
 	var tlsSrv *http.Server
 	if cfg.TLSListen != "" && cfg.TLSListen != "off" {
-		if cert, key, err := certs.Ensure(cfg.PBXDir()); err != nil {
+		loader := &certs.Loader{Dir: cfg.PBXDir()}
+		if _, err := loader.GetCertificate(nil); err != nil {
 			log.Warn("no TLS certificate, HTTPS disabled", "err", err)
 		} else {
 			tlsSrv = newServer(cfg.TLSListen)
-			tlsSrv.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+			// The certificate is read again when it changes (internet mode copies the Let's Encrypt one).
+			tlsSrv.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12, GetCertificate: loader.GetCertificate}
 			go func() {
 				log.Info("kiestoon listening (HTTPS)", "addr", cfg.TLSListen)
-				if err := tlsSrv.ListenAndServeTLS(cert, key); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				if err := tlsSrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
 					log.Warn("HTTPS listener stopped", "err", err)
 				}
 			}()

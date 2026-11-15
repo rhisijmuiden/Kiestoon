@@ -47,7 +47,7 @@ function statusTone(s: string): 'ok' | 'warn' | 'danger' | 'muted' {
 const blankTrunk: Trunk = {
   id: 0, name: '', provider: 'generic', authMode: 'register', host: '', port: 5060, transport: 'udp', username: '', authUsername: '',
   secret: '', secretSet: false, fromDomain: '', fromUser: '', matchIps: '', didSource: 'to', codecs: 'alaw,ulaw,g722', maxChannels: 0,
-  callerId: '', srtp: false, enabled: true,
+  callerId: '', srtp: false, t38: false, enabled: true,
 }
 
 function TrunkList() {
@@ -159,6 +159,7 @@ function TrunkForm({ value, onClose, onSaved }: { value: Trunk; onClose: () => v
           <Input label={t('trunks.codecs')} value={x.codecs} onChange={(e) => set('codecs', e.target.value.replace(/\s/g, ''))} className="font-mono" hint="alaw,ulaw,g722" />
         </div>
         <div className="mt-4"><Toggle label={t('trunks.srtp')} checked={x.srtp} disabled={x.transport !== 'tls'} onChange={(v) => set('srtp', v)} /></div>
+        <div className="mt-3"><Toggle label={t('trunks.t38')} hint={t('trunks.t38Hint')} checked={x.t38} onChange={(v) => set('t38', v)} /></div>
       </details>
       <Toggle label={t('common.enabled')} checked={x.enabled} onChange={(v) => set('enabled', v)} />
     </Modal>

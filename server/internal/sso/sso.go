@@ -44,10 +44,17 @@ type Provider struct {
 	// TrustMFA skips Kiestoon's own second factor, because the provider already asks for one.
 	TrustMFA bool `json:"trustMfa"`
 	Enabled  bool `json:"enabled"`
+	// Protocol is "oidc" or "saml" (kind "saml"). For SAML, Issuer is the optional metadata URL of
+	// the identity provider and SAMLMetadata its metadata XML.
+	Protocol     string `json:"protocol"`
+	SAMLMetadata string `json:"samlMetadata"`
 }
 
 // Kinds are the provider templates offered in the UI.
-var Kinds = []string{"entra", "google", "keycloak", "authentik", "generic"}
+var Kinds = []string{"entra", "google", "keycloak", "authentik", "generic", "saml"}
+
+// IsSAML reports whether the provider uses SAML 2.0.
+func (p *Provider) IsSAML() bool { return p.Kind == "saml" }
 
 var roles = []string{"superadmin", "admin", "reception", "user"}
 
@@ -64,17 +71,32 @@ func (p *Provider) Validate() error {
 	if !slices.Contains(Kinds, p.Kind) {
 		return fieldErr("kind")
 	}
-	u, err := url.Parse(p.Issuer)
-	if err != nil || u.Scheme != "https" || u.Host == "" {
-		return fieldErr("issuer")
+	if p.IsSAML() {
+		p.Protocol = "saml"
+		if p.Issuer != "" {
+			if u, err := url.Parse(p.Issuer); err != nil || u.Scheme != "https" || u.Host == "" {
+				return fieldErr("issuer")
+			}
+		}
+		if _, err := ParseIDPMetadata(p.SAMLMetadata); err != nil {
+			return fieldErr("samlMetadata")
+		}
+		p.ClientID, p.ClientSecret, p.Scopes = "", "", ""
+	} else {
+		p.Protocol = "oidc"
+		p.SAMLMetadata = ""
+		u, err := url.Parse(p.Issuer)
+		if err != nil || u.Scheme != "https" || u.Host == "" {
+			return fieldErr("issuer")
+		}
+		if p.ClientID == "" || len(p.ClientID) > 200 {
+			return fieldErr("clientId")
+		}
 	}
-	if p.ClientID == "" || len(p.ClientID) > 200 {
-		return fieldErr("clientId")
-	}
-	if p.Scopes == "" {
+	if p.Scopes == "" && !p.IsSAML() {
 		p.Scopes = "openid profile email"
 	}
-	if !strings.Contains(" "+p.Scopes+" ", " openid ") {
+	if !p.IsSAML() && !strings.Contains(" "+p.Scopes+" ", " openid ") {
 		p.Scopes = "openid " + p.Scopes
 	}
 	if p.GroupsClaim == "" {
@@ -105,14 +127,14 @@ func fieldErr(f string) error { return &FieldError{Field: f} }
 // Store reads and writes providers.
 type Store struct{ DB *sql.DB }
 
-const cols = `id, name, kind, issuer, client_id, client_secret, scopes, groups_claim, role_map, default_role, auto_create, trust_mfa, enabled`
+const cols = `id, name, kind, issuer, client_id, client_secret, scopes, groups_claim, role_map, default_role, auto_create, trust_mfa, enabled, protocol, saml_metadata`
 
 func scan(row interface{ Scan(...any) error }) (*Provider, error) {
 	var p Provider
 	var rm string
 	var ac, tm, en int
 	if err := row.Scan(&p.ID, &p.Name, &p.Kind, &p.Issuer, &p.ClientID, &p.ClientSecret, &p.Scopes, &p.GroupsClaim, &rm,
-		&p.DefaultRole, &ac, &tm, &en); err != nil {
+		&p.DefaultRole, &ac, &tm, &en, &p.Protocol, &p.SAMLMetadata); err != nil {
 		return nil, err
 	}
 	_ = json.Unmarshal([]byte(rm), &p.RoleMap)
@@ -148,22 +170,27 @@ func (s *Store) Get(ctx context.Context, id int64) (*Provider, error) {
 
 // Save validates and stores a provider. An empty secret on update keeps the stored one.
 func (s *Store) Save(ctx context.Context, p *Provider) error {
-	if p.ID != 0 && p.ClientSecret == "" {
+	if p.ID != 0 && (p.ClientSecret == "" || (p.IsSAML() && p.SAMLMetadata == "")) {
 		old, err := s.Get(ctx, p.ID)
 		if err != nil {
 			return err
 		}
-		p.ClientSecret = old.ClientSecret
+		if p.ClientSecret == "" {
+			p.ClientSecret = old.ClientSecret
+		}
+		if p.SAMLMetadata == "" {
+			p.SAMLMetadata = old.SAMLMetadata
+		}
 	}
 	if err := p.Validate(); err != nil {
 		return err
 	}
 	rm, _ := json.Marshal(p.RoleMap)
 	args := []any{p.Name, p.Kind, p.Issuer, p.ClientID, p.ClientSecret, p.Scopes, p.GroupsClaim, string(rm), p.DefaultRole,
-		b2i(p.AutoCreate), b2i(p.TrustMFA), b2i(p.Enabled)}
+		b2i(p.AutoCreate), b2i(p.TrustMFA), b2i(p.Enabled), p.Protocol, p.SAMLMetadata}
 	if p.ID == 0 {
 		res, err := s.DB.ExecContext(ctx, `INSERT INTO sso_providers(name, kind, issuer, client_id, client_secret, scopes, groups_claim,
-			role_map, default_role, auto_create, trust_mfa, enabled) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
+			role_map, default_role, auto_create, trust_mfa, enabled, protocol, saml_metadata) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
 		if err != nil {
 			return err
 		}
@@ -171,7 +198,7 @@ func (s *Store) Save(ctx context.Context, p *Provider) error {
 		return nil
 	}
 	_, err := s.DB.ExecContext(ctx, `UPDATE sso_providers SET name=?, kind=?, issuer=?, client_id=?, client_secret=?, scopes=?,
-		groups_claim=?, role_map=?, default_role=?, auto_create=?, trust_mfa=?, enabled=? WHERE id=?`, append(args, p.ID)...)
+		groups_claim=?, role_map=?, default_role=?, auto_create=?, trust_mfa=?, enabled=?, protocol=?, saml_metadata=? WHERE id=?`, append(args, p.ID)...)
 	return err
 }
 

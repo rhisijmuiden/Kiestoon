@@ -22,6 +22,9 @@ type Snapshot struct {
 	TimeConditions []TimeCondition
 	Conferences    []Conference
 	Prompts        []Prompt
+	FaxBoxes       []FaxBox
+	Contacts       []Contact
+	Phonebook      PhonebookSettings
 	// FraudLocked blocks international and premium calls after a fraud alert.
 	FraudLocked bool
 	// Now decides which year's holidays go into the dialplan (it is regenerated every night).
@@ -51,6 +54,15 @@ func (r *Repo) Snapshot(ctx context.Context) (*Snapshot, error) {
 		return nil, err
 	}
 	if s.Holidays, err = LoadHolidays(ctx, r.DB); err != nil {
+		return nil, err
+	}
+	if s.FaxBoxes, err = r.FaxBoxes(ctx); err != nil {
+		return nil, err
+	}
+	if s.Contacts, err = r.Contacts(ctx); err != nil {
+		return nil, err
+	}
+	if s.Phonebook, err = LoadPhonebookSettings(ctx, r.DB); err != nil {
 		return nil, err
 	}
 	if s.RingGroups, err = r.RingGroups(ctx); err != nil {

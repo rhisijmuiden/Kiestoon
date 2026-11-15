@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { KeyRound, Pencil, Plus, Trash2, X } from 'lucide-react'
-import { Badge, CopyField, Empty, Modal, Select, Table, Toggle, td, useApi } from '../components/kit'
+import { Badge, CopyField, Empty, Modal, Select, Table, Textarea, Toggle, td, useApi } from '../components/kit'
 import { IconButton, useSaver } from '../components/pbx'
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api, roles } from '../lib/api'
 import type { SsoProvider } from '../lib/types'
 
-type List = { providers: SsoProvider[]; redirectUri: string; kinds: SsoProvider['kind'][] }
+type List = { providers: SsoProvider[]; redirectUri: string; kinds: SsoProvider['kind'][]; samlEntityId: string; samlAcs: string }
 
 const presets: Record<SsoProvider['kind'], Partial<SsoProvider>> = {
   entra: { issuer: 'https://login.microsoftonline.com/<tenant-id>/v2.0', scopes: 'openid profile email', groupsClaim: 'groups' },
@@ -15,6 +15,7 @@ const presets: Record<SsoProvider['kind'], Partial<SsoProvider>> = {
   keycloak: { issuer: 'https://sso.example.com/realms/<realm>', scopes: 'openid profile email', groupsClaim: 'groups' },
   authentik: { issuer: 'https://auth.example.com/application/o/<slug>/', scopes: 'openid profile email', groupsClaim: 'groups' },
   generic: { issuer: '', scopes: 'openid profile email', groupsClaim: 'groups' },
+  saml: { issuer: '', scopes: '', groupsClaim: 'groups', clientId: '' },
 }
 
 const blank: SsoProvider = {
@@ -41,6 +42,11 @@ export function Sso() {
         <Card>
           <p className="mb-3 text-sm text-muted">{t('sso.redirectHint')}</p>
           <CopyField label={t('sso.redirectUri')} value={list.data.redirectUri} />
+          <p className="mb-3 mt-5 text-sm text-muted">{t('sso.samlHint')}</p>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <CopyField label={t('sso.samlEntityId')} value={list.data.samlEntityId} />
+            <CopyField label={t('sso.samlAcs')} value={list.data.samlAcs} />
+          </div>
         </Card>
       )}
       <Card>
@@ -90,16 +96,28 @@ function ProviderForm({ value, onClose, onSaved }: { value: SsoProvider; onClose
         </Select>
         <Input label={t('sso.buttonName')} value={p.name} onChange={(e) => set('name', e.target.value)} hint={t('sso.buttonNameHint')} />
       </div>
-      <Input label={t('sso.issuer')} value={p.issuer} onChange={(e) => set('issuer', e.target.value.trim())} className="font-mono text-sm" hint={t(`sso.issuerHints.${p.kind}`)} />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Input label={t('sso.clientId')} value={p.clientId} onChange={(e) => set('clientId', e.target.value.trim())} className="font-mono text-sm" />
-        <Input label={t('sso.clientSecret')} type="password" value={p.clientSecret ?? ''} onChange={(e) => set('clientSecret', e.target.value)} autoComplete="off"
-          placeholder={p.secretSet ? '••••••••' : ''} hint={p.secretSet ? t('sso.secretKeep') : undefined} />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Input label={t('sso.scopes')} value={p.scopes} onChange={(e) => set('scopes', e.target.value)} className="font-mono text-sm" />
-        <Input label={t('sso.groupsClaim')} value={p.groupsClaim} onChange={(e) => set('groupsClaim', e.target.value.trim())} className="font-mono text-sm" hint={t('sso.groupsClaimHint')} />
-      </div>
+      {p.kind === 'saml' ? (
+        <>
+          <Input label={t('sso.samlMetadataUrl')} value={p.issuer} onChange={(e) => set('issuer', e.target.value.trim())} className="font-mono text-sm"
+            placeholder="https://login.microsoftonline.com/<tenant>/federationmetadata/2007-06/federationmetadata.xml?appid=…" hint={t('sso.samlMetadataUrlHint')} />
+          <Textarea label={t('sso.samlMetadata')} value={p.samlMetadata ?? ''} onChange={(e) => set('samlMetadata', e.target.value)} rows={5}
+            placeholder={'<EntityDescriptor …>'} hint={t('sso.samlMetadataHint')} />
+          <Input label={t('sso.samlGroups')} value={p.groupsClaim} onChange={(e) => set('groupsClaim', e.target.value.trim())} className="font-mono text-sm" hint={t('sso.samlGroupsHint')} />
+        </>
+      ) : (
+        <>
+          <Input label={t('sso.issuer')} value={p.issuer} onChange={(e) => set('issuer', e.target.value.trim())} className="font-mono text-sm" hint={t(`sso.issuerHints.${p.kind}`)} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input label={t('sso.clientId')} value={p.clientId} onChange={(e) => set('clientId', e.target.value.trim())} className="font-mono text-sm" />
+          <Input label={t('sso.clientSecret')} type="password" value={p.clientSecret ?? ''} onChange={(e) => set('clientSecret', e.target.value)} autoComplete="off"
+            placeholder={p.secretSet ? '••••••••' : ''} hint={p.secretSet ? t('sso.secretKeep') : undefined} />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input label={t('sso.scopes')} value={p.scopes} onChange={(e) => set('scopes', e.target.value)} className="font-mono text-sm" />
+          <Input label={t('sso.groupsClaim')} value={p.groupsClaim} onChange={(e) => set('groupsClaim', e.target.value.trim())} className="font-mono text-sm" hint={t('sso.groupsClaimHint')} />
+        </div>
+        </>
+      )}
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-ink-2">{t('sso.roleMap')}</span>
         <p className="text-xs text-subtle">{t('sso.roleMapHint')}</p>

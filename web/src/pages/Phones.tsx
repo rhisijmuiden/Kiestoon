@@ -6,6 +6,10 @@ import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
 import type { Extension, Phone, PhoneKey, PhoneModel, ProvSettings } from '../lib/types'
 
+const vendors = ['yealink', 'snom', 'grandstream', 'fanvil', 'gigaset', 'poly'] as const
+const vendorName = (v: string) => (v === 'poly' ? 'Poly' : v[0].toUpperCase() + v.slice(1))
+const untested = new Set<string>(['grandstream', 'fanvil', 'gigaset', 'poly'])
+
 export function Phones() {
   const { t, i18n } = useTranslation()
   const list = useApi<Phone[]>('/phones')
@@ -29,7 +33,7 @@ export function Phones() {
   return (
     <>
       <PageHeader title={t('phones.title')} subtitle={t('phones.subtitle')}>
-        <Button onClick={() => setEdit({ id: 0, mac: '', vendor: 'yealink', model: 'T54W', extensionId: exts.data?.[0]?.id ?? null, label: '', keys: [], lastSeenAt: '', lastIp: '', userAgent: '' })}>
+        <Button onClick={() => setEdit({ id: 0, mac: '', vendor: 'yealink', model: 'T54W', extensionId: exts.data?.[0]?.id ?? null, label: '', keys: [], lines: [], lastSeenAt: '', lastIp: '', userAgent: '' })}>
           <Plus className="size-4" aria-hidden /> {t('phones.add')}
         </Button>
       </PageHeader>
@@ -42,7 +46,10 @@ export function Phones() {
             <tr key={p.id}>
               <td className={`${td} text-ink`}>{p.label || '–'}</td>
               <td className={`${td} font-mono text-xs`}>{p.mac.match(/.{2}/g)?.join(':').toUpperCase()}</td>
-              <td className={td}>{models.data?.find((m) => m.vendor === p.vendor && m.id === p.model)?.name ?? p.model}</td>
+              <td className={td}>
+                {models.data?.find((m) => m.vendor === p.vendor && m.id === p.model)?.name ?? p.model}
+                {p.lines?.length > 0 && <span className="ml-1.5 text-xs text-subtle">{t('phones.handsetCount', { count: p.lines.length + 1 })}</span>}
+              </td>
               <td className={td}>{extLabel(p.extensionId)}</td>
               <td className={td}>{p.lastSeenAt ? <><Badge tone="ok" dot>{formatDate(p.lastSeenAt, i18n.language)}</Badge> <span className="font-mono text-xs text-subtle">{p.lastIp}</span></> : <Badge>{t('phones.never')}</Badge>}</td>
               <td className={`${td} whitespace-nowrap text-right`}>
@@ -78,7 +85,9 @@ function ProvisioningCard() {
       <div className="grid gap-3 lg:grid-cols-2">
         <CopyField label={t('phones.option66')} value={base} secret />
         <CopyField label={t('phones.option66Snom')} value={`${base}snom{model}.htm`} secret />
+        <CopyField label={t('phones.gigasetUrl')} value={`${base}gigaset/`} secret />
       </div>
+      <p className="mt-3 text-xs text-subtle">{t('phones.vendorsHint')}</p>
       {open && <ProvSettingsForm value={s.data} onClose={() => setOpen(false)} onSaved={() => { setOpen(false); s.reload() }} />}
     </Card>
   )
@@ -128,13 +137,15 @@ function PhoneForm({ value, models, exts, onClose, onSaved }: { value: Phone; mo
   const [error, setError] = useState<unknown>(null)
   const model = models.find((m) => m.vendor === x.vendor && m.id === x.model)
   const keyCount = model?.keys ?? 0
+  const maxLines = model?.lines ?? 0
+  const lines = (x.lines ?? []).slice(0, Math.max(0, maxLines - 1))
   const keys: PhoneKey[] = Array.from({ length: keyCount }, (_, i) => x.keys[i] ?? { type: i === 0 ? 'line' : 'none', value: '', label: '' })
   const setKey = (i: number, k: Partial<PhoneKey>) => setX((o) => ({ ...o, keys: keys.map((old, j) => (j === i ? { ...old, ...k } : old)) }))
   async function save() {
     setBusy(true)
     setError(null)
     try {
-      await api(x.id ? 'PUT' : 'POST', x.id ? `/phones/${x.id}` : '/phones', { ...x, keys })
+      await api(x.id ? 'PUT' : 'POST', x.id ? `/phones/${x.id}` : '/phones', { ...x, keys, lines: lines.filter(Boolean) })
       onSaved()
     } catch (e) {
       setError(e)
@@ -152,8 +163,8 @@ function PhoneForm({ value, models, exts, onClose, onSaved }: { value: Phone; mo
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Select label={t('phones.model')} value={`${x.vendor}/${x.model}`} onChange={(e) => { const [v, m] = e.target.value.split('/'); setX({ ...x, vendor: v as Phone['vendor'], model: m }) }}>
-          {(['yealink', 'snom', 'grandstream'] as const).map((v) => (
-            <optgroup key={v} label={v[0].toUpperCase() + v.slice(1)}>
+          {vendors.map((v) => (
+            <optgroup key={v} label={vendorName(v)}>
               {models.filter((m) => m.vendor === v).map((m) => <option key={m.id} value={`${v}/${m.id}`}>{m.name}</option>)}
             </optgroup>
           ))}
@@ -163,6 +174,25 @@ function PhoneForm({ value, models, exts, onClose, onSaved }: { value: Phone; mo
           {exts.map((e) => <option key={e.id} value={e.id}>{e.number} · {e.name}</option>)}
         </Select>
       </div>
+      {untested.has(x.vendor) && <p className="text-xs text-warn">{t('phones.untested')}</p>}
+      {maxLines > 1 && (
+        <div>
+          <h3 className="mb-1 text-sm font-medium text-ink-2">{t('phones.handsets')}</h3>
+          <p className="mb-3 text-xs text-subtle">{t('phones.handsetsHint', { max: maxLines })}</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {[...lines, 0].slice(0, maxLines - 1).map((id, i) => (
+              <Select key={i} label={t('phones.handset', { n: i + 2 })} value={id || ''} onChange={(e) => {
+                const next = [...lines]
+                next[i] = Number(e.target.value)
+                setX({ ...x, lines: next.filter(Boolean) })
+              }}>
+                <option value="">–</option>
+                {exts.filter((e) => e.id === id || (e.id !== x.extensionId && !lines.includes(e.id))).map((e) => <option key={e.id} value={e.id}>{e.number} · {e.name}</option>)}
+              </Select>
+            ))}
+          </div>
+        </div>
+      )}
       <div>
         <h3 className="mb-1 text-sm font-medium text-ink-2">{t('phones.keys')}</h3>
         {keyCount === 0 ? (

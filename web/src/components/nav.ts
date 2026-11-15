@@ -1,5 +1,5 @@
 import {
-  Activity, Archive, AudioLines, Clock, Disc3, GitBranch, Headset, History, KeyRound, LayoutGrid, ListOrdered, Mail, MonitorSmartphone,
+  Activity, Archive, AudioLines, BookUser, Globe, MonitorPlay, Plug, Printer, Clock, Disc3, GitBranch, Headset, History, KeyRound, LayoutGrid, ListOrdered, Mail, MonitorSmartphone,
   Phone, Presentation, ScrollText, Settings, Shield, ShieldAlert, Smartphone, User, UserCog, UsersRound, Voicemail, Waypoints,
   type LucideIcon,
 } from 'lucide-react'
@@ -20,12 +20,15 @@ export const nav: NavGroup[] = [
       { key: 'colleagues', path: '/me/colleagues', icon: UsersRound, min: 'user', portal: true },
       { key: 'myCalls', path: '/me/calls', icon: History, min: 'user', portal: true },
       { key: 'devices', path: '/me/devices', icon: MonitorSmartphone, min: 'user', portal: true },
+      { key: 'phonebook', path: '/phonebook', icon: BookUser, min: 'user' },
     ],
   },
   {
     key: 'reception',
     items: [
       { key: 'switchboard', path: '/reception', icon: Activity, min: 'reception' },
+      { key: 'wallboard', path: '/wallboard', icon: MonitorPlay, min: 'reception' },
+      { key: 'fax', path: '/fax', icon: Printer, min: 'reception' },
       { key: 'history', path: '/history', icon: ScrollText, min: 'reception' },
       { key: 'recordings', path: '/recordings', icon: Disc3, min: 'reception' },
     ],
@@ -51,6 +54,8 @@ export const nav: NavGroup[] = [
       { key: 'sso', path: '/sso', icon: KeyRound },
       { key: 'features', path: '/features', icon: ShieldAlert },
       { key: 'firewall', path: '/firewall', icon: Shield },
+      { key: 'internet', path: '/internet', icon: Globe },
+      { key: 'integrations', path: '/integrations', icon: Plug },
       { key: 'backups', path: '/backups', icon: Archive },
       { key: 'mail', path: '/mail', icon: Mail },
       { key: 'audit', path: '/audit', icon: ScrollText },

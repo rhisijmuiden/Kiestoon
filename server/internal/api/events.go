@@ -26,10 +26,16 @@ func (s *Server) onAMIEvent(m asterisk.Message) {
 		if rec.Direction == "outbound" {
 			go s.checkFraud(rec)
 		}
+		s.cdrEvent(rec)
 	case "UserEvent":
-		if m.Get("UserEvent") == "Kiestoon" {
+		switch m.Get("UserEvent") {
+		case "Kiestoon":
 			go s.featureCode(m.Get("Action"), m.Get("Ext"), m.Get("Value"), m.Get("Queue"), m.Get("Id"))
+		case "KiestoonFax":
+			go s.onFax(m)
 		}
+	case "DialBegin", "DialEnd", "MessageWaiting", "QueueCallerAbandon":
+		s.callEvent(m)
 	}
 }
 
@@ -125,6 +131,12 @@ func (s *Server) RunMaintenance(ctx context.Context) {
 		if today != day {
 			if day != "" {
 				s.Ast.Changed()
+				// The wallboard counts "today": start the queue statistics over at midnight.
+				if s.AMI.Connected() {
+					if _, err := s.AMI.Action(ctx, asterisk.Message{{Key: "Action", Value: "QueueReset"}}); err != nil {
+						s.Log.Warn("queue reset", "err", err)
+					}
+				}
 			}
 			f, _ := pbx.LoadFeatureSettings(ctx, s.DB)
 			if n := s.Spool.PurgeRecordings(f.RecordingDays, time.Now()); n > 0 {

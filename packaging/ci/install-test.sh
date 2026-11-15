@@ -53,7 +53,10 @@ for _ in $(seq 1 30); do ct 'asterisk -rx "manager show connected" | grep -q kie
 ct 'asterisk -rx "manager show connected" | grep -q kiestoon' || fail "AMI not connected"
 ct 'asterisk -rx "pjsip show transports"' | tee /dev/stderr | grep -q 'transport-udp' || fail "pjsip transports"
 ct 'asterisk -rx "core show version"'
+ct 'asterisk -rx "module show like res_fax_spandsp"' | grep -q 'res_fax_spandsp' || fail "fax module (SpanDSP) not loaded"
 ct 'test -f /var/lib/kiestoon/pbx/pjsip.conf && stat -c "%U:%G %a %n" /var/lib/kiestoon /var/lib/kiestoon/pbx /var/lib/kiestoon/pbx/pjsip.conf'
 ct 'asterisk -rx "dialplan show 112@kiestoon-emergency"' | grep -q '112' || fail "emergency dialplan"
 ct 'fail2ban-client status | grep -q kiestoon-sip' || fail "fail2ban jails"
+ct 'command -v tiff2pdf >/dev/null' || fail "tiff2pdf missing"
+ct '! systemctl is-active --quiet caddy.service' || fail "caddy runs while internet mode is off"
 echo "install test passed"

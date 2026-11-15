@@ -277,7 +277,7 @@ func (s *Server) portalWebRTC(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"wsPath": "/api/webrtc/ws", "username": e.WebRTCEndpoint(), "password": e.WebRTCSecret, "number": e.Number,
-		"name": e.Name, "domain": "kiestoon.local", "secureContext": r.TLS != nil || s.Cfg.SecureCookies,
+		"name": e.Name, "domain": "kiestoon.local", "secureContext": s.secure(r),
 	})
 }
 
@@ -530,12 +530,12 @@ func (s *Server) portalPhoneKeys(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "bad_request")
 		return
 	}
-	max := 0
+	max, lines := 0, 1
 	if m := provision.FindModel(p.Vendor, p.Model); m != nil {
-		max = m.Keys
+		max, lines = m.Keys, m.MaxLines()
 	}
 	p.Keys = req.Keys
-	if err := s.PBX.SavePhone(r.Context(), p, max); err != nil {
+	if err := s.PBX.SavePhone(r.Context(), p, max, lines); err != nil {
 		s.saveErr(w, err)
 		return
 	}

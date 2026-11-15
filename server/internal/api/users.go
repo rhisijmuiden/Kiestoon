@@ -2,11 +2,14 @@ package api
 
 import (
 	"database/sql"
+	"encoding/xml"
 	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/crewjam/saml"
 
 	"github.com/rhisijmuiden/kiestoon/server/internal/auth"
 	"github.com/rhisijmuiden/kiestoon/server/internal/sso"
@@ -29,6 +32,8 @@ func (s *Server) userRoutes(mux *http.ServeMux, admin func(http.HandlerFunc) htt
 	mux.HandleFunc("GET /api/auth/sso/providers", s.publicProviders)
 	mux.HandleFunc("GET /api/auth/sso/{id}/start", s.ssoStart)
 	mux.HandleFunc("GET /api/auth/sso/callback", s.ssoCallback)
+	mux.HandleFunc("GET /api/auth/saml/metadata", s.samlMetadata)
+	mux.HandleFunc("POST /api/auth/saml/acs", s.samlACS)
 }
 
 // mayManage reports whether actor may change an account with this role. Only a superadmin
@@ -146,16 +151,22 @@ func (s *Server) resetUserMFA(w http.ResponseWriter, r *http.Request) {
 
 // ---- identity providers -----------------------------------------------------
 
-// redirectURI is the callback address to register at the identity provider.
-func (s *Server) redirectURI(r *http.Request) string {
+// publicBase is the address people reach the portal on: the public URL when one is set (internet
+// mode sets it), otherwise the address of this request.
+func (s *Server) publicBase(r *http.Request) string {
 	if base, _ := store.GetSetting(r.Context(), s.DB, "public_url", ""); base != "" {
-		return strings.TrimRight(base, "/") + "/api/auth/sso/callback"
+		return strings.TrimRight(base, "/")
 	}
 	scheme := "http"
 	if s.secure(r) {
 		scheme = "https"
 	}
-	return scheme + "://" + r.Host + "/api/auth/sso/callback"
+	return scheme + "://" + r.Host
+}
+
+// redirectURI is the callback address to register at the identity provider.
+func (s *Server) redirectURI(r *http.Request) string {
+	return s.publicBase(r) + "/api/auth/sso/callback"
 }
 
 func (s *Server) listProviders(w http.ResponseWriter, r *http.Request) {
@@ -167,7 +178,9 @@ func (s *Server) listProviders(w http.ResponseWriter, r *http.Request) {
 	for i := range ps {
 		ps[i].ClientSecret = ""
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"providers": ps, "redirectUri": s.redirectURI(r), "kinds": sso.Kinds})
+	ep := sso.Endpoints(s.publicBase(r))
+	writeJSON(w, http.StatusOK, map[string]any{"providers": ps, "redirectUri": s.redirectURI(r), "kinds": sso.Kinds,
+		"samlEntityId": ep.EntityID, "samlAcs": ep.ACS})
 }
 
 func (s *Server) saveProvider(w http.ResponseWriter, r *http.Request) {
@@ -189,6 +202,16 @@ func (s *Server) saveProvider(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, http.StatusForbidden, "forbidden")
 			return
 		}
+	}
+	if p.IsSAML() && p.Issuer != "" && p.SAMLMetadata == "" {
+		// A metadata URL: fetch the current metadata (signing certificates change over time).
+		md, err := sso.FetchIDPMetadata(r.Context(), strings.TrimSpace(p.Issuer))
+		if err != nil {
+			s.Log.Warn("saml metadata", "url", p.Issuer, "err", err)
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid", "field": "issuer", "message": err.Error()})
+			return
+		}
+		p.SAMLMetadata = md
 	}
 	if err := s.SSO.Save(r.Context(), &p); err != nil {
 		var fe *sso.FieldError
@@ -246,6 +269,22 @@ func (s *Server) ssoStart(w http.ResponseWriter, r *http.Request) {
 		ssoFail(w, r, "sso_unknown")
 		return
 	}
+	if p.IsSAML() {
+		sp, err := sso.ServiceProvider(r.Context(), s.DB, sso.Endpoints(s.publicBase(r)), p)
+		if err != nil {
+			s.Log.Warn("saml start", "provider", p.Name, "err", err)
+			ssoFail(w, r, "sso_unreachable")
+			return
+		}
+		u, err := s.SAMLFlow.Start(sp, p)
+		if err != nil {
+			s.Log.Warn("saml start", "provider", p.Name, "err", err)
+			ssoFail(w, r, "sso_unreachable")
+			return
+		}
+		http.Redirect(w, r, u, http.StatusFound)
+		return
+	}
 	state, authURL, err := s.SSOFlow.Start(r.Context(), p, s.redirectURI(r))
 	if err != nil {
 		s.Log.Warn("sso start", "provider", p.Name, "err", err)
@@ -289,6 +328,74 @@ func (s *Server) ssoCallback(w http.ResponseWriter, r *http.Request) {
 		ssoFail(w, r, "sso_failed")
 		return
 	}
+	s.ssoComplete(w, r, p, id)
+}
+
+// samlMetadata serves Kiestoon's service provider metadata, to import at the identity provider.
+func (s *Server) samlMetadata(w http.ResponseWriter, r *http.Request) {
+	sp, err := sso.ServiceProvider(r.Context(), s.DB, sso.Endpoints(s.publicBase(r)), nil)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	b, err := xml.MarshalIndent(sp.Metadata(), "", "  ")
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/samlmetadata+xml")
+	w.Header().Set("Content-Disposition", `inline; filename="kiestoon-saml-metadata.xml"`)
+	_, _ = w.Write([]byte(xml.Header))
+	_, _ = w.Write(b)
+}
+
+// samlACS receives the SAML response (HTTP-POST binding) from the identity provider.
+func (s *Server) samlACS(w http.ResponseWriter, r *http.Request) {
+	ip := clientIP(r)
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	if err := r.ParseForm(); err != nil {
+		ssoFail(w, r, "sso_state")
+		return
+	}
+	pid, reqID, ok := s.SAMLFlow.Take(r.PostForm.Get("RelayState"))
+	if !ok {
+		ssoFail(w, r, "sso_state")
+		return
+	}
+	p, err := s.SSO.Get(r.Context(), pid)
+	if err != nil || !p.Enabled || !p.IsSAML() {
+		ssoFail(w, r, "sso_unknown")
+		return
+	}
+	sp, err := sso.ServiceProvider(r.Context(), s.DB, sso.Endpoints(s.publicBase(r)), p)
+	if err != nil {
+		ssoFail(w, r, "sso_failed")
+		return
+	}
+	a, err := sp.ParseResponse(r, []string{reqID})
+	if err != nil {
+		var ire *saml.InvalidResponseError
+		detail := err.Error()
+		if errors.As(err, &ire) && ire.PrivateErr != nil {
+			detail = ire.PrivateErr.Error()
+		}
+		s.Log.Warn("saml sign-in failed", "provider", p.Name, "err", detail)
+		store.Audit(r.Context(), s.DB, 0, "login.sso_failed", p.Name, ip)
+		ssoFail(w, r, "sso_failed")
+		return
+	}
+	id, err := sso.SAMLIdentity(p, a)
+	if err != nil {
+		s.Log.Warn("saml identity", "provider", p.Name, "err", err)
+		ssoFail(w, r, "sso_failed")
+		return
+	}
+	s.ssoComplete(w, r, p, id)
+}
+
+// ssoComplete signs in (and if allowed creates) the account of a verified identity.
+func (s *Server) ssoComplete(w http.ResponseWriter, r *http.Request, p *sso.Provider, id *sso.Identity) {
+	ip := clientIP(r)
 	role, allowed := sso.RoleFor(p, id.Groups)
 	if !allowed {
 		store.Audit(r.Context(), s.DB, 0, "login.sso_denied", id.Username, ip)

@@ -96,18 +96,42 @@ Notes on phase 2:
 
 ## Phase 3 · Integrations
 
-Goal: safely connected to the internet and to the rest of the business.
+Goal: safely connected to the internet and to the rest of the business. Released as `v0.4.0-rc.1` on the testing channel.
 
-- [ ] Internet mode: Caddy with automatic Let's Encrypt certificates on 443, WebRTC over WSS
-- [ ] Geo-blocking (country lists, updated monthly)
-- [ ] SAML 2.0 next to OIDC
-- [ ] OneDrive as backup destination
-- [ ] Phone provisioning: Fanvil, Gigaset (N670/N870 Pro DECT), Poly (VVX, Edge)
-- [ ] Fax-to-email: receive faxes (T.38 / G.711 via SpanDSP), convert to PDF, mail per fax number
-- [ ] Queue wallboard for the reception
-- [ ] Central phone book with XML phone book for phones and LDAP
-- [ ] REST API with tokens, webhooks (for example incoming call to CRM)
-- [ ] Passkeys / WebAuthn for users
+- [x] Internet mode: Caddy with automatic Let's Encrypt certificates on 443, WebRTC over WSS
+- [x] Geo-blocking (country lists, updated monthly)
+- [x] SAML 2.0 next to OIDC
+- [x] OneDrive as backup destination
+- [x] Phone provisioning: Fanvil, Gigaset (N670/N870 Pro DECT), Poly (VVX, Edge)
+- [x] Fax-to-email: receive faxes (T.38 / G.711 via SpanDSP), convert to PDF, mail per fax number
+- [x] Queue wallboard for the reception
+- [x] Central phone book with XML phone book for phones and LDAP
+- [x] REST API with tokens, webhooks (for example incoming call to CRM)
+- [x] Passkeys / WebAuthn for users
+
+Notes on phase 3:
+
+- Internet mode: the root helper writes `/etc/caddy/Caddyfile` and starts Caddy on 80/443 in front of the portal.
+  Caddy stays off until it is switched on in the portal. Behind Caddy the portal trusts `X-Forwarded-For` only from
+  localhost. The softphone then works on `https://<domain>` (WSS through Caddy), so port 8443 is no longer needed
+  for it. The Let's Encrypt certificate can also be used for SIP over TLS; it is copied after every renewal.
+- Geo-blocking uses the free DB-IP Lite country database (CC BY 4.0), downloaded monthly. Private networks, the trunk
+  providers and the SIP/admin allow lists are always let through, and without country data no country rule is
+  applied, so nobody is locked out by an empty list. Port 80 stays open for Let's Encrypt.
+- SAML 2.0 is a provider kind next to OIDC (metadata by URL or pasted XML). Kiestoon signs its requests with its own
+  key; the metadata and ACS addresses are shown on the SSO page.
+- OneDrive signs in with the Microsoft device code flow (an Entra app registration with public client flows).
+  The refresh token is renewed before every backup run.
+- Fax: a fax box is a destination for inbound routes. Faxes arrive as TIFF through SpanDSP, are converted to PDF with
+  `tiff2pdf` and mailed through the mail queue. T.38 is switched on per trunk. Sending faxes is not planned.
+- Phone book: contacts are served as XML phone books (Yealink, Snom, Grandstream, Fanvil, through provisioning) and as
+  a read-only LDAP directory (389/636, own network only). Incoming callers in the phone book get their name shown.
+- The REST API is the same API the portal uses. Tokens are stored as hashes, never have more rights than their owner
+  and cannot manage users, tokens, webhooks, updates or restores. Webhooks are signed with HMAC-SHA256.
+- Passkeys (WebAuthn, discoverable credentials with user verification) count as the second factor. They need a host
+  name, not an IP address.
+- Not yet tested on real hardware: Fanvil, Gigaset and Poly provisioning (built after the vendor documentation), and
+  still the Grandstream memory keys from phase 2.
 
 ## Phase 4 · Extensions
 

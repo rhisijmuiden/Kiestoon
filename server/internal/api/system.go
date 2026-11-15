@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -42,6 +43,8 @@ func (s *Server) systemRoutes(mux *http.ServeMux, admin func(http.HandlerFunc) h
 	mux.Handle("DELETE /api/backups/targets/{id}", admin(s.backupDeleteTarget))
 	mux.Handle("GET /api/backups/targets/{id}/key", admin(s.backupRevealKey))
 	mux.Handle("POST /api/backups/targets/{id}/test", admin(s.backupTest))
+	mux.Handle("POST /api/backups/targets/{id}/onedrive/start", admin(s.oneDriveStart))
+	mux.Handle("POST /api/backups/targets/{id}/onedrive/poll", admin(s.oneDrivePoll))
 	mux.Handle("GET /api/backups/targets/{id}/snapshots", admin(s.backupSnapshots))
 	mux.Handle("POST /api/backups/run", admin(s.backupRun))
 	mux.Handle("GET /api/backups/runs", admin(s.backupRuns))
@@ -167,10 +170,24 @@ func listenPort(addr string, fallback int) int {
 func (s *Server) firewallPorts(ctx context.Context) firewall.Ports {
 	st, _ := pbx.LoadSettings(ctx, s.DB)
 	p := firewall.Ports{SIP: st.SIPPort, SIPTLS: st.TLSPort, RTPStart: st.RTPStart, RTPEnd: st.RTPEnd}
-	for _, port := range []int{listenPort(s.Cfg.Listen, 8080), listenPort(s.Cfg.TLSListen, 8443), 80, 443} {
+	inet := s.internetSettings(ctx)
+	web := []int{listenPort(s.Cfg.Listen, 8080), listenPort(s.Cfg.TLSListen, 8443)}
+	if inet.Enabled {
+		// Caddy serves the portal to the whole internet on 80 and 443.
+		p.Public = []int{80, 443}
+	} else {
+		web = append(web, 80, 443)
+	}
+	for _, port := range web {
 		if port > 0 {
 			p.Portal = append(p.Portal, port)
 		}
+	}
+	if s.faxInUse(ctx) {
+		p.UDPTL = [2]int{4000, 4999}
+	}
+	if ls := s.ldapSettings(ctx); ls.LDAPEnabled {
+		p.LDAP = ls.Ports()
 	}
 	return p
 }
@@ -333,15 +350,20 @@ func (s *Server) firewallUnban(w http.ResponseWriter, r *http.Request) {
 
 // ---- backups ----------------------------------------------------------------
 
-const targetCols = `id, name, kind, host, port, username, password, private_key, path, implicit_tls, repo_password, enabled`
+const targetCols = `id, name, kind, host, port, username, password, private_key, path, implicit_tls, repo_password, enabled, onedrive`
 
 func scanTarget(row interface{ Scan(...any) error }) (*backup.Target, error) {
 	var t backup.Target
 	var tls, en int
-	if err := row.Scan(&t.ID, &t.Name, &t.Kind, &t.Host, &t.Port, &t.Username, &t.Password, &t.PrivateKey, &t.Path, &tls, &t.RepoPassword, &en); err != nil {
+	var od string
+	if err := row.Scan(&t.ID, &t.Name, &t.Kind, &t.Host, &t.Port, &t.Username, &t.Password, &t.PrivateKey, &t.Path, &tls, &t.RepoPassword, &en, &od); err != nil {
 		return nil, err
 	}
 	t.ImplicitTLS, t.Enabled = tls == 1, en == 1
+	if t.Kind == "onedrive" {
+		t.OneDrive = &backup.OneDrive{}
+		_ = json.Unmarshal([]byte(od), t.OneDrive)
+	}
 	return &t, nil
 }
 
@@ -369,7 +391,23 @@ func (s *Server) loadTarget(ctx context.Context, id int64) (*backup.Target, erro
 func publicTarget(t backup.Target) backup.Target {
 	t.PasswordSet, t.KeySet = t.Password != "", t.PrivateKey != ""
 	t.Password, t.PrivateKey, t.RepoPassword = "", "", ""
+	if t.OneDrive != nil {
+		o := *t.OneDrive
+		o.SecretSet, o.Connected = o.ClientSecret != "", o.RefreshToken != "" && o.DriveID != ""
+		o.ClientSecret, o.RefreshToken, o.AccessToken = "", "", ""
+		t.OneDrive = &o
+	}
 	return t
+}
+
+func oneDriveJSON(t backup.Target) string {
+	if t.OneDrive == nil {
+		return "{}"
+	}
+	o := *t.OneDrive
+	o.AccessToken, o.Expiry = "", time.Time{}
+	b, _ := json.Marshal(o)
+	return string(b)
 }
 
 func (s *Server) backupTargets(w http.ResponseWriter, r *http.Request) {
@@ -406,24 +444,39 @@ func (s *Server) backupSaveTarget(w http.ResponseWriter, r *http.Request) {
 		if t.RepoPassword == "" {
 			t.RepoPassword = old.RepoPassword
 		}
+		if t.OneDrive != nil && old.OneDrive != nil {
+			if t.OneDrive.ClientSecret == "" {
+				t.OneDrive.ClientSecret = old.OneDrive.ClientSecret
+			}
+			// The Microsoft sign-in stays valid while the app registration stays the same.
+			if t.OneDrive.ClientID == old.OneDrive.ClientID && t.OneDrive.Tenant == old.OneDrive.Tenant {
+				t.OneDrive.RefreshToken, t.OneDrive.DriveID, t.OneDrive.DriveType, t.OneDrive.Account =
+					old.OneDrive.RefreshToken, old.OneDrive.DriveID, old.OneDrive.DriveType, old.OneDrive.Account
+			} else {
+				t.OneDrive.RefreshToken, t.OneDrive.DriveID, t.OneDrive.DriveType, t.OneDrive.Account = "", "", "", ""
+			}
+		}
 	} else if t.RepoPassword == "" {
 		t.RepoPassword = pbx.GenerateSecret(32)
+	}
+	if t.OneDrive != nil && t.ID == 0 {
+		t.OneDrive.RefreshToken, t.OneDrive.DriveID, t.OneDrive.Account = "", "", ""
 	}
 	if err := t.Validate(); err != nil {
 		fieldErr(w, err.Error())
 		return
 	}
-	args := []any{t.Name, t.Kind, t.Host, t.Port, t.Username, t.Password, t.PrivateKey, t.Path, b2i(t.ImplicitTLS), t.RepoPassword, b2i(t.Enabled)}
+	args := []any{t.Name, t.Kind, t.Host, t.Port, t.Username, t.Password, t.PrivateKey, t.Path, b2i(t.ImplicitTLS), t.RepoPassword, b2i(t.Enabled), oneDriveJSON(t)}
 	if t.ID == 0 {
 		res, err := s.DB.ExecContext(r.Context(), `INSERT INTO backup_targets(name, kind, host, port, username, password, private_key,
-			path, implicit_tls, repo_password, enabled) VALUES (?,?,?,?,?,?,?,?,?,?,?)`, args...)
+			path, implicit_tls, repo_password, enabled, onedrive) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
 		if err != nil {
 			writeErr(w, http.StatusInternalServerError, "internal")
 			return
 		}
 		t.ID, _ = res.LastInsertId()
 	} else if _, err := s.DB.ExecContext(r.Context(), `UPDATE backup_targets SET name=?, kind=?, host=?, port=?, username=?, password=?,
-		private_key=?, path=?, implicit_tls=?, repo_password=?, enabled=? WHERE id=?`, append(args, t.ID)...); err != nil {
+		private_key=?, path=?, implicit_tls=?, repo_password=?, enabled=?, onedrive=? WHERE id=?`, append(args, t.ID)...); err != nil {
 		writeErr(w, http.StatusInternalServerError, "internal")
 		return
 	}
@@ -466,7 +519,7 @@ func (s *Server) backupTest(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
 	defer cancel()
 	var res map[string]bool
-	if err := s.Helper.Call(ctx, "backup.test", helper.BackupArgs{Target: *t}, &res); err != nil {
+	if err := s.backupHelper(ctx, "backup.test", helper.BackupArgs{Target: *t}, &res); err != nil {
 		s.helperErr(w, err)
 		return
 	}
@@ -482,7 +535,7 @@ func (s *Server) backupSnapshots(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
 	defer cancel()
 	var snaps []backup.Snapshot
-	if err := s.Helper.Call(ctx, "backup.snapshots", helper.BackupArgs{Target: *t}, &snaps); err != nil {
+	if err := s.backupHelper(ctx, "backup.snapshots", helper.BackupArgs{Target: *t}, &snaps); err != nil {
 		s.helperErr(w, err)
 		return
 	}
@@ -566,7 +619,7 @@ func (s *Server) runBackup(ctx context.Context, t backup.Target, kind, trigger s
 		return
 	}
 	var out backup.Result
-	err = s.Helper.Call(ctx, "backup.run", helper.BackupArgs{Target: t, Kind: kind, Retention: s.schedule(ctx).Retention}, &out)
+	err = s.backupHelper(ctx, "backup.run", helper.BackupArgs{Target: t, Kind: kind, Retention: s.schedule(ctx).Retention}, &out)
 	if err != nil {
 		finish("failed", err.Error(), nil)
 		s.Mail.Notify(context.Background(), "Kiestoon: backup failed",
@@ -652,7 +705,7 @@ func (s *Server) backupRestore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.audit(r, "backup.restore", t.Name+" "+req.Snapshot)
-	if err := s.Helper.Call(r.Context(), "backup.restore", helper.BackupArgs{Target: *t, Snapshot: req.Snapshot}, nil); err != nil {
+	if err := s.backupHelper(r.Context(), "backup.restore", helper.BackupArgs{Target: *t, Snapshot: req.Snapshot}, nil); err != nil {
 		s.helperErr(w, err)
 		return
 	}
@@ -766,7 +819,13 @@ func (s *Server) savePhone(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err := s.PBX.SavePhone(r.Context(), &p, m.Keys); err != nil {
+	for _, id := range p.Lines {
+		if _, err := s.PBX.Extension(r.Context(), id); err != nil {
+			fieldErr(w, "lines")
+			return
+		}
+	}
+	if err := s.PBX.SavePhone(r.Context(), &p, m.Keys, m.MaxLines()); err != nil {
 		s.saveErr(w, err)
 		return
 	}
@@ -783,7 +842,7 @@ func (s *Server) deletePhone(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-func (s *Server) provInput(ctx context.Context, p *pbx.Phone, host string) (provision.Input, error) {
+func (s *Server) provInput(ctx context.Context, p *pbx.Phone, host, scheme string) (provision.Input, error) {
 	set, err := provision.Load(ctx, s.DB)
 	if err != nil {
 		return provision.Input{}, err
@@ -803,8 +862,27 @@ func (s *Server) provInput(ctx context.Context, p *pbx.Phone, host string) (prov
 			in.Ext = e
 		}
 	}
+	for _, id := range p.Lines {
+		if e, err := s.PBX.Extension(ctx, id); err == nil && e.Enabled {
+			in.Lines = append(in.Lines, e)
+		}
+	}
 	in.Org, _ = store.GetSetting(ctx, s.DB, "organization", "Kiestoon")
+	if pb := s.ldapSettings(ctx); pb.XMLEnabled {
+		switch p.Vendor {
+		case "yealink", "snom", "fanvil":
+			in.PhonebookURL = s.provBase(scheme, set, host) + "phonebook/" + p.Vendor + ".xml"
+		case "grandstream":
+			// Grandstream appends phonebook.xml to the directory it is given.
+			in.PhonebookURL = s.provBase(scheme, set, host) + "phonebook/grandstream/phonebook.xml"
+		}
+	}
 	return in, nil
+}
+
+// provBase is the provisioning address with the credentials phones use.
+func (s *Server) provBase(scheme string, set provision.Settings, host string) string {
+	return fmt.Sprintf("%s://%s:%s@%s/prov/", scheme, url.PathEscape(set.Username), url.PathEscape(set.Password), host)
 }
 
 func (s *Server) previewPhone(w http.ResponseWriter, r *http.Request) {
@@ -813,7 +891,7 @@ func (s *Server) previewPhone(w http.ResponseWriter, r *http.Request) {
 		s.saveErr(w, err)
 		return
 	}
-	in, err := s.provInput(r.Context(), p, r.Host)
+	in, err := s.provInput(r.Context(), p, r.Host, s.scheme(r))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "internal")
 		return
@@ -861,23 +939,27 @@ func (s *Server) ProvisioningHandler() http.Handler {
 			http.NotFound(w, r)
 			return
 		}
+		if req.Phonebook {
+			s.provLimit.Reset(ip)
+			s.phonebookXML(w, r, req.Vendor)
+			return
+		}
 		if req.Common {
-			if req.Vendor == "yealink" {
+			switch req.Vendor {
+			case "yealink":
 				w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 				_, _ = w.Write([]byte(provision.YealinkCommon()))
-				return
+			case "poly":
+				w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+				_, _ = w.Write([]byte(provision.PolyMaster()))
+			default:
+				w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+				_, _ = w.Write([]byte(provision.SnomIndex(s.provBase(s.scheme(r), set, r.Host))))
 			}
-			scheme := "http"
-			if r.TLS != nil {
-				scheme = "https"
-			}
-			base := fmt.Sprintf("%s://%s:%s@%s/prov/", scheme, set.Username, set.Password, r.Host)
-			w.Header().Set("Content-Type", "application/xml; charset=utf-8")
-			_, _ = w.Write([]byte(provision.SnomIndex(base)))
 			return
 		}
 		phone, err := s.PBX.PhoneByMAC(r.Context(), req.MAC)
-		if errors.Is(err, pbx.ErrNotFound) || (err == nil && phone.Vendor != req.Vendor) {
+		if errors.Is(err, pbx.ErrNotFound) || (err == nil && !req.Matches(phone.Vendor)) {
 			s.Log.Info("provisioning request for unknown phone", "mac", req.MAC, "ip", ip)
 			http.NotFound(w, r)
 			return
@@ -886,7 +968,13 @@ func (s *Server) ProvisioningHandler() http.Handler {
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
-		in, err := s.provInput(r.Context(), phone, r.Host)
+		// Poly asks for <mac>.cfg first: that is the master file pointing to kiestoon-<mac>.cfg.
+		if phone.Vendor == "poly" && !req.PolyConfig {
+			w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+			_, _ = w.Write([]byte(provision.PolyMaster()))
+			return
+		}
+		in, err := s.provInput(r.Context(), phone, r.Host, s.scheme(r))
 		if err != nil {
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
@@ -897,4 +985,96 @@ func (s *Server) ProvisioningHandler() http.Handler {
 		w.Header().Set("Content-Type", ct)
 		_, _ = w.Write([]byte(body))
 	})
+}
+
+// backupHelper runs a backup command in the root helper. For OneDrive it first gets a fresh access
+// token and stores the new refresh token Microsoft hands out.
+func (s *Server) backupHelper(ctx context.Context, cmd string, a helper.BackupArgs, out any) error {
+	if a.Target.Kind == "onedrive" && a.Target.OneDrive != nil {
+		o := *a.Target.OneDrive
+		rctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		err := o.Refresh(rctx, &http.Client{Timeout: 30 * time.Second})
+		cancel()
+		if err != nil {
+			return fmt.Errorf("onedrive sign-in: %w", err)
+		}
+		a.Target.OneDrive = &o
+		_, _ = s.DB.ExecContext(ctx, `UPDATE backup_targets SET onedrive = ? WHERE id = ?`, oneDriveJSON(a.Target), a.Target.ID)
+	}
+	return s.Helper.Call(ctx, cmd, a, out)
+}
+
+// ---- OneDrive sign-in -------------------------------------------------------
+
+type oneDriveLogin struct {
+	device  string
+	expires time.Time
+}
+
+func (s *Server) oneDriveStart(w http.ResponseWriter, r *http.Request) {
+	t, err := s.loadTarget(r.Context(), pathID(r))
+	if err != nil || t.OneDrive == nil {
+		writeErr(w, http.StatusNotFound, "not_found")
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+	defer cancel()
+	dc, err := t.OneDrive.StartDeviceLogin(ctx, &http.Client{Timeout: 20 * time.Second})
+	if err != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "onedrive_failed", "message": err.Error()})
+		return
+	}
+	s.odMu.Lock()
+	if s.odLogins == nil {
+		s.odLogins = map[int64]oneDriveLogin{}
+	}
+	s.odLogins[t.ID] = oneDriveLogin{device: dc.DeviceCode, expires: time.Now().Add(time.Duration(dc.ExpiresIn) * time.Second)}
+	s.odMu.Unlock()
+	writeJSON(w, http.StatusOK, map[string]any{"userCode": dc.UserCode, "verificationUri": dc.VerificationURI, "expiresIn": dc.ExpiresIn,
+		"interval": max(dc.Interval, 3)})
+}
+
+func (s *Server) oneDrivePoll(w http.ResponseWriter, r *http.Request) {
+	t, err := s.loadTarget(r.Context(), pathID(r))
+	if err != nil || t.OneDrive == nil {
+		writeErr(w, http.StatusNotFound, "not_found")
+		return
+	}
+	s.odMu.Lock()
+	l, ok := s.odLogins[t.ID]
+	s.odMu.Unlock()
+	if !ok || time.Now().After(l.expires) {
+		writeErr(w, http.StatusGone, "onedrive_expired")
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+	defer cancel()
+	o := *t.OneDrive
+	err = o.PollDeviceLogin(ctx, &http.Client{Timeout: 20 * time.Second}, l.device)
+	if errors.Is(err, backup.ErrPending) {
+		writeJSON(w, http.StatusOK, map[string]any{"connected": false})
+		return
+	}
+	if err != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "onedrive_failed", "message": err.Error()})
+		return
+	}
+	s.odMu.Lock()
+	delete(s.odLogins, t.ID)
+	s.odMu.Unlock()
+	t.OneDrive = &o
+	if _, err := s.DB.ExecContext(r.Context(), `UPDATE backup_targets SET onedrive = ? WHERE id = ?`, oneDriveJSON(*t), t.ID); err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	s.audit(r, "backup.onedrive.connected", t.Name+" "+o.Account)
+	writeJSON(w, http.StatusOK, map[string]any{"connected": true, "account": o.Account, "driveType": o.DriveType})
+}
+
+// scheme is the URL scheme the client used (https also behind the Caddy proxy).
+func (s *Server) scheme(r *http.Request) string {
+	if s.secure(r) {
+		return "https"
+	}
+	return "http"
 }

@@ -335,6 +335,130 @@ var migrations = []string{
 		trust_mfa     INTEGER NOT NULL DEFAULT 1,
 		enabled       INTEGER NOT NULL DEFAULT 1
 	);`,
+	// 5: phase 3, integrations. Rebuilds phones (more vendors, extra DECT handsets) and
+	// backup_targets (OneDrive). Runs with foreign keys off.
+	fkOff + `CREATE TABLE phones_new (
+		id           INTEGER PRIMARY KEY AUTOINCREMENT,
+		mac          TEXT NOT NULL UNIQUE,
+		vendor       TEXT NOT NULL CHECK (vendor IN ('yealink','snom','grandstream','fanvil','gigaset','poly')),
+		model        TEXT NOT NULL,
+		extension_id INTEGER REFERENCES extensions(id) ON DELETE SET NULL,
+		label        TEXT NOT NULL DEFAULT '',
+		keys         TEXT NOT NULL DEFAULT '[]',
+		last_seen_at TEXT NOT NULL DEFAULT '',
+		last_ip      TEXT NOT NULL DEFAULT '',
+		user_agent   TEXT NOT NULL DEFAULT '',
+		created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		lines        TEXT NOT NULL DEFAULT '[]'
+	);
+	INSERT INTO phones_new(id, mac, vendor, model, extension_id, label, keys, last_seen_at, last_ip, user_agent, created_at)
+		SELECT id, mac, vendor, model, extension_id, label, keys, last_seen_at, last_ip, user_agent, created_at FROM phones;
+	DROP TABLE phones;
+	ALTER TABLE phones_new RENAME TO phones;
+
+	CREATE TABLE backup_targets_new (
+		id            INTEGER PRIMARY KEY AUTOINCREMENT,
+		name          TEXT NOT NULL,
+		kind          TEXT NOT NULL CHECK (kind IN ('ftp','ftps','sftp','scp','onedrive')),
+		host          TEXT NOT NULL,
+		port          INTEGER NOT NULL DEFAULT 0,
+		username      TEXT NOT NULL DEFAULT '',
+		password      TEXT NOT NULL DEFAULT '',
+		private_key   TEXT NOT NULL DEFAULT '',
+		path          TEXT NOT NULL DEFAULT '',
+		implicit_tls  INTEGER NOT NULL DEFAULT 0,
+		repo_password TEXT NOT NULL,
+		enabled       INTEGER NOT NULL DEFAULT 1,
+		created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		onedrive      TEXT NOT NULL DEFAULT '{}'
+	);
+	INSERT INTO backup_targets_new(id, name, kind, host, port, username, password, private_key, path, implicit_tls, repo_password, enabled, created_at)
+		SELECT id, name, kind, host, port, username, password, private_key, path, implicit_tls, repo_password, enabled, created_at FROM backup_targets;
+	DROP TABLE backup_targets;
+	ALTER TABLE backup_targets_new RENAME TO backup_targets;
+
+	ALTER TABLE trunks ADD COLUMN t38 INTEGER NOT NULL DEFAULT 0;
+	ALTER TABLE sso_providers ADD COLUMN protocol TEXT NOT NULL DEFAULT 'oidc';
+	ALTER TABLE sso_providers ADD COLUMN saml_metadata TEXT NOT NULL DEFAULT '';
+
+	CREATE TABLE fax_boxes (
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		name       TEXT NOT NULL,
+		emails     TEXT NOT NULL DEFAULT '',
+		keep_days  INTEGER NOT NULL DEFAULT 90,
+		ecm        INTEGER NOT NULL DEFAULT 1,
+		enabled    INTEGER NOT NULL DEFAULT 1
+	);
+	CREATE TABLE faxes (
+		id             INTEGER PRIMARY KEY AUTOINCREMENT,
+		box_id         INTEGER REFERENCES fax_boxes(id) ON DELETE SET NULL,
+		received_at    TEXT NOT NULL,
+		caller         TEXT NOT NULL DEFAULT '',
+		caller_name    TEXT NOT NULL DEFAULT '',
+		did            TEXT NOT NULL DEFAULT '',
+		remote_station TEXT NOT NULL DEFAULT '',
+		pages          INTEGER NOT NULL DEFAULT 0,
+		status         TEXT NOT NULL DEFAULT '',
+		error          TEXT NOT NULL DEFAULT '',
+		file           TEXT NOT NULL DEFAULT '',
+		size           INTEGER NOT NULL DEFAULT 0,
+		mailed         INTEGER NOT NULL DEFAULT 0
+	);
+	CREATE INDEX faxes_box ON faxes(box_id, received_at);
+	CREATE TABLE contacts (
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		name       TEXT NOT NULL,
+		company    TEXT NOT NULL DEFAULT '',
+		work       TEXT NOT NULL DEFAULT '',
+		mobile     TEXT NOT NULL DEFAULT '',
+		other      TEXT NOT NULL DEFAULT '',
+		email      TEXT NOT NULL DEFAULT '',
+		notes      TEXT NOT NULL DEFAULT '',
+		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+	CREATE TABLE api_tokens (
+		id           INTEGER PRIMARY KEY AUTOINCREMENT,
+		name         TEXT NOT NULL,
+		token_hash   TEXT NOT NULL UNIQUE,
+		prefix       TEXT NOT NULL,
+		user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		role         TEXT NOT NULL CHECK (role IN ('admin','reception','user')),
+		read_only    INTEGER NOT NULL DEFAULT 1,
+		expires_at   TEXT NOT NULL DEFAULT '',
+		last_used_at TEXT NOT NULL DEFAULT '',
+		last_ip      TEXT NOT NULL DEFAULT '',
+		created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+	CREATE TABLE webhooks (
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		name       TEXT NOT NULL,
+		url        TEXT NOT NULL,
+		events     TEXT NOT NULL DEFAULT '[]',
+		secret     TEXT NOT NULL,
+		enabled    INTEGER NOT NULL DEFAULT 1,
+		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+	CREATE TABLE webhook_deliveries (
+		id          INTEGER PRIMARY KEY AUTOINCREMENT,
+		webhook_id  INTEGER NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
+		at          TEXT NOT NULL,
+		event       TEXT NOT NULL,
+		attempt     INTEGER NOT NULL DEFAULT 1,
+		status      INTEGER NOT NULL DEFAULT 0,
+		error       TEXT NOT NULL DEFAULT '',
+		duration_ms INTEGER NOT NULL DEFAULT 0
+	);
+	CREATE INDEX webhook_deliveries_hook ON webhook_deliveries(webhook_id, id);
+	CREATE TABLE passkeys (
+		id            INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		name          TEXT NOT NULL,
+		credential_id TEXT NOT NULL UNIQUE,
+		data          TEXT NOT NULL,
+		created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		last_used_at  TEXT NOT NULL DEFAULT ''
+	);
+	CREATE INDEX passkeys_user ON passkeys(user_id);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

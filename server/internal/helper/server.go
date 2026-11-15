@@ -22,6 +22,8 @@ import (
 
 	"github.com/rhisijmuiden/kiestoon/server/internal/backup"
 	"github.com/rhisijmuiden/kiestoon/server/internal/firewall"
+	"github.com/rhisijmuiden/kiestoon/server/internal/geoip"
+	"github.com/rhisijmuiden/kiestoon/server/internal/internet"
 )
 
 // FirewallArgs applies the firewall.
@@ -220,6 +222,21 @@ func (s *Server) dispatch(ctx context.Context, req Request) (any, error) {
 			return nil, err
 		}
 		return s.backupCmd(ctx, req.Cmd, a)
+	case "internet.apply":
+		var a InternetArgs
+		if err := json.Unmarshal(req.Args, &a); err != nil {
+			return nil, err
+		}
+		return s.internetApply(ctx, a)
+	case "internet.status":
+		var a internet.Settings
+		if err := json.Unmarshal(req.Args, &a); err != nil {
+			return nil, err
+		}
+		if err := a.Validate(); err != nil {
+			return nil, err
+		}
+		return s.internetStatus(ctx, a)
 	case "asterisk.restart":
 		_, err := runCmd(ctx, "systemctl", "restart", "asterisk.service")
 		return nil, err
@@ -247,6 +264,20 @@ func runCmd(ctx context.Context, name string, args ...string) (string, error) {
 // ---- firewall ---------------------------------------------------------------
 
 func (s *Server) persisted() string { return filepath.Join(s.StateDir, "firewall.nft") }
+
+// geo reads the country networks for geo-blocking from the database the portal downloaded.
+// Without data no country filter is applied (and the portal shows a warning).
+func (s *Server) geo(c firewall.Config) *firewall.Geo {
+	if c.GeoMode == "" || c.GeoMode == "off" || len(c.GeoCountries) == 0 {
+		return nil
+	}
+	sets, err := geoip.Load(geoip.Path(s.DataDir), c.GeoCountries)
+	if err != nil {
+		s.Log.Warn("geo-blocking: no country data", "err", err)
+		return nil
+	}
+	return &firewall.Geo{V4: sets.V4, V6: sets.V6}
+}
 
 func (s *Server) liveRuleset(ctx context.Context) string {
 	out, err := runCmd(ctx, "nft", "list", "table", "inet", "kiestoon")
@@ -287,7 +318,7 @@ func (s *Server) firewallApply(ctx context.Context, a FirewallArgs) (any, error)
 	if a.Ports.SIP == 0 || len(a.Ports.Portal) == 0 || a.Ports.RTPStart == 0 {
 		return nil, errors.New("invalid ports")
 	}
-	text, err := firewall.Ruleset(a.Config, a.Ports, a.TrunkIPs)
+	text, err := firewall.Ruleset(a.Config, a.Ports, a.TrunkIPs, s.geo(a.Config))
 	if err != nil {
 		return nil, err
 	}

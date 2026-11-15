@@ -130,6 +130,12 @@
     "invalid_digit": "Choose a valid key (0-9, * or #).",
     "invalid_line": "A line in the menu connects steps that cannot be connected.",
     "too_large": "The menu is too large.",
+    "transfer_failed": "The phone system could not transfer this call.",
+    "call_gone": "This call has already ended.",
+    "not_answered": "Answer the call first, then transfer it.",
+    "transfer_in_progress": "A transfer for this call is already in progress.",
+    "no_transfer": "There is no transfer in progress for this call.",
+    "self_transfer": "You cannot transfer a call to yourself.",
     "link_invalid": "This link is invalid or has expired.",
     "password_mismatch": "The passwords do not match.",
     "no_email": "This extension has no e-mail address.",
@@ -1660,7 +1666,7 @@
     "myGroups": "My ring groups",
     "noGroups": "You are not in a ring group.",
     "colleagues": "Colleagues",
-    "colleaguesHint": "See who is available. Click a colleague to call.",
+    "colleaguesHint": "See who is available. Click to call, or drag your active call onto a colleague, ring group or queue to transfer it.",
     "dialNumber": "Call a number",
     "call": "Call",
     "callNumber": "Call {{number}}",
@@ -2287,6 +2293,46 @@
     "system": "System",
     "light": "Light",
     "dark": "Dark"
+  },
+  "transfer": {
+    "myCalls": "My active calls",
+    "noCalls": "No active call. Answer or make a call on your phone or the softphone, and it shows up here.",
+    "mode": {
+      "blind": "Transfer directly",
+      "attended": "Ask first"
+    },
+    "device": {
+      "phone": "Desk phone",
+      "web": "Softphone"
+    },
+    "ringing": "Ringing",
+    "transfer": "Transfer",
+    "transferTo": "Transfer to {{target}}",
+    "complete": "Complete transfer",
+    "cancel": "Back to caller",
+    "consultRinging": "Calling {{target}}…",
+    "consultTalking": "Talking to {{target}}",
+    "done": "{{caller}} transferred to {{target}}.",
+    "consulting": "Calling {{target}}. The caller waits on hold. Complete the transfer or go back to the caller.",
+    "dragHint": "Drag the call onto a colleague, ring group or queue. Or press Transfer and pick a target.",
+    "dragHintReception": "Drag a caller onto a colleague, ring group or queue to transfer them. Or press the transfer button and pick a target.",
+    "pickHint": "Pick a colleague, ring group or queue to transfer the call to. Esc cancels.",
+    "liveCalls": "Live calls",
+    "noLiveCalls": "No calls right now.",
+    "external": "External",
+    "internal": "Internal",
+    "colleagues": "Colleagues",
+    "ringGroups": "Ring groups",
+    "queues": "Queues",
+    "noTargets": "Nothing found.",
+    "members_one": "{{count}} member",
+    "members_other": "{{count}} members",
+    "waiting_one": "{{count}} waiting",
+    "waiting_other": "{{count}} waiting",
+    "state": {
+      "ringing": "Ringing",
+      "talking": "In a call"
+    }
   },
   "welcome": {
     "toggle": "Create a portal account and send a welcome e-mail",

@@ -216,7 +216,12 @@ Notes on phase 5:
   picked from the prompts. Steps: keypress, play audio, transfer (extension, ring group, queue, voicemail, submenu,
   external number), time condition with open/closed lines, repeat menu, hang up and no input. Undo/redo, tidy up,
   minimap and a test call that rings your own phone. Existing menus are converted automatically.
-- [x] Welcome e-mail for new extensions (`v0.6.0-rc.6`): an extension created with an e-mail address gets a portal
+- [x] Transfer by drag and drop (`v0.6.0-rc.6`): in the user portal (Colleagues) an employee drags an active call
+  onto a colleague, ring group or queue. Transfer directly (blind) or ask first (attended: the target is called while
+  the caller waits, then complete or go back to the caller). Works for desk phones and the browser softphone (AMI
+  BlindTransfer/Atxfer). The switchboard drags any live caller onto a target (redirect). A Transfer button and pick
+  mode make it work with keyboard and touch too.
+- [x] Welcome e-mail for new extensions (`v0.6.0-rc.7`): an extension created with an e-mail address gets a portal
   account (role user) linked to it, and the employee gets a welcome e-mail in English or Dutch with a one-time link
   to set a password (72 hours, no password in the mail), the portal addresses (http, https for the softphone, or the
   public domain), the username and extension, the SIP details for a mobile app and voicemail info, plus a note when

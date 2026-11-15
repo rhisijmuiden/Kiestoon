@@ -291,8 +291,9 @@ the testing channel.
 - [x] SLA alerts (`v0.7.0-rc.4`): thresholds per queue (target time, service level norm, waiting callers, longest
   wait, abandoned share) shown on the wallboard and switchboard and sent by e-mail with a quiet period, only during
   opening hours and a mail when recovered (push follows with the mobile app)
-- [ ] Scheduled reports by e-mail: daily, weekly or monthly per queue and agent (answered, abandoned, waiting time,
-  service level, talk time), as HTML mail with CSV
+- [x] Scheduled reports by e-mail (`v0.7.0-rc.5`): daily, weekly or monthly per queue, agent and hour (answered,
+  abandoned, waiting time, service level, talk time, SLA alerts) compared with the period before, as HTML mail with
+  CSV; preview and "send now to me"
 - [x] AI (`v0.7.0-rc.2`): transcription of recorded calls (whisper.cpp, local), summaries, topic, mood and
   follow-ups of calls and voicemail, by a local model (llama.cpp with Qwen3, default) or Claude with the
   installation's own API key; shown with recordings, in the portal, the softphone and the voicemail mail

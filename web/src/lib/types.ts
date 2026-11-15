@@ -447,3 +447,10 @@ export type Journey = {
   result: 'answered' | 'voicemail' | 'abandoned' | 'missed' | 'busy' | 'failed'; complete: boolean; partial: boolean
   steps: JourneyStep[]; recordings: { name: string; durationMs: number; from: string; to: string }[]
 }
+
+export type ReportPeriod = 'daily' | 'weekly' | 'monthly'
+export type ReportSection = 'queues' | 'agents' | 'hours' | 'trend'
+export type Report = {
+  id: number; name: string; period: ReportPeriod; time: string; weekday: number; workdays: boolean; queues: number[]
+  sections: ReportSection[]; recipients: string[]; language: 'en' | 'nl'; enabled: boolean; lastSent: string
+}

@@ -274,3 +274,13 @@ func Summarize(calls []Call, target func(queueID int64) int, loc *time.Location)
 	}
 	return s
 }
+
+// Total sums up calls of any queues into one set of figures.
+func Total(calls []Call, target func(queueID int64) int) Totals {
+	var t Totals
+	for _, c := range calls {
+		t.Add(c, target(c.QueueID))
+	}
+	t.Finish()
+	return t
+}

@@ -522,7 +522,16 @@
     "key": "API key",
     "engine": "engine",
     "llm": "local model",
-    "cloudModel": "Claude model"
+    "cloudModel": "Claude model",
+    "period": "Period",
+    "weekday": "Day",
+    "sections": "Content",
+    "recipients": "Recipients",
+    "layouts": "Layouts",
+    "rotate": "Switch layout",
+    "quiet": "Quiet period",
+    "timeCondition": "Time condition",
+    "queues": "Queues"
   },
   "extensions": {
     "title": "Extensions",
@@ -3066,6 +3075,57 @@
       "no_speech": "No speech was recognised in this recording.",
       "transcription": "The transcription failed.",
       "summary": "The transcript is ready, but the summary failed."
+    }
+  },
+  "reports": {
+    "title": "Scheduled reports",
+    "intro": "An overview by e-mail with the figures compared with the period before, and the figures per day and agent as a CSV attachment.",
+    "new": "New report",
+    "none": "No reports yet",
+    "noneText": "For example a weekly overview every Monday morning.",
+    "when": "When",
+    "recipients": "Recipients",
+    "language": "Language",
+    "paused": "Paused",
+    "preview": "Preview",
+    "previewHint": "With today's figures, as the mail looks.",
+    "sendMe": "Send now to me",
+    "sentTo": "Sent to {{to}}.",
+    "namePlaceholder": "Weekly overview support",
+    "period": "Period",
+    "weekday": "Day",
+    "time": "Time",
+    "workdays": "Only on workdays (Monday to Friday)",
+    "content": "Content",
+    "enabled": "Send this report",
+    "periods": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "covers": {
+      "daily": "Covers that day, compared with the same day a week earlier.",
+      "weekly": "Covers the previous week, Monday to Sunday, compared with the week before.",
+      "monthly": "Sent on the 1st; covers the previous month, compared with the month before."
+    },
+    "section": {
+      "queues": "Per queue",
+      "agents": "Per agent",
+      "hours": "Per hour",
+      "trend": "Change vs. the period before"
+    },
+    "whenDaily": "every day {{time}}",
+    "whenWorkdays": "every workday {{time}}",
+    "whenWeekly": "{{day}} {{time}}, previous week",
+    "whenMonthly": "1st of the month {{time}}, previous month",
+    "day": {
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday",
+      "7": "Sunday"
     }
   }
 }

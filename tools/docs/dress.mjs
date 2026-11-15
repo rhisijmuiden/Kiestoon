@@ -111,30 +111,63 @@ for (const [ago, caller, name, pages, status, err] of [
     VALUES (?, ?, ?, ?, '0507001250', ?, ?, ?, ?, '', ?, ?)`).run(box?.id ?? null, iso(ago), caller, name, name, pages, status, err, pages * 48211, status === 'success' ? 1 : 0)
 }
 
-// Queue statistics of today for the wallboard: calls from the morning until now, busier around 10:00 and 14:00.
+// Queue statistics for the wallboard and the reports: today until now, and the five weeks before on workdays,
+// busier around 10:00 and 14:00.
 {
-  const now = new Date(), start = new Date(now)
-  start.setHours(8, 0, 0, 0)
-  if (now - start < 3 * 3600000) start.setTime(Math.max(now.getTime() - 8 * 3600000, new Date(now).setHours(0, 5, 0, 0)))
+  const now = new Date()
   let seed = 7
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
   const agents = { 1: [['201', 'Sanne Bakker'], ['202', 'Thomas Jansen'], ['204', 'Emma de Boer'], ['209', 'Milan Vos'], ['205', 'Noor Hendriks']], 2: [['203', 'Daan Visser'], ['207', 'Lotte Smit']] }
   const ins = db.prepare(`INSERT INTO queue_calls(queue_id, uniqueid, caller, joined_at, result, hold, talk, agent, agent_name, ended_at) VALUES (?,?,?,?,?,?,?,?,?,?)`)
+  const stamp = (d) => d.toISOString().replace(/\.\d+Z$/, 'Z')
   let n = 0
-  for (let t = start.getTime(); t < now.getTime() - 120000; t += 60000) {
-    const h = new Date(t).getHours() + new Date(t).getMinutes() / 60
-    const busy = 0.25 + 0.5 * Math.exp(-((h - 10) ** 2) / 2) + 0.35 * Math.exp(-((h - 14) ** 2) / 3)
-    for (const q of [1, 2]) {
-      if (rnd() > busy * (q === 1 ? 1 : 0.45)) continue
-      const r = rnd()
-      const result = r < 0.03 ? 'abandoned' : r < 0.045 ? 'left' : 'answered'
-      const hold = result === 'answered' ? Math.round(4 + rnd() ** 8 * (q === 1 ? 80 : 45)) : Math.round(20 + rnd() * 120)
-      const [ag, name] = result === 'answered' ? agents[q][Math.floor(rnd() * agents[q].length)] : ['', '']
-      const at = new Date(t + rnd() * 50000)
-      ins.run(q, `demo.${n++}`, '06' + String(10000000 + Math.floor(rnd() * 89999999)), at.toISOString().replace(/\.\d+Z$/, 'Z'), result, hold,
-        result === 'answered' ? Math.round(60 + rnd() * 400) : 0, ag, name, new Date(at.getTime() + 300000).toISOString().replace(/\.\d+Z$/, 'Z'))
+  db.exec('BEGIN')
+  for (let back = 35; back >= 0; back--) {
+    const start = new Date(now)
+    start.setDate(start.getDate() - back)
+    start.setHours(8, 0, 0, 0)
+    let end = new Date(start)
+    end.setHours(18, 0, 0, 0)
+    if (back === 0) {
+      if (now - start < 3 * 3600000) start.setTime(Math.max(now.getTime() - 8 * 3600000, new Date(now).setHours(0, 5, 0, 0)))
+      end = new Date(now.getTime() - 120000)
+    } else if (start.getDay() === 0 || start.getDay() === 6) continue
+    // Monday mornings are a little busier and slower, so the reports have something to compare.
+    const extra = start.getDay() === 1 ? 0.15 : 0
+    for (let t = start.getTime(); t < end.getTime(); t += 60000) {
+      const h = new Date(t).getHours() + new Date(t).getMinutes() / 60
+      const busy = 0.25 + extra + 0.5 * Math.exp(-((h - 10) ** 2) / 2) + 0.35 * Math.exp(-((h - 14) ** 2) / 3)
+      for (const q of [1, 2]) {
+        if (rnd() > busy * (q === 1 ? 1 : 0.45)) continue
+        const r = rnd()
+        const result = r < 0.03 ? 'abandoned' : r < 0.045 ? 'left' : 'answered'
+        const hold = result === 'answered' ? Math.round(4 + rnd() ** 8 * (q === 1 ? 80 + extra * 200 : 45)) : Math.round(20 + rnd() * 120)
+        const [ag, name] = result === 'answered' ? agents[q][Math.floor(rnd() * agents[q].length)] : ['', '']
+        const at = new Date(t + rnd() * 50000)
+        ins.run(q, `demo.${n++}`, '06' + String(10000000 + Math.floor(rnd() * 89999999)), stamp(at), result, hold,
+          result === 'answered' ? Math.round(60 + rnd() * 400) : 0, ag, name, stamp(new Date(at.getTime() + 300000)))
+      }
     }
   }
+  // A few SLA alerts in the past weeks, all at Support on Monday mornings.
+  for (let back = 1; back <= 35; back++) {
+    const d = new Date(now)
+    d.setDate(d.getDate() - back)
+    if (d.getDay() !== 1) continue
+    d.setHours(9, 40, 0, 0)
+    db.prepare(`INSERT INTO sla_alerts(queue_id, kind, at) VALUES (1, 'wait', ?)`).run(stamp(d))
+  }
+  db.exec('COMMIT')
+}
+
+// Scheduled reports.
+for (const [name, period, time, weekday, workdays, queues, sections, rcpt, lang] of [
+  ['Weekly overview support', 'weekly', '08:00', 1, 0, '[1,2]', '["queues","agents","hours","trend"]', '["teamlead@example.com"]', 'en'],
+  ['Daily summary', 'daily', '18:00', 1, 1, '[]', '["queues","trend"]', '["ops@example.com"]', 'en'],
+  ['Maandrapport directie', 'monthly', '07:00', 1, 0, '[]', '["queues","trend"]', '["directie@example.com"]', 'nl'],
+]) {
+  db.prepare(`INSERT INTO wallboard_reports(name, period, time, weekday, workdays, queues, sections, recipients, language, enabled, last_sent)
+    VALUES (?,?,?,?,?,?,?,?,?,1,?)`).run(name, period, time, weekday, workdays, queues, sections, rcpt, lang, iso(3600000))
 }
 
 // Wallboard tv links and who gets SLA alerts.

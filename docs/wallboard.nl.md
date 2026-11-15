@@ -1,4 +1,4 @@
-# Wallboard en SLA-meldingen
+# Wallboard, SLA-meldingen en rapportages
 
 Het wallboard toont je wachtrijen groot leesbaar voor een scherm aan de muur: wie er wacht, hoe lang, het
 servicelevel van vandaag en wat elke medewerker doet. Kiestoon bewaakt de drempels die je per wachtrij instelt en
@@ -95,3 +95,28 @@ Kiestoon controleert de drempels elke 5 seconden. Onder **Meldingen** kies je wa
 - **Ook mailen als het weer goed is** stuurt een korte mail als de wachtrij weer binnen de drempel zit.
 
 Pushmeldingen in de mobiele app volgen met de app.
+
+## Geplande rapportages
+
+Onder **Geplande rapportages** maak je een overzicht dat Kiestoon zelf mailt. Klik **Nieuwe rapportage** en kies:
+
+| Periode | Wordt verstuurd | Gaat over | Vergeleken met |
+| --- | --- | --- | --- |
+| **Dagelijks** | elke dag (of alleen op werkdagen) op de tijd die je kiest | die dag | dezelfde dag een week eerder |
+| **Wekelijks** | op de dag en tijd die je kiest | de vorige week, maandag tot en met zondag | de week ervoor |
+| **Maandelijks** | op de 1e op de tijd die je kiest | de vorige maand | de maand ervoor |
+
+Kies de wachtrijen, de inhoud (per wachtrij, per medewerker, per uur, en het verschil met de periode ervoor), de
+ontvangers en de taal (Engels of Nederlands) van de mail.
+
+![Voorbeeld van een weekrapportage](shot:report-preview)
+
+De mail is een gewone HTML-mail die in elk mailprogramma werkt. Bovenaan staan de gesprekken, het servicelevel, de
+gemiddelde wachttijd en het deel opgehangen, elk met het verschil met de periode ervoor. Daaronder de tabellen per
+wachtrij, per medewerker en per uur, het drukste uur en het aantal SLA-meldingen. De cijfers per dag en wachtrij en
+per medewerker zitten als CSV-bestand in de bijlage, dat opent in Excel.
+
+- **Voorbeeld** toont de mail met de cijfers van nu.
+- **Nu versturen naar mij** mailt hem naar je eigen adres (in te stellen onder [Gebruikers](users.md)).
+- Een rapportage die niet bezorgd kan worden, wordt niet elke minuut opnieuw geprobeerd: hij wacht op zijn volgende
+  verzendmoment. Het [maillogboek](mail.md) laat zien wat er misging.

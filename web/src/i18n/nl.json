@@ -522,7 +522,16 @@
     "key": "API-sleutel",
     "engine": "engine",
     "llm": "lokaal model",
-    "cloudModel": "Claude-model"
+    "cloudModel": "Claude-model",
+    "period": "Periode",
+    "weekday": "Dag",
+    "sections": "Inhoud",
+    "recipients": "Ontvangers",
+    "layouts": "Layouts",
+    "rotate": "Layout wisselen",
+    "quiet": "Rustperiode",
+    "timeCondition": "Tijdconditie",
+    "queues": "Wachtrijen"
   },
   "extensions": {
     "title": "Toestellen",
@@ -3066,6 +3075,57 @@
       "no_speech": "Er is geen spraak herkend in deze opname.",
       "transcription": "De transcriptie is mislukt.",
       "summary": "De transcriptie is klaar, maar de samenvatting is mislukt."
+    }
+  },
+  "reports": {
+    "title": "Geplande rapportages",
+    "intro": "Een overzicht per mail met de cijfers ten opzichte van de periode ervoor, en de cijfers per dag en medewerker als CSV-bijlage.",
+    "new": "Nieuwe rapportage",
+    "none": "Nog geen rapportages",
+    "noneText": "Bijvoorbeeld een weekoverzicht elke maandagochtend.",
+    "when": "Wanneer",
+    "recipients": "Ontvangers",
+    "language": "Taal",
+    "paused": "Gepauzeerd",
+    "preview": "Voorbeeld",
+    "previewHint": "Met de cijfers van nu, zoals de mail eruitziet.",
+    "sendMe": "Nu versturen naar mij",
+    "sentTo": "Verstuurd naar {{to}}.",
+    "namePlaceholder": "Weekoverzicht support",
+    "period": "Periode",
+    "weekday": "Dag",
+    "time": "Tijd",
+    "workdays": "Alleen op werkdagen (maandag tot vrijdag)",
+    "content": "Inhoud",
+    "enabled": "Deze rapportage versturen",
+    "periods": {
+      "daily": "Dagelijks",
+      "weekly": "Wekelijks",
+      "monthly": "Maandelijks"
+    },
+    "covers": {
+      "daily": "Gaat over die dag, vergeleken met dezelfde dag een week eerder.",
+      "weekly": "Gaat over de vorige week, maandag tot en met zondag, vergeleken met de week ervoor.",
+      "monthly": "Gaat op de 1e; over de vorige maand, vergeleken met de maand ervoor."
+    },
+    "section": {
+      "queues": "Per wachtrij",
+      "agents": "Per medewerker",
+      "hours": "Per uur",
+      "trend": "Verschil met de periode ervoor"
+    },
+    "whenDaily": "elke dag {{time}}",
+    "whenWorkdays": "elke werkdag {{time}}",
+    "whenWeekly": "{{day}} {{time}}, vorige week",
+    "whenMonthly": "1e van de maand {{time}}, vorige maand",
+    "day": {
+      "1": "maandag",
+      "2": "dinsdag",
+      "3": "woensdag",
+      "4": "donderdag",
+      "5": "vrijdag",
+      "6": "zaterdag",
+      "7": "zondag"
     }
   }
 }

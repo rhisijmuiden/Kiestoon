@@ -6,6 +6,7 @@ import { Badge, CopyField, Empty, Modal, SectionTitle, Select, Table, Textarea, 
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { IconButton } from '../components/pbx'
 import { api } from '../lib/api'
+import { ReportsCard } from './wallboard/Reports'
 import type { AlertSettings, SLAOptions, WallLayout, WallScreen, WallSettings } from '../lib/types'
 
 const allLayouts: WallLayout[] = ['overview', 'queue', 'agents']
@@ -76,6 +77,7 @@ export function WallboardSettings() {
       </Card>
       <AlertsCard data={data} onSaved={d.reload} />
       <ThresholdsCard data={data} onSaved={d.reload} />
+      <ReportsCard data={data} />
       {edit && <ScreenEditor screen={edit} data={data} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); d.reload() }} />}
     </>
   )

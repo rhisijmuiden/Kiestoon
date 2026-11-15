@@ -1,0 +1,41 @@
+// Package config reads Kiestoon's runtime settings from the environment.
+//
+// On an installed system these come from /etc/kiestoon/kiestoon.env, loaded by systemd.
+package config
+
+import (
+	"os"
+	"path/filepath"
+)
+
+// Config holds the settings the server needs to start.
+type Config struct {
+	// Listen is the address the web portal listens on, ":8080" by default.
+	Listen string
+	// DataDir holds the database, update requests and pre-update backups.
+	DataDir string
+	// Repo is the GitHub repository ("owner/name") that releases are fetched from.
+	Repo string
+	// SecureCookies forces the Secure flag on session cookies (set when served over HTTPS).
+	SecureCookies bool
+}
+
+// Load reads the configuration from environment variables, falling back to defaults.
+func Load() Config {
+	return Config{
+		Listen:        env("KIESTOON_LISTEN", ":8080"),
+		DataDir:       env("KIESTOON_DATA_DIR", "/var/lib/kiestoon"),
+		Repo:          env("KIESTOON_REPO", "rhisijmuiden/kiestoon"),
+		SecureCookies: os.Getenv("KIESTOON_SECURE_COOKIES") == "true",
+	}
+}
+
+// DatabasePath is the location of the SQLite database.
+func (c Config) DatabasePath() string { return filepath.Join(c.DataDir, "kiestoon.db") }
+
+func env(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}

@@ -94,13 +94,17 @@ function cdrs() {
   for (let i = 0; i < 46; i++) {
     const start = new Date(day.getTime() + i * step + (i * 37 % 60) * 1000 * (step / 660000))
     if (start > new Date()) break
-    const p = people[(i * 3 + Math.floor(i / 7)) % people.length], o = outside[(i * 5) % outside.length]
+    let p = people[(i * 3 + Math.floor(i / 7)) % people.length]
+    const o = outside[(i * 5) % outside.length]
     const kind = i % 7 === 3 ? 'internal' : i % 3 === 0 ? 'outbound' : 'inbound'
     const missed = kind === 'inbound' && i % 9 === 4
     const bill = missed ? 0 : 35 + ((i * 53) % 420)
     const ans = new Date(start.getTime() + 7000)
     const end = new Date(ans.getTime() + bill * 1000)
     let src, dst, clid, chan, dchan, trunk = ''
+    // Calls 40 and 44 have a journey (see journeys()): 44 was answered by 201, 40 ended in the voicemail of 204.
+    if (i === 44) p = people[0]
+    if (i === 40) p = people[3]
     if (kind === 'inbound') { src = o[0]; dst = p[0]; clid = `"${o[1]}" <${o[0]}>`; chan = `PJSIP/trunk-1-000${i}a`; dchan = `PJSIP/${p[0]}-000${i}b` }
     else if (kind === 'outbound') { src = p[0]; dst = o[0]; clid = `"${p[1]}" <${p[0]}>`; chan = `PJSIP/${p[0]}-000${i}a`; dchan = `PJSIP/trunk-1-000${i}b`; trunk = 'Voys' }
     else { const q = people[(i + 2) % people.length]; src = p[0]; dst = q[0]; clid = `"${p[1]}" <${p[0]}>`; chan = `PJSIP/${p[0]}-000${i}a`; dchan = `PJSIP/${q[0]}-000${i}b` }
@@ -112,6 +116,64 @@ function cdrs() {
     })
   }
   return out
+}
+
+// The journey of two calls of today as Asterisk reports it (CEL, dial and queue events): call 44
+// went through the IVR to the Support queue, was answered by 201 and transferred to 204; call 40
+// chose Sales, nobody answered and the caller left a voicemail.
+function callStart(i) {
+  const now = STARTED, midnight = new Date(STARTED); midnight.setHours(0, 5, 0, 0)
+  const begin = Math.max(midnight.getTime(), now - 46 * 11 * 60000 - 300000)
+  const step = (now - 300000 - begin) / 46
+  return begin + i * step + (i * 37 % 60) * 1000 * (step / 660000)
+}
+
+function journeys() {
+  const out = []
+  const ev = (i, sec, fields) => {
+    const at = (callStart(i) + sec * 1000) / 1000
+    out.push({ Timestamp: at.toFixed(6), LinkedID: `17316${i}.1`, Linkedid: `17316${i}.1`, ...fields })
+  }
+  const cel = (i, sec, name, chan, uid, extra = {}, more = {}) => ev(i, sec, { Event: 'CEL', EventName: name, EventTime: ((callStart(i) + sec * 1000) / 1000).toFixed(6), Channel: chan, UniqueID: uid, Extra: JSON.stringify(extra), ...more })
+  const mark = (i, sec, name, kv) => cel(i, sec, name, `PJSIP/trunk-1-000${i}a`, `17316${i}.1`, { extra: kv })
+  // Call 44: IVR option 1, Support queue, 202 does not answer, 201 does, blind transfer to 204.
+  let i = 44, c = `PJSIP/trunk-1-000${i}a`, u = `17316${i}.1`
+  cel(i, 0, 'CHAN_START', c, u, {}, { CallerIDnum: '0687654321', CallerIDname: '', Exten: '0507001234', Context: 'kiestoon-from-trunk' })
+  mark(i, 0.1, 'kt_in', 'route=1&did=0507001234')
+  mark(i, 0.1, 'kt_tc', 'id=1&state=open')
+  mark(i, 0.2, 'kt_ivr', 'id=1')
+  cel(i, 0.2, 'ANSWER', c, u)
+  mark(i, 6.4, 'kt_ivrkey', 'id=1&key=1')
+  mark(i, 6.5, 'kt_queue', 'id=1')
+  ev(i, 7, { Event: 'QueueCallerJoin', Channel: c, Uniqueid: u, Queue: 'kiestoon-q-1', Position: '1' })
+  ev(i, 7.2, { Event: 'AgentCalled', Channel: c, Uniqueid: u, Queue: 'kiestoon-q-1', MemberName: 'Thomas Jansen', Interface: 'Local/202@kiestoon-ring/n', DestUniqueid: '9.1' })
+  ev(i, 22.2, { Event: 'AgentRingNoAnswer', Channel: c, Uniqueid: u, Queue: 'kiestoon-q-1', MemberName: 'Thomas Jansen', RingTime: '15', DestUniqueid: '9.1' })
+  ev(i, 24, { Event: 'AgentCalled', Channel: c, Uniqueid: u, Queue: 'kiestoon-q-1', MemberName: 'Sanne Bakker', Interface: 'Local/201@kiestoon-ring/n', DestUniqueid: '9.2' })
+  ev(i, 28, { Event: 'AgentConnect', Channel: c, Uniqueid: u, Queue: 'kiestoon-q-1', MemberName: 'Sanne Bakker', HoldTime: '21', RingTime: '4', DestUniqueid: '9.2' })
+  cel(i, 133, 'BLINDTRANSFER', `PJSIP/201-000${i}b`, '9.3', { extension: '204', context: 'kiestoon-local' })
+  mark(i, 133.1, 'kt_ext', 'num=204')
+  ev(i, 133.2, { Event: 'DialBegin', Channel: c, Uniqueid: u, DestChannel: `PJSIP/204-000${i}c`, DestUniqueid: '9.4' })
+  ev(i, 137, { Event: 'DialEnd', Channel: c, Uniqueid: u, DestChannel: `PJSIP/204-000${i}c`, DestUniqueid: '9.4', DialStatus: 'ANSWER' })
+  cel(i, 274, 'HANGUP', c, u, { hangupcause: 16, hangupsource: c, dialstatus: 'ANSWER' })
+  cel(i, 274.1, 'LINKEDID_END', c, u)
+  // Call 40: IVR option 2, Sales ring group, nobody answers, voicemail of 204.
+  i = 40; c = `PJSIP/trunk-1-000${i}a`; u = `17316${i}.1`
+  cel(i, 0, 'CHAN_START', c, u, {}, { CallerIDnum: '0301234567', CallerIDname: 'Gemeente Utrecht', Exten: '0507001234', Context: 'kiestoon-from-trunk' })
+  mark(i, 0.1, 'kt_in', 'route=1&did=0507001234')
+  mark(i, 0.1, 'kt_tc', 'id=1&state=open')
+  mark(i, 0.2, 'kt_ivr', 'id=1')
+  mark(i, 9.2, 'kt_ivrtimeout', 'id=1&try=1')
+  mark(i, 14, 'kt_ivrkey', 'id=1&key=2')
+  mark(i, 14.1, 'kt_rg', 'id=1')
+  for (const [n, ext] of ['202', '206', '208'].entries()) {
+    ev(i, 14.2, { Event: 'DialBegin', Channel: `Local/${ext}@kiestoon-ring-0000${n};2`, Uniqueid: `8.${n}`, DestChannel: `PJSIP/${ext}-000${i}${n}`, DestUniqueid: `7.${n}` })
+    ev(i, 34.2, { Event: 'DialEnd', Channel: `Local/${ext}@kiestoon-ring-0000${n};2`, Uniqueid: `8.${n}`, DestChannel: `PJSIP/${ext}-000${i}${n}`, DestUniqueid: `7.${n}`, DialStatus: ext === '206' ? 'BUSY' : 'NOANSWER' })
+  }
+  mark(i, 34.3, 'kt_rgend', 'id=1')
+  mark(i, 34.3, 'kt_vm', 'box=204')
+  cel(i, 58, 'HANGUP', c, u, { hangupcause: 16, hangupsource: c, dialstatus: '' })
+  cel(i, 58.1, 'LINKEDID_END', c, u)
+  return out.sort((a, b) => a.Timestamp - b.Timestamp)
 }
 
 function write(sock, obj) {
@@ -140,7 +202,7 @@ net.createServer((sock) => {
         case 'login':
           write(sock, { Response: 'Success', ActionID: id, Message: 'Authentication accepted' })
           // Asterisk sends a call record once; the portal stores it, also across a restart of the portal.
-          if (!cdrsSent) { cdrsSent = true; setTimeout(() => cdrs().forEach((e) => write(sock, e)), 500) }
+          if (!cdrsSent) { cdrsSent = true; setTimeout(() => [...cdrs(), ...journeys()].forEach((e) => write(sock, e)), 500) }
           break
         case 'coreshowchannels': list(sock, id, channels().map((c) => ({ Event: 'CoreShowChannel', ...c, Duration: new Date(c.Duration * 1000).toISOString().slice(11, 19) })), 'CoreShowChannelsComplete'); break
         case 'pjsipshowcontacts': list(sock, id, contacts().map((c) => ({ Event: 'ContactList', ...c })), 'ContactListComplete'); break

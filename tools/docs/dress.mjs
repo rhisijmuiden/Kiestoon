@@ -64,6 +64,9 @@ for (const [i, [from, to, secs]] of [['0612345678', '201', 312], ['201', '020555
   fs.writeFileSync(path.join(mon, `kt-${stamp(d)}-17316${i}.${i}-${from}-${to}.wav`), Buffer.from(wav(Math.min(secs, 30), 11 + i), 'base64'))
 }
 
+// The recording of call 44 (see the call journeys in fake-ami.mjs).
+fs.writeFileSync(path.join(mon, `kt-${stamp(new Date(Date.now() - 30 * 60000))}-1731644.1-0687654321-q700.wav`), Buffer.from(wav(30, 17), 'base64'))
+
 // Received faxes.
 const box = db.prepare('SELECT id FROM fax_boxes ORDER BY id LIMIT 1').get()
 for (const [ago, caller, name, pages, status, err] of [

@@ -1611,7 +1611,10 @@
     "unlock": "Deblokkeren",
     "codes": "Functiecodes",
     "code": "Code",
-    "action": "Wat het doet"
+    "action": "Wat het doet",
+    "journey": "Gespreksverloop",
+    "journeyDays": "Gespreksverloop bewaren (dagen)",
+    "journeyDaysHint": "Hoe lang het stap-voor-stap verloop van elk gesprek (keuzes in het keuzemenu, wachttijd in de wachtrij, wie opnam) bewaard blijft voor het gesprekslog. 0 registreert geen verloop; let op de bewaarregels van de AVG."
   },
   "codes": {
     "voicemail": "Je voicemail beluisteren",
@@ -2682,5 +2685,125 @@
     "saved": "Hostnamen opgeslagen.",
     "adminElsewhere": "Beheer is op dit adres gesloten.",
     "toAdmin": "Naar beheer"
+  },
+  "journey": {
+    "title": "Gespreksverloop",
+    "back": "Gespreksgeschiedenis",
+    "open": "Toon het verloop van het gesprek van {{time}}",
+    "heading": "{{from}} → {{to}}",
+    "flow": "Gespreksverloop als flow",
+    "steps": "Stappen",
+    "stepsCount": "Stappen",
+    "total": "Totaal",
+    "wait": "Wachttijd",
+    "talk": "Gesprekstijd",
+    "duration": "Duur",
+    "offset": "Tijd sinds het begin van het gesprek",
+    "live": "Dit gesprek is nog bezig; open de pagina opnieuw voor de laatste stappen.",
+    "partial": "Van dit gesprek is alleen het gespreksrecord beschikbaar (het is ouder dan de verloopregistratie, of het verloop is na de bewaartermijn verwijderd), dus je ziet de basis.",
+    "recordings": "Opnames",
+    "noRecordings": "Geen opnames van dit gesprek.",
+    "choices": "Keuzes",
+    "rang": "Toestellen die overgingen",
+    "from": "Van",
+    "did": "Gebeld nummer",
+    "trunk": "Trunk",
+    "route": "Inkomende route",
+    "dialled": "Gekozen",
+    "position": "Plek in de rij",
+    "waited": "Gewacht",
+    "by": "Door",
+    "talkWith": "In gesprek met {{name}}",
+    "transferTo": "Naar {{to}}",
+    "result": {
+      "answered": "Beantwoord",
+      "voicemail": "Voicemail",
+      "abandoned": "Opgehangen tijdens wachten",
+      "missed": "Gemist",
+      "busy": "Bezet",
+      "failed": "Mislukt"
+    },
+    "party": {
+      "ext": "Toestel",
+      "caller": "Beller",
+      "remote": "Andere partij",
+      "system": "Telefooncentrale"
+    },
+    "step": {
+      "inbound": "Binnenkomend gesprek",
+      "internal": "Gesprek vanaf een toestel",
+      "outbound": "Uitgaande route",
+      "timecondition": "Tijdsconditie",
+      "ivr": "Keuzemenu",
+      "queue": "Wachtrij",
+      "ringgroup": "Belgroep",
+      "extension": "Toestel",
+      "talk": "In gesprek",
+      "transfer": "Doorverbonden",
+      "voicemail": "Voicemail",
+      "forward": "Doorgeschakeld naar",
+      "park": "Geparkeerd",
+      "pickup": "Overgenomen door",
+      "conference": "Vergadering",
+      "fax": "Fax",
+      "external": "Extern nummer",
+      "noroute": "Geen inkomende route voor",
+      "hangup": "Gesprek beëindigd"
+    },
+    "tc": {
+      "open": "Open",
+      "closed": "Gesloten",
+      "holiday": "Feestdag"
+    },
+    "ivr": {
+      "pressed": "Koos {{key}}",
+      "timeout": "Geen keuze gemaakt (poging {{n}})",
+      "invalid": "Ongeldige keuze (poging {{n}})",
+      "repeat": "Menu opnieuw afgespeeld",
+      "none": "Geen keuze gemaakt"
+    },
+    "ring": {
+      "answered": "Opgenomen",
+      "noanswer": "Niet opgenomen",
+      "busy": "Bezet",
+      "cancel": "Gestopt",
+      "unavailable": "Onbereikbaar",
+      "failed": "Mislukt"
+    },
+    "queueResult": {
+      "answered": "Beantwoord",
+      "abandoned": "Beller hing op tijdens het wachten",
+      "timeout": "Maximale wachttijd bereikt",
+      "full": "Wachtrij vol",
+      "joinempty": "Niemand aangemeld",
+      "leaveempty": "Niemand meer aangemeld",
+      "joinunavail": "Niemand beschikbaar",
+      "leaveunavail": "Niemand meer beschikbaar",
+      "continue": "Doorgegaan"
+    },
+    "extResult": {
+      "answered": "Opgenomen",
+      "noanswer": "Niet opgenomen",
+      "busy": "Bezet",
+      "unavailable": "Onbereikbaar",
+      "cancel": "Beller hing op",
+      "failed": "Mislukt",
+      "dnd": "Niet storen",
+      "closed": "Buiten het rooster"
+    },
+    "vm": {
+      "noanswer": "Niet opgenomen",
+      "busy": "Bezet"
+    },
+    "transfer": {
+      "blind": "Direct doorverbonden",
+      "attended": "Doorverbonden na overleg"
+    },
+    "hangup": {
+      "caller": "Opgehangen door de beller",
+      "remote": "Opgehangen door de andere partij",
+      "ext": "Opgehangen door {{name}}",
+      "system": "Beëindigd door de telefooncentrale"
+    }
   }
 }

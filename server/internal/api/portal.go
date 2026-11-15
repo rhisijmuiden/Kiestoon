@@ -41,6 +41,7 @@ func (s *Server) portalRoutes(mux *http.ServeMux, user func(http.HandlerFunc) ht
 	mux.Handle("GET /api/portal/colleagues", user(s.portalColleagues))
 	mux.Handle("POST /api/portal/call", user(s.portalCall))
 	mux.Handle("GET /api/portal/history", user(s.portalHistory))
+	mux.Handle("GET /api/portal/history/journey/{id}", user(s.portalJourney))
 	mux.Handle("GET /api/portal/recordings", user(s.portalRecordings))
 	mux.Handle("GET /api/portal/recordings/{name}", user(s.portalRecordingAudio))
 	mux.Handle("GET /api/portal/phones", user(s.portalPhones))

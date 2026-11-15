@@ -4,7 +4,8 @@
 
 **Gespreksgeschiedenis** (menu Receptie) toont elk gesprek: tijd, beller, gebeld nummer, richting, resultaat, duur
 en trunk. Zoek op een nummer, filter op periode, richting (inkomend, uitgaand, intern) en resultaat (beantwoord,
-geen gehoor, bezet, mislukt), en klik **CSV exporteren** voor een spreadsheet.
+geen gehoor, bezet, mislukt), en klik **CSV exporteren** voor een spreadsheet. Klik op een gesprek voor het
+[gespreksverloop](call-journey.md): elke stap die het doorliep, getekend als flow.
 
 ![Gespreksgeschiedenis](shot:history)
 

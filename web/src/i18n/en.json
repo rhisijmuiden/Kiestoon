@@ -1611,7 +1611,10 @@
     "unlock": "Unblock",
     "codes": "Feature codes",
     "code": "Code",
-    "action": "What it does"
+    "action": "What it does",
+    "journey": "Call journey",
+    "journeyDays": "Keep call journeys (days)",
+    "journeyDaysHint": "How long the step-by-step journey of each call (IVR choices, queue waits, who answered) is kept for the call history. 0 records no journeys; mind the GDPR (AVG) retention rules."
   },
   "codes": {
     "voicemail": "Listen to your voicemail",
@@ -2682,5 +2685,125 @@
     "saved": "Host name settings saved.",
     "adminElsewhere": "Administration is closed on this address.",
     "toAdmin": "Open administration"
+  },
+  "journey": {
+    "title": "Call journey",
+    "back": "Call history",
+    "open": "Show the journey of the call of {{time}}",
+    "heading": "{{from}} → {{to}}",
+    "flow": "Call journey as a flow",
+    "steps": "Steps",
+    "stepsCount": "Steps",
+    "total": "Total",
+    "wait": "Waiting time",
+    "talk": "Talk time",
+    "duration": "Duration",
+    "offset": "Time since the call started",
+    "live": "This call is still going on; reopen the page to see the latest steps.",
+    "partial": "Only the call record is available for this call (it is older than the journey recording, or its journey was removed after the retention period), so this shows the basics.",
+    "recordings": "Recordings",
+    "noRecordings": "No recordings of this call.",
+    "choices": "Choices",
+    "rang": "Phones that rang",
+    "from": "From",
+    "did": "Number called",
+    "trunk": "Trunk",
+    "route": "Inbound route",
+    "dialled": "Dialled",
+    "position": "Position in line",
+    "waited": "Waited",
+    "by": "By",
+    "talkWith": "Talking with {{name}}",
+    "transferTo": "To {{to}}",
+    "result": {
+      "answered": "Answered",
+      "voicemail": "Voicemail",
+      "abandoned": "Hung up while waiting",
+      "missed": "Missed",
+      "busy": "Busy",
+      "failed": "Failed"
+    },
+    "party": {
+      "ext": "Extension",
+      "caller": "Caller",
+      "remote": "Other party",
+      "system": "Phone system"
+    },
+    "step": {
+      "inbound": "Incoming call",
+      "internal": "Call from an extension",
+      "outbound": "Outbound route",
+      "timecondition": "Time condition",
+      "ivr": "IVR menu",
+      "queue": "Queue",
+      "ringgroup": "Ring group",
+      "extension": "Extension",
+      "talk": "Talking",
+      "transfer": "Transferred",
+      "voicemail": "Voicemail",
+      "forward": "Forwarded to",
+      "park": "Parked",
+      "pickup": "Picked up by",
+      "conference": "Conference",
+      "fax": "Fax",
+      "external": "External number",
+      "noroute": "No inbound route for",
+      "hangup": "Call ended"
+    },
+    "tc": {
+      "open": "Open",
+      "closed": "Closed",
+      "holiday": "Holiday"
+    },
+    "ivr": {
+      "pressed": "Pressed {{key}}",
+      "timeout": "No choice made (attempt {{n}})",
+      "invalid": "Invalid choice (attempt {{n}})",
+      "repeat": "Menu played again",
+      "none": "No choice made"
+    },
+    "ring": {
+      "answered": "Answered",
+      "noanswer": "Not answered",
+      "busy": "Busy",
+      "cancel": "Stopped",
+      "unavailable": "Unreachable",
+      "failed": "Failed"
+    },
+    "queueResult": {
+      "answered": "Answered",
+      "abandoned": "Caller hung up while waiting",
+      "timeout": "Maximum waiting time reached",
+      "full": "Queue full",
+      "joinempty": "Nobody signed in",
+      "leaveempty": "Nobody signed in anymore",
+      "joinunavail": "Nobody available",
+      "leaveunavail": "Nobody available anymore",
+      "continue": "Continued"
+    },
+    "extResult": {
+      "answered": "Answered",
+      "noanswer": "Not answered",
+      "busy": "Busy",
+      "unavailable": "Unreachable",
+      "cancel": "Caller hung up",
+      "failed": "Failed",
+      "dnd": "Do not disturb",
+      "closed": "Outside the schedule"
+    },
+    "vm": {
+      "noanswer": "Not answered",
+      "busy": "Busy"
+    },
+    "transfer": {
+      "blind": "Transferred directly",
+      "attended": "Transferred after consulting"
+    },
+    "hangup": {
+      "caller": "Hung up by the caller",
+      "remote": "Hung up by the other party",
+      "ext": "Hung up by {{name}}",
+      "system": "Ended by the phone system"
+    }
   }
 }

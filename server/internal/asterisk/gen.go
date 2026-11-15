@@ -29,6 +29,10 @@ type Options struct {
 	PromptDir string
 	// FaxDir is where Asterisk writes received faxes (TIFF) for the portal.
 	FaxDir string
+	// SpeechDir is where speech steps of a voice menu record the caller for the server.
+	SpeechDir string
+	// AGIAddr is the server's FastAGI listener (host:port) that recognises speech.
+	AGIAddr string
 }
 
 // Files maps a file name in the pbx directory to its contents.

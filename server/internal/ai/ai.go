@@ -285,3 +285,51 @@ func (z *Summarizer) claude(ctx context.Context, model, system, user string) (st
 	}
 	return b.String(), nil
 }
+
+// Classify picks which of the options (from 1) fits what a caller said in a voice menu, or 0 when
+// none fits. It is the fallback of a speech step when no keyword matched.
+func (z *Summarizer) Classify(ctx context.Context, st Settings, said string, options []string) (int, error) {
+	said = strings.TrimSpace(said)
+	if said == "" || len(options) == 0 {
+		return 0, nil
+	}
+	if len(said) > 2000 {
+		said = said[:2000]
+	}
+	var b strings.Builder
+	for i, o := range options {
+		fmt.Fprintf(&b, "%d. %s\n", i+1, o)
+	}
+	system := "You route callers in the voice menu of a company. The caller was asked what they are calling about; " +
+		"their answer was transcribed by speech recognition and can contain errors. Choose the option that fits the " +
+		"answer best. Answer with one JSON object and nothing else: {\"option\": n} with the number of the option, " +
+		"or {\"option\": 0} when no option fits or the answer is unclear."
+	user := "Options:\n" + b.String() + "\nThe caller said: " + said
+	var answer string
+	var err error
+	if st.Engine == EngineCloud {
+		if z.APIKey == "" {
+			return 0, ErrNoKey
+		}
+		answer, err = z.claude(ctx, st.CloudModel, system, user)
+	} else {
+		answer, err = z.Speech.Chat(ctx, st.LLM, system, user, true)
+	}
+	if err != nil {
+		return 0, err
+	}
+	answer = strings.TrimSpace(answer)
+	if i, j := strings.Index(answer, "{"), strings.LastIndex(answer, "}"); i >= 0 && j > i {
+		answer = answer[i : j+1]
+	}
+	var out struct {
+		Option int `json:"option"`
+	}
+	if err := json.Unmarshal([]byte(answer), &out); err != nil {
+		return 0, fmt.Errorf("model answer is not JSON: %w", err)
+	}
+	if out.Option < 0 || out.Option > len(options) {
+		return 0, nil
+	}
+	return out.Option, nil
+}

@@ -198,11 +198,13 @@ export type QueueView = Queue & {
 }
 
 export type IVROption = { digit: string; destination: Destination }
-export type FlowNodeType = 'entry' | 'key' | 'timeout' | 'audio' | 'destination' | 'time' | 'repeat'
+export type FlowNodeType = 'entry' | 'key' | 'timeout' | 'audio' | 'destination' | 'time' | 'repeat' | 'speech'
+export type SpeechIntent = { label: string; keywords: string[] }
 export type FlowNode = {
   id: string; type: FlowNodeType; x: number; y: number; digit?: string; label?: string; promptId?: number; destination?: Destination
+  intents?: SpeechIntent[]; ai?: boolean
 }
-export type FlowPort = 'out' | 'open' | 'closed'
+export type FlowPort = 'out' | 'open' | 'closed' | 'nomatch' | `i${number}`
 export type FlowEdge = { from: string; port: FlowPort; to: string }
 export type Flow = { nodes: FlowNode[]; edges: FlowEdge[] }
 export type IVR = {
@@ -400,7 +402,7 @@ export type ResyncResult = { resync: ResyncState; message?: string }
 
 export type JourneyParty = { kind: 'ext' | 'caller' | 'remote' | 'system'; number?: string; name?: string }
 export type JourneySub = {
-  kind: 'key' | 'timeout' | 'invalid' | 'repeat' | 'ring'; at: string; durationMs: number; value?: string; party?: JourneyParty; result?: string
+  kind: 'key' | 'timeout' | 'invalid' | 'repeat' | 'speech' | 'ring'; at: string; durationMs: number; value?: string; party?: JourneyParty; result?: string
 }
 export type JourneyStep = {
   id: number; kind: string; at: string; durationMs: number; ref?: string; name?: string; number?: string; result?: string

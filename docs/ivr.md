@@ -27,6 +27,7 @@ audio.
 | **Keypress** | "Press 1": the caller pressed this key | One |
 | **No input** | The caller pressed nothing or an unused key, after the menu repeated | One |
 | **Play audio** | Plays a message, then follows the line | One |
+| **Speech question** | Asks what the caller wants and listens to the answer (see [below](#speech-question)) | One per answer, plus *Not understood* |
 | **Extension, Ring group, Queue, Voicemail** | Transfers the call there | End point |
 | **Submenu** | Another IVR menu | End point |
 | **External number** | Forwards to a phone number outside | End point |
@@ -65,6 +66,31 @@ waveform player to listen to it. Choose the source in the side panel:
 
 Generated, recorded and uploaded audio is saved under **Voice prompts**, so you can reuse it in queues and other
 menus.
+
+## Speech question
+
+A **Speech question** lets callers say what they are calling about instead of pressing keys
+("Please tell us in a few words what you are calling about").
+
+![A menu with a speech question](shot:ivr-speech)
+
+1. The step plays its question, then records the answer (up to 12 seconds; 3 seconds of silence ends it).
+2. The answer is written out **on this server** by Whisper, while the caller hears hold music for a moment.
+3. Every **answer** of the step has a name and keywords. The answer with the most keywords that occur in what
+   the caller said wins. A keyword also matches longer words (*factu* matches *factuur* and *facturen*);
+   capitals and accents do not matter, and a keyword of several words (*werkt niet*) must occur in that order.
+4. With **Let AI choose when no keyword matches**, the [AI engine](ai.md) picks the answer that fits best.
+   Claude takes a second or two; a local model can take much longer the first time.
+5. Nothing fits, or speech-to-text is off: the call takes the **Not understood** line.
+
+Every answer has its own port on the right of the step; draw a line from each to where the call should go.
+A common set-up: connect **No input** to the speech question and set **Repeat menu** to 0, so callers who press
+nothing are asked to say it, while callers who know the key still press it. The [call journey](call-journey.md)
+shows what the caller's answer was recognised as.
+
+!!! note "Requirements"
+    Speech-to-text must be on under [Speech](prompts.md#speech) with a Whisper model downloaded. The *base* or
+    *small* model keeps the wait short.
 
 ## Test call
 

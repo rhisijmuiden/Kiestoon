@@ -143,6 +143,7 @@ func (s *Server) checkFraud(rec cdr.Record) {
 // recordings and keeps the day/night BLF lamps right.
 func (s *Server) RunMaintenance(ctx context.Context) {
 	go s.runCallbacks(ctx)
+	go s.runAGI(ctx)
 	day := ""
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()

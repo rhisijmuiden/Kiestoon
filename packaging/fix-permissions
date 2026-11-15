@@ -26,7 +26,7 @@ if getent group asterisk >/dev/null; then
   [ -f "$DATA/pbx/tls/kiestoon.crt" ] && chmod 0644 "$DATA/pbx/tls/kiestoon.crt"
   [ -f "$DATA/pbx/tls/public.crt" ] && chmod 0644 "$DATA/pbx/tls/public.crt"
 
-  install -d -o asterisk -g asterisk -m 2770 "$DATA/asterisk" "$DATA/asterisk/spool" "$DATA/asterisk/spool/monitor" "$DATA/asterisk/spool/fax" "$DATA/asterisk/spool/fax-out"
+  install -d -o asterisk -g asterisk -m 2770 "$DATA/asterisk" "$DATA/asterisk/spool" "$DATA/asterisk/spool/monitor" "$DATA/asterisk/spool/fax" "$DATA/asterisk/spool/fax-out" "$DATA/asterisk/spool/speech"
   chown -R asterisk:asterisk "$DATA/asterisk"
   find "$DATA/asterisk" -type d -exec chmod 2770 {} +
   find "$DATA/asterisk" -type f -exec chmod 0660 {} +

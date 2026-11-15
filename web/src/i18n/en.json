@@ -1351,7 +1351,8 @@
       "remote": "Other site",
       "followsun": "Follow the sun",
       "entry": "Incoming call",
-      "destination": "Transfer"
+      "destination": "Transfer",
+      "speech": "Speech question"
     },
     "node": {
       "press": "Press",
@@ -1361,14 +1362,18 @@
       "choose": "Choose a destination",
       "repeatText": "Back to the start of the menu",
       "open": "open",
-      "closed": "closed"
+      "closed": "closed",
+      "intentUnnamed": "Unnamed answer",
+      "notUnderstood": "Not understood"
     },
     "problem": {
       "notInMenu": "Not part of the menu: draw a line from the incoming call to this step.",
       "unreachable": "No line leads to this step.",
       "noLine": "No line goes out: the call ends here.",
       "chooseTime": "Choose a time condition.",
-      "chooseTarget": "Choose where the call goes."
+      "chooseTarget": "Choose where the call goes.",
+      "noIntents": "Add at least one answer with keywords",
+      "intentIncomplete": "Every answer needs a name and keywords"
     },
     "panel": {
       "title": "Edit step",
@@ -1401,7 +1406,8 @@
         "entry": "plays first",
         "key": "plays as part of the menu",
         "timeout": "plays before giving up",
-        "audio": "plays, then follows the line"
+        "audio": "plays, then follows the line",
+        "speech": "asks the question"
       },
       "manage": "Manage",
       "keypress": "Key",
@@ -1418,8 +1424,19 @@
         "audio": "Play audio",
         "destination": "Send the call",
         "time": "Check opening hours",
-        "repeat": "Repeat the menu"
-      }
+        "repeat": "Repeat the menu",
+        "speech": "Ask what the caller wants"
+      },
+      "speechIntro": "The caller answers in their own words. Kiestoon writes out the answer on this server (Whisper) and follows the line of the answer whose keywords it hears.",
+      "intent": "Answer {{n}}",
+      "intentPlaceholder": "e.g. Invoices",
+      "keywords": "Keywords, separated by commas",
+      "keywordsPlaceholder": "invoice, factu, payment",
+      "addIntent": "Add answer",
+      "keywordsHint": "A keyword also matches longer words: “factu” matches factuur and facturen. Capitals and accents do not matter. The answer with the most keywords wins.",
+      "speechAI": "Let AI choose when no keyword matches",
+      "speechAIHint": "Uses the engine of the AI page (Claude is quickest). Without it, the call takes the “Not understood” line.",
+      "speechLinesHint": "Draw a line from every answer, and from “Not understood”, to the next step. Speech-to-text must be on under Speech."
     },
     "test": {
       "button": "Test call",
@@ -2843,7 +2860,9 @@
       "timeout": "No choice made (attempt {{n}})",
       "invalid": "Invalid choice (attempt {{n}})",
       "repeat": "Menu played again",
-      "none": "No choice made"
+      "none": "No choice made",
+      "said": "Said: {{intent}}",
+      "notUnderstood": "Answer not understood"
     },
     "ring": {
       "answered": "Answered",

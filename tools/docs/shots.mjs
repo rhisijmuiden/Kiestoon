@@ -19,6 +19,7 @@ export const shots = [
   { name: 'queue-edit', path: '/queues', run: (p) => editRow(p, 'Support'), selector: dialog },
   { name: 'ivr-list', path: '/ivr' },
   { name: 'ivr-canvas', path: '/ivr', run: (p) => editRow(p, 'Main menu'), wait: 1200 },
+  { name: 'ivr-speech', path: '/ivr', run: async (p) => { await editRow(p, 'Speech menu'); await p.waitForTimeout(800); await p.getByText('What are you calling about?').first().click() }, wait: 1200 },
   { name: 'time-conditions', path: '/time-conditions' },
   { name: 'time-condition-edit', path: '/time-conditions', run: (p) => editRow(p, 'Office hours'), selector: dialog },
   { name: 'holidays', path: '/time-conditions', run: (p) => tab(p, 'Holidays', 'Feestdagen') },

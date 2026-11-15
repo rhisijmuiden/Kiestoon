@@ -381,6 +381,20 @@ func (e *Engine) Transcribe(ctx context.Context, modelID, language, audio string
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	return e.transcribe(ctx, m, language, audio)
+}
+
+// TranscribeNow transcribes a short recording right away, next to a running background job (a
+// caller is waiting for it in a voice menu).
+func (e *Engine) TranscribeNow(ctx context.Context, modelID, language, audio string) (string, error) {
+	m := FindModel(modelID)
+	if _, stt := e.Installed(); !stt || m == nil || !e.HasModel(m) {
+		return "", ErrNotReady
+	}
+	return e.transcribe(ctx, m, language, audio)
+}
+
+func (e *Engine) transcribe(ctx context.Context, m *Model, language, audio string) (string, error) {
 	tmp, err := os.MkdirTemp("", "kt-stt-")
 	if err != nil {
 		return "", err

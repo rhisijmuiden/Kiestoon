@@ -616,6 +616,8 @@ func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 				x.f(` same => n,GotoIf($["${GOSUB_RETVAL}" = "open"]?open)`)
 				x.f(" same => n,%s", gotoNode(f.Next(n.ID, "closed")))
 				x.f(" same => n(open),%s", gotoNode(f.Next(n.ID, "open")))
+			case pbx.NodeSpeech:
+				genSpeechStep(x, o, v.ID, f, &n, gotoNode)
 			case pbx.NodeRepeat:
 				mark(x, "ivrrepeat", fmt.Sprintf("id=%d", v.ID))
 				x.f(" same => n,Set(KT_TRIES=0)")
@@ -978,4 +980,34 @@ func genAllowed(x *w, s *pbx.Snapshot) {
 	x.f(" same => n,Set(CDR(kt_blocked)=limit)")
 	x.f(" same => n,Return(deny)")
 	x.nl()
+}
+
+// genSpeechStep asks a question, records the answer and lets the server recognise it (FastAGI).
+// The server sets KT_INTENT (the intent number, empty when nothing matched) and KT_INTENTL (its
+// label, safe for the journey mark). Without speech support the call takes the "nomatch" line.
+func genSpeechStep(x *w, o Options, ivr int64, f *pbx.Flow, n *pbx.FlowNode, gotoNode func(*pbx.FlowNode) string) {
+	if n.PromptID != 0 {
+		x.f(" same => n,Playback(%s)", promptPath(o, n.PromptID))
+	}
+	if o.SpeechDir == "" || o.AGIAddr == "" || len(n.Intents) == 0 {
+		mark(x, "ivrspeech", fmt.Sprintf("id=%d", ivr), "intent=")
+		x.f(" same => n,%s", gotoNode(f.Next(n.ID, "nomatch")))
+		return
+	}
+	x.f(" same => n,Set(KT_INTENT=)")
+	x.f(" same => n,Set(KT_INTENTL=)")
+	x.f(" same => n,Set(KT_SPF=%s/${UNIQUEID}-${EPOCH}.wav)", o.SpeechDir)
+	// Up to 12 seconds; 3 seconds of silence ends it. q: no beep.
+	x.f(" same => n,Record(${KT_SPF},3,12,q)")
+	x.f(" same => n,StartMusicOnHold()")
+	x.f(" same => n,AGI(agi://%s/speech,%d,%s,${KT_SPF})", o.AGIAddr, ivr, n.ID)
+	x.f(" same => n,StopMusicOnHold()")
+	mark(x, "ivrspeech", fmt.Sprintf("id=%d", ivr), "intent=${KT_INTENTL}")
+	for i := range n.Intents {
+		x.f(` same => n,GotoIf($["${KT_INTENT}" = "%d"]?%s)`, i+1, pbx.SpeechPort(i+1))
+	}
+	x.f(" same => n,%s", gotoNode(f.Next(n.ID, "nomatch")))
+	for i := range n.Intents {
+		x.f(" same => n(%s),%s", pbx.SpeechPort(i+1), gotoNode(f.Next(n.ID, pbx.SpeechPort(i+1))))
+	}
 }

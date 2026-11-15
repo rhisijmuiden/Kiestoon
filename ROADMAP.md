@@ -263,6 +263,10 @@ Notes on phase 5:
   build from a demo office (`tools/docs/`). Every portal page has a Help button that opens the matching page and
   section of the manual in the user's language. The README (also in Dutch, `README.nl.md`) shows the highlights. A
   backup location can now be added with an existing encryption key, to restore backups on a new server.
+- [x] Trusted networks (`v0.6.0-rc.15`): on the Firewall page, IP ranges (IPv4/IPv6 CIDR with a description) from
+  which password sign-ins skip the MFA step, per role (super admins off by default). Off by default, every skip in
+  the audit log, the session loses the skip when it is used from outside the network, X-Forwarded-For only from
+  trusted proxies, ranges wider than /8 refused and a warning for public ranges. SSO and API tokens are not affected.
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

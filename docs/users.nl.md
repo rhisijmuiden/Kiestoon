@@ -39,6 +39,8 @@ wachtwoordmanager.
 
 Een passkey, of single sign-on met **MFA van de provider vertrouwen**, telt ook als tweede stap.
 
+Vanaf een [vertrouwd netwerk](firewall.md#vertrouwde-netwerken-mfa-overslaan), zoals het kantoornetwerk, kan de MFA-stap worden overgeslagen voor de rollen die je kiest.
+
 ## Passkeys
 
 Onder **Mijn account › Passkeys** kan iedereen een passkey toevoegen: inloggen met vingerafdruk, gezicht of de

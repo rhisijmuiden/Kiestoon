@@ -139,7 +139,8 @@
     "link_invalid": "Deze link is ongeldig of verlopen.",
     "password_mismatch": "De wachtwoorden komen niet overeen.",
     "no_email": "Deze extensie heeft geen e-mailadres.",
-    "user_disabled": "Dit account is uitgeschakeld."
+    "user_disabled": "Dit account is uitgeschakeld.",
+    "network_too_broad": "Dat IP-bereik is te groot. Gebruik /8 of kleiner."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -506,7 +507,10 @@
     "prefix": "Locatieprefix",
     "rules": "Regels",
     "fallback": "Uitwijkbestemming",
-    "flow": "Menu"
+    "flow": "Menu",
+    "networks": "Netwerken",
+    "description": "Omschrijving",
+    "roles": "Rollen"
   },
   "extensions": {
     "title": "Toestellen",
@@ -850,6 +854,29 @@
       "dataFrom": "Landendata van {{date}}",
       "noData": "Nog geen landendata",
       "update": "Landendata bijwerken"
+    },
+    "trusted": {
+      "title": "Vertrouwde netwerken",
+      "on": "Aan",
+      "off": "Uit",
+      "intro": "Wie met een wachtwoord inlogt vanaf een van deze netwerken (bijvoorbeeld het kantoornetwerk of de bedrijfs-VPN) slaat de MFA-stap over. Buiten deze netwerken wordt de code gewoon gevraagd, en een sessie die het netwerk verlaat moet eerst de code invoeren voordat hij verder kan. Single sign-on en API-tokens vallen hier niet onder.",
+      "enable": "MFA overslaan op vertrouwde netwerken",
+      "enableHint": "Standaard uit. Elke overgeslagen MFA-stap komt in het auditlog.",
+      "networks": "Netwerken",
+      "none": "Nog geen netwerken.",
+      "cidr": "IP-bereik (CIDR)",
+      "description": "Omschrijving",
+      "descriptionPlaceholder": "Kantoor-LAN, VPN…",
+      "add": "Netwerk toevoegen",
+      "addMine": "Mijn adres toevoegen ({{ip}})",
+      "youInside": "Je adres {{ip}} valt binnen het vertrouwde netwerk {{net}}.",
+      "youOutside": "Je adres is {{ip}}; dat valt niet in een vertrouwd netwerk.",
+      "tooBroad": "Bereiken groter dan /8 (zoals 0.0.0.0/0 of ::/0) worden geweigerd: dan zou MFA voor het hele internet uit staan.",
+      "publicWarn": "{{nets}} bevat internetadressen (publiek). Voeg alleen een publiek bereik toe als het het vaste adres van je eigen kantoor is, nooit een bereik van een provider of cloud.",
+      "roles": "Rollen die MFA mogen overslaan",
+      "superadminHint": "Aangeraden: uit laten, zodat superbeheerders altijd MFA gebruiken.",
+      "notes": "Het adres is het adres dat het portaal ziet. Achter een reverse proxy wordt X-Forwarded-For alleen geloofd van Caddy op deze machine of van de vertrouwde proxy's op de pagina Internettoegang (reverse proxy).",
+      "saved": "Opgeslagen"
     }
   },
   "mail": {
@@ -1022,7 +1049,7 @@
         "sharepoint-ntlm": "SharePoint (NTLM)",
         "other": "Andere WebDAV-server"
       },
-      "hint": "Maak voor Nextcloud een app-wachtwoord aan onder Instellingen > Beveiliging en gebruik dat hier.",
+      "hint": "Maak voor Nextcloud een app-wachtwoord aan op de pagina Internettoegang (reverse proxy) > Beveiliging en gebruik dat hier.",
       "pathHint": "Het pad na de host, zoals remote.php/dav/files/GEBRUIKER/kiestoon voor Nextcloud."
     },
     "smb": {

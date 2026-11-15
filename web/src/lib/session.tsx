@@ -42,6 +42,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     refresh()
   }, [refresh])
 
+  useEffect(() => {
+    const onMfa = () => setState((s) => (s.kind === 'ready' || s.kind === 'enroll' ? { kind: 'mfa' } : s))
+    window.addEventListener('kiestoon:mfa-required', onMfa)
+    return () => window.removeEventListener('kiestoon:mfa-required', onMfa)
+  }, [])
+
   return <SessionContext.Provider value={{ state, refresh, signOut }}>{children}</SessionContext.Provider>
 }
 

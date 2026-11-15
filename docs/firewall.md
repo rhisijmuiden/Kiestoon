@@ -33,6 +33,43 @@ With **fail2ban on**, an address that fails to sign in too often on SIP or the p
 - **Never block**: trusted addresses, such as your office IP.
 - **Blocked addresses** shows the current blocks; **Unblock** lifts one.
 
+## Trusted networks (skip MFA)
+
+People who sign in with their password from a known network, such as the office LAN or the company VPN, can skip
+the MFA step there. Outside those networks the code is asked as usual.
+
+1. Open **Firewall** and scroll to **Trusted networks**.
+2. Add each network as an IP range in CIDR notation (`192.168.1.0/24`, `10.8.0.0/16`, `fd00:1::/64`) with a
+   description. A single address (`203.0.113.10`) is stored as `/32` or `/128`. **Add my address** fills in the
+   address the portal sees for you right now.
+3. Choose the **roles that may skip MFA**. Leave **Super admin** off (the default), so super admins always use their
+   code.
+4. Switch on **Skip MFA on trusted networks** and click **Save**. This is saved straight away; it does not change
+   the firewall rules and needs no **Apply**.
+
+![Trusted networks](shot:trusted-networks)
+
+How it is kept safe:
+
+- **Off by default.** Every skipped MFA step is written to the [audit log](users.md#audit-log) as `login.mfa_skipped`, with
+  the network and its description.
+- **Only where you are.** A session that skipped MFA keeps that only while it is used from a trusted network. Take
+  the laptop home and the portal asks for the code before you can continue (audit: `session.mfa_required`). Taking
+  a role or network off has the same effect on running sessions.
+- **The real address.** Kiestoon uses the address of the connection. `X-Forwarded-For` is only believed from Caddy
+  on this machine ([internet access](internet.md)) or from the trusted proxies of your own reverse proxy, so a
+  browser cannot claim to be in the office.
+- **No internet-wide ranges.** Ranges wider than `/8`, such as `0.0.0.0/0` or `::/0`, are refused. A public range is
+  allowed (an office with a fixed IP address) but the page warns about it: never add a range of a provider, a
+  mobile network or a cloud.
+- **Password sign-in only.** [Single sign-on](users.md#single-sign-on) leaves MFA to the identity provider,
+  [API tokens](api.md) never ask for MFA, and passkeys already are a second factor. Administrators who have not set
+  up MFA yet still have to do so, so it works when they are away from the office.
+
+!!! warning "A trusted network is as safe as its weakest device"
+    Anyone on that network only needs a password. Use it for networks you control, keep guest Wi-Fi out of the
+    range, and use strong passwords.
+
 ## Geo-blocking
 
 Only let telephony (SIP), and if you want the portal, in from certain countries.

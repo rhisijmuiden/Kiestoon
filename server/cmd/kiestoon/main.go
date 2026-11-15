@@ -108,6 +108,7 @@ func serve(log *slog.Logger) error {
 	srv := api.New(cfg, db, log)
 	ensureSetupToken(ctx, cfg, srv, log)
 	srv.LoadProxySettings(ctx)
+	srv.LoadTrustedNetworks(ctx)
 
 	go srv.AMI.Run(ctx)
 	go srv.Ast.Run(ctx)

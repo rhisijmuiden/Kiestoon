@@ -199,6 +199,10 @@ await c.put('/api/firewall', {
   enabled: true, sipWhitelist: ['195.35.114.0/23', '185.103.76.0/22', '213.211.0.0/16'], allowPrivateSip: true, sipOpen: false, adminNetworks: ['192.168.10.0/24'],
   fail2banEnabled: true, banMinutes: 60, findMinutes: 10, maxRetry: 5, ignoreIps: ['192.168.10.0/24'], geoMode: 'allow', geoCountries: ['NL', 'BE', 'DE'], geoPortal: false,
 })
+await c.put('/api/firewall/trusted', {
+  enabled: true, roles: ['user', 'reception', 'admin'],
+  networks: [{ cidr: '192.168.10.0/24', description: 'Office LAN Noordkade' }, { cidr: '10.8.0.0/16', description: 'Company VPN' }],
+})
 await c.post('/api/tokens', { name: 'CRM integration', role: 'reception', readOnly: true, expiresDays: 365 })
 await c.post('/api/webhooks', { name: 'CRM - incoming calls', url: 'https://crm.noordkade.example/hooks/kiestoon', events: ['call.ringing', 'call.answered', 'call.ended'], secret: '', enabled: true })
 await c.put('/api/internet', { enabled: true, domain: 'pbx.noordkade.example', email: 'it@noordkade.example', staging: false, useForSip: true })

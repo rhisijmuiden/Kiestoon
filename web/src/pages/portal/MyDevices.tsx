@@ -5,18 +5,19 @@ import { Headset, Smartphone } from 'lucide-react'
 import { Badge, CopyField, Empty, SectionTitle, formatDate, useApi } from '../../components/kit'
 import { Alert, Button, Card, ErrorMessage, PageHeader } from '../../components/ui'
 import { api } from '../../lib/api'
-import type { BlfEntry, Phone, PhoneKey, PortalMe } from '../../lib/types'
+import type { BlfEntry, ModuleType, Phone, PhoneKey, PhoneModule, PortalMe } from '../../lib/types'
 import { useSoftphone } from '../../lib/softphone'
-import { KeyEditor } from '../Phones'
+import { KeyLayout, fillKeys } from '../../components/KeyLayout'
 import { WindowsSoftphoneCard } from '../../components/WindowsSoftphone'
 
+type PortalPhone = Phone & { maxKeys: number; maxLines: number; moduleTypes: ModuleType[] }
 type Sip = { server: string; port: number; transport: string; username: string; password: string; srtp: boolean }
 
 /** SIP details for apps, the browser softphone and the keys of the user's own desk phones. */
 export function MyDevices() {
   const { t, i18n } = useTranslation()
   const me = useApi<PortalMe>('/portal/me')
-  const phones = useApi<(Phone & { maxKeys: number })[]>('/portal/phones')
+  const phones = useApi<PortalPhone[]>('/portal/phones')
   const blf = useApi<BlfEntry[]>('/portal/colleagues')
   const softphone = useSoftphone()
   const [sip, setSip] = useState<Sip | null>(null)
@@ -76,11 +77,12 @@ export function MyDevices() {
   )
 }
 
-function PhoneKeys({ phone, exts, lastSeen, onSaved }: { phone: Phone & { maxKeys: number }; exts: { number: string; name: string }[]; lastSeen: string; onSaved: () => void }) {
+function PhoneKeys({ phone, exts, lastSeen, onSaved }: { phone: PortalPhone; exts: { number: string; name: string }[]; lastSeen: string; onSaved: () => void }) {
   const { t } = useTranslation()
-  const make = () => Array.from({ length: phone.maxKeys }, (_, i): PhoneKey => phone.keys[i] ?? { type: i === 0 ? 'line' : 'none', value: '', label: '' })
+  const make = () => fillKeys(phone.keys, phone.maxKeys)
   const [keys, setKeys] = useState<PhoneKey[]>(make)
-  useEffect(() => setKeys(make()), [phone]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [modules, setModules] = useState<PhoneModule[]>(phone.modules ?? [])
+  useEffect(() => { setKeys(make()); setModules(phone.modules ?? []) }, [phone]) // eslint-disable-line react-hooks/exhaustive-deps
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const [saved, setSaved] = useState(false)
@@ -89,7 +91,7 @@ function PhoneKeys({ phone, exts, lastSeen, onSaved }: { phone: Phone & { maxKey
     setError(null)
     setSaved(false)
     try {
-      await api('PUT', `/portal/phones/${phone.id}/keys`, { keys })
+      await api('PUT', `/portal/phones/${phone.id}/keys`, { keys, modules })
       setSaved(true)
       onSaved()
     } catch (e) {
@@ -107,9 +109,10 @@ function PhoneKeys({ phone, exts, lastSeen, onSaved }: { phone: Phone & { maxKey
       </div>
       <ErrorMessage error={error} />
       {saved && <Alert tone="ok">{t('portal.keysSaved')}</Alert>}
-      {phone.maxKeys === 0 ? <p className="text-sm text-subtle">{t('phones.noKeys')}</p> : (
+      {phone.maxKeys === 0 && modules.length === 0 ? <p className="text-sm text-subtle">{t('phones.noKeys')}</p> : (
         <>
-          <KeyEditor keys={keys} exts={exts} setKey={(i, k) => setKeys((ks) => ks.map((old, j) => (j === i ? { ...old, ...k } : old)))} />
+          <KeyLayout vendor={phone.vendor} keys={keys} modules={modules} moduleTypes={phone.moduleTypes ?? []} lines={1 + (phone.lines?.length ?? 0)} exts={exts}
+            onKeys={setKeys} onModules={setModules} canEditModules={false} />
           <div className="flex justify-end"><Button busy={busy} onClick={save}>{t('common.save')}</Button></div>
         </>
       )}

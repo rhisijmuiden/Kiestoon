@@ -152,3 +152,54 @@ func TestGuessModel(t *testing.T) {
 		}
 	}
 }
+
+func TestKeysLinesAndModules(t *testing.T) {
+	anna := &pbx.Extension{Number: "201", Name: "Anna", SIPSecret: "s1", Transport: "udp"}
+	sales := &pbx.Extension{Number: "250", Name: "Sales", SIPSecret: "s2", Transport: "tls"}
+	keys := []pbx.Key{
+		{Type: "line", Label: "Anna"}, {Type: "line", Value: "2", Label: "Sales"}, {Type: "blf", Value: "202", Label: "Bob"},
+		{Type: "park", Label: "Park"}, {Type: "parkslot", Value: "71", Label: "P1"}, {Type: "intercom", Value: "203", Label: "Ic"},
+		{Type: "dnd", Label: "DND"}, {Type: "voicemail", Label: "VM"},
+	}
+	mods := []pbx.Module{{Type: "EXP50", Keys: []pbx.Key{{Type: "blf", Value: "210", Label: "Kees"}}}}
+	in := Input{Settings: Settings{AdminPassword: "adminpw12", NTPServer: "pool.ntp.org", Language: "en"},
+		PBX: pbx.Settings{SIPPort: 5060, TLSPort: 5061}, Ext: anna, Lines: []*pbx.Extension{sales}, Server: "pbx.local",
+		Phone: pbx.Phone{Vendor: "yealink", Model: "T54W", Keys: keys, Modules: mods, Options: pbx.PhoneOptions{Intercom: pbx.IntercomOptions{Allow: true, Mute: true}}}}
+	y := Yealink(in)
+	for _, want := range []string{
+		"account.2.user_name = 250", "account.2.sip_server.1.port = 5061", "account.2.sip_server.1.transport_type = 2",
+		"linekey.2.type = 15\nlinekey.2.line = 2", "linekey.3.type = 16\nlinekey.3.line = 1\nlinekey.3.value = 202\nlinekey.3.extension = **",
+		"linekey.4.type = 10\nlinekey.4.line = 1\nlinekey.4.value = 70", "linekey.5.value = 71\nlinekey.5.extension = \n",
+		"linekey.6.type = 13\nlinekey.6.line = 1\nlinekey.6.value = *80203", "linekey.7.value = *76", "linekey.8.value = *97",
+		"expansion_module.1.key.1.type = 16", "expansion_module.1.key.1.value = 210", "expansion_module.1.key.1.label = Kees",
+		"features.intercom.allow = 1", "features.intercom.mute = 1", "features.intercom.tone = 0",
+	} {
+		if !strings.Contains(y, want) {
+			t.Errorf("yealink: missing %q", want)
+		}
+	}
+	in.Phone.Vendor, in.Phone.Model = "snom", "D785"
+	in.Phone.Modules = []pbx.Module{{Type: "D7", Keys: []pbx.Key{{Type: "blf", Value: "210", Label: "Kees"}}}}
+	sn := Snom(in)
+	for _, want := range []string{
+		`<user_name idx="2" perm="R">250</user_name>`, `<fkey idx="1" context="2" label="Sales" perm="R">line</fkey>`,
+		`<fkey idx="3" context="1" label="Park" perm="R">transfer 70</fkey>`, `<fkey idx="4" context="1" label="P1" perm="R">blf &lt;sip:71@pbx.local&gt;</fkey>`,
+		`<fkey idx="24" context="1" label="Kees" perm="R">blf &lt;sip:210@pbx.local&gt;|**</fkey>`, `<answer_after_policy perm="R">idle</answer_after_policy>`,
+	} {
+		if !strings.Contains(sn, want) {
+			t.Errorf("snom: missing %q", want)
+		}
+	}
+	in.Phone.Vendor, in.Phone.Model = "grandstream", "GXP2170"
+	in.Phone.Modules = []pbx.Module{{Type: "GBX20", Keys: []pbx.Key{{Type: "blf", Value: "210", Label: "Kees"}}}, {Type: "GBX20", Keys: []pbx.Key{{Type: "speed", Value: "0612345678", Label: "Mob"}}}}
+	g := Grandstream(in)
+	for _, want := range []string{"<P404>250</P404>", "<P406>s2</P406>", "<P326>9</P326>", "<P6001>1</P6001>", "<P6601>210</P6601>", "<P6041>0</P6041>", "<P6641>0612345678</P6641>", "<P298>1</P298>"} {
+		if !strings.Contains(g, want) {
+			t.Errorf("grandstream: missing %q", want)
+		}
+	}
+	lim, ok := Limits("yealink", "T54W")
+	if !ok || lim.Lines != 16 || lim.Modules["EXP50"].Max != 3 || lim.Modules["EXP40"].Keys != 0 {
+		t.Errorf("limits: %+v", lim)
+	}
+}

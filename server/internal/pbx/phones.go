@@ -10,11 +10,54 @@ import (
 	"strings"
 )
 
-// Key is one programmable button on a phone.
+// Key is one programmable button on a phone or expansion module.
 type Key struct {
-	Type  string `json:"type"` // line | blf | speed | none
+	// Type is line (value: account number, "" for 1), blf (extension), speed (number), park (park
+	// the current call), parkslot (watch and pick up a parking slot, 71-79), intercom (extension),
+	// dnd, voicemail or none.
+	Type  string `json:"type"`
 	Value string `json:"value"`
 	Label string `json:"label"`
+}
+
+// KeyTypes are the key functions the editor offers.
+var KeyTypes = []string{"none", "line", "blf", "speed", "park", "parkslot", "intercom", "dnd", "voicemail"}
+
+// Module is an expansion module (sidecar) attached to a phone, such as a Yealink EXP50.
+type Module struct {
+	Type string `json:"type"`
+	Keys []Key  `json:"keys"`
+}
+
+// IntercomOptions decide how the phone answers intercom calls (auto-answer).
+type IntercomOptions struct {
+	Allow bool `json:"allow"` // answer intercom calls automatically
+	Mute  bool `json:"mute"`  // start with the microphone muted
+	Tone  bool `json:"tone"`  // play a warning tone first
+	Barge bool `json:"barge"` // also during another call
+}
+
+// PhoneOptions are per-phone settings beyond keys and lines.
+type PhoneOptions struct {
+	Intercom IntercomOptions `json:"intercom"`
+}
+
+// DefaultPhoneOptions apply to phones that never had their options saved.
+func DefaultPhoneOptions() PhoneOptions {
+	return PhoneOptions{Intercom: IntercomOptions{Allow: true, Tone: true}}
+}
+
+// ModuleLimit is what one type of expansion module takes.
+type ModuleLimit struct {
+	Keys int // keys per module
+	Max  int // modules per phone
+}
+
+// PhoneLimits are what a phone model supports; the API fills them in from the model list.
+type PhoneLimits struct {
+	Keys    int
+	Lines   int
+	Modules map[string]ModuleLimit
 }
 
 // Phone is a desk phone that fetches its configuration from Kiestoon.
@@ -36,6 +79,9 @@ type Phone struct {
 	ZTPState string `json:"ztpState"`
 	ZTPError string `json:"ztpError"`
 	ZTPAt    string `json:"ztpAt"`
+	// Modules are the expansion modules in the order they are connected.
+	Modules []Module     `json:"modules"`
+	Options PhoneOptions `json:"options"`
 }
 
 var reMAC = regexp.MustCompile(`^[0-9a-f]{12}$`)
@@ -50,13 +96,13 @@ func NormalizeMAC(s string) string {
 	}, s))
 }
 
-const phoneCols = `id, mac, vendor, model, extension_id, label, keys, last_seen_at, last_ip, user_agent, lines, ztp_state, ztp_error, ztp_at`
+const phoneCols = `id, mac, vendor, model, extension_id, label, keys, last_seen_at, last_ip, user_agent, lines, ztp_state, ztp_error, ztp_at, modules, options`
 
 func scanPhone(row interface{ Scan(...any) error }) (*Phone, error) {
 	var p Phone
 	var ext sql.NullInt64
-	var keys, lines string
-	err := row.Scan(&p.ID, &p.MAC, &p.Vendor, &p.Model, &ext, &p.Label, &keys, &p.LastSeenAt, &p.LastIP, &p.UserAgent, &lines, &p.ZTPState, &p.ZTPError, &p.ZTPAt)
+	var keys, lines, modules, options string
+	err := row.Scan(&p.ID, &p.MAC, &p.Vendor, &p.Model, &ext, &p.Label, &keys, &p.LastSeenAt, &p.LastIP, &p.UserAgent, &lines, &p.ZTPState, &p.ZTPError, &p.ZTPAt, &modules, &options)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -71,6 +117,17 @@ func scanPhone(row interface{ Scan(...any) error }) (*Phone, error) {
 	if p.Lines == nil {
 		p.Lines = []int64{}
 	}
+	_ = json.Unmarshal([]byte(modules), &p.Modules)
+	if p.Modules == nil {
+		p.Modules = []Module{}
+	}
+	for i := range p.Modules {
+		if p.Modules[i].Keys == nil {
+			p.Modules[i].Keys = []Key{}
+		}
+	}
+	p.Options = DefaultPhoneOptions()
+	_ = json.Unmarshal([]byte(options), &p.Options)
 	return &p, err
 }
 
@@ -113,9 +170,90 @@ func (r *Repo) PhoneByMAC(ctx context.Context, mac string) (*Phone, error) {
 	return scanPhone(r.DB.QueryRowContext(ctx, `SELECT `+phoneCols+` FROM phones WHERE mac = ?`, NormalizeMAC(mac)))
 }
 
-// SavePhone validates and stores a phone. maxKeys is the number of keys of the model and maxLines
-// the number of accounts (or DECT handsets) it has.
-func (r *Repo) SavePhone(ctx context.Context, p *Phone, maxKeys, maxLines int) error {
+var (
+	reKeyNumber = regexp.MustCompile(`^[0-9*#+]{1,20}$`)
+	reKeyExt    = regexp.MustCompile(`^[0-9]{2,8}$`)
+	reParkSlot  = regexp.MustCompile(`^7[1-9]$`)
+)
+
+// CleanKeys checks and normalises a key layout of at most max keys on a phone with lines accounts.
+func CleanKeys(keys []Key, max, lines int) ([]Key, error) {
+	if keys == nil {
+		keys = []Key{}
+	}
+	if len(keys) > max {
+		keys = keys[:max]
+	}
+	out := make([]Key, len(keys))
+	for i, k := range keys {
+		k.Label = cleanText(k.Label, 20)
+		k.Value = strings.TrimSpace(k.Value)
+		switch k.Type {
+		case "", "none":
+			k = Key{Type: "none"}
+		case "dnd", "voicemail", "park":
+			k.Value = ""
+		case "line":
+			if k.Value == "1" {
+				k.Value = ""
+			}
+			if k.Value != "" {
+				n := 0
+				for _, c := range k.Value {
+					if c < '0' || c > '9' {
+						return nil, invalid("invalid", "keys")
+					}
+					n = n*10 + int(c-'0')
+					if n > 99 {
+						break
+					}
+				}
+				if n < 1 || n > lines {
+					return nil, invalid("invalid", "keys")
+				}
+			}
+		case "blf", "speed":
+			if !reKeyNumber.MatchString(k.Value) {
+				return nil, invalid("invalid", "keys")
+			}
+		case "intercom":
+			if !reKeyExt.MatchString(k.Value) {
+				return nil, invalid("invalid", "keys")
+			}
+		case "parkslot":
+			if !reParkSlot.MatchString(k.Value) {
+				return nil, invalid("invalid", "keys")
+			}
+		default:
+			return nil, invalid("invalid", "keys")
+		}
+		out[i] = k
+	}
+	return out, nil
+}
+
+// CleanModules checks the expansion modules of a phone: one type, at most its maximum.
+func CleanModules(mods []Module, lim PhoneLimits) ([]Module, error) {
+	if len(mods) == 0 {
+		return []Module{}, nil
+	}
+	out := make([]Module, len(mods))
+	for i, m := range mods {
+		ml, ok := lim.Modules[m.Type]
+		if !ok || m.Type != mods[0].Type || len(mods) > ml.Max {
+			return nil, invalid("invalid", "modules")
+		}
+		keys, err := CleanKeys(m.Keys, ml.Keys, lim.Lines)
+		if err != nil {
+			return nil, invalid("invalid", "modules")
+		}
+		out[i] = Module{Type: m.Type, Keys: keys}
+	}
+	return out, nil
+}
+
+// SavePhone validates and stores a phone against the limits of its model.
+func (r *Repo) SavePhone(ctx context.Context, p *Phone, lim PhoneLimits) error {
 	p.MAC = NormalizeMAC(p.MAC)
 	p.Label = cleanText(p.Label, 40)
 	if !reMAC.MatchString(p.MAC) {
@@ -138,51 +276,39 @@ func (r *Repo) SavePhone(ctx context.Context, p *Phone, maxKeys, maxLines int) e
 			lines = append(lines, id)
 		}
 	}
-	if maxLines < 1 {
-		maxLines = 1
+	if lim.Lines < 1 {
+		lim.Lines = 1
 	}
-	if len(lines) > maxLines-1 {
+	if len(lines) > lim.Lines-1 {
 		return invalid("invalid", "lines")
 	}
 	p.Lines = lines
-	if p.Keys == nil {
-		p.Keys = []Key{}
+	var err error
+	if p.Keys, err = CleanKeys(p.Keys, lim.Keys, lim.Lines); err != nil {
+		return err
 	}
-	if len(p.Keys) > maxKeys {
-		p.Keys = p.Keys[:maxKeys]
-	}
-	for i := range p.Keys {
-		k := &p.Keys[i]
-		k.Label = cleanText(k.Label, 20)
-		k.Value = strings.TrimSpace(k.Value)
-		switch k.Type {
-		case "none", "line":
-			k.Value = ""
-		case "blf", "speed":
-			if !regexp.MustCompile(`^[0-9*#+]{1,20}$`).MatchString(k.Value) {
-				return invalid("invalid", "keys")
-			}
-		default:
-			return invalid("invalid", "keys")
-		}
+	if p.Modules, err = CleanModules(p.Modules, lim); err != nil {
+		return err
 	}
 	keys, _ := json.Marshal(p.Keys)
 	linesJSON, _ := json.Marshal(p.Lines)
+	modules, _ := json.Marshal(p.Modules)
+	options, _ := json.Marshal(p.Options)
 	var ext any
 	if p.ExtensionID != nil {
 		ext = *p.ExtensionID
 	}
 	if p.ID == 0 {
-		res, err := r.DB.ExecContext(ctx, `INSERT INTO phones(mac, vendor, model, extension_id, label, keys, lines) VALUES (?,?,?,?,?,?,?)`,
-			p.MAC, p.Vendor, p.Model, ext, p.Label, string(keys), string(linesJSON))
+		res, err := r.DB.ExecContext(ctx, `INSERT INTO phones(mac, vendor, model, extension_id, label, keys, lines, modules, options) VALUES (?,?,?,?,?,?,?,?,?)`,
+			p.MAC, p.Vendor, p.Model, ext, p.Label, string(keys), string(linesJSON), string(modules), string(options))
 		if err != nil {
 			return uniqueErr(err, "mac")
 		}
 		p.ID, _ = res.LastInsertId()
 		return nil
 	}
-	res, err := r.DB.ExecContext(ctx, `UPDATE phones SET mac=?, vendor=?, model=?, extension_id=?, label=?, keys=?, lines=? WHERE id=?`,
-		p.MAC, p.Vendor, p.Model, ext, p.Label, string(keys), string(linesJSON), p.ID)
+	res, err := r.DB.ExecContext(ctx, `UPDATE phones SET mac=?, vendor=?, model=?, extension_id=?, label=?, keys=?, lines=?, modules=?, options=? WHERE id=?`,
+		p.MAC, p.Vendor, p.Model, ext, p.Label, string(keys), string(linesJSON), string(modules), string(options), p.ID)
 	if err != nil {
 		return uniqueErr(err, "mac")
 	}
@@ -205,44 +331,60 @@ func (r *Repo) TouchPhone(ctx context.Context, id int64, ip, ua string) {
 	_, _ = r.DB.ExecContext(ctx, `UPDATE phones SET last_seen_at = strftime('%Y-%m-%dT%H:%M:%SZ','now'), last_ip = ?, user_agent = ? WHERE id = ?`, ip, ua, id)
 }
 
+func renumberKeys(keys []Key, m map[string]string) bool {
+	changed := false
+	for i := range keys {
+		switch keys[i].Type {
+		case "blf", "speed", "intercom":
+			if to, ok := m[keys[i].Value]; ok {
+				keys[i].Value = to
+				changed = true
+			}
+		}
+	}
+	return changed
+}
+
 func renumberPhoneKeys(ctx context.Context, tx *sql.Tx, changes []Renumber) error {
 	m := map[string]string{}
 	for _, c := range changes {
 		m[c.From] = c.To
 	}
-	rows, err := tx.QueryContext(ctx, `SELECT id, keys FROM phones`)
-	if err != nil {
-		return err
-	}
 	type upd struct {
-		id   int64
-		keys string
+		table, keys, modules string
+		id                   int64
 	}
 	var ups []upd
-	for rows.Next() {
-		var id int64
-		var raw string
-		if err := rows.Scan(&id, &raw); err != nil {
-			rows.Close()
+	for _, table := range []string{"phones", "key_templates"} {
+		rows, err := tx.QueryContext(ctx, `SELECT id, keys, modules FROM `+table)
+		if err != nil {
 			return err
 		}
-		var keys []Key
-		_ = json.Unmarshal([]byte(raw), &keys)
-		changed := false
-		for i := range keys {
-			if to, ok := m[keys[i].Value]; ok && (keys[i].Type == "blf" || keys[i].Type == "speed") {
-				keys[i].Value = to
-				changed = true
+		for rows.Next() {
+			var id int64
+			var rawKeys, rawMods string
+			if err := rows.Scan(&id, &rawKeys, &rawMods); err != nil {
+				rows.Close()
+				return err
+			}
+			var keys []Key
+			var mods []Module
+			_ = json.Unmarshal([]byte(rawKeys), &keys)
+			_ = json.Unmarshal([]byte(rawMods), &mods)
+			changed := renumberKeys(keys, m)
+			for i := range mods {
+				changed = renumberKeys(mods[i].Keys, m) || changed
+			}
+			if changed {
+				k, _ := json.Marshal(keys)
+				md, _ := json.Marshal(mods)
+				ups = append(ups, upd{table, string(k), string(md), id})
 			}
 		}
-		if changed {
-			b, _ := json.Marshal(keys)
-			ups = append(ups, upd{id, string(b)})
-		}
+		rows.Close()
 	}
-	rows.Close()
 	for _, u := range ups {
-		if _, err := tx.ExecContext(ctx, `UPDATE phones SET keys = ? WHERE id = ?`, u.keys, u.id); err != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE `+u.table+` SET keys = ?, modules = ? WHERE id = ?`, u.keys, u.modules, u.id); err != nil {
 			return err
 		}
 	}

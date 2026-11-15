@@ -508,16 +508,27 @@ func (s *Server) portalPhones(w http.ResponseWriter, r *http.Request) {
 	phones, _ := s.PBX.Phones(r.Context())
 	type view struct {
 		pbx.Phone
-		MaxKeys int `json:"maxKeys"`
+		MaxKeys     int                    `json:"maxKeys"`
+		Lines       int                    `json:"maxLines"`
+		ModuleTypes []provision.ModuleType `json:"moduleTypes"`
 	}
 	out := []view{}
 	for _, p := range phones {
 		if p.ExtensionID != nil && *p.ExtensionID == e.ID {
-			max := 0
+			max, lines := 0, 1
 			if m := provision.FindModel(p.Vendor, p.Model); m != nil {
-				max = m.Keys
+				max, lines = m.Keys, m.MaxLines()
 			}
-			out = append(out, view{p, max})
+			mts := []provision.ModuleType{}
+			for _, mt := range provision.ModuleTypes {
+				for _, m := range p.Modules {
+					if mt.Vendor == p.Vendor && mt.ID == m.Type {
+						mts = append(mts, mt)
+						break
+					}
+				}
+			}
+			out = append(out, view{p, max, lines, mts})
 		}
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -534,23 +545,39 @@ func (s *Server) portalPhoneKeys(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Keys []pbx.Key `json:"keys"`
+		Keys    []pbx.Key    `json:"keys"`
+		Modules []pbx.Module `json:"modules"`
 	}
 	if err := decode(r, &req); err != nil {
 		writeErr(w, http.StatusBadRequest, "bad_request")
 		return
 	}
-	max, lines := 0, 1
-	if m := provision.FindModel(p.Vendor, p.Model); m != nil {
-		max, lines = m.Keys, m.MaxLines()
-	}
+	lim, _ := provision.Limits(p.Vendor, p.Model)
 	p.Keys = req.Keys
-	if err := s.PBX.SavePhone(r.Context(), p, max, lines); err != nil {
+	// Users fill in the keys of the modules the admin set up; they cannot add or change modules.
+	if req.Modules != nil {
+		if len(req.Modules) != len(p.Modules) {
+			fieldErr(w, "modules")
+			return
+		}
+		for i := range p.Modules {
+			if req.Modules[i].Type != p.Modules[i].Type {
+				fieldErr(w, "modules")
+				return
+			}
+			p.Modules[i].Keys = req.Modules[i].Keys
+		}
+	}
+	if err := s.PBX.SavePhone(r.Context(), p, lim); err != nil {
 		s.saveErr(w, err)
 		return
 	}
 	s.audit(r, "portal.phone_keys", p.MAC)
-	writeJSON(w, http.StatusOK, p)
+	state, _ := s.notifyPhone(r.Context(), p, s.registeredAs(r.Context(), p))
+	writeJSON(w, http.StatusOK, struct {
+		*pbx.Phone
+		Resync string `json:"resync"`
+	}{p, state})
 }
 
 // ---- WebRTC -----------------------------------------------------------------

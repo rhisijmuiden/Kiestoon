@@ -11,14 +11,16 @@ import type { DiscoveredPhone, Extension, Phone, PhoneModel, ResyncResult } from
 
 export const formatMac = (mac: string) => mac.match(/.{2}/g)?.join(':').toUpperCase() ?? mac
 
-export type LinkNotice = { kind: 'adopted' } | ({ kind: 'resync' } & ResyncResult)
+export type LinkNotice = { kind: 'adopted' } | ({ kind: 'resync' } & ResyncResult) | { kind: 'applied'; applied: number; notified: number; resync: boolean }
 
 /** Tells the admin what happens next on the phone after a change. */
 export function LinkNoticeAlert({ notice, onClose }: { notice: LinkNotice; onClose: () => void }) {
   const { t } = useTranslation()
   let tone: 'ok' | 'warn' = 'ok'
   let text = t('phoneLink.adopted')
-  if (notice.kind === 'resync') {
+  if (notice.kind === 'applied') {
+    text = notice.resync ? t('keys.applied', { count: notice.applied, notified: notice.notified }) : t('keys.appliedNoResync', { count: notice.applied })
+  } else if (notice.kind === 'resync') {
     tone = notice.resync === 'sent' || notice.resync === 'skipped' ? 'ok' : 'warn'
     text = t(`phoneLink.resync.${notice.resync}`, { message: notice.message || '' })
   }

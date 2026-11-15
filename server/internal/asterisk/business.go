@@ -228,6 +228,28 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 	}
 	x.nl()
 
+	// Intercom (*80<extension> or an intercom key): only to a known extension that is free and not on
+	// DND, on all its devices (desk phones and the browser) with the auto-answer headers.
+	x.f("[kiestoon-intercom]")
+	for _, e := range s.Extensions {
+		if !e.Enabled {
+			continue
+		}
+		x.f("exten => %s,1,NoOp(Intercom %s)", e.Number, e.Number)
+		if e.Features.DND {
+			x.f(" same => n,Goto(busy)")
+		}
+		x.f(` same => n,GotoIf($["${EXTENSION_STATE(%s@kiestoon-extensions)}" != "NOT_INUSE"]?busy)`, e.Number)
+		devicesDial(x, e)
+		x.f(" same => n,Set(CALLERID(name)=Intercom ${CALLERID(name)})")
+		x.f(" same => n,Dial(${KT_DIAL},20,b(kiestoon-autoanswer^s^1))")
+		x.f(" same => n,Hangup()")
+		x.f(" same => n(busy),Busy(5)")
+	}
+	x.f("exten => i,1,Playback(pbx-invalid)")
+	x.f(" same => n,Hangup()")
+	x.nl()
+
 	// Click-to-call from the portal: the user's phone answered, now call the number with the
 	// rights of that extension.
 	x.f("[kiestoon-click]")
@@ -787,8 +809,7 @@ func genFeatureCodes(x *w, s *pbx.Snapshot) {
 	x.f(" same => n,Hangup()")
 	x.f("exten => _**X.,1,Pickup(${EXTEN:2}@PICKUPMARK)")
 	x.f(" same => n,Hangup()")
-	x.f("exten => _*80X.,1,Dial(PJSIP/${EXTEN:3},20,b(kiestoon-autoanswer^s^1))")
-	x.f(" same => n,Hangup()")
+	x.f("exten => _*80X.,1,Goto(kiestoon-intercom,${FILTER(0-9,${EXTEN:3})},1)")
 	for _, t := range s.TimeConditions {
 		x.f("exten => *28%d,hint,Custom:kt-tc-%d", t.ID, t.ID)
 		x.f("exten => *28%d,1,Answer()", t.ID)

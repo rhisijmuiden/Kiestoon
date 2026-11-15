@@ -17,7 +17,7 @@ import (
 	"github.com/rhisijmuiden/kiestoon/server/internal/store"
 )
 
-func (s *Server) pbxRoutes(mux *http.ServeMux, admin func(http.HandlerFunc) http.Handler) {
+func (s *Server) pbxRoutes(mux *http.ServeMux, admin, recep func(http.HandlerFunc) http.Handler) {
 	mux.Handle("GET /api/pbx/status", admin(s.pbxStatus))
 	mux.Handle("POST /api/pbx/restart", admin(s.pbxRestart))
 	mux.Handle("GET /api/pbx/settings", admin(s.pbxSettings))
@@ -51,9 +51,9 @@ func (s *Server) pbxRoutes(mux *http.ServeMux, admin func(http.HandlerFunc) http
 	mux.Handle("PUT /api/pbx/outbound/{id}", admin(s.saveOutbound))
 	mux.Handle("DELETE /api/pbx/outbound/{id}", admin(s.deleteOutbound))
 
-	mux.Handle("GET /api/live", admin(s.live))
-	mux.Handle("GET /api/cdr", admin(s.cdrSearch))
-	mux.Handle("GET /api/cdr/export", admin(s.cdrExport))
+	mux.Handle("GET /api/live", recep(s.live))
+	mux.Handle("GET /api/cdr", recep(s.cdrSearch))
+	mux.Handle("GET /api/cdr/export", recep(s.cdrExport))
 }
 
 // ---- helpers ----------------------------------------------------------------
@@ -95,7 +95,7 @@ func (s *Server) plan(ctx context.Context) pbx.NumberPlan {
 }
 
 func (s *Server) asteriskOptions(ctx context.Context) asterisk.Options {
-	o := asterisk.Options{AMIUser: "kiestoon", AMISecret: s.AMI.Secret, MailCmd: "/usr/bin/kiestoon sendmail -t"}
+	o := asterisk.Options{AMIUser: "kiestoon", AMISecret: s.AMI.Secret, MailCmd: "/usr/bin/kiestoon sendmail -t", PromptDir: s.promptDir()}
 	if cert, key, err := certs.Ensure(s.Cfg.PBXDir()); err == nil {
 		o.TLSCert, o.TLSKey = cert, key
 	}
@@ -104,19 +104,6 @@ func (s *Server) asteriskOptions(ctx context.Context) asterisk.Options {
 	}
 	o.Organization, _ = store.GetSetting(ctx, s.DB, "organization", "Kiestoon")
 	return o
-}
-
-// onAMIEvent stores call detail records as Asterisk reports them.
-func (s *Server) onAMIEvent(m asterisk.Message) {
-	if m.Get("Event") != "Cdr" {
-		return
-	}
-	rec := cdr.FromEvent(m.Get, time.Local)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := s.CDR.Insert(ctx, rec); err != nil {
-		s.Log.Warn("store cdr", "err", err)
-	}
 }
 
 // ---- status and settings ----------------------------------------------------
@@ -195,16 +182,11 @@ func (s *Server) numberPlanPreview(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "bad_request")
 		return
 	}
-	exts, err := s.PBX.Extensions(r.Context())
+	changes, conflicts, err := s.PBX.PlanMigrationAll(r.Context(), req.Digits)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "internal")
 		return
 	}
-	nums := make([]string, len(exts))
-	for i, e := range exts {
-		nums[i] = e.Number
-	}
-	changes, conflicts := pbx.PlanMigration(nums, req.Digits)
 	writeJSON(w, http.StatusOK, map[string]any{"changes": changes, "conflicts": conflicts, "plan": pbx.PlanFor(req.Digits)})
 }
 

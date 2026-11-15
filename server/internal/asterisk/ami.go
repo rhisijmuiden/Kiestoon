@@ -131,7 +131,7 @@ func (a *AMI) session(ctx context.Context) error {
 	stop := context.AfterFunc(ctx, func() { conn.Close() })
 	defer stop()
 
-	resp, _, err := a.send(ctx, Message{{"Action", "Login"}, {"Username", a.User}, {"Secret", a.Secret}, {"Events", "call,cdr,system,reporting"}}, false)
+	resp, _, err := a.send(ctx, Message{{"Action", "Login"}, {"Username", a.User}, {"Secret", a.Secret}, {"Events", "call,cdr,system,reporting,user,agent"}}, false)
 	if err != nil {
 		return err
 	}

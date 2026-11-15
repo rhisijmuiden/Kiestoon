@@ -46,7 +46,22 @@ type Extension struct {
 	VoicemailDelete bool   `json:"voicemailDelete"`
 	Enabled         bool   `json:"enabled"`
 	CreatedAt       string `json:"createdAt"`
+	// Features are the call settings users change themselves in the user portal.
+	Features Features `json:"features"`
+	// RecordMode: off, ondemand (*1 during a call) or always.
+	RecordMode string `json:"recordMode"`
+	// PickupGroup: phones in the same group can pick up each other's calls with *8. Empty: no group.
+	PickupGroup string `json:"pickupGroup"`
+	// OutboundClass limits outbound calls: internal, national or international.
+	OutboundClass string `json:"outboundClass"`
+	AllowPremium  bool   `json:"allowPremium"`
+	// WebRTC enables the browser softphone in the user portal.
+	WebRTC       bool   `json:"webrtc"`
+	WebRTCSecret string `json:"-"`
 }
+
+// WebRTCEndpoint is the Asterisk endpoint of the browser softphone of an extension.
+func (e Extension) WebRTCEndpoint() string { return e.Number + "-web" }
 
 // Trunk is a connection to a SIP provider.
 type Trunk struct {
@@ -139,17 +154,23 @@ func b2i(b bool) int {
 // ---- extensions -------------------------------------------------------------
 
 const extCols = `id, number, name, email, sip_secret, transport, srtp, max_contacts, outbound_cid, ring_seconds,
-	voicemail, voicemail_pin, voicemail_email, voicemail_delete, enabled, created_at`
+	voicemail, voicemail_pin, voicemail_email, voicemail_delete, enabled, created_at, features, record_mode, pickup_group,
+	outbound_class, allow_premium, webrtc, webrtc_secret`
 
 func scanExt(row interface{ Scan(...any) error }) (*Extension, error) {
 	var e Extension
-	var srtp, vm, vme, vmd, en int
+	var srtp, vm, vme, vmd, en, prem, web int
+	var feat string
 	err := row.Scan(&e.ID, &e.Number, &e.Name, &e.Email, &e.SIPSecret, &e.Transport, &srtp, &e.MaxContacts,
-		&e.OutboundCID, &e.RingSeconds, &vm, &e.VoicemailPIN, &vme, &vmd, &en, &e.CreatedAt)
+		&e.OutboundCID, &e.RingSeconds, &vm, &e.VoicemailPIN, &vme, &vmd, &en, &e.CreatedAt, &feat, &e.RecordMode,
+		&e.PickupGroup, &e.OutboundClass, &prem, &web, &e.WebRTCSecret)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
 	e.SRTP, e.Voicemail, e.VoicemailEmail, e.VoicemailDelete, e.Enabled = srtp == 1, vm == 1, vme == 1, vmd == 1, en == 1
+	e.AllowPremium, e.WebRTC = prem == 1, web == 1
+	_ = json.Unmarshal([]byte(feat), &e.Features)
+	e.Features.normalize()
 	return &e, err
 }
 
@@ -187,12 +208,18 @@ func (r *Repo) SaveExtension(ctx context.Context, plan NumberPlan, e *Extension)
 	if e.Voicemail && e.VoicemailPIN == "" {
 		e.VoicemailPIN = GeneratePIN(6)
 	}
+	if e.WebRTCSecret == "" {
+		e.WebRTCSecret = GenerateSecret(32)
+	}
+	feat, _ := json.Marshal(e.Features)
 	args := []any{e.Number, e.Name, e.Email, e.SIPSecret, e.Transport, b2i(e.SRTP), e.MaxContacts, e.OutboundCID,
-		e.RingSeconds, b2i(e.Voicemail), e.VoicemailPIN, b2i(e.VoicemailEmail), b2i(e.VoicemailDelete), b2i(e.Enabled)}
+		e.RingSeconds, b2i(e.Voicemail), e.VoicemailPIN, b2i(e.VoicemailEmail), b2i(e.VoicemailDelete), b2i(e.Enabled),
+		string(feat), e.RecordMode, e.PickupGroup, e.OutboundClass, b2i(e.AllowPremium), b2i(e.WebRTC), e.WebRTCSecret}
 	if e.ID == 0 {
 		res, err := r.DB.ExecContext(ctx, `INSERT INTO extensions(number, name, email, sip_secret, transport, srtp, max_contacts,
-			outbound_cid, ring_seconds, voicemail, voicemail_pin, voicemail_email, voicemail_delete, enabled)
-			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
+			outbound_cid, ring_seconds, voicemail, voicemail_pin, voicemail_email, voicemail_delete, enabled,
+			features, record_mode, pickup_group, outbound_class, allow_premium, webrtc, webrtc_secret)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
 		if err != nil {
 			return uniqueErr(err, "number")
 		}
@@ -201,7 +228,8 @@ func (r *Repo) SaveExtension(ctx context.Context, plan NumberPlan, e *Extension)
 	}
 	res, err := r.DB.ExecContext(ctx, `UPDATE extensions SET number=?, name=?, email=?, sip_secret=?, transport=?, srtp=?,
 		max_contacts=?, outbound_cid=?, ring_seconds=?, voicemail=?, voicemail_pin=?, voicemail_email=?, voicemail_delete=?,
-		enabled=? WHERE id=?`, append(args, e.ID)...)
+		enabled=?, features=?, record_mode=?, pickup_group=?, outbound_class=?, allow_premium=?, webrtc=?, webrtc_secret=?
+		WHERE id=?`, append(args, e.ID)...)
 	if err != nil {
 		return uniqueErr(err, "number")
 	}
@@ -222,8 +250,13 @@ func (r *Repo) DeleteExtension(ctx context.Context, id int64) error {
 		return err
 	}
 	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, `UPDATE inbound_routes SET destination_type='hangup', destination=''
-		WHERE destination_type IN ('extension','voicemail') AND destination = ?`, e.Number); err != nil {
+	if err := replaceDestinations(ctx, tx, func(d *Destination) bool {
+		if (d.Type == DestExtension || d.Type == DestVoicemail) && d.Target == e.Number {
+			*d = Destination{Type: DestHangup}
+			return true
+		}
+		return false
+	}); err != nil {
 		return err
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM extensions WHERE id = ?`, id); err != nil {

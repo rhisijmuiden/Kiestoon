@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	_ "modernc.org/sqlite" // pure-Go SQLite driver, no cgo needed
 )
@@ -184,7 +185,161 @@ var migrations = []string{
 		bytes_added INTEGER NOT NULL DEFAULT 0,
 		files       INTEGER NOT NULL DEFAULT 0
 	);`,
+	// 4: phase 2, business features. Rebuilds users (new role "reception", link to an extension,
+	// SSO identity) and inbound_routes (more destination types). Runs with foreign keys off.
+	fkOff + `CREATE TABLE users_new (
+		id             INTEGER PRIMARY KEY AUTOINCREMENT,
+		username       TEXT NOT NULL UNIQUE COLLATE NOCASE,
+		display_name   TEXT NOT NULL,
+		password_hash  TEXT NOT NULL,
+		role           TEXT NOT NULL CHECK (role IN ('superadmin','admin','reception','user')),
+		totp_secret    TEXT NOT NULL DEFAULT '',
+		totp_enabled   INTEGER NOT NULL DEFAULT 0,
+		language       TEXT NOT NULL DEFAULT 'en',
+		created_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		totp_last_step INTEGER NOT NULL DEFAULT 0,
+		email          TEXT NOT NULL DEFAULT '',
+		extension_id   INTEGER REFERENCES extensions(id) ON DELETE SET NULL,
+		sso_provider   INTEGER NOT NULL DEFAULT 0,
+		sso_subject    TEXT NOT NULL DEFAULT '',
+		enabled        INTEGER NOT NULL DEFAULT 1,
+		last_login_at  TEXT NOT NULL DEFAULT ''
+	);
+	INSERT INTO users_new(id, username, display_name, password_hash, role, totp_secret, totp_enabled, language, created_at, totp_last_step)
+		SELECT id, username, display_name, password_hash, role, totp_secret, totp_enabled, language, created_at, totp_last_step FROM users;
+	DROP TABLE users;
+	ALTER TABLE users_new RENAME TO users;
+	CREATE INDEX users_sso ON users(sso_provider, sso_subject);
+	ALTER TABLE sessions ADD COLUMN method TEXT NOT NULL DEFAULT 'password';
+
+	CREATE TABLE inbound_routes_new (
+		id               INTEGER PRIMARY KEY AUTOINCREMENT,
+		name             TEXT NOT NULL,
+		did              TEXT NOT NULL UNIQUE,
+		destination_type TEXT NOT NULL,
+		destination      TEXT NOT NULL DEFAULT '',
+		cid_prefix       TEXT NOT NULL DEFAULT '',
+		enabled          INTEGER NOT NULL DEFAULT 1
+	);
+	INSERT INTO inbound_routes_new SELECT id, name, did, destination_type, destination, cid_prefix, enabled FROM inbound_routes;
+	DROP TABLE inbound_routes;
+	ALTER TABLE inbound_routes_new RENAME TO inbound_routes;
+
+	ALTER TABLE extensions ADD COLUMN features TEXT NOT NULL DEFAULT '{}';
+	ALTER TABLE extensions ADD COLUMN record_mode TEXT NOT NULL DEFAULT 'ondemand';
+	ALTER TABLE extensions ADD COLUMN pickup_group TEXT NOT NULL DEFAULT '1';
+	ALTER TABLE extensions ADD COLUMN outbound_class TEXT NOT NULL DEFAULT 'national';
+	ALTER TABLE extensions ADD COLUMN allow_premium INTEGER NOT NULL DEFAULT 0;
+	ALTER TABLE extensions ADD COLUMN webrtc INTEGER NOT NULL DEFAULT 1;
+	ALTER TABLE extensions ADD COLUMN webrtc_secret TEXT NOT NULL DEFAULT '';
+	-- Existing extensions keep the international calling they had before.
+	UPDATE extensions SET outbound_class = 'international';
+
+	CREATE TABLE ring_groups (
+		id           INTEGER PRIMARY KEY AUTOINCREMENT,
+		number       TEXT NOT NULL UNIQUE,
+		name         TEXT NOT NULL,
+		strategy     TEXT NOT NULL DEFAULT 'simultaneous',
+		ring_seconds INTEGER NOT NULL DEFAULT 20,
+		members      TEXT NOT NULL DEFAULT '[]',
+		cid_prefix   TEXT NOT NULL DEFAULT '',
+		skip_busy    INTEGER NOT NULL DEFAULT 1,
+		failover_type TEXT NOT NULL DEFAULT 'hangup',
+		failover     TEXT NOT NULL DEFAULT '',
+		enabled      INTEGER NOT NULL DEFAULT 1
+	);
+	CREATE TABLE queues (
+		id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+		number             TEXT NOT NULL UNIQUE,
+		name               TEXT NOT NULL,
+		strategy           TEXT NOT NULL DEFAULT 'rrmemory',
+		music              TEXT NOT NULL DEFAULT 'default',
+		announce_position  INTEGER NOT NULL DEFAULT 1,
+		announce_frequency INTEGER NOT NULL DEFAULT 60,
+		agent_timeout      INTEGER NOT NULL DEFAULT 20,
+		retry              INTEGER NOT NULL DEFAULT 5,
+		wrapup             INTEGER NOT NULL DEFAULT 10,
+		max_wait           INTEGER NOT NULL DEFAULT 300,
+		max_callers        INTEGER NOT NULL DEFAULT 0,
+		join_empty         INTEGER NOT NULL DEFAULT 0,
+		record             INTEGER NOT NULL DEFAULT 0,
+		cid_prefix         TEXT NOT NULL DEFAULT '',
+		greeting_prompt    INTEGER NOT NULL DEFAULT 0,
+		overflow_type      TEXT NOT NULL DEFAULT 'hangup',
+		overflow           TEXT NOT NULL DEFAULT '',
+		enabled            INTEGER NOT NULL DEFAULT 1
+	);
+	CREATE TABLE queue_members (
+		queue_id     INTEGER NOT NULL REFERENCES queues(id) ON DELETE CASCADE,
+		extension_id INTEGER NOT NULL REFERENCES extensions(id) ON DELETE CASCADE,
+		penalty      INTEGER NOT NULL DEFAULT 0,
+		dynamic      INTEGER NOT NULL DEFAULT 1,
+		logged_in    INTEGER NOT NULL DEFAULT 1,
+		paused       INTEGER NOT NULL DEFAULT 0,
+		PRIMARY KEY (queue_id, extension_id)
+	);
+	CREATE TABLE ivrs (
+		id              INTEGER PRIMARY KEY AUTOINCREMENT,
+		name            TEXT NOT NULL,
+		prompt_id       INTEGER NOT NULL DEFAULT 0,
+		timeout         INTEGER NOT NULL DEFAULT 5,
+		retries         INTEGER NOT NULL DEFAULT 2,
+		direct_dial     INTEGER NOT NULL DEFAULT 1,
+		options         TEXT NOT NULL DEFAULT '[]',
+		timeout_type    TEXT NOT NULL DEFAULT 'hangup',
+		timeout_target  TEXT NOT NULL DEFAULT '',
+		layout          TEXT NOT NULL DEFAULT '{}'
+	);
+	CREATE TABLE time_conditions (
+		id             INTEGER PRIMARY KEY AUTOINCREMENT,
+		name           TEXT NOT NULL,
+		schedule       TEXT NOT NULL DEFAULT '[]',
+		use_holidays   INTEGER NOT NULL DEFAULT 1,
+		mode           TEXT NOT NULL DEFAULT 'auto',
+		open_type      TEXT NOT NULL DEFAULT 'hangup',
+		open_target    TEXT NOT NULL DEFAULT '',
+		closed_type    TEXT NOT NULL DEFAULT 'hangup',
+		closed_target  TEXT NOT NULL DEFAULT '',
+		holiday_type   TEXT NOT NULL DEFAULT '',
+		holiday_target TEXT NOT NULL DEFAULT ''
+	);
+	CREATE TABLE conferences (
+		id          INTEGER PRIMARY KEY AUTOINCREMENT,
+		number      TEXT NOT NULL UNIQUE,
+		name        TEXT NOT NULL,
+		pin         TEXT NOT NULL DEFAULT '',
+		admin_pin   TEXT NOT NULL DEFAULT '',
+		max_members INTEGER NOT NULL DEFAULT 20,
+		record      INTEGER NOT NULL DEFAULT 0,
+		wait_admin  INTEGER NOT NULL DEFAULT 0,
+		enabled     INTEGER NOT NULL DEFAULT 1
+	);
+	CREATE TABLE prompts (
+		id          INTEGER PRIMARY KEY AUTOINCREMENT,
+		name        TEXT NOT NULL,
+		duration_ms INTEGER NOT NULL DEFAULT 0,
+		created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+	CREATE TABLE sso_providers (
+		id            INTEGER PRIMARY KEY AUTOINCREMENT,
+		name          TEXT NOT NULL,
+		kind          TEXT NOT NULL DEFAULT 'generic',
+		issuer        TEXT NOT NULL,
+		client_id     TEXT NOT NULL,
+		client_secret TEXT NOT NULL DEFAULT '',
+		scopes        TEXT NOT NULL DEFAULT 'openid profile email',
+		groups_claim  TEXT NOT NULL DEFAULT 'groups',
+		role_map      TEXT NOT NULL DEFAULT '[]',
+		default_role  TEXT NOT NULL DEFAULT 'user',
+		auto_create   INTEGER NOT NULL DEFAULT 1,
+		trust_mfa     INTEGER NOT NULL DEFAULT 1,
+		enabled       INTEGER NOT NULL DEFAULT 1
+	);`,
 }
+
+// fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so
+// dropping the old table does not cascade into the rows that point at it.
+const fkOff = "-- foreign_keys=off\n"
 
 // Open opens (and creates if needed) the database at path and migrates it to the latest schema.
 func Open(ctx context.Context, path string) (*sql.DB, error) {
@@ -211,6 +366,27 @@ func migrate(ctx context.Context, db *sql.DB) error {
 		return fmt.Errorf("read schema version: %w", err)
 	}
 	for i := current; i < len(migrations); i++ {
+		noFK := strings.HasPrefix(migrations[i], fkOff)
+		if noFK {
+			// PRAGMA foreign_keys cannot change inside a transaction. Open uses one connection, so this sticks.
+			if _, err := db.ExecContext(ctx, `PRAGMA foreign_keys = OFF`); err != nil {
+				return err
+			}
+		}
+		if err := runMigration(ctx, db, i, noFK); err != nil {
+			return err
+		}
+		if noFK {
+			if _, err := db.ExecContext(ctx, `PRAGMA foreign_keys = ON`); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func runMigration(ctx context.Context, db *sql.DB, i int, checkFK bool) error {
+	{
 		tx, err := db.BeginTx(ctx, nil)
 		if err != nil {
 			return err
@@ -223,11 +399,19 @@ func migrate(ctx context.Context, db *sql.DB) error {
 			tx.Rollback()
 			return err
 		}
-		if err := tx.Commit(); err != nil {
-			return err
+		if checkFK {
+			var bad int
+			if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM pragma_foreign_key_check`).Scan(&bad); err != nil {
+				tx.Rollback()
+				return err
+			}
+			if bad > 0 {
+				tx.Rollback()
+				return fmt.Errorf("migration %d: %d foreign key violations", i+1, bad)
+			}
 		}
+		return tx.Commit()
 	}
-	return nil
 }
 
 // GetSetting returns a stored setting, or fallback when it is not set.

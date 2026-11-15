@@ -26,6 +26,8 @@ type Config struct {
 	AMIAddr string
 	// HelperSocket is the Unix socket of the root helper service.
 	HelperSocket string
+	// AsteriskHTTP is Asterisk's local HTTP server, which carries the WebSocket of the browser softphone.
+	AsteriskHTTP string
 }
 
 // Load reads the configuration from environment variables, falling back to defaults.
@@ -39,6 +41,7 @@ func Load() Config {
 		TLSListen:      env("KIESTOON_TLS_LISTEN", ":8443"),
 		AMIAddr:        env("KIESTOON_AMI_ADDR", "127.0.0.1:5038"),
 		HelperSocket:   env("KIESTOON_HELPER_SOCKET", "/run/kiestoon-helper/helper.sock"),
+		AsteriskHTTP:   env("KIESTOON_ASTERISK_HTTP", "127.0.0.1:8088"),
 	}
 }
 
@@ -54,3 +57,6 @@ func env(key, fallback string) string {
 
 // PBXDir holds the generated Asterisk configuration and the TLS certificate.
 func (c Config) PBXDir() string { return filepath.Join(c.DataDir, "pbx") }
+
+// SpoolDir is Asterisk's spool directory (voicemail and recordings) inside the data directory.
+func (c Config) SpoolDir() string { return filepath.Join(c.DataDir, "asterisk", "spool") }

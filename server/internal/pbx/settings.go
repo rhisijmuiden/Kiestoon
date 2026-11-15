@@ -3,6 +3,7 @@ package pbx
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"net"
 	"net/mail"
 	"regexp"
@@ -221,17 +222,48 @@ func PlanMigration(numbers []string, to int) ([]Renumber, []string) {
 	return out, conflicts
 }
 
-// ApplyPlanMigration changes the number length and renumbers extensions, routes and phone keys.
-func (r *Repo) ApplyPlanMigration(ctx context.Context, settings Settings, digits int) ([]Renumber, error) {
-	exts, err := r.Extensions(ctx)
+// planNumbers returns the numbers of a numbered table (extensions, ring groups, queues, conferences).
+func planNumbers(ctx context.Context, db execQuerier, table string) ([]string, error) {
+	rows, err := db.QueryContext(ctx, `SELECT number FROM `+table)
 	if err != nil {
 		return nil, err
 	}
-	nums := make([]string, len(exts))
-	for i, e := range exts {
-		nums[i] = e.Number
+	defer rows.Close()
+	out := []string{}
+	for rows.Next() {
+		var n string
+		if err := rows.Scan(&n); err != nil {
+			return nil, err
+		}
+		out = append(out, n)
 	}
-	changes, conflicts := PlanMigration(nums, digits)
+	return out, rows.Err()
+}
+
+var numberedTables = []string{"extensions", "ring_groups", "queues", "conferences"}
+
+// PlanMigrationAll computes the renumbering of every numbered table.
+func (r *Repo) PlanMigrationAll(ctx context.Context, digits int) ([]Renumber, []string, error) {
+	all, conflicts := []Renumber{}, []string{}
+	for _, t := range numberedTables {
+		nums, err := planNumbers(ctx, r.DB, t)
+		if err != nil {
+			return nil, nil, err
+		}
+		ch, co := PlanMigration(nums, digits)
+		all = append(all, ch...)
+		conflicts = append(conflicts, co...)
+	}
+	return all, conflicts, nil
+}
+
+// ApplyPlanMigration changes the number length and renumbers extensions, groups, queues,
+// conferences, every destination and phone key that uses them.
+func (r *Repo) ApplyPlanMigration(ctx context.Context, settings Settings, digits int) ([]Renumber, error) {
+	all, conflicts, err := r.PlanMigrationAll(ctx, digits)
+	if err != nil {
+		return nil, err
+	}
 	if len(conflicts) > 0 {
 		return nil, invalid("renumber_conflict", strings.Join(conflicts, ","))
 	}
@@ -240,31 +272,102 @@ func (r *Repo) ApplyPlanMigration(ctx context.Context, settings Settings, digits
 		return nil, err
 	}
 	defer tx.Rollback()
-	// Two steps through a temporary name, so swaps cannot hit the UNIQUE constraint.
-	for _, c := range changes {
-		if _, err := tx.ExecContext(ctx, `UPDATE extensions SET number = ? WHERE number = ?`, "tmp-"+c.To, c.From); err != nil {
+	m := map[string]string{}
+	for _, c := range all {
+		m[c.From] = c.To
+	}
+	for _, t := range numberedTables {
+		nums, err := planNumbers(ctx, tx, t)
+		if err != nil {
+			return nil, err
+		}
+		// Two steps through a temporary name, so swaps cannot hit the UNIQUE constraint.
+		for _, n := range nums {
+			if to, ok := m[n]; ok && to != n {
+				if _, err := tx.ExecContext(ctx, `UPDATE `+t+` SET number = ? WHERE number = ?`, "tmp-"+to, n); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if _, err := tx.ExecContext(ctx, `UPDATE `+t+` SET number = substr(number, 5) WHERE number LIKE 'tmp-%'`); err != nil {
 			return nil, err
 		}
 	}
-	for _, c := range changes {
-		if _, err := tx.ExecContext(ctx, `UPDATE extensions SET number = ? WHERE number = ?`, c.To, "tmp-"+c.To); err != nil {
-			return nil, err
+	if err := replaceDestinations(ctx, tx, func(d *Destination) bool {
+		if to, ok := m[d.Target]; ok && (d.Type == DestExtension || d.Type == DestVoicemail) && to != d.Target {
+			d.Target = to
+			return true
 		}
-		if _, err := tx.ExecContext(ctx, `UPDATE inbound_routes SET destination = ? WHERE destination_type IN ('extension','voicemail') AND destination = ?`, "tmp-"+c.To, c.From); err != nil {
-			return nil, err
-		}
-	}
-	if _, err := tx.ExecContext(ctx, `UPDATE inbound_routes SET destination = substr(destination, 5) WHERE destination LIKE 'tmp-%'`); err != nil {
+		return false
+	}); err != nil {
 		return nil, err
 	}
-	if err := renumberPhoneKeys(ctx, tx, changes); err != nil {
+	if err := renumberJSONColumn(ctx, tx, "ring_groups", "members", func(raw string) (string, bool) {
+		var mem []string
+		_ = json.Unmarshal([]byte(raw), &mem)
+		changed := false
+		for i, x := range mem {
+			if to, ok := m[x]; ok {
+				mem[i], changed = to, true
+			}
+		}
+		b, _ := json.Marshal(mem)
+		return string(b), changed
+	}); err != nil {
+		return nil, err
+	}
+	if err := renumberJSONColumn(ctx, tx, "extensions", "features", func(raw string) (string, bool) {
+		var f Features
+		_ = json.Unmarshal([]byte(raw), &f)
+		changed := false
+		for _, p := range []*string{&f.ForwardAlways, &f.ForwardBusy, &f.ForwardNoAnswer, &f.ClosedForward} {
+			if to, ok := m[*p]; ok {
+				*p, changed = to, true
+			}
+		}
+		b, _ := json.Marshal(f)
+		return string(b), changed
+	}); err != nil {
+		return nil, err
+	}
+	if err := renumberPhoneKeys(ctx, tx, all); err != nil {
 		return nil, err
 	}
 	settings.Digits = digits
 	if err := setJSONTx(ctx, tx, SettingsKey, settings); err != nil {
 		return nil, err
 	}
-	return changes, tx.Commit()
+	return all, tx.Commit()
+}
+
+func renumberJSONColumn(ctx context.Context, tx *sql.Tx, table, col string, fn func(string) (string, bool)) error {
+	rows, err := tx.QueryContext(ctx, `SELECT id, `+col+` FROM `+table)
+	if err != nil {
+		return err
+	}
+	type upd struct {
+		id  int64
+		raw string
+	}
+	var ups []upd
+	for rows.Next() {
+		var id int64
+		var raw string
+		if err := rows.Scan(&id, &raw); err != nil {
+			rows.Close()
+			return err
+		}
+		if out, ok := fn(raw); ok {
+			ups = append(ups, upd{id, out})
+		}
+	}
+	rows.Close()
+	for _, u := range ups {
+		if _, err := tx.ExecContext(ctx, `UPDATE `+table+` SET `+col+` = ? WHERE id = ?`, u.raw, u.id); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // ---- validation -------------------------------------------------------------
@@ -346,7 +449,25 @@ func (r *Repo) validateExtension(ctx context.Context, plan NumberPlan, e *Extens
 	if e.VoicemailEmail && e.Voicemail && e.Email == "" {
 		e.VoicemailEmail = false
 	}
-	return nil
+	switch e.RecordMode {
+	case "":
+		e.RecordMode = "ondemand"
+	case "off", "ondemand", "always":
+	default:
+		return invalid("invalid", "recordMode")
+	}
+	e.PickupGroup = strings.TrimSpace(e.PickupGroup)
+	if e.PickupGroup != "" && !regexp.MustCompile(`^[0-9]{1,2}$`).MatchString(e.PickupGroup) {
+		return invalid("invalid", "pickupGroup")
+	}
+	switch e.OutboundClass {
+	case "":
+		e.OutboundClass = "national"
+	case "internal", "national", "international":
+	default:
+		return invalid("invalid", "outboundClass")
+	}
+	return e.Features.Validate()
 }
 
 func validateTrunk(t *Trunk) error {
@@ -477,24 +598,11 @@ func (r *Repo) validateInbound(ctx context.Context, x *InboundRoute) error {
 	if x.DID != "" && !reCallerID.MatchString(x.DID) {
 		return invalid("invalid", "did")
 	}
-	switch x.DestinationType {
-	case "extension", "voicemail":
-		var n int
-		col := "1"
-		if x.DestinationType == "voicemail" {
-			col = "voicemail"
-		}
-		if err := r.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM extensions WHERE number = ? AND `+col+` = 1`, x.Destination).Scan(&n); err != nil {
-			return err
-		}
-		if n == 0 {
-			return invalid("unknown_destination", "destination")
-		}
-	case "hangup":
-		x.Destination = ""
-	default:
-		return invalid("invalid", "destinationType")
+	d := Destination{Type: x.DestinationType, Target: x.Destination}
+	if err := r.ValidateDestination(ctx, &d, "destination"); err != nil {
+		return err
 	}
+	x.DestinationType, x.Destination = d.Type, d.Target
 	return nil
 }
 

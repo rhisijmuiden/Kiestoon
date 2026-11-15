@@ -23,7 +23,9 @@ import (
 	"github.com/rhisijmuiden/kiestoon/server/internal/config"
 	"github.com/rhisijmuiden/kiestoon/server/internal/helper"
 	"github.com/rhisijmuiden/kiestoon/server/internal/mail"
+	"github.com/rhisijmuiden/kiestoon/server/internal/media"
 	"github.com/rhisijmuiden/kiestoon/server/internal/pbx"
+	"github.com/rhisijmuiden/kiestoon/server/internal/sso"
 	"github.com/rhisijmuiden/kiestoon/server/internal/store"
 	"github.com/rhisijmuiden/kiestoon/server/internal/updates"
 	"github.com/rhisijmuiden/kiestoon/server/internal/version"
@@ -46,6 +48,10 @@ type Server struct {
 	CDR     *cdr.Store
 	Mail    *mail.Service
 	Helper  *helper.Client
+	States  *asterisk.StateCache
+	Spool   *media.Spool
+	SSO     *sso.Store
+	SSOFlow *sso.Flow
 	// loginLimit counts failed password and MFA attempts per IP.
 	loginLimit *auth.Limiter
 	// provLimit counts failed provisioning requests per IP.
@@ -66,6 +72,9 @@ func New(cfg config.Config, db *sql.DB, log *slog.Logger) *Server {
 		CDR:        &cdr.Store{DB: db},
 		Mail:       &mail.Service{DB: db, QueueDir: mail.QueueDir(cfg.DataDir)},
 		Helper:     &helper.Client{Socket: cfg.HelperSocket},
+		Spool:      &media.Spool{Dir: cfg.SpoolDir()},
+		SSO:        &sso.Store{DB: db},
+		SSOFlow:    sso.NewFlow(),
 		loginLimit: auth.NewLimiter(5, 10*time.Minute),
 		provLimit:  auth.NewLimiter(20, 10*time.Minute),
 		started:    time.Now(),
@@ -77,6 +86,7 @@ func New(cfg config.Config, db *sql.DB, log *slog.Logger) *Server {
 	}
 	s.AMI = &asterisk.AMI{Addr: cfg.AMIAddr, User: "kiestoon", Secret: secret, Log: log, OnEvent: s.onAMIEvent}
 	s.Live = &asterisk.LiveCache{AMI: s.AMI}
+	s.States = &asterisk.StateCache{AMI: s.AMI}
 	s.Ast = &asterisk.Manager{Dir: cfg.PBXDir(), Repo: s.PBX, AMI: s.AMI, Log: log, Options: s.asteriskOptions}
 	return s
 }
@@ -106,6 +116,7 @@ func (s *Server) Routes() http.Handler {
 	full := func(h http.HandlerFunc) http.Handler { return s.signedIn(s.mfaEnrolled(h), true) }
 	enroll := func(h http.HandlerFunc) http.Handler { return s.signedIn(h, true) }
 	admin := func(h http.HandlerFunc) http.Handler { return s.signedIn(s.mfaEnrolled(s.adminOnly(h)), true) }
+	recep := func(h http.HandlerFunc) http.Handler { return s.signedIn(s.mfaEnrolled(s.receptionOnly(h)), true) }
 
 	mux.Handle("GET /api/me", enroll(s.me))
 	mux.Handle("POST /api/account/mfa/enroll", enroll(s.mfaEnroll))
@@ -120,8 +131,11 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("GET /api/system/updates/status", admin(s.updateStatus))
 	mux.Handle("GET /api/system/audit", admin(s.auditLog))
 
-	s.pbxRoutes(mux, admin)
+	s.pbxRoutes(mux, admin, recep)
 	s.systemRoutes(mux, admin)
+	s.businessRoutes(mux, admin, recep)
+	s.userRoutes(mux, admin)
+	s.portalRoutes(mux, full)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)
@@ -141,7 +155,11 @@ func (s *Server) jsonOnly(next http.Handler) http.Handler {
 				writeErr(w, http.StatusUnsupportedMediaType, "json_required")
 				return
 			}
-			r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+			limit := int64(1 << 20)
+			if strings.HasPrefix(r.URL.Path, "/api/pbx/prompts") || strings.HasPrefix(r.URL.Path, "/api/portal/greetings/") {
+				limit = 8 << 20 // base64 audio
+			}
+			r.Body = http.MaxBytesReader(w, r.Body, limit)
 		}
 		next.ServeHTTP(w, r)
 	})
@@ -171,9 +189,21 @@ func (s *Server) signedIn(next http.Handler, needMFA bool) http.Handler {
 // mfaEnrolled blocks admins that have not set up MFA yet from everything but enrollment.
 func (s *Server) mfaEnrolled(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		u := sessionFrom(r).User
-		if u.IsAdmin() && !u.TOTPEnabled {
+		sess := sessionFrom(r)
+		u := sess.User
+		// The identity provider already asked for a second factor.
+		if u.IsAdmin() && !u.TOTPEnabled && sess.Method != "sso-mfa" {
 			writeErr(w, http.StatusForbidden, "mfa_enrollment_required")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) receptionOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !sessionFrom(r).User.IsReception() {
+			writeErr(w, http.StatusForbidden, "forbidden")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -389,18 +419,30 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) meBody(ctx context.Context, u *auth.User, mfaPassed bool) map[string]any {
+	return s.meBodyMethod(ctx, u, mfaPassed, "password")
+}
+
+func (s *Server) meBodyMethod(ctx context.Context, u *auth.User, mfaPassed bool, method string) map[string]any {
 	org, _ := store.GetSetting(ctx, s.DB, "organization", "Kiestoon")
+	var ext map[string]string
+	if u.ExtensionID != nil {
+		if e, err := s.PBX.Extension(ctx, *u.ExtensionID); err == nil {
+			ext = map[string]string{"number": e.Number, "name": e.Name}
+		}
+	}
 	return map[string]any{
 		"user":                  u,
 		"mfaPassed":             mfaPassed,
-		"mfaEnrollmentRequired": u.IsAdmin() && !u.TOTPEnabled,
+		"mfaEnrollmentRequired": u.IsAdmin() && !u.TOTPEnabled && method != "sso-mfa",
 		"organization":          org,
+		"extension":             ext,
+		"signInMethod":          method,
 	}
 }
 
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 	sess := sessionFrom(r)
-	writeJSON(w, http.StatusOK, s.meBody(r.Context(), sess.User, sess.MFAPassed))
+	writeJSON(w, http.StatusOK, s.meBodyMethod(r.Context(), sess.User, sess.MFAPassed, sess.Method))
 }
 
 func (s *Server) mfaEnroll(w http.ResponseWriter, r *http.Request) {
@@ -594,7 +636,7 @@ func (s *Server) auditLog(w http.ResponseWriter, r *http.Request) {
 func SecurityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
-		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
 		h.Set("X-Frame-Options", "DENY")
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("Referrer-Policy", "no-referrer")

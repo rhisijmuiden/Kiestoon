@@ -25,6 +25,8 @@ type Options struct {
 	MailCmd string
 	// Organization is shown as the sender name of voicemail e-mails.
 	Organization string
+	// PromptDir holds the uploaded IVR and queue prompts (<id>.wav).
+	PromptDir string
 }
 
 // Files maps a file name in the pbx directory to its contents.
@@ -34,10 +36,13 @@ type Files map[string]string
 func Generate(s *pbx.Snapshot, o Options) Files {
 	return Files{
 		"pjsip.conf":         genPJSIP(s, o),
-		"extensions.conf":    genDialplan(s),
+		"extensions.conf":    genDialplan(s, o),
 		"voicemail.conf":     genVoicemail(s, o),
 		"manager_users.conf": genManager(o),
 		"rtp.conf":           genRTP(s),
+		"queues.conf":        genQueuesConf(s),
+		"confbridge.conf":    genConfBridge(s),
+		"res_parking.conf":   genParking(s),
 	}
 }
 
@@ -106,6 +111,14 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 		x.nl()
 	}
 
+	// WebSocket transport for the browser softphone. Asterisk's HTTP server only listens on
+	// 127.0.0.1; the Kiestoon portal proxies /api/webrtc/ws to it for signed-in users.
+	x.f("[transport-ws]")
+	x.f("type=transport")
+	x.f("protocol=ws")
+	x.f("bind=127.0.0.1")
+	x.nl()
+
 	// Internal extensions
 	for _, e := range s.Extensions {
 		if !e.Enabled {
@@ -136,9 +149,10 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 			x.f("media_encryption=sdes")
 			x.f("media_encryption_optimistic=no")
 		}
-		x.f("set_var=KT_EXT=%s", e.Number)
-		if e.OutboundCID != "" {
-			x.f("set_var=KT_OUTCID=%s", esc(e.OutboundCID))
+		extVars(&x, e)
+		if e.PickupGroup != "" {
+			x.f("named_call_group=%s", e.PickupGroup)
+			x.f("named_pickup_group=%s", e.PickupGroup)
 		}
 		x.nl()
 		x.f("[%s]", e.Number)
@@ -153,6 +167,9 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 		x.f("remove_existing=yes")
 		x.f("qualify_frequency=60")
 		x.nl()
+		if e.WebRTC {
+			genWebRTCEndpoint(&x, s, e)
+		}
 	}
 
 	// Trunks
@@ -238,6 +255,8 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 			x.f("media_encryption=sdes")
 		}
 		x.f("set_var=KT_TRUNK=%d", t.ID)
+		x.f("set_var=KT_CLASS=international")
+		x.f("set_var=KT_PREMIUM=1")
 		x.f("set_var=KT_DIDSRC=%s", t.DIDSource)
 		x.nl()
 		matches := []string{t.Host}
@@ -352,7 +371,7 @@ func genVoicemail(s *pbx.Snapshot, o Options) string {
 
 // ---- dialplan ---------------------------------------------------------------
 
-func genDialplan(s *pbx.Snapshot) string {
+func genDialplan(s *pbx.Snapshot, o Options) string {
 	st := s.Settings
 	var x w
 	x.b.WriteString(header)
@@ -369,7 +388,10 @@ func genDialplan(s *pbx.Snapshot) string {
 	x.f("[kiestoon-internal]")
 	x.f("include => kiestoon-emergency")
 	x.f("include => kiestoon-features")
-	x.f("include => kiestoon-extensions")
+	x.f("include => kiestoon-local")
+	if s.Features.ParkingSlots > 0 {
+		x.f("include => kiestoon-parkedcalls")
+	}
 	x.f("include => kiestoon-outbound")
 	x.f("exten => i,1,Playback(ss-noservice)")
 	x.f(" same => n,Hangup()")
@@ -406,39 +428,15 @@ func genDialplan(s *pbx.Snapshot) string {
 	}
 	x.nl()
 
-	x.f("[kiestoon-features]")
-	x.f("; *97 own voicemail, *98 any mailbox, *43 echo test")
-	x.f("exten => *97,1,Answer()")
-	x.f(" same => n,VoiceMailMain(${KT_EXT}@default)")
-	x.f(" same => n,Hangup()")
-	x.f("exten => *98,1,Answer()")
-	x.f(" same => n,VoiceMailMain(@default)")
-	x.f(" same => n,Hangup()")
-	x.f("exten => *43,1,Answer()")
-	x.f(" same => n,Playback(demo-echotest)")
-	x.f(" same => n,Echo()")
-	x.f(" same => n,Hangup()")
-	x.nl()
-
-	x.f("[kiestoon-extensions]")
-	for _, e := range s.Extensions {
-		if !e.Enabled {
-			continue
-		}
-		x.f("exten => %s,hint,PJSIP/%s", e.Number, e.Number)
-		x.f("exten => %s,1,NoOp(Call for %s)", e.Number, e.Number)
-		x.f(" same => n,Set(KT_DIAL=${PJSIP_DIAL_CONTACTS(%s)})", e.Number)
-		x.f(` same => n,ExecIf($["${KT_DIAL}" = ""]?Set(KT_DIAL=PJSIP/%s))`, e.Number)
-		x.f(" same => n,Dial(${KT_DIAL},%d,tT)", e.RingSeconds)
-		if e.Voicemail {
-			x.f(` same => n,VoiceMail(%s@default,${IF($["${DIALSTATUS}" = "BUSY"]?b:u)})`, e.Number)
-		} else {
-			x.f(` same => n,ExecIf($["${DIALSTATUS}" = "BUSY"]?Busy(10))`)
-			x.f(" same => n,Playback(vm-nobodyavail)")
-		}
-		x.f(" same => n,Hangup()")
-	}
-	x.nl()
+	genFeatureCodes(&x, s)
+	genLocal(&x, s)
+	genExtensionsBusiness(&x, s)
+	genRingGroups(&x, s)
+	genQueues(&x, s, o)
+	genIVRs(&x, s, o)
+	genTimeConditions(&x, s)
+	genConferences(&x, s)
+	genAllowed(&x, s)
 
 	// Outbound: one context per route, included in the order of the routes, so the first
 	// matching route wins regardless of how specific its pattern is.
@@ -472,6 +470,10 @@ func genDialplan(s *pbx.Snapshot) string {
 		x.nl()
 		x.f("[kiestoon-route-%d]", r.ID)
 		x.f("exten => s,1,NoOp(Outbound route %d to ${KT_NUM})", r.ID)
+		x.f(" same => n,Gosub(kiestoon-allowed,s,1(${KT_NUM}))")
+		x.f(` same => n,GotoIf($["${GOSUB_RETVAL}" != "ok"]?denied)`)
+		x.f(` same => n,ExecIf($["${KT_RECALWAYS}" = "1"]?Gosub(kiestoon-record,s,1(${KT_NUM})))`)
+		x.f(` same => n,ExecIf($["${KT_RECOPT}" = "X"]?Set(__TOUCH_MIXMONITOR=kt-${STRFTIME(${EPOCH},,%%Y%%m%%d-%%H%%M%%S)}-${UNIQUEID}-${FILTER(0-9+,${CALLERID(num)})}-${FILTER(0-9+,${KT_NUM})}))`)
 		attempt := 0
 		for _, tid := range r.TrunkIDs {
 			t, ok := trunks[tid]
@@ -494,12 +496,14 @@ func genDialplan(s *pbx.Snapshot) string {
 				x.f(" same => n,Set(GROUP(kt_trunks)=%s)", t.Endpoint())
 			}
 			x.f(" same => n,Set(CDR(kt_trunk)=%s)", esc(t.Name))
-			x.f(" same => n,Dial(PJSIP/${KT_NUM}@%s,,T)", t.Endpoint())
+			x.f(" same => n,Dial(PJSIP/${KT_NUM}@%s,,T${KT_RECOPT})", t.Endpoint())
 			x.f(` same => n,GotoIf($["${DIALSTATUS}" = "BUSY" | "${DIALSTATUS}" = "NOANSWER" | "${DIALSTATUS}" = "ANSWER" | "${DIALSTATUS}" = "CANCEL"]?done)`)
 			x.f(" same => n(%s),NoOp(Trying the next trunk)", label)
 		}
 		x.f(" same => n,Playback(all-circuits-busy-now)")
 		x.f(" same => n(done),Hangup()")
+		x.f(" same => n(denied),Playback(ss-noservice)")
+		x.f(" same => n,Hangup()")
 		x.nl()
 	}
 
@@ -557,16 +561,7 @@ func genDialplan(s *pbx.Snapshot) string {
 		if r.CIDPrefix != "" {
 			x.f(" same => n,Set(CALLERID(name)=%s${CALLERID(name)})", esc(r.CIDPrefix))
 		}
-		switch r.DestinationType {
-		case "extension":
-			x.f(" same => n,Goto(kiestoon-extensions,%s,1)", r.Destination)
-		case "voicemail":
-			x.f(" same => n,Answer()")
-			x.f(" same => n,VoiceMail(%s@default,u)", r.Destination)
-			x.f(" same => n,Hangup()")
-		default:
-			x.f(" same => n,Hangup()")
-		}
+		x.f(" same => n,%s", destGoto(pbx.Destination{Type: r.DestinationType, Target: r.Destination}))
 		x.nl()
 	}
 	return x.b.String()
@@ -587,6 +582,12 @@ func ChangedModules(changed []string) []string {
 			cmds["manager reload"] = true
 		case "rtp.conf":
 			cmds["module reload res_rtp_asterisk.so"] = true
+		case "queues.conf":
+			cmds["module reload app_queue.so"] = true
+		case "confbridge.conf":
+			cmds["module reload app_confbridge.so"] = true
+		case "res_parking.conf":
+			cmds["module reload res_parking.so"] = true
 		}
 	}
 	out := make([]string, 0, len(cmds))
@@ -595,4 +596,59 @@ func ChangedModules(changed []string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// extVars are the channel variables the dialplan uses to know who is calling and what they may do.
+func extVars(x *w, e pbx.Extension) {
+	x.f("set_var=KT_EXT=%s", e.Number)
+	if e.OutboundCID != "" {
+		x.f("set_var=KT_OUTCID=%s", esc(e.OutboundCID))
+	}
+	x.f("set_var=KT_CLASS=%s", e.OutboundClass)
+	x.f("set_var=KT_PREMIUM=%d", b2i(e.AllowPremium))
+	switch e.RecordMode {
+	case "always":
+		x.f("set_var=KT_RECALWAYS=1")
+	case "ondemand":
+		x.f("set_var=KT_RECOPT=X")
+	}
+}
+
+func genWebRTCEndpoint(x *w, s *pbx.Snapshot, e pbx.Extension) {
+	name := e.WebRTCEndpoint()
+	x.f("[%s]", name)
+	x.f("type=endpoint")
+	x.f("transport=transport-ws")
+	x.f("context=kiestoon-internal")
+	x.f("disallow=all")
+	x.f("allow=g722,alaw,ulaw")
+	x.f("auth=%s", name)
+	x.f("aors=%s", name)
+	x.f(`callerid="%s" <%s>`, esc(strings.ReplaceAll(e.Name, `"`, "")), e.Number)
+	if e.Voicemail {
+		x.f("mailboxes=%s@default", e.Number)
+	}
+	x.f("webrtc=yes")
+	x.f("dtls_auto_generate_cert=yes")
+	x.f("dtmf_mode=rfc4733")
+	x.f("device_state_busy_at=0")
+	x.f("language=%s", s.Settings.Language)
+	if e.PickupGroup != "" {
+		x.f("named_call_group=%s", e.PickupGroup)
+		x.f("named_pickup_group=%s", e.PickupGroup)
+	}
+	extVars(x, e)
+	x.nl()
+	x.f("[%s]", name)
+	x.f("type=auth")
+	x.f("auth_type=userpass")
+	x.f("username=%s", name)
+	x.f("password=%s", esc(e.WebRTCSecret))
+	x.nl()
+	x.f("[%s]", name)
+	x.f("type=aor")
+	x.f("max_contacts=5")
+	x.f("remove_existing=yes")
+	x.f("qualify_frequency=0")
+	x.nl()
 }

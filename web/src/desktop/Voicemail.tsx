@@ -69,7 +69,8 @@ export function Voicemail() {
               <span className="min-w-0 flex-1">
                 <span className={`block truncate text-[13.5px] ${fresh ? 'font-semibold' : 'font-medium'} text-ink`}>{nm || nr || t('reception.unknownCaller')}</span>
                 <span className="block truncate text-[11.5px] text-muted">{nm && nr ? `${nr} · ` : ''}{new Date(m.date).toLocaleString(i18n.language, { dateStyle: 'short', timeStyle: 'short' })} · {formatDuration(m.duration)}</span>
-                {m.transcript && <span className="mt-1 block text-[11.5px] italic text-muted">“{m.transcript}”</span>}
+                {m.summary && <span className="mt-1 block text-[11.5px] text-ink/90">{m.summary.summary}</span>}
+                {m.transcript && !m.summary && <span className="mt-1 block text-[11.5px] italic text-muted">“{m.transcript}”</span>}
               </span>
               {nr && <CallButton number={nr} label={nm || nr} />}
               <button type="button" onClick={() => remove(m)} aria-label={t('common.delete')} title={t('common.delete')}

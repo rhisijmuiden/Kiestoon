@@ -98,6 +98,7 @@ plugins:
             Time conditions and holidays: Tijdcondities en feestdagen
             Conference rooms: Vergaderruimtes
             Voice prompts and speech: Gesproken teksten en spraak
+            AI summaries: AI-samenvattingen
             Voicemail: Voicemail
             Fax: Fax
             Call history and recordings: Gespreksgeschiedenis en opnames
@@ -146,6 +147,7 @@ nav:
       - Time conditions and holidays: time-conditions.md
       - Conference rooms: conferences.md
       - Voice prompts and speech: prompts.md
+      - AI summaries: ai.md
       - Voicemail: voicemail.md
       - Fax: fax.md
       - Call history and recordings: history.md

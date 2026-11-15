@@ -141,7 +141,11 @@
     "no_email": "This extension has no e-mail address.",
     "user_disabled": "This account is disabled.",
     "network_too_broad": "That IP range is too broad. Use /8 or smaller.",
-    "on_portal_host": "You are working on the employee portal address. Open the PBX address to switch this on, otherwise you lock yourself out."
+    "on_portal_host": "You are working on the employee portal address. Open the PBX address to switch this on, otherwise you lock yourself out.",
+    "ai_no_key": "Add a Claude API key first, or choose the local model.",
+    "ai_not_ready": "The local AI model is not downloaded yet, or the speech package is not installed.",
+    "ai_failed": "The summary failed.",
+    "ai_busy": "Another transcription is running. Try again in a minute."
   },
   "setup": {
     "title": "Welcome to Kiestoon",
@@ -247,7 +251,8 @@
     "sunRoutes": "Follow the sun",
     "cluster": "High availability",
     "help": "Help",
-    "helpTitle": "Open the manual for this page"
+    "helpTitle": "Open the manual for this page",
+    "ai": "AI"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -397,7 +402,7 @@
     "emergencyCallerId": "Emergency caller ID",
     "externalAddress": "Public address",
     "localNets": "Local networks",
-    "language": "Language",
+    "language": "language",
     "timezone": "Time zone",
     "mac": "MAC address",
     "vendor": "Brand",
@@ -458,7 +463,7 @@
     "displayName": "full name",
     "audio": "audio",
     "emails": "E-mail addresses",
-    "keepDays": "Keep for",
+    "keepDays": "keep for",
     "work": "Work number",
     "mobile": "Mobile number",
     "other": "Other number",
@@ -513,7 +518,11 @@
     "description": "Description",
     "roles": "Roles",
     "portalUrl": "Employee portal address",
-    "portalDomain": "Employee portal host name"
+    "portalDomain": "Employee portal host name",
+    "key": "API key",
+    "engine": "engine",
+    "llm": "local model",
+    "cloudModel": "Claude model"
   },
   "extensions": {
     "title": "Extensions",
@@ -2879,6 +2888,73 @@
       "remote": "Hung up by the other party",
       "ext": "Hung up by {{name}}",
       "system": "Ended by the phone system"
+    }
+  },
+  "ai": {
+    "title": "AI summaries",
+    "subtitle": "Transcripts and summaries of recorded calls and voicemail",
+    "saved": "AI settings saved.",
+    "needsStt": "Turn on speech-to-text under Speech first: AI works on the transcripts it makes.",
+    "what": "What to summarise",
+    "intro": "Transcripts are always made on this server by Whisper. The summary comes from a local model (nothing leaves the server) or from Claude in the cloud (only the text is sent).",
+    "calls": "Recorded calls",
+    "callsHint": "Only calls that are recorded anyway. New recordings are handled in the background, newest first.",
+    "voicemail": "Voicemail",
+    "voicemailHint": "Adds a summary and follow-ups to the portal, the softphone and the voicemail mail.",
+    "language": "Language of the summaries",
+    "languageAuto": "Same as the call",
+    "keepDays": "Keep summaries of calls (days)",
+    "keepDaysHint": "0 keeps them as long as the recording.",
+    "engine": "Engine",
+    "engines": {
+      "local": "Local model",
+      "localHint": "Runs on this server with llama.cpp. Free and private, but slower.",
+      "cloud": "Claude (cloud)",
+      "cloudHint": "Faster and better, with your own Anthropic API key. Only the transcript text is sent."
+    },
+    "notInstalled": "The local AI runtime is not installed. Install or update the kiestoon-speech package.",
+    "llm": "Local model",
+    "ram": "Needs about {{gb}} GB of free memory while it runs.",
+    "localHint": "The model starts when there is work and stops again after 5 idle minutes.",
+    "cloudModel": "Claude model",
+    "key": "Anthropic API key",
+    "keySet": "A key is stored ({{hint}}). It is never shown again.",
+    "keyNone": "No key stored yet. Create one at console.anthropic.com.",
+    "keyNew": "New key",
+    "keySave": "Save key",
+    "keyRemove": "Remove key",
+    "cloudHint": "Usage is billed by Anthropic to your own account. Audio never leaves the server.",
+    "test": "Try it",
+    "testIntro": "Summarise a sample voicemail with these settings.",
+    "testDone": "Made by {{engine}} in {{seconds}} s.",
+    "models": {
+      "claude-opus-5-5": "Claude Opus 5.5",
+      "claude-sonnet-5-5": "Claude Sonnet 5.5",
+      "claude-haiku-5-5": "Claude Haiku 5.5",
+      "qwen3-4b-instruct": "Qwen3 4B Instruct",
+      "qwen3-1.7b": "Qwen3 1.7B"
+    },
+    "sentiment": {
+      "positive": "Positive",
+      "neutral": "Neutral",
+      "negative": "Negative"
+    },
+    "actions": "Follow-ups",
+    "show": "AI summary",
+    "noResult": "No transcript or summary yet.",
+    "run": "Transcribe and summarise",
+    "rerun": "Make again",
+    "running": "This can take a few minutes on the local model.",
+    "transcript": "Transcript",
+    "madeBy": "Made by {{engine}}",
+    "errors": {
+      "failed": "The summary failed.",
+      "speech_not_ready": "Speech-to-text is not ready: download a Whisper model under Speech.",
+      "ai_no_key": "The transcript is ready, but no Claude API key is stored.",
+      "ai_not_ready": "The transcript is ready, but the local model is not downloaded.",
+      "no_speech": "No speech was recognised in this recording.",
+      "transcription": "The transcription failed.",
+      "summary": "The transcript is ready, but the summary failed."
     }
   }
 }

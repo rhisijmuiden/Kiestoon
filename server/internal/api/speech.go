@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"github.com/rhisijmuiden/kiestoon/server/internal/ai"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -109,7 +110,7 @@ func (s *Server) speechDownload(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) speechRemove(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	if speech.FindVoice(id) == nil && speech.FindModel(id) == nil {
+	if speech.FindVoice(id) == nil && speech.FindModel(id) == nil && speech.FindLLM(id) == nil {
 		writeErr(w, http.StatusNotFound, "not_found")
 		return
 	}
@@ -257,9 +258,16 @@ func (s *Server) prepareMail(ctx context.Context, raw []byte) []byte {
 	if !ok || text == "" {
 		return nil
 	}
+	nl := s.defaultLanguage(ctx) == "nl"
 	label := "Transcription (automatic)"
-	if s.defaultLanguage(ctx) == "nl" {
+	if nl {
 		label = "Transcriptie (automatisch)"
+	}
+	extra := label + ":\r\n" + text + "\r\n"
+	if s.aiSettings(ctx).Voicemail {
+		if sum := s.voicemailSummary(tctx, audio, text); sum != nil {
+			extra = mailSummary(sum, nl) + "\r\n" + extra
+		}
 	}
 	var out bytes.Buffer
 	end := bytes.Index(raw, []byte("\r\n\r\n"))
@@ -279,7 +287,7 @@ func (s *Server) prepareMail(ctx context.Context, raw []byte) []byte {
 	for _, p := range parts {
 		body := p.body
 		if !added && strings.HasPrefix(strings.ToLower(p.header.Get("Content-Type")), "text/plain") {
-			body = append(bytes.TrimRight(body, "\r\n"), []byte("\r\n\r\n"+label+":\r\n"+text+"\r\n")...)
+			body = append(bytes.TrimRight(body, "\r\n"), []byte("\r\n\r\n"+extra)...)
 			// multipart decoded quoted-printable for us; the text is now plain 8-bit.
 			p.header.Del("Content-Transfer-Encoding")
 			p.header.Set("Content-Transfer-Encoding", "8bit")
@@ -330,4 +338,20 @@ func (s *Server) transcribeSpool(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// mailSummary is the AI summary block of a voicemail mail.
+func mailSummary(sum *ai.Summary, nl bool) string {
+	head, acts := "Summary (AI)", "To do"
+	if nl {
+		head, acts = "Samenvatting (AI)", "Te doen"
+	}
+	out := head + ":\r\n" + sum.Summary + "\r\n"
+	if len(sum.Actions) > 0 {
+		out += acts + ":\r\n"
+		for _, a := range sum.Actions {
+			out += "- " + a + "\r\n"
+		}
+	}
+	return out
 }

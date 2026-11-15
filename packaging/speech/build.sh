@@ -11,6 +11,8 @@ VERSION="${2:-$(tr -d '[:space:]' < "$HERE/VERSION")}"
 PIPER_VERSION=1.8.0
 WHISPER_TAG=v1.9.5
 WHISPER_COMMIT=d1be6fde11ac6e0407606b4e42fe72d34add8037
+LLAMA_TAG=b12000
+LLAMA_COMMIT=68d20b884c3878217de79eade0a249efde96ab38
 PREFIX=/opt/kiestoon-speech
 ARCH="$(dpkg --print-architecture)"
 
@@ -45,14 +47,29 @@ find "$WORK/whisper/build" -name '*.so*' \( -type f -o -type l \) -exec cp -a {}
 strip --strip-unneeded "$PREFIX/lib/whisper-cli" "$PREFIX"/lib/*.so* 2>/dev/null || true
 ln -s ../lib/whisper-cli "$PREFIX/bin/whisper-cli"
 
+# llama.cpp's llama-server for local AI summaries. It has its own ggml libraries in llama/lib, so
+# whisper.cpp and llama.cpp can each use the ggml version they were released with.
+git clone -q --depth 1 --branch "$LLAMA_TAG" https://github.com/ggml-org/llama.cpp "$WORK/llama"
+[ "$(git -C "$WORK/llama" rev-parse HEAD)" = "$LLAMA_COMMIT" ] || { echo "llama.cpp tag moved"; exit 1; }
+cmake -S "$WORK/llama" -B "$WORK/llama/build" -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_RPATH='$ORIGIN' -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON -DBUILD_SHARED_LIBS=ON -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON \
+  -DLLAMA_CURL=OFF -DLLAMA_OPENSSL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=ON >/dev/null
+cmake --build "$WORK/llama/build" -j"$(nproc)" --target llama-server >/dev/null
+install -d "$PREFIX/llama/bin" "$PREFIX/llama/lib"
+install -m 0755 "$WORK/llama/build/bin/llama-server" "$PREFIX/llama/lib/llama-server"
+find "$WORK/llama/build" -name '*.so*' \( -type f -o -type l \) -exec cp -a {} "$PREFIX/llama/lib/" \;
+strip --strip-unneeded "$PREFIX/llama/lib/llama-server" "$PREFIX"/llama/lib/*.so* 2>/dev/null || true
+ln -s ../lib/llama-server "$PREFIX/llama/bin/llama-server"
+
 cat > "$PREFIX/bin/piper" <<'SH'
 #!/bin/sh
 exec /opt/kiestoon-speech/venv/bin/python3 -m piper "$@"
 SH
 chmod 0755 "$PREFIX/bin/piper"
 
-# Smoke test: both programs start.
+# Smoke test: the programs start.
 "$PREFIX/bin/whisper-cli" --help >/dev/null
+"$PREFIX/llama/bin/llama-server" --help >/dev/null
 "$PREFIX/bin/piper" --help >/dev/null
 
 mkdir -p "$STAGE/opt"
@@ -63,7 +80,8 @@ kiestoon-speech bundles:
  - Piper $PIPER_VERSION (https://github.com/OHF-Voice/piper1-gpl), GPL-3.0, with ONNX Runtime (MIT)
    and espeak-ng (GPL-3.0) as installed by pip.
  - whisper.cpp $WHISPER_TAG (https://github.com/ggml-org/whisper.cpp), MIT.
-Voices and Whisper models are downloaded separately; their licences are shown in the portal.
+ - llama.cpp $LLAMA_TAG (https://github.com/ggml-org/llama.cpp), MIT.
+Voices, Whisper models and language models are downloaded separately; their licences are shown in the portal.
 COPY
 install -d "$STAGE/DEBIAN"
 SIZE="$(du -sk --exclude=DEBIAN "$STAGE" | cut -f1)"
@@ -79,8 +97,9 @@ Enhances: kiestoon
 Section: sound
 Priority: optional
 Homepage: https://github.com/rhisijmuiden/kiestoon
-Description: Local text-to-speech and speech-to-text for Kiestoon
- Piper turns typed text into voice prompts; whisper.cpp transcribes voicemail.
+Description: Local text-to-speech, speech-to-text and AI summaries for Kiestoon
+ Piper turns typed text into voice prompts; whisper.cpp transcribes voicemail and
+ recorded calls; llama.cpp summarises them with a local language model.
  Everything runs on the phone system itself: no audio leaves the server.
 CONTROL
 mkdir -p "$OUT"

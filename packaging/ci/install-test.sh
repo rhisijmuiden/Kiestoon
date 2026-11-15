@@ -70,6 +70,7 @@ ct 'command -v gs >/dev/null' || fail "ghostscript missing (fax sending)"
 if [ -n "$SPEECH_DEB" ]; then
   ct '/opt/kiestoon-speech/bin/whisper-cli --help >/dev/null 2>&1' || fail "whisper-cli does not start"
   ct 'echo Kiestoon | /opt/kiestoon-speech/bin/piper --help >/dev/null' || fail "piper does not start"
+  ct '/opt/kiestoon-speech/llama/bin/llama-server --help >/dev/null 2>&1' || fail "llama-server does not start"
 fi
 ct '! systemctl is-active --quiet caddy.service' || fail "caddy runs while internet mode is off"
 echo "install test passed"

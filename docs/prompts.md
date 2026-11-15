@@ -36,3 +36,5 @@ The **Speech** page (System menu) adds local speech technology. **No audio leave
 Voices and models are downloaded from the portal with pinned SHA-256 checksums. Larger Whisper models are more
 accurate but slower; *small* is a good choice from 2 CPU cores. Speech needs the `kiestoon-speech` package
 (`apt install kiestoon-speech`, about 66 MB).
+
+Summaries of calls and voicemail with a local model or Claude are on the [AI summaries](ai.md) page.

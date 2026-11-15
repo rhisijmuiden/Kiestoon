@@ -231,7 +231,10 @@ export type FraudSettings = {
 export type FeatureSettings = { parkingSlots: number; parkingTimeout: number; recordingDays: number; recordingBeep: boolean; journeyDays: number; fraud: FraudSettings }
 export type FeatureCode = { code: string; key: string }
 
-export type Recording = { name: string; date: string; uniqueId: string; from: string; to: string; size: number; duration: number }
+export type Recording = {
+  name: string; date: string; uniqueId: string; from: string; to: string; size: number; duration: number
+  ai?: { status: 'done' | 'failed'; topic?: string; sentiment?: AISentiment }
+}
 export type BlfEntry = { number: string; name: string; state: string; dnd: boolean }
 export type TransferTarget = { kind: 'extension' | 'ringgroup' | 'queue'; number: string; name: string; state?: string; dnd?: boolean; members?: number; waiting?: number }
 export type ActiveCall = {
@@ -251,7 +254,7 @@ export type PortalMe = {
   id: number; number: string; name: string; email: string; features: Features; voicemail: boolean; voicemailEmail: boolean
   webrtc: boolean; recordMode: string; outboundClass: string; schedules: { id: number; name: string }[]; codes: FeatureCode[]
 }
-export type VoicemailMessage = { folder: string; id: number; callerId: string; date: string; duration: number; transcript?: string }
+export type VoicemailMessage = { folder: string; id: number; callerId: string; date: string; duration: number; transcript?: string; summary?: AISummary }
 export type RingGroupStatus = { id: number; number: string; name: string; strategy: string; members: { number: string; name: string; state: string }[] }
 export type WebRTCAccount = { wsPath: string; username: string; password: string; number: string; name: string; domain: string; secureContext: boolean }
 
@@ -306,6 +309,16 @@ export type SpeechSettings = {
   tts: { enabled: boolean; voiceEn: string; voiceNl: string }
   stt: { enabled: boolean; model: string; language: 'auto' | 'nl' | 'en'; voicemail: boolean }
 }
+export type AISentiment = 'positive' | 'neutral' | 'negative'
+export type AISummary = { summary: string; actions: string[]; topic: string; sentiment: AISentiment }
+export type AISettings = {
+  calls: boolean; voicemail: boolean; engine: 'local' | 'cloud'; llm: string; cloudModel: string; language: 'auto' | 'nl' | 'en'; keepDays: number
+}
+export type AIData = {
+  settings: AISettings; llms: (SpeechItem & { ram: number })[]; llmInstalled: boolean; cloudModels: string[]
+  keySet: boolean; keyHint: string; sttReady: boolean
+}
+export type AIResult = { status: 'none' | 'done' | 'failed'; transcript?: string; summary?: AISummary; engine?: string; error?: string; at?: string }
 export type SpeechData = { settings: SpeechSettings; ttsInstalled: boolean; sttInstalled: boolean; voices: SpeechItem[]; models: SpeechItem[] }
 
 export type FaxJob = {

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -25,9 +26,12 @@ type Phone struct {
 	ExtensionID *int64 `json:"extensionId"`
 	Label       string `json:"label"`
 	Keys        []Key  `json:"keys"`
-	LastSeenAt  string `json:"lastSeenAt"`
-	LastIP      string `json:"lastIp"`
-	UserAgent   string `json:"userAgent"`
+	// Lines are extra extensions on the same device: handsets 2 and up of a DECT base (Gigaset)
+	// or accounts 2 and up of a desk phone.
+	Lines      []int64 `json:"lines"`
+	LastSeenAt string  `json:"lastSeenAt"`
+	LastIP     string  `json:"lastIp"`
+	UserAgent  string  `json:"userAgent"`
 }
 
 var reMAC = regexp.MustCompile(`^[0-9a-f]{12}$`)
@@ -42,13 +46,13 @@ func NormalizeMAC(s string) string {
 	}, s))
 }
 
-const phoneCols = `id, mac, vendor, model, extension_id, label, keys, last_seen_at, last_ip, user_agent`
+const phoneCols = `id, mac, vendor, model, extension_id, label, keys, last_seen_at, last_ip, user_agent, lines`
 
 func scanPhone(row interface{ Scan(...any) error }) (*Phone, error) {
 	var p Phone
 	var ext sql.NullInt64
-	var keys string
-	err := row.Scan(&p.ID, &p.MAC, &p.Vendor, &p.Model, &ext, &p.Label, &keys, &p.LastSeenAt, &p.LastIP, &p.UserAgent)
+	var keys, lines string
+	err := row.Scan(&p.ID, &p.MAC, &p.Vendor, &p.Model, &ext, &p.Label, &keys, &p.LastSeenAt, &p.LastIP, &p.UserAgent, &lines)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -59,8 +63,15 @@ func scanPhone(row interface{ Scan(...any) error }) (*Phone, error) {
 	if p.Keys == nil {
 		p.Keys = []Key{}
 	}
+	_ = json.Unmarshal([]byte(lines), &p.Lines)
+	if p.Lines == nil {
+		p.Lines = []int64{}
+	}
 	return &p, err
 }
+
+// Vendors are the phone brands Kiestoon provisions.
+var Vendors = []string{"yealink", "snom", "grandstream", "fanvil", "gigaset", "poly"}
 
 // Phones returns all phones.
 func (r *Repo) Phones(ctx context.Context) ([]Phone, error) {
@@ -90,16 +101,38 @@ func (r *Repo) PhoneByMAC(ctx context.Context, mac string) (*Phone, error) {
 	return scanPhone(r.DB.QueryRowContext(ctx, `SELECT `+phoneCols+` FROM phones WHERE mac = ?`, NormalizeMAC(mac)))
 }
 
-// SavePhone validates and stores a phone. maxKeys is the number of keys of the model.
-func (r *Repo) SavePhone(ctx context.Context, p *Phone, maxKeys int) error {
+// SavePhone validates and stores a phone. maxKeys is the number of keys of the model and maxLines
+// the number of accounts (or DECT handsets) it has.
+func (r *Repo) SavePhone(ctx context.Context, p *Phone, maxKeys, maxLines int) error {
 	p.MAC = NormalizeMAC(p.MAC)
 	p.Label = cleanText(p.Label, 40)
 	if !reMAC.MatchString(p.MAC) {
 		return invalid("invalid", "mac")
 	}
-	if p.Vendor != "yealink" && p.Vendor != "snom" && p.Vendor != "grandstream" {
+	if !slices.Contains(Vendors, p.Vendor) {
 		return invalid("invalid", "vendor")
 	}
+	if p.Lines == nil {
+		p.Lines = []int64{}
+	}
+	seen := map[int64]bool{}
+	if p.ExtensionID != nil {
+		seen[*p.ExtensionID] = true
+	}
+	lines := []int64{}
+	for _, id := range p.Lines {
+		if id > 0 && !seen[id] {
+			seen[id] = true
+			lines = append(lines, id)
+		}
+	}
+	if maxLines < 1 {
+		maxLines = 1
+	}
+	if len(lines) > maxLines-1 {
+		return invalid("invalid", "lines")
+	}
+	p.Lines = lines
 	if p.Keys == nil {
 		p.Keys = []Key{}
 	}
@@ -122,21 +155,22 @@ func (r *Repo) SavePhone(ctx context.Context, p *Phone, maxKeys int) error {
 		}
 	}
 	keys, _ := json.Marshal(p.Keys)
+	linesJSON, _ := json.Marshal(p.Lines)
 	var ext any
 	if p.ExtensionID != nil {
 		ext = *p.ExtensionID
 	}
 	if p.ID == 0 {
-		res, err := r.DB.ExecContext(ctx, `INSERT INTO phones(mac, vendor, model, extension_id, label, keys) VALUES (?,?,?,?,?,?)`,
-			p.MAC, p.Vendor, p.Model, ext, p.Label, string(keys))
+		res, err := r.DB.ExecContext(ctx, `INSERT INTO phones(mac, vendor, model, extension_id, label, keys, lines) VALUES (?,?,?,?,?,?,?)`,
+			p.MAC, p.Vendor, p.Model, ext, p.Label, string(keys), string(linesJSON))
 		if err != nil {
 			return uniqueErr(err, "mac")
 		}
 		p.ID, _ = res.LastInsertId()
 		return nil
 	}
-	res, err := r.DB.ExecContext(ctx, `UPDATE phones SET mac=?, vendor=?, model=?, extension_id=?, label=?, keys=? WHERE id=?`,
-		p.MAC, p.Vendor, p.Model, ext, p.Label, string(keys), p.ID)
+	res, err := r.DB.ExecContext(ctx, `UPDATE phones SET mac=?, vendor=?, model=?, extension_id=?, label=?, keys=?, lines=? WHERE id=?`,
+		p.MAC, p.Vendor, p.Model, ext, p.Label, string(keys), string(linesJSON), p.ID)
 	if err != nil {
 		return uniqueErr(err, "mac")
 	}

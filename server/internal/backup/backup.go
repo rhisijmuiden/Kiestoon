@@ -1,5 +1,5 @@
 // Package backup makes encrypted, deduplicated backups with restic to FTP, FTPS, SFTP or SCP (SSH)
-// servers, through rclone. The root helper runs these commands; the portal only stores the
+// servers and to Microsoft OneDrive, through rclone. The root helper runs these commands; the portal only stores the
 // targets and the schedule.
 //
 // A "full" backup reads every file again and is stored without a parent snapshot; an
@@ -39,6 +39,8 @@ type Target struct {
 	ImplicitTLS  bool   `json:"implicitTls"`
 	RepoPassword string `json:"repoPassword,omitempty"`
 	Enabled      bool   `json:"enabled"`
+	// OneDrive is the Microsoft account of a "onedrive" target.
+	OneDrive *OneDrive `json:"onedrive,omitempty"`
 }
 
 var (
@@ -57,6 +59,22 @@ func (t *Target) Validate() error {
 	}
 	switch t.Kind {
 	case "ftp", "ftps", "sftp", "scp":
+		t.OneDrive = nil
+	case "onedrive":
+		if t.OneDrive == nil {
+			return errors.New("clientId")
+		}
+		if err := t.OneDrive.Validate(); err != nil {
+			return err
+		}
+		t.Host, t.Port, t.Username, t.Password, t.PrivateKey, t.ImplicitTLS = "graph.microsoft.com", 443, "", "", "", false
+		if !rePath.MatchString(t.Path) || strings.Contains(t.Path, "..") {
+			return errors.New("path")
+		}
+		if len(t.RepoPassword) < 12 {
+			return errors.New("repoPassword")
+		}
+		return nil
 	default:
 		return errors.New("kind")
 	}
@@ -147,6 +165,30 @@ func (r *Runner) Env(ctx context.Context, t Target) ([]string, error) {
 	}
 	if strings.HasPrefix(t.Path, "/") {
 		path = "/" + path
+	}
+	if t.Kind == "onedrive" {
+		o := t.OneDrive
+		if o.AccessToken == "" || o.DriveID == "" {
+			return nil, errors.New("onedrive_not_connected")
+		}
+		env := []string{
+			"PATH=/usr/sbin:/usr/bin:/sbin:/bin",
+			"HOME=/root",
+			"RESTIC_REPOSITORY=rclone:kt:" + strings.TrimPrefix(path, "/"),
+			"RESTIC_PASSWORD=" + t.RepoPassword,
+			"RESTIC_CACHE_DIR=" + r.CacheDir,
+			"RCLONE_CONFIG_KT_TYPE=onedrive",
+			"RCLONE_CONFIG_KT_CLIENT_ID=" + o.ClientID,
+			"RCLONE_CONFIG_KT_TOKEN=" + o.rcloneToken(),
+			"RCLONE_CONFIG_KT_DRIVE_ID=" + o.DriveID,
+			"RCLONE_CONFIG_KT_DRIVE_TYPE=" + o.DriveType,
+			"RCLONE_CONFIG_KT_AUTH_URL=" + o.authority() + "/authorize",
+			"RCLONE_CONFIG_KT_TOKEN_URL=" + o.authority() + "/token",
+		}
+		if o.ClientSecret != "" {
+			env = append(env, "RCLONE_CONFIG_KT_CLIENT_SECRET="+o.ClientSecret)
+		}
+		return env, nil
 	}
 	env := []string{
 		"PATH=/usr/sbin:/usr/bin:/sbin:/bin",

@@ -27,6 +27,8 @@ type Options struct {
 	Organization string
 	// PromptDir holds the uploaded IVR and queue prompts (<id>.wav).
 	PromptDir string
+	// FaxDir is where Asterisk writes received faxes (TIFF) for the portal.
+	FaxDir string
 }
 
 // Files maps a file name in the pbx directory to its contents.
@@ -253,6 +255,13 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 		x.f("language=%s", st.Language)
 		if t.SRTP {
 			x.f("media_encryption=sdes")
+		}
+		if t.T38 {
+			// Fax as T.38 (UDPTL) with redundancy; the provider re-invites from G.711.
+			x.f("t38_udptl=yes")
+			x.f("t38_udptl_ec=redundancy")
+			x.f("t38_udptl_maxdatagram=400")
+			x.f("t38_udptl_nat=yes")
 		}
 		x.f("set_var=KT_TRUNK=%d", t.ID)
 		x.f("set_var=KT_CLASS=international")
@@ -518,9 +527,14 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 			x.f(` same => n,ExecIf($["${CALLERID(num):0:%d}" = "00%s"]?Set(CALLERID(num)=0${CALLERID(num):%d}))`, len(cc)+2, cc, len(cc)+2)
 			x.f(` same => n,ExecIf($["${CALLERID(num):0:1}" = "+"]?Set(CALLERID(num)=00${CALLERID(num):1}))`)
 		}
+		if s.Phonebook.CallerIDLookup && len(s.Contacts) > 0 {
+			x.f(` same => n,ExecIf($[${DIALPLAN_EXISTS(kiestoon-cidname,${CALLERID(num)},1)}]?Gosub(kiestoon-cidname,${CALLERID(num)},1))`)
+		}
 		x.f(" same => n,Goto(kiestoon-did,${KT_DID},1)")
 	}
 	x.nl()
+	genCallerIDNames(&x, s)
+	genFax(&x, s, o)
 
 	x.f("[kiestoon-did]")
 	var catchAll *pbx.InboundRoute

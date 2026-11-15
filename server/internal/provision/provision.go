@@ -1,5 +1,5 @@
-// Package provision builds configuration files for desk phones (Yealink, Snom, Grandstream) that
-// fetch them from the portal over HTTP(S), for example via DHCP option 66.
+// Package provision builds configuration files for desk and DECT phones (Yealink, Snom, Grandstream,
+// Fanvil, Gigaset, Poly) that fetch them from the portal over HTTP(S), for example via DHCP option 66.
 package provision
 
 import (
@@ -84,27 +84,52 @@ type Model struct {
 	Name   string `json:"name"`
 	// Keys is the number of programmable keys the layout editor shows. 0: no key layout support.
 	Keys int `json:"keys"`
+	// Lines is the number of extensions the device can carry (DECT handsets). 0 means one.
+	Lines int `json:"lines,omitempty"`
+}
+
+// MaxLines is the number of extensions the model can carry.
+func (m Model) MaxLines() int {
+	if m.Lines < 1 {
+		return 1
+	}
+	return m.Lines
 }
 
 // Models are the phones Kiestoon can provision.
 var Models = []Model{
-	{"yealink", "T31P", "Yealink T31P", 2},
-	{"yealink", "T33G", "Yealink T33G", 4},
-	{"yealink", "T43U", "Yealink T43U", 12},
-	{"yealink", "T46U", "Yealink T46U", 16},
-	{"yealink", "T48U", "Yealink T48U", 29},
-	{"yealink", "T53W", "Yealink T53W", 12},
-	{"yealink", "T54W", "Yealink T54W", 16},
-	{"yealink", "T57W", "Yealink T57W", 29},
-	{"snom", "D713", "Snom D713", 4},
-	{"snom", "D717", "Snom D717", 6},
-	{"snom", "D735", "Snom D735", 8},
-	{"snom", "D785", "Snom D785", 24},
-	{"snom", "D865", "Snom D865", 12},
-	{"grandstream", "GRP2612", "Grandstream GRP2612", 7},
-	{"grandstream", "GRP2614", "Grandstream GRP2614", 7},
-	{"grandstream", "GRP2616", "Grandstream GRP2616", 7},
-	{"grandstream", "GXP2170", "Grandstream GXP2170", 7},
+	{"yealink", "T31P", "Yealink T31P", 2, 0},
+	{"yealink", "T33G", "Yealink T33G", 4, 0},
+	{"yealink", "T43U", "Yealink T43U", 12, 0},
+	{"yealink", "T46U", "Yealink T46U", 16, 0},
+	{"yealink", "T48U", "Yealink T48U", 29, 0},
+	{"yealink", "T53W", "Yealink T53W", 12, 0},
+	{"yealink", "T54W", "Yealink T54W", 16, 0},
+	{"yealink", "T57W", "Yealink T57W", 29, 0},
+	{"snom", "D713", "Snom D713", 4, 0},
+	{"snom", "D717", "Snom D717", 6, 0},
+	{"snom", "D735", "Snom D735", 8, 0},
+	{"snom", "D785", "Snom D785", 24, 0},
+	{"snom", "D865", "Snom D865", 12, 0},
+	{"grandstream", "GRP2612", "Grandstream GRP2612", 7, 0},
+	{"grandstream", "GRP2614", "Grandstream GRP2614", 7, 0},
+	{"grandstream", "GRP2616", "Grandstream GRP2616", 7, 0},
+	{"grandstream", "GXP2170", "Grandstream GXP2170", 7, 0},
+	{"fanvil", "X3U", "Fanvil X3U", 6, 0},
+	{"fanvil", "X4U", "Fanvil X4U", 12, 0},
+	{"fanvil", "X5U", "Fanvil X5U", 16, 0},
+	{"fanvil", "X6U", "Fanvil X6U", 20, 0},
+	{"fanvil", "X7", "Fanvil X7", 20, 0},
+	{"gigaset", "N670", "Gigaset N670 IP PRO", 0, 20},
+	{"gigaset", "N870", "Gigaset N870 IP PRO", 0, 100},
+	{"gigaset", "N870E", "Gigaset N870E IP PRO", 0, 100},
+	{"poly", "VVX150", "Poly VVX 150", 0, 0},
+	{"poly", "VVX250", "Poly VVX 250", 3, 0},
+	{"poly", "VVX350", "Poly VVX 350", 5, 0},
+	{"poly", "VVX450", "Poly VVX 450", 11, 0},
+	{"poly", "E220", "Poly Edge E220", 3, 0},
+	{"poly", "E350", "Poly Edge E350", 7, 0},
+	{"poly", "E450", "Poly Edge E450", 11, 0},
 }
 
 // FindModel returns the model, or nil.
@@ -125,6 +150,10 @@ type Input struct {
 	Ext      *pbx.Extension
 	Server   string // host the phone should register to
 	Org      string
+	// Lines are the extensions of DECT handsets 2 and up (Gigaset).
+	Lines []*pbx.Extension
+	// PhonebookURL is the address of the XML phone book for this vendor ("" when the phone book is off).
+	PhonebookURL string
 }
 
 func transportCode(t string) (yealink, gs int, snom string) {
@@ -201,6 +230,13 @@ func Yealink(in Input) string {
 	} else {
 		w("account.1.enable", 0)
 	}
+	if in.PhonebookURL != "" {
+		w("features.remote_phonebook.enable", 1)
+		w("features.remote_phonebook.flash_time", 3600)
+		w("remote_phonebook.data.1.name", clean(in.Org))
+		w("remote_phonebook.data.1.url", in.PhonebookURL)
+		w("directory.incoming_call_match_enable", 1)
+	}
 	for i, k := range in.Phone.Keys {
 		n := i + 1
 		switch k.Type {
@@ -274,6 +310,9 @@ func Snom(in Input) string {
 		}
 		wi("codec_priority_list", "g722,pcma,pcmu,telephone-event")
 	}
+	if in.PhonebookURL != "" {
+		w("dkey_directory", "url "+in.PhonebookURL)
+	}
 	b.WriteString("  </phone-settings>\n  <functionKeys e=\"2\">\n")
 	for i, k := range in.Phone.Keys {
 		val := ""
@@ -333,6 +372,17 @@ func Grandstream(in Input) string {
 	} else {
 		p(271, 0)
 	}
+	if in.PhonebookURL != "" {
+		// Phone book XML download: P330 protocol (1 HTTP, 3 HTTPS), P331 the path (the phone adds
+		// phonebook.xml), P332 the interval in minutes.
+		proto, path := 1, strings.TrimPrefix(in.PhonebookURL, "http://")
+		if strings.HasPrefix(in.PhonebookURL, "https://") {
+			proto, path = 3, strings.TrimPrefix(in.PhonebookURL, "https://")
+		}
+		p(330, proto)
+		p(331, strings.TrimSuffix(path, "/phonebook.xml"))
+		p(332, 60)
+	}
 	// Multi-purpose keys 1-7: mode P323+i, account P301+3i, name P302+3i, value P303+3i.
 	for i, k := range in.Phone.Keys {
 		if i >= 7 {
@@ -356,29 +406,43 @@ func Grandstream(in Input) string {
 
 // Request is a parsed provisioning file name.
 type Request struct {
+	// Vendor is "" for <mac>.cfg, which Yealink, Fanvil and Poly all ask for: the stored phone decides.
 	Vendor string
 	MAC    string // "" for common/index files
 	Model  string
 	Common bool
+	// PolyConfig is the second Poly file (kiestoon-<mac>.cfg) with the actual settings.
+	PolyConfig bool
+	// Phonebook is the XML phone book of a vendor (MAC empty).
+	Phonebook bool
 }
 
 var (
-	reYealink  = regexp.MustCompile(`^([0-9a-fA-F]{12})\.cfg$`)
+	reMACcfg   = regexp.MustCompile(`^([0-9a-fA-F]{12})\.cfg$`)
 	reSnomMAC  = regexp.MustCompile(`^snom/([0-9a-fA-F]{12})\.xml$`)
 	reSnomIdx  = regexp.MustCompile(`^snom([A-Za-z0-9]{2,8})(-([0-9A-Fa-f]{12}))?\.htm$`)
 	reGrand    = regexp.MustCompile(`^cfg([0-9a-fA-F]{12})(\.xml)?$`)
 	reYealinkC = regexp.MustCompile(`^y0{12}\.cfg$`)
+	rePolyC    = regexp.MustCompile(`^0{12}\.cfg$`)
+	rePolyCfg  = regexp.MustCompile(`^kiestoon-([0-9a-fA-F]{12})\.cfg$`)
+	reGigaset  = regexp.MustCompile(`^(gigaset/)?([0-9a-fA-F]{12})\.xml$`)
+	rePhonebk  = regexp.MustCompile(`^phonebook/(yealink|snom|grandstream|fanvil|poly)(/phonebook)?\.xml$`)
 )
 
-// Parse recognises the file names the three vendors ask for.
+// Parse recognises the file names the vendors ask for.
 func Parse(name string) (Request, bool) {
+	lower := func(re *regexp.Regexp, i int) string { return strings.ToLower(re.FindStringSubmatch(name)[i]) }
 	switch {
 	case reYealinkC.MatchString(name):
 		return Request{Vendor: "yealink", Common: true}, true
-	case reYealink.MatchString(name):
-		return Request{Vendor: "yealink", MAC: strings.ToLower(reYealink.FindStringSubmatch(name)[1])}, true
+	case rePolyC.MatchString(name):
+		return Request{Vendor: "poly", Common: true}, true
+	case reMACcfg.MatchString(name):
+		return Request{MAC: lower(reMACcfg, 1)}, true
+	case rePolyCfg.MatchString(name):
+		return Request{Vendor: "poly", MAC: lower(rePolyCfg, 1), PolyConfig: true}, true
 	case reSnomMAC.MatchString(name):
-		return Request{Vendor: "snom", MAC: strings.ToLower(reSnomMAC.FindStringSubmatch(name)[1])}, true
+		return Request{Vendor: "snom", MAC: lower(reSnomMAC, 1)}, true
 	case reSnomIdx.MatchString(name):
 		m := reSnomIdx.FindStringSubmatch(name)
 		if m[3] != "" {
@@ -386,18 +450,37 @@ func Parse(name string) (Request, bool) {
 		}
 		return Request{Vendor: "snom", Model: m[1], Common: true}, true
 	case reGrand.MatchString(name):
-		return Request{Vendor: "grandstream", MAC: strings.ToLower(reGrand.FindStringSubmatch(name)[1])}, true
+		return Request{Vendor: "grandstream", MAC: lower(reGrand, 1)}, true
+	case reGigaset.MatchString(name):
+		return Request{Vendor: "gigaset", MAC: lower(reGigaset, 2)}, true
+	case rePhonebk.MatchString(name):
+		return Request{Vendor: rePhonebk.FindStringSubmatch(name)[1], Phonebook: true}, true
 	}
 	return Request{}, false
 }
 
-// Render builds the configuration for a phone.
+// Matches reports whether the stored phone may be served the file of the request.
+func (r Request) Matches(vendor string) bool {
+	if r.Vendor == "" {
+		return vendor == "yealink" || vendor == "fanvil" || vendor == "poly"
+	}
+	return r.Vendor == vendor
+}
+
+// Render builds the configuration for a phone. For Poly this is the file with the settings; the
+// master file that points to it is PolyMaster.
 func Render(in Input) (body, contentType string) {
 	switch in.Phone.Vendor {
 	case "snom":
 		return Snom(in), "application/xml; charset=utf-8"
 	case "grandstream":
 		return Grandstream(in), "application/xml; charset=utf-8"
+	case "fanvil":
+		return Fanvil(in), "text/plain; charset=utf-8"
+	case "gigaset":
+		return Gigaset(in), "application/xml; charset=utf-8"
+	case "poly":
+		return Poly(in), "application/xml; charset=utf-8"
 	}
 	return Yealink(in), "text/plain; charset=utf-8"
 }

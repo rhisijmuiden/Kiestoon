@@ -33,6 +33,8 @@ func destGoto(d pbx.Destination) string {
 		return fmt.Sprintf("Goto(kiestoon-conf-%s,s,1)", d.Target)
 	case pbx.DestExternal:
 		return fmt.Sprintf("Goto(kiestoon-external,%s,1)", d.Target)
+	case pbx.DestFax:
+		return fmt.Sprintf("Goto(kiestoon-fax-%s,s,1)", d.Target)
 	}
 	return "Hangup()"
 }

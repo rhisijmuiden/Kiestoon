@@ -85,6 +85,8 @@ type Trunk struct {
 	CallerID     string `json:"callerId"`
 	SRTP         bool   `json:"srtp"`
 	Enabled      bool   `json:"enabled"`
+	// T38 offers T.38 fax (UDPTL) to the provider; without it faxes come in as G.711 audio.
+	T38 bool `json:"t38"`
 }
 
 // Endpoint is the Asterisk endpoint name of the trunk.
@@ -275,18 +277,18 @@ func uniqueErr(err error, field string) error {
 // ---- trunks -----------------------------------------------------------------
 
 const trunkCols = `id, name, provider, auth_mode, host, port, transport, username, auth_username, secret, from_domain,
-	from_user, match_ips, did_source, codecs, max_channels, caller_id, srtp, enabled`
+	from_user, match_ips, did_source, codecs, max_channels, caller_id, srtp, enabled, t38`
 
 func scanTrunk(row interface{ Scan(...any) error }) (*Trunk, error) {
 	var t Trunk
-	var srtp, en int
+	var srtp, en, t38 int
 	err := row.Scan(&t.ID, &t.Name, &t.Provider, &t.AuthMode, &t.Host, &t.Port, &t.Transport, &t.Username,
 		&t.AuthUsername, &t.Secret, &t.FromDomain, &t.FromUser, &t.MatchIPs, &t.DIDSource, &t.Codecs, &t.MaxChannels,
-		&t.CallerID, &srtp, &en)
+		&t.CallerID, &srtp, &en, &t38)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
-	t.SRTP, t.Enabled, t.SecretSet = srtp == 1, en == 1, t.Secret != ""
+	t.SRTP, t.Enabled, t.SecretSet, t.T38 = srtp == 1, en == 1, t.Secret != "", t38 == 1
 	return &t, err
 }
 
@@ -326,11 +328,11 @@ func (r *Repo) SaveTrunk(ctx context.Context, t *Trunk) error {
 		return err
 	}
 	args := []any{t.Name, t.Provider, t.AuthMode, t.Host, t.Port, t.Transport, t.Username, t.AuthUsername, t.Secret,
-		t.FromDomain, t.FromUser, t.MatchIPs, t.DIDSource, t.Codecs, t.MaxChannels, t.CallerID, b2i(t.SRTP), b2i(t.Enabled)}
+		t.FromDomain, t.FromUser, t.MatchIPs, t.DIDSource, t.Codecs, t.MaxChannels, t.CallerID, b2i(t.SRTP), b2i(t.Enabled), b2i(t.T38)}
 	if t.ID == 0 {
 		res, err := r.DB.ExecContext(ctx, `INSERT INTO trunks(name, provider, auth_mode, host, port, transport, username,
-			auth_username, secret, from_domain, from_user, match_ips, did_source, codecs, max_channels, caller_id, srtp, enabled)
-			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
+			auth_username, secret, from_domain, from_user, match_ips, did_source, codecs, max_channels, caller_id, srtp, enabled, t38)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
 		if err != nil {
 			return uniqueErr(err, "name")
 		}
@@ -339,7 +341,7 @@ func (r *Repo) SaveTrunk(ctx context.Context, t *Trunk) error {
 	}
 	_, err := r.DB.ExecContext(ctx, `UPDATE trunks SET name=?, provider=?, auth_mode=?, host=?, port=?, transport=?,
 		username=?, auth_username=?, secret=?, from_domain=?, from_user=?, match_ips=?, did_source=?, codecs=?,
-		max_channels=?, caller_id=?, srtp=?, enabled=? WHERE id=?`, append(args, t.ID)...)
+		max_channels=?, caller_id=?, srtp=?, enabled=?, t38=? WHERE id=?`, append(args, t.ID)...)
 	return uniqueErr(err, "name")
 }
 

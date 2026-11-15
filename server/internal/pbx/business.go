@@ -27,12 +27,13 @@ const (
 	DestTimeCondition = "timecondition"
 	DestConference    = "conference"
 	DestExternal      = "external"
+	DestFax           = "fax"
 	DestHangup        = "hangup"
 )
 
 // DestinationTypes lists every destination type, in the order the UI offers them.
 var DestinationTypes = []string{DestExtension, DestVoicemail, DestRingGroup, DestQueue, DestIVR, DestTimeCondition,
-	DestConference, DestExternal, DestHangup}
+	DestConference, DestFax, DestExternal, DestHangup}
 
 // Destination is a place a call goes to. Target is an extension number for extension and voicemail,
 // a phone number for external, and a row ID for the other types.
@@ -80,6 +81,8 @@ func (r *Repo) ValidateDestination(ctx context.Context, d *Destination, field st
 		table = "time_conditions"
 	case DestConference:
 		table = "conferences"
+	case DestFax:
+		table = "fax_boxes"
 	default:
 		return invalid("invalid", field)
 	}

@@ -25,6 +25,7 @@ import (
 	"github.com/rhisijmuiden/kiestoon/server/internal/mail"
 	"github.com/rhisijmuiden/kiestoon/server/internal/media"
 	"github.com/rhisijmuiden/kiestoon/server/internal/pbx"
+	"github.com/rhisijmuiden/kiestoon/server/internal/phonebook"
 	"github.com/rhisijmuiden/kiestoon/server/internal/sso"
 	"github.com/rhisijmuiden/kiestoon/server/internal/store"
 	"github.com/rhisijmuiden/kiestoon/server/internal/updates"
@@ -52,12 +53,20 @@ type Server struct {
 	Spool   *media.Spool
 	SSO     *sso.Store
 	SSOFlow *sso.Flow
+	// SAMLFlow keeps SAML sign-ins in progress.
+	SAMLFlow *sso.SAMLFlow
 	// loginLimit counts failed password and MFA attempts per IP.
 	loginLimit *auth.Limiter
 	// provLimit counts failed provisioning requests per IP.
 	provLimit *auth.Limiter
 	started   time.Time
 	backupMu  sync.Mutex
+	odMu      sync.Mutex
+	odLogins  map[int64]oneDriveLogin
+	ldapMu    sync.Mutex
+	ldap      *phonebook.Directory
+	ldapOn    bool
+	hooks     *webhookQueue
 }
 
 // New wires up a server.
@@ -75,9 +84,11 @@ func New(cfg config.Config, db *sql.DB, log *slog.Logger) *Server {
 		Spool:      &media.Spool{Dir: cfg.SpoolDir()},
 		SSO:        &sso.Store{DB: db},
 		SSOFlow:    sso.NewFlow(),
+		SAMLFlow:   sso.NewSAMLFlow(),
 		loginLimit: auth.NewLimiter(5, 10*time.Minute),
 		provLimit:  auth.NewLimiter(20, 10*time.Minute),
 		started:    time.Now(),
+		hooks:      &webhookQueue{},
 	}
 	secret, _ := store.GetSetting(context.Background(), db, "ami_secret", "")
 	if secret == "" {
@@ -136,6 +147,10 @@ func (s *Server) Routes() http.Handler {
 	s.businessRoutes(mux, admin, recep)
 	s.userRoutes(mux, admin)
 	s.portalRoutes(mux, full)
+	s.internetRoutes(mux, admin)
+	s.faxRoutes(mux, admin, recep)
+	s.phonebookRoutes(mux, admin, recep, full)
+	s.integrationRoutes(mux, admin, recep)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)
@@ -149,6 +164,12 @@ func (s *Server) Routes() http.Handler {
 func (s *Server) jsonOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
+		// The SAML response arrives as a form POST from the identity provider; it is signed and
+		// checked against a sign-in this portal started.
+		if r.Method == http.MethodPost && r.URL.Path == "/api/auth/saml/acs" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			ct, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
 			if ct != "application/json" {
@@ -167,6 +188,19 @@ func (s *Server) jsonOnly(next http.Handler) http.Handler {
 
 func (s *Server) signedIn(next http.Handler, needMFA bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// API tokens (Authorization: Bearer kt_…) instead of a session cookie.
+		if tsess, bearer := s.tokenSession(r); bearer {
+			if tsess == nil {
+				writeErr(w, http.StatusUnauthorized, "invalid_token")
+				return
+			}
+			if !tokenAllowed(r, tsess) {
+				writeErr(w, http.StatusForbidden, "token_not_allowed")
+				return
+			}
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, tsess)))
+			return
+		}
 		c, err := r.Cookie(CookieName)
 		if err != nil {
 			writeErr(w, http.StatusUnauthorized, "not_signed_in")
@@ -192,7 +226,8 @@ func (s *Server) mfaEnrolled(next http.Handler) http.Handler {
 		sess := sessionFrom(r)
 		u := sess.User
 		// The identity provider already asked for a second factor.
-		if u.IsAdmin() && !u.TOTPEnabled && sess.Method != "sso-mfa" {
+		// API tokens are created by a signed-in (and so enrolled) user.
+		if u.IsAdmin() && !u.TOTPEnabled && sess.Method != "sso-mfa" && !strings.HasPrefix(sess.Method, "token") {
 			writeErr(w, http.StatusForbidden, "mfa_enrollment_required")
 			return
 		}
@@ -239,7 +274,25 @@ func decode(r *http.Request, v any) error {
 	return dec.Decode(v)
 }
 
+// fromProxy reports whether the request came through Caddy (internet mode) on this machine.
+func fromProxy(r *http.Request) bool {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback() && r.Header.Get("X-Forwarded-For") != ""
+}
+
+// clientIP is the address of the browser or phone. Behind Caddy on the same machine it is the
+// address Caddy puts in X-Forwarded-For (Caddy replaces what the client sent).
 func clientIP(r *http.Request) string {
+	if fromProxy(r) {
+		parts := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
+		if ip := net.ParseIP(strings.TrimSpace(parts[len(parts)-1])); ip != nil {
+			return ip.String()
+		}
+	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return r.RemoteAddr
@@ -247,7 +300,9 @@ func clientIP(r *http.Request) string {
 	return host
 }
 
-func (s *Server) secure(r *http.Request) bool { return s.Cfg.SecureCookies || r.TLS != nil }
+func (s *Server) secure(r *http.Request) bool {
+	return s.Cfg.SecureCookies || r.TLS != nil || (fromProxy(r) && r.Header.Get("X-Forwarded-Proto") == "https")
+}
 
 func (s *Server) setCookie(w http.ResponseWriter, r *http.Request, token string) {
 	http.SetCookie(w, &http.Cookie{

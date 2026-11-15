@@ -42,6 +42,7 @@ export type Trunk = {
   maxChannels: number
   callerId: string
   srtp: boolean
+  t38: boolean
   enabled: boolean
 }
 
@@ -107,14 +108,18 @@ export type MailLog = { id: number; at: string; recipient: string; subject: stri
 export type FirewallConfig = {
   enabled: boolean; sipWhitelist: string[]; allowPrivateSip: boolean; sipOpen: boolean; adminNetworks: string[]
   fail2banEnabled: boolean; banMinutes: number; findMinutes: number; maxRetry: number; ignoreIps: string[]
+  geoMode: 'off' | 'allow' | 'block' | ''; geoCountries: string[]; geoPortal: boolean
 }
 export type FirewallStatus = { active: boolean; pending: boolean; secondsLeft: number; ruleset: string; rolledBack: boolean }
 export type Ban = { jail: string; ip: string }
 
 export type BackupTarget = {
-  id: number; name: string; kind: 'ftp' | 'ftps' | 'sftp' | 'scp'; host: string; port: number; username: string
+  id: number; name: string; kind: 'ftp' | 'ftps' | 'sftp' | 'scp' | 'onedrive'; host: string; port: number; username: string
   password?: string; passwordSet: boolean; privateKey?: string; keySet: boolean; path: string; implicitTls: boolean
-  repoPassword?: string; enabled: boolean
+  repoPassword?: string; enabled: boolean; onedrive?: OneDrive
+}
+export type OneDrive = {
+  tenant: string; clientId: string; clientSecret?: string; secretSet?: boolean; connected?: boolean; driveType?: string; account?: string
 }
 export type BackupRun = {
   id: number; target: string; kind: string; trigger: string; startedAt: string; finishedAt: string; state: string
@@ -124,16 +129,16 @@ export type Snapshot = { id: string; shortId: string; time: string; hostname: st
 export type Schedule = { enabled: boolean; time: string; fullWeekday: number; retention: { daily: number; weekly: number; monthly: number } }
 
 export type ProvSettings = { enabled: boolean; username: string; password: string; server: string; adminPassword: string; ntpServer: string; language: 'en' | 'nl' }
-export type PhoneModel = { vendor: 'yealink' | 'snom' | 'grandstream'; id: string; name: string; keys: number }
+export type PhoneModel = { vendor: 'yealink' | 'snom' | 'grandstream' | 'fanvil' | 'gigaset' | 'poly'; id: string; name: string; keys: number; lines?: number }
 export type PhoneKey = { type: 'none' | 'line' | 'blf' | 'speed'; value: string; label: string }
 export type Phone = {
   id: number; mac: string; vendor: PhoneModel['vendor']; model: string; extensionId: number | null; label: string
-  keys: PhoneKey[]; lastSeenAt: string; lastIp: string; userAgent: string
+  keys: PhoneKey[]; lines: number[]; lastSeenAt: string; lastIp: string; userAgent: string
 }
 
 // ---- phase 2: business features ---------------------------------------------
 
-export type DestType = 'extension' | 'voicemail' | 'ringgroup' | 'queue' | 'ivr' | 'timecondition' | 'conference' | 'external' | 'hangup'
+export type DestType = 'extension' | 'voicemail' | 'ringgroup' | 'queue' | 'ivr' | 'timecondition' | 'conference' | 'fax' | 'external' | 'hangup'
 export type Destination = { type: DestType | ''; target: string }
 export type DestOption = { type: DestType; target: string; label: string }
 export type Destinations = { types: DestType[]; options: DestOption[] }
@@ -199,9 +204,9 @@ export type BlfEntry = { number: string; name: string; state: string; dnd: boole
 
 export type RoleMapping = { group: string; role: string }
 export type SsoProvider = {
-  id: number; name: string; kind: 'entra' | 'google' | 'keycloak' | 'authentik' | 'generic'; issuer: string; clientId: string
+  id: number; name: string; kind: 'entra' | 'google' | 'keycloak' | 'authentik' | 'generic' | 'saml'; issuer: string; clientId: string
   clientSecret?: string; secretSet: boolean; scopes: string; groupsClaim: string; roleMap: RoleMapping[]; defaultRole: string
-  autoCreate: boolean; trustMfa: boolean; enabled: boolean
+  autoCreate: boolean; trustMfa: boolean; enabled: boolean; protocol?: 'oidc' | 'saml'; samlMetadata?: string
 }
 
 export type PortalMe = {
@@ -211,3 +216,33 @@ export type PortalMe = {
 export type VoicemailMessage = { folder: string; id: number; callerId: string; date: string; duration: number }
 export type RingGroupStatus = { id: number; number: string; name: string; strategy: string; members: { number: string; name: string; state: string }[] }
 export type WebRTCAccount = { wsPath: string; username: string; password: string; number: string; name: string; domain: string; secureContext: boolean }
+
+// ---- phase 3: integrations --------------------------------------------------
+
+export type InternetSettings = { enabled: boolean; domain: string; email: string; staging: boolean; useForSip: boolean }
+export type CertInfo = { subject: string; issuer: string; notAfter: string; dnsNames: string[] }
+export type InternetData = {
+  settings: InternetSettings; status: { installed: boolean; active: boolean; certificate: CertInfo | null }; helperAvailable: boolean; dns?: string[]
+}
+export type GeoStatus = { available: boolean; updatedAt?: string; attribution: string }
+
+export type FaxBox = { id: number; name: string; emails: string; keepDays: number; ecm: boolean; enabled: boolean }
+export type Fax = {
+  id: number; boxId: number | null; boxName: string; receivedAt: string; caller: string; callerName: string; did: string
+  remoteStation: string; pages: number; status: 'success' | 'failed'; error: string; size: number; mailed: boolean
+}
+
+export type Contact = { id: number; name: string; company: string; work: string; mobile: string; other: string; email: string; notes: string }
+export type PhonebookSettings = {
+  includeExtensions: boolean; callerIdLookup: boolean; xmlEnabled: boolean; ldapEnabled: boolean; ldapPort: number; ldapsPort: number; ldapAuth: boolean
+}
+export type PhonebookInfo = { settings: PhonebookSettings; baseDn: string; bindDn: string; server: string; ldapRunning: boolean; xmlBase: string }
+
+export type ApiToken = {
+  id: number; name: string; prefix: string; userId: number; username: string; role: string; readOnly: boolean; expiresAt: string
+  lastUsedAt: string; lastIp: string; createdAt: string
+}
+export type Webhook = { id: number; name: string; url: string; events: string[]; secret: string; enabled: boolean; createdAt: string }
+export type WebhookDelivery = { id: number; at: string; event: string; attempt: number; status: number; error: string; durationMs: number }
+
+export type Passkey = { id: number; name: string; createdAt: string; lastUsedAt: string }

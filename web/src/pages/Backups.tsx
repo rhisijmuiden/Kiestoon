@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Archive, DatabaseBackup, History, KeyRound, Pencil, Play, Plus, PlugZap, RotateCcw, Trash2 } from 'lucide-react'
+import { Archive, Cloud, DatabaseBackup, ExternalLink, Loader2, History, KeyRound, Pencil, Play, Plus, PlugZap, RotateCcw, Trash2 } from 'lucide-react'
 import { Badge, CopyField, Empty, Modal, SectionTitle, Select, Table, Textarea, Toggle, formatBytes, formatDate, td, useApi } from '../components/kit'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
@@ -10,7 +10,7 @@ const blank: BackupTarget = {
   id: 0, name: '', kind: 'sftp', host: '', port: 22, username: '', passwordSet: false, keySet: false, path: 'kiestoon',
   implicitTls: false, enabled: true,
 }
-const defaultPorts: Record<BackupTarget['kind'], number> = { ftp: 21, ftps: 21, sftp: 22, scp: 22 }
+const defaultPorts: Record<BackupTarget['kind'], number> = { ftp: 21, ftps: 21, sftp: 22, scp: 22, onedrive: 443 }
 
 type RestoreStatus = { state: '' | 'running' | 'success' | 'failed'; snapshot: string; message: string; at: string }
 
@@ -18,6 +18,7 @@ export function Backups() {
   const { t, i18n } = useTranslation()
   const targets = useApi<BackupTarget[]>('/backups/targets')
   const runs = useApi<BackupRun[]>('/backups/runs', 5000)
+  const [connect, setConnect] = useState<BackupTarget | null>(null)
   const restore = useApi<RestoreStatus>('/backups/restore/status', 5000)
   const helper = useApi<{ available: boolean }>('/system/helper')
   const [edit, setEdit] = useState<BackupTarget | null>(null)
@@ -86,11 +87,18 @@ export function Backups() {
               <td className={`${td} text-ink`}>{tg.name}</td>
               <td className={td}>
                 <span className="font-mono text-xs uppercase text-accent">{tg.kind}</span>{' '}
-                <span className="font-mono text-xs">{tg.username}@{tg.host}:{tg.port}/{tg.path}</span>
+                {tg.kind === 'onedrive' ? (
+                  <span className="font-mono text-xs">{tg.onedrive?.connected ? `${tg.onedrive.account || 'OneDrive'}/${tg.path}` : t('backups.onedrive.notConnected')}</span>
+                ) : (
+                  <span className="font-mono text-xs">{tg.username}@{tg.host}:{tg.port}/{tg.path}</span>
+                )}
               </td>
               <td className={td}>{tg.enabled ? <Badge tone="ok" dot>{t('common.enabled')}</Badge> : <Badge dot>{t('backups.disabled')}</Badge>}</td>
               <td className={`${td} whitespace-nowrap text-right`}>
                 <div className="inline-flex flex-wrap justify-end gap-1.5">
+                  {tg.kind === 'onedrive' && (
+                    <Button variant={tg.onedrive?.connected ? 'ghost' : 'secondary'} onClick={() => setConnect(tg)}><Cloud className="size-4" />{tg.onedrive?.connected ? t('backups.onedrive.reconnect') : t('backups.onedrive.connect')}</Button>
+                  )}
                   <Button variant="ghost" busy={busy === `test${tg.id}`} onClick={() => test(tg)}><PlugZap className="size-4" />{t('backups.test')}</Button>
                   <Button variant="secondary" busy={busy === `full${tg.id}`} disabled={running} onClick={() => run(tg, 'full')}><DatabaseBackup className="size-4" />{t('backups.full')}</Button>
                   <Button variant="secondary" busy={busy === `incremental${tg.id}`} disabled={running} onClick={() => run(tg, 'incremental')}><Play className="size-4" />{t('backups.incremental')}</Button>
@@ -132,6 +140,7 @@ export function Backups() {
       </div>
 
       {edit && <TargetForm value={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); targets.reload() }} />}
+      {connect && <OneDriveConnect target={connect} onClose={() => { setConnect(null); targets.reload() }} />}
       {snapsFor && <SnapshotsModal target={snapsFor} onClose={() => setSnapsFor(null)} onRestore={() => { setSnapsFor(null); restore.reload() }} />}
       {keyFor && (
         <Modal title={t('backups.repoKey')} subtitle={keyFor.name} onClose={() => setKeyFor(null)}>
@@ -229,24 +238,45 @@ function TargetForm({ value, onClose, onSaved }: { value: BackupTarget; onClose:
       <div className="grid gap-3 sm:grid-cols-[1fr_2fr_1fr]">
         <Select label={t('backups.protocol')} value={v.kind} onChange={(e) => {
           const k = e.target.value as BackupTarget['kind']
-          setV((o) => ({ ...o, kind: k, port: o.port === defaultPorts[o.kind] ? defaultPorts[k] : o.port }))
+          setV((o) => ({
+            ...o, kind: k, port: o.port === defaultPorts[o.kind] ? defaultPorts[k] : o.port,
+            onedrive: k === 'onedrive' ? o.onedrive ?? { tenant: 'common', clientId: '' } : o.onedrive,
+          }))
         }}>
           <option value="sftp">SFTP</option>
           <option value="scp">SCP (SSH)</option>
           <option value="ftps">FTPS</option>
           <option value="ftp">FTP</option>
+          <option value="onedrive">Microsoft OneDrive</option>
         </Select>
-        <Input label={t('backups.host')} value={v.host} onChange={(e) => set('host', e.target.value)} placeholder="backup.example.com" />
-        <Input label={t('backups.port')} type="number" value={v.port} onChange={(e) => set('port', Number(e.target.value))} />
+        {v.kind !== 'onedrive' && <>
+          <Input label={t('backups.host')} value={v.host} onChange={(e) => set('host', e.target.value)} placeholder="backup.example.com" />
+          <Input label={t('backups.port')} type="number" value={v.port} onChange={(e) => set('port', Number(e.target.value))} />
+        </>}
       </div>
+      {v.kind === 'onedrive' && v.onedrive && <>
+        <p className="text-xs text-subtle">{t('backups.onedrive.intro')}</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input label={t('backups.onedrive.clientId')} value={v.onedrive.clientId} className="font-mono"
+            onChange={(e) => set('onedrive', { ...v.onedrive!, clientId: e.target.value.trim() })} placeholder="00000000-0000-0000-0000-000000000000" />
+          <Input label={t('backups.onedrive.tenant')} value={v.onedrive.tenant} className="font-mono" hint={t('backups.onedrive.tenantHint')}
+            onChange={(e) => set('onedrive', { ...v.onedrive!, tenant: e.target.value.trim() })} placeholder="common" />
+        </div>
+        <Input label={t('backups.onedrive.clientSecret')} type="password" value={v.onedrive.clientSecret ?? ''} autoComplete="new-password"
+          placeholder={v.onedrive.secretSet ? t('common.keepSecret') : ''} hint={t('backups.onedrive.clientSecretHint')}
+          onChange={(e) => set('onedrive', { ...v.onedrive!, clientSecret: e.target.value })} />
+        {!v.id && <Alert tone="warn">{t('backups.onedrive.connectAfterSave')}</Alert>}
+      </>}
       {v.kind === 'ftp' && <Alert tone="warn">{t('backups.ftpWarn')}</Alert>}
       {v.kind === 'scp' && <p className="text-xs text-subtle">{t('backups.scpHint')}</p>}
       {v.kind === 'ftps' && <Toggle label={t('backups.implicitTls')} hint={t('backups.implicitTlsHint')} checked={v.implicitTls} onChange={(x) => set('implicitTls', x)} />}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Input label={t('backups.username')} value={v.username} onChange={(e) => set('username', e.target.value)} autoComplete="off" />
-        <Input label={t('backups.password')} type="password" value={v.password ?? ''} onChange={(e) => set('password', e.target.value)}
-          placeholder={v.passwordSet ? t('common.keepSecret') : ''} autoComplete="new-password" hint={ssh ? t('backups.passwordOrKey') : undefined} />
-      </div>
+      {v.kind !== 'onedrive' && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input label={t('backups.username')} value={v.username} onChange={(e) => set('username', e.target.value)} autoComplete="off" />
+          <Input label={t('backups.password')} type="password" value={v.password ?? ''} onChange={(e) => set('password', e.target.value)}
+            placeholder={v.passwordSet ? t('common.keepSecret') : ''} autoComplete="new-password" hint={ssh ? t('backups.passwordOrKey') : undefined} />
+        </div>
+      )}
       {ssh && (
         <Textarea label={t('backups.privateKey')} value={v.privateKey ?? ''} onChange={(e) => set('privateKey', e.target.value)}
           placeholder={v.keySet ? t('common.keepSecret') : '-----BEGIN OPENSSH PRIVATE KEY-----'} hint={t('backups.privateKeyHint')} />
@@ -309,6 +339,52 @@ function SnapshotsModal({ target, onClose, onRestore }: { target: BackupTarget; 
           </div>
         </div>
       )}
+    </Modal>
+  )
+}
+
+/** Signs in to Microsoft with the device code flow: the administrator enters a code on microsoft.com/devicelogin. */
+function OneDriveConnect({ target, onClose }: { target: BackupTarget; onClose: () => void }) {
+  const { t } = useTranslation()
+  const [code, setCode] = useState<{ userCode: string; verificationUri: string; interval: number } | null>(null)
+  const [done, setDone] = useState<{ account: string } | null>(null)
+  const [error, setError] = useState<unknown>(null)
+  useEffect(() => {
+    let stop = false
+    api<{ userCode: string; verificationUri: string; interval: number }>('POST', `/backups/targets/${target.id}/onedrive/start`)
+      .then((c) => { if (!stop) setCode(c) }).catch((e) => !stop && setError(e))
+    return () => { stop = true }
+  }, [target.id])
+  useEffect(() => {
+    if (!code || done) return
+    const id = window.setInterval(async () => {
+      try {
+        const r = await api<{ connected: boolean; account?: string }>('POST', `/backups/targets/${target.id}/onedrive/poll`)
+        if (r.connected) setDone({ account: r.account ?? '' })
+      } catch (e) {
+        setError(e)
+        window.clearInterval(id)
+      }
+    }, code.interval * 1000)
+    return () => window.clearInterval(id)
+  }, [code, done, target.id])
+  return (
+    <Modal title={t('backups.onedrive.connectTitle', { name: target.name })} onClose={onClose}
+      footer={<Button variant={done ? 'primary' : 'ghost'} onClick={onClose}>{done ? t('common.close') : t('common.cancel')}</Button>}>
+      <ErrorMessage error={error} />
+      {done ? (
+        <Alert tone="ok">{t('backups.onedrive.connected', { account: done.account })}</Alert>
+      ) : code ? (
+        <>
+          <p className="text-sm text-ink-2">{t('backups.onedrive.step1')}</p>
+          <a href={code.verificationUri} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-accent hover:underline">
+            {code.verificationUri} <ExternalLink className="size-4" aria-hidden />
+          </a>
+          <p className="text-sm text-ink-2">{t('backups.onedrive.step2')}</p>
+          <CopyField label={t('backups.onedrive.code')} value={code.userCode} />
+          <p className="flex items-center gap-2 text-xs text-subtle"><Loader2 className="size-4 animate-spin" aria-hidden />{t('backups.onedrive.waiting')}</p>
+        </>
+      ) : !error && <p className="flex items-center gap-2 text-sm text-muted"><Loader2 className="size-4 animate-spin" aria-hidden />{t('app.loading')}</p>}
     </Modal>
   )
 }

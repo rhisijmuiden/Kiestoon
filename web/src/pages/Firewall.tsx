@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ShieldAlert, ShieldCheck, Unlock } from 'lucide-react'
-import { Badge, SectionTitle, Table, Textarea, Toggle, td, useApi } from '../components/kit'
+import { Globe2, RefreshCw, ShieldAlert, ShieldCheck, Unlock, X } from 'lucide-react'
+import { Badge, SectionTitle, Table, Textarea, Toggle, formatDate, td, useApi } from '../components/kit'
+import { Segmented } from '../components/pbx'
+import { countryCodes, countryName, europe } from '../lib/countries'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
-import type { Ban, FirewallConfig, FirewallStatus } from '../lib/types'
+import type { Ban, FirewallConfig, FirewallStatus, GeoStatus } from '../lib/types'
 
 type FwData = { config: FirewallConfig; status: FirewallStatus; helperAvailable: boolean; trunkIps: string[]; clientIp: string; ports: { Portal: number[]; SIP: number; SIPTLS: number; RTPStart: number; RTPEnd: number } }
 
@@ -111,6 +113,7 @@ export function Firewall() {
           </Table>
         </Card>
       </div>
+      <GeoCard c={c} set={set} />
       <div className="flex flex-wrap items-center justify-end gap-3">
         <span className="flex items-center gap-1.5 text-xs text-subtle"><ShieldAlert className="size-4" />{t('firewall.safeMode')}</span>
         <Button busy={busy} disabled={!fw.data.helperAvailable} onClick={save}>{t('firewall.apply')}</Button>
@@ -124,5 +127,81 @@ export function Firewall() {
         </Card>
       )}
     </>
+  )
+}
+
+function GeoCard({ c, set }: { c: FirewallConfig; set: <K extends keyof FirewallConfig>(k: K, v: FirewallConfig[K]) => void }) {
+  const { t, i18n } = useTranslation()
+  const geo = useApi<GeoStatus>('/firewall/geo')
+  const [pick, setPick] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<unknown>(null)
+  const mode = c.geoMode || 'off'
+  const list = c.geoCountries ?? []
+  const add = (codes: string[]) => set('geoCountries', [...new Set([...list, ...codes])].sort())
+  const sorted = [...countryCodes].sort((a, b) => countryName(a, i18n.language).localeCompare(countryName(b, i18n.language), i18n.language))
+  async function update() {
+    setBusy(true)
+    setError(null)
+    try {
+      geo.setData(await api<GeoStatus>('POST', '/firewall/geo/update'))
+    } catch (e) {
+      setError(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Card>
+      <SectionTitle action={geo.data?.available
+        ? <Badge tone="ok" dot>{t('firewall.geo.dataFrom', { date: formatDate(geo.data.updatedAt ?? '', i18n.language) })}</Badge>
+        : <Badge tone="warn" dot>{t('firewall.geo.noData')}</Badge>}>
+        <span className="inline-flex items-center gap-2"><Globe2 className="size-5 text-accent" aria-hidden />{t('firewall.geo.title')}</span>
+      </SectionTitle>
+      <p className="mb-4 max-w-3xl text-sm text-muted">{t('firewall.geo.intro')}</p>
+      <ErrorMessage error={error} />
+      <div className="flex flex-col gap-4">
+        <Segmented label={t('firewall.geo.mode')} value={mode} onChange={(v) => set('geoMode', v)} options={[
+          { key: 'off', label: t('firewall.geo.off') },
+          { key: 'allow', label: t('firewall.geo.allow'), tone: 'ok' },
+          { key: 'block', label: t('firewall.geo.block'), tone: 'danger' },
+        ]} />
+        {mode !== 'off' && (
+          <>
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-ink-2">{mode === 'allow' ? t('firewall.geo.allowList') : t('firewall.geo.blockList')}</span>
+              <div className="flex flex-wrap gap-1.5">
+                {list.length === 0 && <span className="text-sm text-subtle">{t('firewall.geo.none')}</span>}
+                {list.map((code) => (
+                  <span key={code} className="inline-flex items-center gap-1 rounded-full border border-line bg-white/5 py-0.5 pl-2.5 pr-1 text-xs text-ink-2">
+                    <span className="font-mono text-subtle">{code}</span> {countryName(code, i18n.language)}
+                    <button type="button" aria-label={t('common.remove')} onClick={() => set('geoCountries', list.filter((x) => x !== code))} className="inline-flex size-6 items-center justify-center rounded-full hover:bg-white/10"><X className="size-3" aria-hidden /></button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="min-w-60 flex-1">
+                  <label className="sr-only" htmlFor="geo-pick">{t('firewall.geo.addCountry')}</label>
+                  <select id="geo-pick" value={pick} onChange={(e) => { if (e.target.value) add([e.target.value]); setPick('') }}
+                    className="min-h-11 w-full rounded-[10px] border border-line bg-[#0A1224] px-3.5 text-[15px] text-ink">
+                    <option value="">{t('firewall.geo.addCountry')}</option>
+                    {sorted.filter((x) => !list.includes(x)).map((x) => <option key={x} value={x}>{countryName(x, i18n.language)} ({x})</option>)}
+                  </select>
+                </div>
+                <Button variant="ghost" onClick={() => add(['NL', 'BE'])}>{t('firewall.geo.presetBenelux')}</Button>
+                <Button variant="ghost" onClick={() => add(europe)}>{t('firewall.geo.presetEurope')}</Button>
+              </div>
+            </div>
+            {mode === 'allow' && <Alert tone="warn">{t('firewall.geo.allowWarn')}</Alert>}
+            <Toggle label={t('firewall.geo.portal')} hint={t('firewall.geo.portalHint')} checked={c.geoPortal} onChange={(v) => set('geoPortal', v)} />
+            <p className="text-xs text-subtle">{t('firewall.geo.exceptions')}</p>
+          </>
+        )}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="text-xs text-subtle">{geo.data?.attribution}</span>
+          <Button variant="ghost" busy={busy} onClick={update}><RefreshCw className="size-4" aria-hidden />{t('firewall.geo.update')}</Button>
+        </div>
+      </div>
+    </Card>
   )
 }

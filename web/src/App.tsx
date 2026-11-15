@@ -12,6 +12,11 @@ import { Backups } from './pages/Backups'
 import { Conferences } from './pages/Conferences'
 import { Dashboard } from './pages/Dashboard'
 import { Extensions } from './pages/Extensions'
+import { Fax } from './pages/Fax'
+import { Integrations } from './pages/Integrations'
+import { Internet } from './pages/Internet'
+import { Phonebook } from './pages/Phonebook'
+import { Wallboard } from './pages/Wallboard'
 import { Features } from './pages/Features'
 import { Firewall } from './pages/Firewall'
 import { History } from './pages/History'
@@ -46,6 +51,7 @@ const pages: Record<string, ReactElement> = {
   extensions: <Extensions />, ringGroups: <RingGroups />, queues: <Queues />, ivr: <IVRs />, timeConditions: <TimeConditions />,
   conferences: <Conferences />, prompts: <Prompts />, trunks: <Trunks />, phones: <Phones />, users: <Users />, sso: <Sso />,
   features: <Features />, firewall: <Firewall />, backups: <Backups />, mail: <Mail />, audit: <Audit />, settings: <Settings />,
+  phonebook: <Phonebook />, wallboard: <Wallboard />, fax: <Fax />, internet: <Internet />, integrations: <Integrations />,
 }
 
 function NoExtension() {

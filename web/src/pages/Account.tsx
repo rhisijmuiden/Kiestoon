@@ -1,5 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Fingerprint, Plus, Trash2 } from 'lucide-react'
+import { Empty, Table, formatDate, td, useApi } from '../components/kit'
+import { IconButton } from '../components/pbx'
+import { createPasskey, passkeysSupported } from '../lib/passkey'
+import type { Passkey } from '../lib/types'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { LanguageSwitch } from '../components/brand'
 import { api } from '../lib/api'
@@ -54,6 +59,70 @@ export function Account() {
           </form>
         </Card>
       </div>
+      <Passkeys />
     </>
   )
+}
+
+function Passkeys() {
+  const { t, i18n } = useTranslation()
+  const list = useApi<Passkey[]>('/account/passkeys')
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<unknown>(null)
+  const ipHost = /^[\d.]+$/.test(window.location.hostname) || window.location.hostname.includes(":")
+  async function add() {
+    setBusy(true)
+    setError(null)
+    try {
+      const opts = await api<{ publicKey: Record<string, unknown> }>('POST', '/account/passkeys/begin')
+      const credential = await createPasskey(opts)
+      await api('POST', '/account/passkeys/finish', { name: name.trim() || defaultName(), credential })
+      setName('')
+      list.reload()
+    } catch (e) {
+      if (!(e instanceof DOMException && e.name === 'NotAllowedError') && !(e instanceof Error && e.message === 'cancelled')) setError(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+  async function remove(p: Passkey) {
+    if (!window.confirm(t('common.confirmDelete', { name: p.name }))) return
+    await api('DELETE', `/account/passkeys/${p.id}`)
+    list.reload()
+  }
+  return (
+    <Card>
+      <h2 className="flex items-center gap-2 font-display text-lg font-semibold"><Fingerprint className="size-5 text-accent" aria-hidden />{t('account.passkeys.title')}</h2>
+      <p className="mt-1 max-w-3xl text-sm text-muted">{t('account.passkeys.intro')}</p>
+      <div className="mt-4 flex flex-col gap-4">
+        <ErrorMessage error={error} />
+        {!passkeysSupported() || ipHost ? (
+          <Alert tone="warn">{ipHost ? t('account.passkeys.needsName') : t('account.passkeys.unsupported')}</Alert>
+        ) : (
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="min-w-56 flex-1"><Input label={t('account.passkeys.name')} value={name} onChange={(e) => setName(e.target.value)} placeholder={defaultName()} /></div>
+            <Button busy={busy} onClick={add}><Plus className="size-4" aria-hidden />{t('account.passkeys.add')}</Button>
+          </div>
+        )}
+        <Table head={[t('common.name'), t('account.passkeys.created'), t('account.passkeys.lastUsed'), '']}
+          empty={list.data?.length === 0 && <Empty title={t('account.passkeys.empty')} />}>
+          {list.data?.map((p) => (
+            <tr key={p.id}>
+              <td className={`${td} text-ink`}>{p.name}</td>
+              <td className={td}>{formatDate(p.createdAt, i18n.language)}</td>
+              <td className={td}>{formatDate(p.lastUsedAt, i18n.language)}</td>
+              <td className={`${td} text-right`}><IconButton label={t('common.delete')} danger onClick={() => remove(p)}><Trash2 className="size-4" aria-hidden /></IconButton></td>
+            </tr>
+          ))}
+        </Table>
+      </div>
+    </Card>
+  )
+}
+
+function defaultName() {
+  const ua = navigator.userAgent
+  const os = /iPhone|iPad/.test(ua) ? 'iPhone/iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'Linux'
+  return `${os} · ${new Date().toLocaleDateString()}`
 }

@@ -93,7 +93,7 @@ export type Live = {
 }
 
 export type Cdr = {
-  id: number; start: string; answer: string; end: string; duration: number; billsec: number; src: string; dst: string; clid: string
+  id: number; uniqueId: string; linkedId: string; start: string; answer: string; end: string; duration: number; billsec: number; src: string; dst: string; clid: string
   srcChannel: string; dstChannel: string; disposition: string; direction: string; trunk: string
 }
 
@@ -214,7 +214,7 @@ export type FraudSettings = {
   premiumPrefixes: string[]; blockedCountries: string[]; maxOutbound: number; alertEmail: string; alertOutboundPerHour: number
   alertInternationalPerHour: number; blockOnAlert: boolean
 }
-export type FeatureSettings = { parkingSlots: number; parkingTimeout: number; recordingDays: number; recordingBeep: boolean; fraud: FraudSettings }
+export type FeatureSettings = { parkingSlots: number; parkingTimeout: number; recordingDays: number; recordingBeep: boolean; journeyDays: number; fraud: FraudSettings }
 export type FeatureCode = { code: string; key: string }
 
 export type Recording = { name: string; date: string; uniqueId: string; from: string; to: string; size: number; duration: number }
@@ -366,3 +366,18 @@ export type DiscoveredPhone = {
 }
 export type ResyncState = 'sent' | 'not_registered' | 'failed' | 'skipped'
 export type ResyncResult = { resync: ResyncState; message?: string }
+
+export type JourneyParty = { kind: 'ext' | 'caller' | 'remote' | 'system'; number?: string; name?: string }
+export type JourneySub = {
+  kind: 'key' | 'timeout' | 'invalid' | 'repeat' | 'ring'; at: string; durationMs: number; value?: string; party?: JourneyParty; result?: string
+}
+export type JourneyStep = {
+  id: number; kind: string; at: string; durationMs: number; ref?: string; name?: string; number?: string; result?: string
+  tone: 'ok' | 'warn' | 'danger' | 'info' | 'accent'; party?: JourneyParty; detail?: Record<string, string>; subs?: JourneySub[]
+}
+export type Journey = {
+  linkedId: string; start: string; end: string; durationMs: number; talkMs: number; waitMs: number
+  direction: 'inbound' | 'outbound' | 'internal'; from: JourneyParty; to: string
+  result: 'answered' | 'voicemail' | 'abandoned' | 'missed' | 'busy' | 'failed'; complete: boolean; partial: boolean
+  steps: JourneyStep[]; recordings: { name: string; durationMs: number; from: string; to: string }[]
+}

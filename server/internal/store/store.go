@@ -629,6 +629,19 @@ var migrations = []string{
 		modules    TEXT NOT NULL DEFAULT '[]',
 		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
 	);`,
+	// Call journeys: the CEL, dial and queue events of every call, by linkedid, to show in the
+	// call history how a call went. Removed after the retention set under Call features.
+	`CREATE TABLE call_events (
+		id       INTEGER PRIMARY KEY AUTOINCREMENT,
+		linkedid TEXT NOT NULL,
+		at       TEXT NOT NULL,
+		kind     TEXT NOT NULL,
+		uniqueid TEXT NOT NULL DEFAULT '',
+		channel  TEXT NOT NULL DEFAULT '',
+		data     TEXT NOT NULL DEFAULT '{}'
+	);
+	CREATE INDEX call_events_linked ON call_events(linkedid, at);
+	CREATE INDEX call_events_at ON call_events(at);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

@@ -70,6 +70,8 @@ export function Features() {
           <SectionTitle>{t('features.recording')}</SectionTitle>
           <Input label={t('features.recordingDays')} type="number" min={0} max={3650} value={f.recordingDays} onChange={(e) => setF({ ...f, recordingDays: Number(e.target.value) })} hint={t('features.recordingDaysHint')} />
           <Toggle label={t('features.recordingBeep')} hint={t('features.recordingBeepHint')} checked={f.recordingBeep} onChange={(v) => setF({ ...f, recordingBeep: v })} />
+          <SectionTitle>{t('features.journey')}</SectionTitle>
+          <Input label={t('features.journeyDays')} type="number" min={0} max={3650} value={f.journeyDays} onChange={(e) => setF({ ...f, journeyDays: Number(e.target.value) })} hint={t('features.journeyDaysHint')} />
         </Card>
         <Card className="flex flex-col gap-4">
           <SectionTitle><span className="inline-flex items-center gap-2"><ShieldAlert className="size-5 text-warn" aria-hidden />{t('features.fraud')}</span></SectionTitle>

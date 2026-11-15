@@ -54,6 +54,7 @@ func (s *Server) pbxRoutes(mux *http.ServeMux, admin, recep func(http.HandlerFun
 	mux.Handle("GET /api/live", recep(s.live))
 	mux.Handle("GET /api/cdr", recep(s.cdrSearch))
 	mux.Handle("GET /api/cdr/export", recep(s.cdrExport))
+	mux.Handle("GET /api/cdr/journey/{id}", recep(s.cdrJourney))
 }
 
 // ---- helpers ----------------------------------------------------------------

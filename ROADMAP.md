@@ -263,6 +263,12 @@ Notes on phase 5:
   build from a demo office (`tools/docs/`). Every portal page has a Help button that opens the matching page and
   section of the manual in the user's language. The README (also in Dutch, `README.nl.md`) shows the highlights. A
   backup location can now be added with an existing encryption key, to restore backups on a new server.
+- [x] Call journey (`v0.6.0-rc.15`): click a call in the call history (or under My calls in the portal) to see
+  every step as a flow in the style of the IVR builder: trunk and number called, time condition, IVR keys and
+  timeouts, queue position and wait, every phone that rang and who missed it, who answered and the talk time,
+  transfers (also drag and drop), voicemail, recordings and who hung up. Built from Asterisk CEL over AMI, dial and
+  queue events and dialplan markers, stored per linkedid; retention setting under Call features (default 90 days,
+  0 = off). Older calls get a short version from the call record.
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

@@ -4,7 +4,8 @@
 
 **Call history** (Reception menu) lists every call: time, caller, called number, direction, result, duration and
 trunk. Search on a number, filter on date range, direction (inbound, outbound, internal) and result (answered, no
-answer, busy, failed), and click **Export CSV** for a spreadsheet.
+answer, busy, failed), and click **Export CSV** for a spreadsheet. Click a call to see its
+[call journey](call-journey.md): every step it went through, drawn as a flow.
 
 ![Call history](shot:history)
 

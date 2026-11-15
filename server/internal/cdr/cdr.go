@@ -95,9 +95,11 @@ type Filter struct {
 	Direction   string
 	Disposition string
 	// Ext limits the records to calls to or from one extension (user portal).
-	Ext    string
-	Limit  int
-	Offset int
+	Ext string
+	// LinkedID limits the records to one call (all its legs).
+	LinkedID string
+	Limit    int
+	Offset   int
 }
 
 func (f Filter) where() (string, []any) {
@@ -127,6 +129,10 @@ func (f Filter) where() (string, []any) {
 	if f.Disposition != "" {
 		conds = append(conds, "disposition = ?")
 		args = append(args, f.Disposition)
+	}
+	if f.LinkedID != "" {
+		conds = append(conds, "(linkedid = ? OR (linkedid = '' AND uniqueid = ?))")
+		args = append(args, f.LinkedID, f.LinkedID)
 	}
 	if f.Ext != "" {
 		conds = append(conds, "(src = ? OR dst = ? OR src_channel LIKE ? OR dst_channel LIKE ? OR src_channel LIKE ? OR dst_channel LIKE ?)")

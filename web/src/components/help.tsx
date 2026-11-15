@@ -21,6 +21,9 @@ const topics: Record<string, Topic> = {
   '/wallboard': { page: 'switchboard', en: 'wallboard', nl: 'wallboard' },
   '/fax': { page: 'fax' },
   '/history': { page: 'history' },
+  // A call journey (?call=...) opened from the call history or My calls.
+  '/history#call': { page: 'call-journey' },
+  '/me/calls#call': { page: 'call-journey' },
   '/recordings': { page: 'history', en: 'recordings', nl: 'opnames' },
   '/extensions': { page: 'extensions' },
   '/ring-groups': { page: 'ring-groups' },
@@ -66,10 +69,11 @@ export function localDocsUrl(url: string, language: string): string {
 /** Opens the manual page that belongs to the current portal page, in the user's language. */
 export function HelpButton({ className = '' }: { className?: string }) {
   const { t, i18n } = useTranslation()
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
+  const path = new URLSearchParams(search).has('call') ? `${pathname.replace(/\/+$/, '')}#call` : pathname
   return (
     <a
-      href={helpUrl(pathname, i18n.language)}
+      href={helpUrl(path, i18n.language)}
       target="_blank"
       rel="noopener noreferrer"
       title={t('nav.helpTitle')}

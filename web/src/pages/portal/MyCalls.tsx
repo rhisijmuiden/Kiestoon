@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Phone, PhoneIncoming, PhoneOutgoing, Repeat } from 'lucide-react'
 import { Badge, Table, Tabs, formatDate, formatDuration, td, useApi } from '../../components/kit'
@@ -7,6 +7,9 @@ import { Button, Card, ErrorMessage, PageHeader } from '../../components/ui'
 import type { Cdr, PortalMe } from '../../lib/types'
 import { useSoftphone } from '../../lib/softphone'
 import { RecordingList } from '../Recordings'
+import { JourneyFallback, rowOpen, useCallParam } from '../History'
+
+const CallJourney = lazy(() => import('../history/CallJourney').then((m) => ({ default: m.CallJourney })))
 
 const PAGE = 50
 
@@ -20,6 +23,10 @@ export function MyCalls() {
   const [error, setError] = useState<unknown>(null)
   const total = list.data?.total ?? 0
   const other = (r: Cdr) => (r.src === me.data?.number ? r.dst : r.src)
+  const { call, open, close } = useCallParam()
+  if (call) {
+    return <Suspense fallback={<JourneyFallback />}><CallJourney id={call} base="/portal/history/journey" recordingBase="/portal/recordings" onBack={close} /></Suspense>
+  }
   return (
     <>
       <PageHeader title={t('portal.myCalls')} />
@@ -33,7 +40,7 @@ export function MyCalls() {
               {list.data?.records.map((r) => {
                 const out = r.src === me.data?.number
                 return (
-                  <tr key={r.id}>
+                  <tr key={r.id} {...rowOpen(() => open(r.linkedId || r.uniqueId), t('journey.open', { time: formatDate(r.start, i18n.language) }))}>
                     <td className={`${td} whitespace-nowrap font-mono text-xs`}>{formatDate(r.start, i18n.language)}</td>
                     <td className={td}>{r.direction === 'internal' ? <Repeat className="size-4 text-subtle" aria-hidden /> : out ? <PhoneOutgoing className="size-4 text-accent-2" aria-hidden /> : <PhoneIncoming className="size-4 text-accent" aria-hidden />}</td>
                     <td className={td}><span className="font-mono text-ink">{other(r) || '–'}</span> {!out && <span className="text-xs text-subtle">{r.clid.replace(/<.*>/, '').replace(/"/g, '').trim()}</span>}</td>

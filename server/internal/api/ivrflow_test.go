@@ -104,7 +104,7 @@ func TestIVRFlow(t *testing.T) {
 	for _, want := range []string{
 		fmt.Sprintf("[kiestoon-ivr-%d]", id),
 		fmt.Sprintf("Background(%s)", filepath.Join(s.promptDir(), fmt.Sprint(prompts[1]))),
-		fmt.Sprintf("exten => 1,1,Goto(kiestoon-ivr-%d-flow,1,1)", id),
+		fmt.Sprintf("exten => 1,1,CELGenUserEvent(kt_ivrkey,id=%d&key=${EXTEN})\n same => n,Goto(kiestoon-ivr-%d-flow,1,1)", id, id),
 		fmt.Sprintf("[kiestoon-ivr-%d-flow]", id),
 		fmt.Sprintf("Playback(%s)", filepath.Join(s.promptDir(), fmt.Sprint(prompts[2]))),
 		fmt.Sprintf("Gosub(kiestoon-tcstate-%v,s,1)", tc["id"]),

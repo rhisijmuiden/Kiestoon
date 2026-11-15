@@ -16,6 +16,10 @@ import (
 // onAMIEvent stores call detail records and handles the feature codes the dialplan reports.
 func (s *Server) onAMIEvent(m asterisk.Message) {
 	switch m.Get("Event") {
+	case "CEL", "DialBegin", "DialEnd", "QueueCallerJoin", "AgentCalled", "AgentRingNoAnswer", "AgentConnect", "AgentComplete":
+		s.journeyEvent(m)
+	}
+	switch m.Get("Event") {
 	case "Cdr":
 		rec := cdr.FromEvent(m.Get, time.Local)
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -39,6 +43,9 @@ func (s *Server) onAMIEvent(m asterisk.Message) {
 	case "OriginateResponse":
 		go s.onOriginateResponse(m)
 	case "DialBegin", "DialEnd", "MessageWaiting", "QueueCallerAbandon":
+		if m.Get("Event") == "QueueCallerAbandon" {
+			s.journeyEvent(m)
+		}
 		s.callEvent(m)
 	case "ExtensionStatus":
 		// BLF changes of local extensions go to linked Kiestoon systems.
@@ -151,9 +158,11 @@ func (s *Server) RunMaintenance(ctx context.Context) {
 			if n := s.Spool.PurgeRecordings(f.RecordingDays, time.Now()); n > 0 {
 				s.Log.Info("old recordings removed", "count", n)
 			}
+			s.purgeJourneys(ctx)
 			day = today
 		}
 		s.syncDeviceStates(ctx)
+		s.refreshJourneySetting(ctx)
 		select {
 		case <-ctx.Done():
 			return

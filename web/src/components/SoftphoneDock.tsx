@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Delete, Grid3x3, Headset, Mic, MicOff, Pause, Phone, PhoneIncoming, PhoneOff, Play, X } from 'lucide-react'
+import { Link } from 'react-router'
+import { Delete, Grid3x3, Headset, Mic, MicOff, Pause, Phone, PhoneForwarded, PhoneIncoming, PhoneOff, Play, X } from 'lucide-react'
 import { formatDuration } from './kit'
 import { useSoftphone } from '../lib/softphone'
 
@@ -71,6 +72,10 @@ export function SoftphoneDock() {
                   <CtrlButton label={c.muted ? t('softphone.unmute') : t('softphone.mute')} active={c.muted} onClick={p.toggleMute}>{c.muted ? <MicOff className="size-5" aria-hidden /> : <Mic className="size-5" aria-hidden />}</CtrlButton>
                   <CtrlButton label={c.held ? t('softphone.resume') : t('softphone.hold')} active={c.held} onClick={p.toggleHold}>{c.held ? <Play className="size-5" aria-hidden /> : <Pause className="size-5" aria-hidden />}</CtrlButton>
                   <CtrlButton label={t('softphone.keypad')} active={showPad} onClick={() => setShowPad(!showPad)}><Grid3x3 className="size-5" aria-hidden /></CtrlButton>
+                  <Link to="/me/colleagues" aria-label={t('transfer.transfer')} title={t('transfer.transfer')}
+                    className="inline-flex size-12 items-center justify-center rounded-xl border border-line text-ink-2 transition hover:bg-tint/5">
+                    <PhoneForwarded className="size-5" aria-hidden />
+                  </Link>
                 </div>
               )}
               {c.state === 'active' && showPad && <Keypad onPress={press} />}

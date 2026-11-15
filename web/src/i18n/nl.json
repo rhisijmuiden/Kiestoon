@@ -129,7 +129,13 @@
     "duplicate_digit": "Twee stappen gebruiken dezelfde toets.",
     "invalid_digit": "Kies een geldige toets (0-9, * of #).",
     "invalid_line": "Een lijn in het menu verbindt stappen die niet verbonden kunnen worden.",
-    "too_large": "Het menu is te groot."
+    "too_large": "Het menu is te groot.",
+    "transfer_failed": "De telefooncentrale kon dit gesprek niet doorverbinden.",
+    "call_gone": "Dit gesprek is al beëindigd.",
+    "not_answered": "Neem het gesprek eerst aan en verbind het daarna door.",
+    "transfer_in_progress": "Dit gesprek wordt al doorverbonden.",
+    "no_transfer": "Voor dit gesprek loopt geen doorverbinding.",
+    "self_transfer": "Je kunt een gesprek niet naar jezelf doorverbinden."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -1656,7 +1662,7 @@
     "myGroups": "Mijn belgroepen",
     "noGroups": "Je zit niet in een belgroep.",
     "colleagues": "Collega's",
-    "colleaguesHint": "Zie wie er beschikbaar is. Klik op een collega om te bellen.",
+    "colleaguesHint": "Zie wie er beschikbaar is. Klik om te bellen, of sleep je actieve gesprek naar een collega, belgroep of wachtrij om door te verbinden.",
     "dialNumber": "Een nummer bellen",
     "call": "Bellen",
     "callNumber": "{{number}} bellen",
@@ -2283,5 +2289,45 @@
     "system": "Systeem",
     "light": "Licht",
     "dark": "Donker"
+  },
+  "transfer": {
+    "myCalls": "Mijn actieve gesprekken",
+    "noCalls": "Geen actief gesprek. Neem een gesprek aan of bel op je toestel of de softphone, dan verschijnt het hier.",
+    "mode": {
+      "blind": "Direct doorverbinden",
+      "attended": "Eerst overleggen"
+    },
+    "device": {
+      "phone": "Bureautoestel",
+      "web": "Softphone"
+    },
+    "ringing": "Gaat over",
+    "transfer": "Doorverbinden",
+    "transferTo": "Doorverbinden naar {{target}}",
+    "complete": "Doorverbinden voltooien",
+    "cancel": "Terug naar beller",
+    "consultRinging": "{{target}} wordt gebeld…",
+    "consultTalking": "In gesprek met {{target}}",
+    "done": "{{caller}} doorverbonden met {{target}}.",
+    "consulting": "{{target}} wordt gebeld. De beller wacht in de wacht. Voltooi het doorverbinden of ga terug naar de beller.",
+    "dragHint": "Sleep het gesprek naar een collega, belgroep of wachtrij. Of druk op Doorverbinden en kies een bestemming.",
+    "dragHintReception": "Sleep een beller naar een collega, belgroep of wachtrij om door te verbinden. Of druk op de doorverbindknop en kies een bestemming.",
+    "pickHint": "Kies een collega, belgroep of wachtrij om het gesprek naar door te verbinden. Esc annuleert.",
+    "liveCalls": "Live gesprekken",
+    "noLiveCalls": "Er zijn nu geen gesprekken.",
+    "external": "Extern",
+    "internal": "Intern",
+    "colleagues": "Collega's",
+    "ringGroups": "Belgroepen",
+    "queues": "Wachtrijen",
+    "noTargets": "Niets gevonden.",
+    "members_one": "{{count}} lid",
+    "members_other": "{{count}} leden",
+    "waiting_one": "{{count}} wachtend",
+    "waiting_other": "{{count}} wachtend",
+    "state": {
+      "ringing": "Gaat over",
+      "talking": "In gesprek"
+    }
   }
 }

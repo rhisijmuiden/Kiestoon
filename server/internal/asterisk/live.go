@@ -16,11 +16,14 @@ type Channel struct {
 	CallerNum string `json:"callerNum"`
 	CallerNam string `json:"callerName"`
 	Connected string `json:"connected"`
+	ConnName  string `json:"connectedName"`
 	Exten     string `json:"exten"`
 	State     string `json:"state"`
 	App       string `json:"app"`
 	Duration  int    `json:"duration"`
 	LinkedID  string `json:"-"`
+	BridgeID  string `json:"-"`
+	Context   string `json:"-"`
 }
 
 // Call groups the legs of one call.
@@ -75,6 +78,13 @@ func endpointOf(channel string) string {
 	return s
 }
 
+// Invalidate makes the next Get ask Asterisk again, for example right after a transfer.
+func (c *LiveCache) Invalidate() {
+	c.mu.Lock()
+	c.last = nil
+	c.mu.Unlock()
+}
+
 // Get returns the live state.
 func (c *LiveCache) Get(ctx context.Context) *Live {
 	c.mu.Lock()
@@ -101,8 +111,9 @@ func (c *LiveCache) Get(ctx context.Context) *Live {
 			d := parseDuration(e.Get("Duration"))
 			ch := Channel{
 				Channel: e.Get("Channel"), Endpoint: endpointOf(e.Get("Channel")), CallerNum: e.Get("CallerIDNum"),
-				CallerNam: e.Get("CallerIDName"), Connected: e.Get("ConnectedLineNum"), Exten: e.Get("Exten"),
-				State: e.Get("ChannelStateDesc"), App: e.Get("Application"), Duration: d, LinkedID: e.Get("Linkedid"),
+				CallerNam: e.Get("CallerIDName"), Connected: e.Get("ConnectedLineNum"), ConnName: e.Get("ConnectedLineName"),
+				Exten: e.Get("Exten"), State: e.Get("ChannelStateDesc"), App: e.Get("Application"), Duration: d,
+				LinkedID: e.Get("Linkedid"), BridgeID: e.Get("BridgeId"), Context: e.Get("Context"),
 			}
 			id := ch.LinkedID
 			if id == "" {

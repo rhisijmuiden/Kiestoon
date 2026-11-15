@@ -80,7 +80,7 @@ export type NumberPlan = { digits: number; ranges: Range[] }
 
 export type PbxStatus = { connected: boolean; version: string; lastApply: string; lastError: string; restartNeeded: boolean }
 
-export type LiveCall = { id: string; from: string; fromName: string; to: string; direction: string; state: string; duration: number }
+export type LiveCall = { id: string; from: string; fromName: string; to: string; direction: string; state: string; duration: number; legs?: LiveLeg[] }
 export type LiveContact = { endpoint: string; uri: string; status: string; rttMs: number; userAgent: string }
 export type Live = {
   connected: boolean
@@ -213,6 +213,12 @@ export type FeatureCode = { code: string; key: string }
 
 export type Recording = { name: string; date: string; uniqueId: string; from: string; to: string; size: number; duration: number }
 export type BlfEntry = { number: string; name: string; state: string; dnd: boolean }
+export type TransferTarget = { kind: 'extension' | 'ringgroup' | 'queue'; number: string; name: string; state?: string; dnd?: boolean; members?: number; waiting?: number }
+export type ActiveCall = {
+  channel: string; peer: string; peerName: string; state: 'ringing' | 'talking'; duration: number; device: 'phone' | 'web'
+  consult?: { target: string; targetName: string; answered: boolean }
+}
+export type LiveLeg = { channel: string; endpoint: string; callerNum: string; callerName: string; connected: string; connectedName: string; state: string; duration: number }
 
 export type RoleMapping = { group: string; role: string }
 export type SsoProvider = {

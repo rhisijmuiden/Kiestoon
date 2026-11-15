@@ -5,15 +5,23 @@ import { Badge, Empty, SectionTitle, formatDuration, useApi } from '../component
 import { IconButton, stateTone } from '../components/pbx'
 import { Card, ErrorMessage, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
-import type { BlfEntry, QueueView, TimeCondition } from '../lib/types'
+import type { BlfEntry, Live, QueueView, TimeCondition } from '../lib/types'
+import { ActiveCalls, SwitchboardCalls, TransferNotice, TransferTargets } from '../components/Transfer'
+import { useSession } from '../lib/session'
+import { TransferProvider } from '../lib/transfer'
 import { ModeSwitch } from './TimeConditions'
 
-/** The switchboard: day/night switches, live queues with their agents and the busy lamp field. */
+/**
+ * The switchboard: day/night switches, live calls that can be dragged onto a colleague, ring
+ * group or queue, live queues with their agents and the busy lamp field.
+ */
 export function Reception() {
   const { t } = useTranslation()
+  const { state } = useSession()
+  const hasExt = state.kind === 'ready' && !!state.me.extension
   const tcs = useApi<TimeCondition[]>('/pbx/timeconditions', 15000)
   const queues = useApi<QueueView[]>('/reception/queues', 3000)
-  const blf = useApi<BlfEntry[]>('/reception/blf', 3000)
+  const live = useApi<Live>('/live', 2000)
   async function agent(q: number, ext: number, action: string) {
     await api('POST', `/reception/queues/${q}/agents/${ext}`, { action })
     queues.reload()
@@ -21,7 +29,7 @@ export function Reception() {
   return (
     <>
       <PageHeader title={t('reception.title')} subtitle={t('reception.subtitle')} />
-      <ErrorMessage error={queues.error || blf.error} />
+      <ErrorMessage error={queues.error || live.error} />
       {(tcs.data?.length ?? 0) > 0 && (
         <Card>
           <SectionTitle>{t('reception.dayNight')}</SectionTitle>
@@ -35,11 +43,13 @@ export function Reception() {
           </div>
         </Card>
       )}
+      <TransferProvider onDone={live.reload}>
+        <TransferNotice />
+        {hasExt && <ActiveCalls />}
+        <SwitchboardCalls calls={live.data?.calls ?? []} />
+        <TransferTargets path="/reception/targets" />
+      </TransferProvider>
       <QueueBoard queues={queues.data ?? []} onAgent={agent} />
-      <Card>
-        <SectionTitle>{t('reception.blf')}</SectionTitle>
-        <BlfGrid entries={blf.data ?? []} />
-      </Card>
     </>
   )
 }

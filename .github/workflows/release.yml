@@ -1,0 +1,63 @@
+name: Release
+
+# Push a tag to publish a release:
+#   vX.Y.Z-rc.N  -> pre-release, offered on the testing channel
+#   vX.Y.Z       -> release, offered on the production channel
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build packages (amd64, arm64)
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          make web
+          (cd server && go test ./...)
+          make deb VERSION="$VERSION" GOARCH=amd64
+          make deb VERSION="$VERSION" GOARCH=arm64
+
+      - name: Build Proxmox LXC template (amd64)
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq debootstrap
+          sudo ./lxc/build-lxc.sh "dist/kiestoon_${VERSION#v}_amd64.deb" dist/
+          sudo chown -R "$(id -u):$(id -g)" dist
+
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum -- *.deb *.tar.zst > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          flags=()
+          if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); else flags+=(--latest); fi
+          gh release create "$TAG" dist/*.deb dist/*.tar.zst dist/SHA256SUMS \
+            --title "Kiestoon $TAG" --generate-notes "${flags[@]}"

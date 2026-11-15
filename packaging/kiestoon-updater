@@ -1,0 +1,75 @@
+#!/bin/bash
+# Installs a Kiestoon release that an administrator requested in the portal.
+#
+# Runs as root from kiestoon-updater.service when the portal writes update-request.json.
+# Steps: validate the request, download the .deb and SHA256SUMS from the GitHub release, verify the
+# checksum, stop the portal, back up the data directory, install the package (which restarts the
+# portal) and report progress in update-status.json, which the portal shows in "Info & updates".
+set -euo pipefail
+
+DATA_DIR="${KIESTOON_DATA_DIR:-/var/lib/kiestoon}"
+REPO="${KIESTOON_REPO:-rhisijmuiden/kiestoon}"
+BACKUP_DIR="/var/lib/kiestoon-backups"
+KEEP_BACKUPS=5
+REQUEST="$DATA_DIR/update-request.json"
+STATUS="$DATA_DIR/update-status.json"
+WORK="$(mktemp -d /tmp/kiestoon-update.XXXXXX)"
+trap 'rm -rf "$WORK"' EXIT
+
+log() { echo "kiestoon-updater: $*"; }
+
+status() { # state version message
+  local tmp="$STATUS.tmp"
+  jq -n --arg s "$1" --arg v "$2" --arg m "${3:-}" --arg t "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '{state: $s, version: $v, message: $m, updatedAt: $t}' >"$tmp"
+  chown kiestoon:kiestoon "$tmp" 2>/dev/null || true
+  chmod 0640 "$tmp"
+  mv -f "$tmp" "$STATUS"
+}
+
+[ -f "$REQUEST" ] || { log "no update request"; exit 0; }
+
+# Read and remove the request first, so the path unit does not trigger again.
+VERSION="$(jq -r '.version // empty' "$REQUEST" 2>/dev/null || true)"
+rm -f "$REQUEST"
+
+# Only accept a plain semantic version such as v0.1.0 or v0.2.0-rc.1.
+if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+  status failed "${VERSION:0:40}" "invalid version in update request"
+  exit 1
+fi
+
+fail() {
+  log "failed: $1"
+  status failed "$VERSION" "$1"
+  # Whatever happened, make sure the portal is running again.
+  systemctl start kiestoon.service || true
+  exit 1
+}
+
+status running "$VERSION" ""
+ARCH="$(dpkg --print-architecture)"
+DEB="kiestoon_${VERSION#v}_${ARCH}.deb"
+BASE="${KIESTOON_DOWNLOAD_BASE:-https://github.com/$REPO/releases/download}/$VERSION"
+
+log "downloading $DEB"
+curl -fsSL --retry 3 --max-time 600 -o "$WORK/$DEB" "$BASE/$DEB" || fail "download of $DEB failed"
+curl -fsSL --retry 3 --max-time 60 -o "$WORK/SHA256SUMS" "$BASE/SHA256SUMS" || fail "download of SHA256SUMS failed"
+(cd "$WORK" && grep -E " [* ]?${DEB}\$" SHA256SUMS | sha256sum -c --status -) || fail "checksum of $DEB does not match"
+
+log "backing up $DATA_DIR"
+install -d -m 0700 "$BACKUP_DIR"
+systemctl stop kiestoon.service || true
+BACKUP="$BACKUP_DIR/pre-update-$(date -u +%Y%m%dT%H%M%SZ)-$(kiestoon version 2>/dev/null | awk '{print $2}').tar.zst"
+tar --zstd -cf "$BACKUP" -C "$(dirname "$DATA_DIR")" "$(basename "$DATA_DIR")" || fail "backup failed"
+# Keep only the newest backups.
+ls -1t "$BACKUP_DIR"/pre-update-*.tar.zst 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) | xargs -r rm -f
+
+log "installing $DEB"
+export DEBIAN_FRONTEND=noninteractive
+# --allow-downgrades: switching from testing back to production can mean an older version.
+apt-get install -y --allow-downgrades -o Dpkg::Options::=--force-confold "$WORK/$DEB" || fail "package installation failed (backup: $BACKUP)"
+
+systemctl start kiestoon.service || true
+status success "$VERSION" ""
+log "updated to $VERSION"

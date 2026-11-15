@@ -18,7 +18,12 @@ var dist embed.FS
 func Handler() http.Handler {
 	sub, _ := fs.Sub(dist, "dist")
 	files := http.FileServer(http.FS(sub))
+	_, missing := fs.Stat(sub, "index.html")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if missing != nil {
+			http.Error(w, "The Kiestoon web UI is not built into this binary. Run `make` in the repository.", http.StatusServiceUnavailable)
+			return
+		}
 		p := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
 		if p == "" {
 			p = "index.html"

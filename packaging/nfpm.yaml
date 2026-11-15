@@ -1,0 +1,48 @@
+# Builds the Kiestoon .deb. Used by `make deb` and the release workflow.
+name: kiestoon
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+version_schema: semver
+section: comm
+priority: optional
+maintainer: RHIS <info@rhis.nl>
+description: |
+  Kiestoon open source VoIP phone system (PBX).
+  Web portal, API and updater for a single-tenant phone system on Debian 13.
+vendor: RHIS
+homepage: https://github.com/rhisijmuiden/kiestoon
+license: GPL-3.0-or-later
+
+depends:
+  - adduser
+  - ca-certificates
+  - curl
+  - jq
+  - zstd
+
+contents:
+  - src: ./build/kiestoon
+    dst: /usr/bin/kiestoon
+    file_info: { mode: 0755 }
+  - src: ./packaging/kiestoon-updater
+    dst: /usr/lib/kiestoon/kiestoon-updater
+    file_info: { mode: 0755 }
+  - src: ./packaging/systemd/kiestoon.service
+    dst: /usr/lib/systemd/system/kiestoon.service
+  - src: ./packaging/systemd/kiestoon-updater.path
+    dst: /usr/lib/systemd/system/kiestoon-updater.path
+  - src: ./packaging/systemd/kiestoon-updater.service
+    dst: /usr/lib/systemd/system/kiestoon-updater.service
+  - src: ./packaging/kiestoon.env
+    dst: /etc/kiestoon/kiestoon.env
+    type: config|noreplace
+    file_info: { mode: 0640 }
+  - src: ./packaging/profile.sh
+    dst: /etc/profile.d/kiestoon.sh
+    file_info: { mode: 0644 }
+
+scripts:
+  postinstall: ./packaging/scripts/postinstall.sh
+  preremove: ./packaging/scripts/preremove.sh
+  postremove: ./packaging/scripts/postremove.sh

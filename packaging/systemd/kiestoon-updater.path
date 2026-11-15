@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch for update requests from the Kiestoon portal
+
+[Path]
+PathExists=/var/lib/kiestoon/update-request.json
+Unit=kiestoon-updater.service
+
+[Install]
+WantedBy=multi-user.target

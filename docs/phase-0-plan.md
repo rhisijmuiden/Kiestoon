@@ -1,4 +1,6 @@
-# Phase 0 build plan (handoff notes)
+# Phase 0 build plan
+
+**Status: built.** Everything below is implemented; kept as a record of the design.
 
 Work in progress on branch `feat/phase-0-foundation`. PRs target `testing`; `main` is production.
 Branch flow: feature branch → PR into `testing` → CI green → merge → tag `v0.1.0-rc.N` on testing →

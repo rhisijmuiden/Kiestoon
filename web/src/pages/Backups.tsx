@@ -317,6 +317,10 @@ function TargetForm({ value, onClose, onSaved }: { value: BackupTarget; onClose:
         placeholder={v.kind === 'smb' ? 'Backups/kiestoon' : v.kind === 'webdav' ? 'kiestoon' : undefined}
         hint={v.kind === 's3' ? t('backups.s3.bucketHint') : v.kind === 'smb' ? t('backups.smb.shareHint') : v.kind === 'webdav' ? t('backups.webdav.pathHint') : t('backups.pathHint')} />
       <Toggle label={t('common.enabled')} hint={t('backups.enabledHint')} checked={v.enabled} onChange={(x) => set('enabled', x)} />
+      {!v.id && (
+        <Input label={t('backups.existingKey')} type="password" value={v.repoPassword ?? ''} onChange={(e) => set('repoPassword', e.target.value.trim())}
+          autoComplete="new-password" className="font-mono" hint={t('backups.existingKeyHint')} />
+      )}
       {!v.id && <p className="text-xs text-subtle">{t('backups.encryption')}</p>}
       <ErrorMessage error={error} />
     </Modal>

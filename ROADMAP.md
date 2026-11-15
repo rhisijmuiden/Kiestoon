@@ -145,7 +145,7 @@ Goal: fit into existing networks and save work for the installer. Released as `v
 - [x] Email-to-fax / send a fax from the portal (depends on T.38 support of the SIP provider)
 - [x] More backup destinations: S3, WebDAV, SMB
 - [x] Optional Prometheus metrics
-- [x] Research: multi-tenant with Kamailio in front ([docs/multi-tenant-research.md](docs/multi-tenant-research.md))
+- [x] Research: multi-tenant with Kamailio in front ([docs/development/multi-tenant-research.md](docs/development/multi-tenant-research.md))
 
 Notes on phase 4:
 
@@ -256,6 +256,13 @@ Notes on phase 5:
   answers on its speaker by itself, pushed through provisioning and switched per phone. Yealink, Snom and Fanvil
   (warning tone, muted microphone, also during a call), Poly (muted microphone), Grandstream, Htek, Cisco MPP and
   Akuvox door and loading bay stations (on or off). Snom now gets the correct answer_after_policy values.
+- [x] Manual and Help button (`v0.6.0-rc.14`): a complete manual in English and Dutch on GitHub Pages
+  (https://rhisijmuiden.github.io/Kiestoon/, MkDocs Material in the Kiestoon house style) covering install, first
+  setup, every telephony feature, the user portal, the Windows softphone, branch offices, linked systems, high
+  availability, security and the system pages. Screenshots in light and dark, per language, are made in every docs
+  build from a demo office (`tools/docs/`). Every portal page has a Help button that opens the matching page and
+  section of the manual in the user's language. The README (also in Dutch, `README.nl.md`) shows the highlights. A
+  backup location can now be added with an existing encryption key, to restore backups on a new server.
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

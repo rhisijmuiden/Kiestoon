@@ -7,3 +7,7 @@ web/dist/
 *.deb
 *.tar.zst
 /dist-asterisk/
+docs/assets/screenshots/
+/site/
+tools/docs/node_modules/
+__pycache__/

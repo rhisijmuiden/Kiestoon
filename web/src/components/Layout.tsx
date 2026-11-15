@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { LogOut, Menu, X } from 'lucide-react'
 import { Brand, LanguageSwitch, PoweredBy, ThemeSwitch } from './brand'
+import { HelpButton } from './help'
 import { InfoDialog, useSystemInfo } from './InfoDialog'
 import { nav, visible } from './nav'
 import { SoftphoneDock } from './SoftphoneDock'
@@ -119,6 +120,7 @@ export function Layout() {
 
       <div className="min-w-0 flex-1">
         <div className="hidden items-center justify-end gap-2.5 px-8 pt-6 lg:flex 2xl:px-10">
+          <HelpButton />
           <ThemeSwitch persist />
           <LanguageSwitch persist />
           <NavLink
@@ -134,6 +136,7 @@ export function Layout() {
           </button>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2 px-4 pt-4 lg:hidden">
+          <HelpButton />
           <ThemeSwitch persist />
           <LanguageSwitch persist />
           <NavLink to="/account" className="inline-flex min-h-11 items-center rounded-xl border border-line px-3 text-sm text-ink-2">

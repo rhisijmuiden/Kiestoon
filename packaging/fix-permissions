@@ -6,7 +6,9 @@
 #   /var/lib/kiestoon/pbx        kiestoon:asterisk 2750  generated Asterisk configuration, readable by Asterisk
 #   /var/lib/kiestoon/asterisk   asterisk:asterisk 2770  voicemail and recordings (the portal is in group asterisk)
 #   /var/lib/kiestoon/mailq      asterisk:kiestoon 2770  voicemail e-mails waiting to be sent by the portal
-#   /var/lib/kiestoon/fax        kiestoon:kiestoon 0750  received faxes (PDF)
+#   /var/lib/kiestoon/fax        kiestoon:kiestoon 0750  received and sent faxes (PDF)
+#   /var/lib/kiestoon/speech     kiestoon:kiestoon 0750  downloaded voices and speech models, transcripts
+#   /var/lib/kiestoon/firmware   kiestoon:kiestoon 0750  phone firmware
 set -e
 DATA="${KIESTOON_DATA_DIR:-/var/lib/kiestoon}"
 
@@ -14,7 +16,7 @@ install -d -o kiestoon -g kiestoon -m 0751 "$DATA"
 chown -R kiestoon:kiestoon "$DATA"
 chmod 0751 "$DATA"
 install -d -o kiestoon -g kiestoon -m 0700 "$DATA/staging"
-install -d -o kiestoon -g kiestoon -m 0750 "$DATA/fax" "$DATA/geoip"
+install -d -o kiestoon -g kiestoon -m 0750 "$DATA/fax" "$DATA/fax/out" "$DATA/geoip" "$DATA/speech" "$DATA/firmware"
 
 if getent group asterisk >/dev/null; then
   install -d -o kiestoon -g asterisk -m 2750 "$DATA/pbx" "$DATA/pbx/tls"
@@ -24,7 +26,7 @@ if getent group asterisk >/dev/null; then
   [ -f "$DATA/pbx/tls/kiestoon.crt" ] && chmod 0644 "$DATA/pbx/tls/kiestoon.crt"
   [ -f "$DATA/pbx/tls/public.crt" ] && chmod 0644 "$DATA/pbx/tls/public.crt"
 
-  install -d -o asterisk -g asterisk -m 2770 "$DATA/asterisk" "$DATA/asterisk/spool" "$DATA/asterisk/spool/monitor" "$DATA/asterisk/spool/fax"
+  install -d -o asterisk -g asterisk -m 2770 "$DATA/asterisk" "$DATA/asterisk/spool" "$DATA/asterisk/spool/monitor" "$DATA/asterisk/spool/fax" "$DATA/asterisk/spool/fax-out"
   chown -R asterisk:asterisk "$DATA/asterisk"
   find "$DATA/asterisk" -type d -exec chmod 2770 {} +
   find "$DATA/asterisk" -type f -exec chmod 0660 {} +

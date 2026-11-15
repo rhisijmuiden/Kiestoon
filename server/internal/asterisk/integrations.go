@@ -77,3 +77,37 @@ func genFax(x *w, s *pbx.Snapshot, o Options) {
 		x.nl()
 	}
 }
+
+// genFaxSend sends faxes the portal queues (portal upload or e-mail to fax). The portal originates
+// Local/<number>@kiestoon-faxout, which dials out through the normal outbound routes with the caller
+// ID of the fax box, and runs kiestoon-faxsend (exten = job number) when the far end answers.
+func genFaxSend(x *w, s *pbx.Snapshot) {
+	send := false
+	for _, f := range s.FaxBoxes {
+		send = send || (f.Enabled && f.SendEnabled)
+	}
+	if !send {
+		return
+	}
+	x.f("[kiestoon-faxout]")
+	x.f("exten => _X.,1,NoOp(Fax job ${KT_FAXJOB} to ${EXTEN})")
+	x.f(" same => n,Set(KT_CLASS=national)")
+	x.f(" same => n,Set(KT_PREMIUM=0)")
+	x.f(" same => n,Set(KT_OUTCID=${KT_FAXCID})")
+	x.f(" same => n,Set(CALLERID(num)=${KT_FAXCID})")
+	x.f(" same => n,Set(CDR(kt_faxout)=${KT_FAXJOB})")
+	x.f(" same => n,Goto(kiestoon-outbound,${EXTEN},1)")
+	x.f("exten => _+X.,1,Goto(kiestoon-faxout,00${EXTEN:1},1)")
+	x.nl()
+	x.f("[kiestoon-faxsend]")
+	x.f("exten => _X.,1,NoOp(Sending fax job ${EXTEN})")
+	x.f(" same => n,Set(KT_FAXJOB=${EXTEN})")
+	x.f(" same => n,Set(FAXOPT(ecm)=${KT_FAXECM})")
+	x.f(" same => n,Set(FAXOPT(headerinfo)=${KT_FAXHEADER})")
+	x.f(" same => n,Set(FAXOPT(localstationid)=${KT_FAXCID})")
+	x.f(" same => n,SendFAX(${KT_FAXFILE},z)")
+	x.f(" same => n,Hangup()")
+	x.f("exten => h,1,UserEvent(KiestoonFaxOut,Job: ${KT_FAXJOB},Status: ${FAXOPT(status)},Pages: ${FAXOPT(pages)}," +
+		"Error: ${FILTER(A-Za-z0-9 _.:-,${FAXOPT(error)})},Remote: ${FILTER(A-Za-z0-9 +_.-,${FAXOPT(remotestationid)})})")
+	x.nl()
+}

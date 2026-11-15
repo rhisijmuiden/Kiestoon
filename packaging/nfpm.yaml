@@ -28,11 +28,15 @@ depends:
   - rclone
   # Fax-to-mail: converts received faxes (TIFF) to PDF.
   - libtiff-tools
+  # Sending faxes: renders PDF documents as fax images (TIFF G3).
+  - ghostscript
   # Direct internet access: Let's Encrypt certificates and HTTPS on 443 (off until switched on).
   - caddy
 
 recommends:
   - kiestoon-sounds-nl
+  # Local text-to-speech and speech-to-text (optional, about 200 MB).
+  - kiestoon-speech
 
 contents:
   - src: ./build/kiestoon

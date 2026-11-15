@@ -443,6 +443,8 @@ func Enqueue(dir string, msg []byte) error {
 type Service struct {
 	DB       *sql.DB
 	QueueDir string
+	// Prepare can change a queued message once before it is sent; nil leaves it as it is.
+	Prepare  func(ctx context.Context, raw []byte) []byte
 	mu       sync.Mutex
 	attempts map[string]retry
 }
@@ -532,6 +534,14 @@ func (m *Service) flush(ctx context.Context) {
 		if err != nil {
 			continue
 		}
+		// Prepare may add to a message once (the voicemail transcript); the result is stored, so a
+		// retry does not repeat the work.
+		if m.Prepare != nil && !bytes.Contains(headerBlock(raw), []byte("X-Kiestoon-Prepared:")) {
+			if out := m.Prepare(ctx, raw); out != nil {
+				raw = append([]byte("X-Kiestoon-Prepared: 1\r\n"), out...)
+				_ = os.WriteFile(path, raw, 0o640)
+			}
+		}
 		msg, rcpts, subject, err := prepareQueued(raw, s)
 		if err == nil {
 			err = Send(ctx, s, s.FromAddress, rcpts, msg)
@@ -556,6 +566,17 @@ func (m *Service) flush(ctx context.Context) {
 			_ = os.Rename(path, filepath.Join(m.QueueDir, "failed", name))
 		}
 	}
+}
+
+// headerBlock is the part of a message before the first empty line.
+func headerBlock(raw []byte) []byte {
+	if i := bytes.Index(raw, []byte("\n\n")); i >= 0 {
+		raw = raw[:i]
+	}
+	if i := bytes.Index(raw, []byte("\r\n\r\n")); i >= 0 {
+		raw = raw[:i]
+	}
+	return raw
 }
 
 // prepareQueued reads recipients from the message headers (like sendmail -t) and replaces the

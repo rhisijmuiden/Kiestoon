@@ -114,9 +114,11 @@ export type FirewallStatus = { active: boolean; pending: boolean; secondsLeft: n
 export type Ban = { jail: string; ip: string }
 
 export type BackupTarget = {
-  id: number; name: string; kind: 'ftp' | 'ftps' | 'sftp' | 'scp' | 'onedrive'; host: string; port: number; username: string
+  id: number; name: string; kind: 'ftp' | 'ftps' | 'sftp' | 'scp' | 'onedrive' | 's3' | 'webdav' | 'smb'; host: string; port: number; username: string
   password?: string; passwordSet: boolean; privateKey?: string; keySet: boolean; path: string; implicitTls: boolean
   repoPassword?: string; enabled: boolean; onedrive?: OneDrive
+  /** s3: provider and region; webdav: vendor; smb: Windows domain; plain: http instead of https. */
+  provider?: string; region?: string; domain?: string; plain?: boolean
 }
 export type OneDrive = {
   tenant: string; clientId: string; clientSecret?: string; secretSet?: boolean; connected?: boolean; driveType?: string; account?: string
@@ -129,11 +131,12 @@ export type Snapshot = { id: string; shortId: string; time: string; hostname: st
 export type Schedule = { enabled: boolean; time: string; fullWeekday: number; retention: { daily: number; weekly: number; monthly: number } }
 
 export type ProvSettings = { enabled: boolean; username: string; password: string; server: string; adminPassword: string; ntpServer: string; language: 'en' | 'nl' }
-export type PhoneModel = { vendor: 'yealink' | 'snom' | 'grandstream' | 'fanvil' | 'gigaset' | 'poly'; id: string; name: string; keys: number; lines?: number }
+export type PhoneModel = { vendor: 'yealink' | 'snom' | 'grandstream' | 'fanvil' | 'gigaset' | 'poly' | 'htek' | 'akuvox' | 'cisco'; id: string; name: string; keys: number; lines?: number }
 export type PhoneKey = { type: 'none' | 'line' | 'blf' | 'speed'; value: string; label: string }
 export type Phone = {
   id: number; mac: string; vendor: PhoneModel['vendor']; model: string; extensionId: number | null; label: string
   keys: PhoneKey[]; lines: number[]; lastSeenAt: string; lastIp: string; userAgent: string
+  ztpState?: '' | 'registered' | 'error' | 'elsewhere'; ztpError?: string; ztpAt?: string
 }
 
 // ---- phase 2: business features ---------------------------------------------
@@ -213,7 +216,7 @@ export type PortalMe = {
   id: number; number: string; name: string; email: string; features: Features; voicemail: boolean; voicemailEmail: boolean
   webrtc: boolean; recordMode: string; outboundClass: string; schedules: { id: number; name: string }[]; codes: FeatureCode[]
 }
-export type VoicemailMessage = { folder: string; id: number; callerId: string; date: string; duration: number }
+export type VoicemailMessage = { folder: string; id: number; callerId: string; date: string; duration: number; transcript?: string }
 export type RingGroupStatus = { id: number; number: string; name: string; strategy: string; members: { number: string; name: string; state: string }[] }
 export type WebRTCAccount = { wsPath: string; username: string; password: string; number: string; name: string; domain: string; secureContext: boolean }
 
@@ -226,7 +229,10 @@ export type InternetData = {
 }
 export type GeoStatus = { available: boolean; updatedAt?: string; attribution: string }
 
-export type FaxBox = { id: number; name: string; emails: string; keepDays: number; ecm: boolean; enabled: boolean }
+export type FaxBox = {
+  id: number; name: string; emails: string; keepDays: number; ecm: boolean; enabled: boolean
+  number: string; sendEnabled: boolean; senders: string; sendPin?: string; sendPinSet?: boolean
+}
 export type Fax = {
   id: number; boxId: number | null; boxName: string; receivedAt: string; caller: string; callerName: string; did: string
   remoteStation: string; pages: number; status: 'success' | 'failed'; error: string; size: number; mailed: boolean
@@ -246,3 +252,40 @@ export type Webhook = { id: number; name: string; url: string; events: string[];
 export type WebhookDelivery = { id: number; at: string; event: string; attempt: number; status: number; error: string; durationMs: number }
 
 export type Passkey = { id: number; name: string; createdAt: string; lastUsedAt: string }
+
+// ---- phase 4: extensions -----------------------------------------------------
+
+export type Firmware = {
+  id: number; vendor: string; models: string[]; version: string; filename: string; size: number; sha256: string
+  active: boolean; createdAt: string; files: number
+}
+export type ZtpGuide = { vendor: string; service: string; portal: string; path: string }
+export type ZtpSettings = { serverUrl: string; yealink: { enabled: boolean; accessKey: string; secret?: string; secretSet: boolean; api: string } }
+export type ZtpData = { settings: ZtpSettings; guides: ZtpGuide[]; effectiveUrl: string; username: string; password: string }
+
+export type SpeechProgress = { done: number; total: number; error?: string }
+export type SpeechItem = {
+  id: string; name: string; language?: string; licence?: string; speed?: string; size: number; downloaded: boolean; progress?: SpeechProgress
+}
+export type SpeechSettings = {
+  tts: { enabled: boolean; voiceEn: string; voiceNl: string }
+  stt: { enabled: boolean; model: string; language: 'auto' | 'nl' | 'en'; voicemail: boolean }
+}
+export type SpeechData = { settings: SpeechSettings; ttsInstalled: boolean; sttInstalled: boolean; voices: SpeechItem[]; models: SpeechItem[] }
+
+export type FaxJob = {
+  id: number; boxId: number | null; boxName: string; userId: number | null; source: 'portal' | 'email'; sender: string; number: string
+  document: string; pages: number; status: 'queued' | 'sending' | 'success' | 'failed'; attempts: number; error: string
+  createdAt: string; updatedAt: string; nextAt: string
+}
+export type FaxSendBox = { id: number; name: string; number: string }
+export type FaxMail = {
+  enabled: boolean; host: string; port: number; security: 'tls' | 'starttls'; username: string; password?: string; passwordSet: boolean
+  folder: string; delete: boolean; lastCheck?: string; lastError?: string
+}
+
+export type ProxySettings = { enabled: boolean; trustedProxies: string[]; publicUrl: string }
+export type ProxyData = {
+  settings: ProxySettings; remoteAddr: string; clientIp: string; forwardedFor: string; forwardedProto: string; secure: boolean; host: string
+}
+export type MetricsSettings = { enabled: boolean; token: string; allowFrom: string[] }

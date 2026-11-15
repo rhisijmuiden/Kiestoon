@@ -19,7 +19,7 @@ import (
 )
 
 func (s *Server) faxRoutes(mux *http.ServeMux, admin, recep func(http.HandlerFunc) http.Handler) {
-	mux.Handle("GET /api/pbx/faxboxes", admin(list(s, s.PBX.FaxBoxes)))
+	mux.Handle("GET /api/pbx/faxboxes", admin(s.faxBoxesList))
 	mux.Handle("POST /api/pbx/faxboxes", admin(s.saveFaxBox))
 	mux.Handle("PUT /api/pbx/faxboxes/{id}", admin(s.saveFaxBox))
 	mux.Handle("DELETE /api/pbx/faxboxes/{id}", admin(s.deleter("faxbox", s.PBX.DeleteFaxBox)))
@@ -56,7 +56,7 @@ func (s *Server) saveFaxBox(w http.ResponseWriter, r *http.Request) {
 		s.firewallChanged(r.Context()) // the T.38 ports open or close
 	}
 	_ = os.MkdirAll(s.faxSpool(), 0o2770)
-	s.saved(w, r, "faxbox", f.Name, f)
+	s.saved(w, r, "faxbox", f.Name, publicFaxBox(f))
 }
 
 func (s *Server) faxList(w http.ResponseWriter, r *http.Request) {

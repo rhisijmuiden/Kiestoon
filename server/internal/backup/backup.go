@@ -1,5 +1,5 @@
 // Package backup makes encrypted, deduplicated backups with restic to FTP, FTPS, SFTP or SCP (SSH)
-// servers and to Microsoft OneDrive, through rclone. The root helper runs these commands; the portal only stores the
+// servers, S3 object storage, WebDAV (Nextcloud, ownCloud), SMB shares and Microsoft OneDrive, through rclone. The root helper runs these commands; the portal only stores the
 // targets and the schedule.
 //
 // A "full" backup reads every file again and is stored without a parent snapshot; an
@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -27,7 +28,7 @@ import (
 type Target struct {
 	ID           int64  `json:"id"`
 	Name         string `json:"name"`
-	Kind         string `json:"kind"` // ftp | ftps | sftp | scp
+	Kind         string `json:"kind"` // ftp | ftps | sftp | scp | s3 | webdav | smb | onedrive
 	Host         string `json:"host"`
 	Port         int    `json:"port"`
 	Username     string `json:"username"`
@@ -41,13 +42,38 @@ type Target struct {
 	Enabled      bool   `json:"enabled"`
 	// OneDrive is the Microsoft account of a "onedrive" target.
 	OneDrive *OneDrive `json:"onedrive,omitempty"`
+	Extra
 }
+
+// Extra holds the settings only some protocols have (stored as JSON).
+type Extra struct {
+	// Provider is the S3 provider (AWS, Minio, Wasabi, Ceph, Other …) or the WebDAV vendor
+	// (nextcloud, owncloud, other).
+	Provider string `json:"provider,omitempty"`
+	// Region of an S3 bucket.
+	Region string `json:"region,omitempty"`
+	// Domain is the Windows domain of an SMB user.
+	Domain string `json:"domain,omitempty"`
+	// Plain uses http instead of https (S3 or WebDAV on the own network only).
+	Plain bool `json:"plain,omitempty"`
+}
+
+// S3Providers are the S3 providers rclone knows and the UI offers.
+var S3Providers = []string{"AWS", "Minio", "Wasabi", "Ceph", "DigitalOcean", "Scaleway", "Hetzner", "Cloudflare", "Other"}
+
+// WebDAVVendors are the WebDAV servers rclone has special support for.
+var WebDAVVendors = []string{"nextcloud", "owncloud", "sharepoint-ntlm", "other"}
 
 var (
 	reHost = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$`)
 	rePath = regexp.MustCompile(`^[A-Za-z0-9_./~-]{0,200}$`)
-	reUser = regexp.MustCompile(`^[A-Za-z0-9_.@+-]{1,64}$`)
-	reSnap = regexp.MustCompile(`^[0-9a-f]{8,64}$`)
+	// WebDAV paths contain the user name, which may be an e-mail address.
+	reDAVPath = regexp.MustCompile(`^[A-Za-z0-9_./~@+-]{0,250}$`)
+	reUser    = regexp.MustCompile(`^[A-Za-z0-9_.@+-]{1,64}$`)
+	reS3Key   = regexp.MustCompile(`^[A-Za-z0-9_+/=.-]{1,128}$`)
+	reRegion  = regexp.MustCompile(`^[a-z0-9-]{0,40}$`)
+	reDomain  = regexp.MustCompile(`^[A-Za-z0-9_.-]{0,64}$`)
+	reSnap    = regexp.MustCompile(`^[0-9a-f]{8,64}$`)
 )
 
 // Validate checks a target before it is stored or used.
@@ -60,7 +86,12 @@ func (t *Target) Validate() error {
 	switch t.Kind {
 	case "ftp", "ftps", "sftp", "scp":
 		t.OneDrive = nil
+		t.Extra = Extra{}
+	case "s3", "webdav", "smb":
+		t.OneDrive = nil
+		return t.validateObject()
 	case "onedrive":
+		t.Extra = Extra{}
 		if t.OneDrive == nil {
 			return errors.New("clientId")
 		}
@@ -105,9 +136,91 @@ func (t *Target) Validate() error {
 	return nil
 }
 
+// validateObject checks S3, WebDAV and SMB targets.
+func (t *Target) validateObject() error {
+	t.PrivateKey, t.ImplicitTLS = "", false
+	if net.ParseIP(t.Host) == nil && !reHost.MatchString(t.Host) {
+		return errors.New("host")
+	}
+	if t.Port == 0 {
+		t.Port = t.DefaultPort()
+	}
+	if t.Port < 1 || t.Port > 65535 {
+		return errors.New("port")
+	}
+	if strings.Contains(t.Path, "..") || strings.ContainsAny(t.Path, "\n\r") {
+		return errors.New("path")
+	}
+	switch t.Kind {
+	case "s3":
+		t.Domain = ""
+		if !slices.Contains(S3Providers, t.Provider) {
+			return errors.New("provider")
+		}
+		if !reS3Key.MatchString(t.Username) {
+			return errors.New("username")
+		}
+		if t.Password == "" || len(t.Password) > 128 || strings.ContainsAny(t.Password, "\n\r") {
+			return errors.New("password")
+		}
+		if !reRegion.MatchString(t.Region) {
+			return errors.New("region")
+		}
+		// bucket/prefix: the bucket name rules of S3.
+		bucket, _, _ := strings.Cut(strings.Trim(t.Path, "/"), "/")
+		if !regexp.MustCompile(`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`).MatchString(bucket) || !rePath.MatchString(t.Path) {
+			return errors.New("path")
+		}
+	case "webdav":
+		t.Region, t.Domain = "", ""
+		if t.Provider == "" {
+			t.Provider = "other"
+		}
+		if !slices.Contains(WebDAVVendors, t.Provider) {
+			return errors.New("provider")
+		}
+		if !reUser.MatchString(t.Username) {
+			return errors.New("username")
+		}
+		if t.Password == "" {
+			return errors.New("password")
+		}
+		if !reDAVPath.MatchString(t.Path) {
+			return errors.New("path")
+		}
+	case "smb":
+		t.Region, t.Provider, t.Plain = "", "", false
+		if !reUser.MatchString(t.Username) {
+			return errors.New("username")
+		}
+		if t.Password == "" {
+			return errors.New("password")
+		}
+		if !reDomain.MatchString(t.Domain) {
+			return errors.New("domain")
+		}
+		// share/folder: the first part is the share.
+		share, _, _ := strings.Cut(strings.Trim(t.Path, "/"), "/")
+		if share == "" || !rePath.MatchString(t.Path) {
+			return errors.New("path")
+		}
+	}
+	if len(t.RepoPassword) < 12 {
+		return errors.New("repoPassword")
+	}
+	return nil
+}
+
 // DefaultPort is the usual port of the protocol.
 func (t Target) DefaultPort() int {
 	switch t.Kind {
+	case "s3", "webdav":
+		if t.Plain {
+			return 80
+		}
+		return 443
+	case "smb":
+		return 445
 	case "sftp", "scp":
 		return 22
 	case "ftps":
@@ -125,6 +238,8 @@ var Paths = []string{"/var/lib/kiestoon", "/etc/kiestoon"}
 var Excludes = []string{
 	"/var/lib/kiestoon/kiestoon.db", "/var/lib/kiestoon/kiestoon.db-wal", "/var/lib/kiestoon/kiestoon.db-shm",
 	"/var/lib/kiestoon/update-request.json", "/var/lib/kiestoon/mailq/.*",
+	// Downloaded speech models and phone firmware can be downloaded again.
+	"/var/lib/kiestoon/speech", "/var/lib/kiestoon/firmware",
 }
 
 // StagingDir (inside the data directory) holds the consistent database copy the portal makes
@@ -190,6 +305,9 @@ func (r *Runner) Env(ctx context.Context, t Target) ([]string, error) {
 		}
 		return env, nil
 	}
+	if t.Kind == "s3" || t.Kind == "webdav" || t.Kind == "smb" {
+		return r.objectEnv(ctx, t)
+	}
 	env := []string{
 		"PATH=/usr/sbin:/usr/bin:/sbin:/bin",
 		"HOME=/root",
@@ -224,6 +342,55 @@ func (r *Runner) Env(ctx context.Context, t Target) ([]string, error) {
 			env = append(env, "RCLONE_CONFIG_KT_KEY_PEM="+strings.ReplaceAll(strings.TrimSpace(t.PrivateKey), "\n", `\n`))
 		}
 	}
+	return env, nil
+}
+
+// objectEnv configures the rclone remote for S3, WebDAV and SMB.
+func (r *Runner) objectEnv(ctx context.Context, t Target) ([]string, error) {
+	scheme := "https"
+	if t.Plain {
+		scheme = "http"
+	}
+	hostPort := net.JoinHostPort(t.Host, strconv.Itoa(t.Port))
+	env := []string{
+		"PATH=/usr/sbin:/usr/bin:/sbin:/bin",
+		"HOME=/root",
+		"RESTIC_PASSWORD=" + t.RepoPassword,
+		"RESTIC_CACHE_DIR=" + r.CacheDir,
+	}
+	repo := strings.Trim(t.Path, "/")
+	switch t.Kind {
+	case "s3":
+		env = append(env, "RCLONE_CONFIG_KT_TYPE=s3", "RCLONE_CONFIG_KT_PROVIDER="+t.Provider,
+			"RCLONE_CONFIG_KT_ACCESS_KEY_ID="+t.Username, "RCLONE_CONFIG_KT_SECRET_ACCESS_KEY="+t.Password,
+			"RCLONE_CONFIG_KT_ENDPOINT="+scheme+"://"+hostPort,
+			// Never create public objects; restic needs nothing else.
+			"RCLONE_CONFIG_KT_ACL=private", "RCLONE_CONFIG_KT_NO_CHECK_BUCKET=true")
+		if t.Region != "" {
+			env = append(env, "RCLONE_CONFIG_KT_REGION="+t.Region)
+		}
+		if t.Provider != "AWS" {
+			env = append(env, "RCLONE_CONFIG_KT_FORCE_PATH_STYLE=true")
+		}
+	case "webdav":
+		pw, err := r.obscure(ctx, t.Password)
+		if err != nil {
+			return nil, err
+		}
+		env = append(env, "RCLONE_CONFIG_KT_TYPE=webdav", "RCLONE_CONFIG_KT_URL="+scheme+"://"+hostPort+"/",
+			"RCLONE_CONFIG_KT_VENDOR="+t.Provider, "RCLONE_CONFIG_KT_USER="+t.Username, "RCLONE_CONFIG_KT_PASS="+pw)
+	case "smb":
+		pw, err := r.obscure(ctx, t.Password)
+		if err != nil {
+			return nil, err
+		}
+		env = append(env, "RCLONE_CONFIG_KT_TYPE=smb", "RCLONE_CONFIG_KT_HOST="+t.Host, "RCLONE_CONFIG_KT_PORT="+strconv.Itoa(t.Port),
+			"RCLONE_CONFIG_KT_USER="+t.Username, "RCLONE_CONFIG_KT_PASS="+pw)
+		if t.Domain != "" {
+			env = append(env, "RCLONE_CONFIG_KT_DOMAIN="+t.Domain)
+		}
+	}
+	env = append(env, "RESTIC_REPOSITORY=rclone:kt:"+repo)
 	return env, nil
 }
 

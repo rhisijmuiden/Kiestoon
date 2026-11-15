@@ -32,6 +32,10 @@ type Phone struct {
 	LastSeenAt string  `json:"lastSeenAt"`
 	LastIP     string  `json:"lastIp"`
 	UserAgent  string  `json:"userAgent"`
+	// ZTP is the state at the vendor's redirection service (registered, error, elsewhere; "" unknown).
+	ZTPState string `json:"ztpState"`
+	ZTPError string `json:"ztpError"`
+	ZTPAt    string `json:"ztpAt"`
 }
 
 var reMAC = regexp.MustCompile(`^[0-9a-f]{12}$`)
@@ -46,13 +50,13 @@ func NormalizeMAC(s string) string {
 	}, s))
 }
 
-const phoneCols = `id, mac, vendor, model, extension_id, label, keys, last_seen_at, last_ip, user_agent, lines`
+const phoneCols = `id, mac, vendor, model, extension_id, label, keys, last_seen_at, last_ip, user_agent, lines, ztp_state, ztp_error, ztp_at`
 
 func scanPhone(row interface{ Scan(...any) error }) (*Phone, error) {
 	var p Phone
 	var ext sql.NullInt64
 	var keys, lines string
-	err := row.Scan(&p.ID, &p.MAC, &p.Vendor, &p.Model, &ext, &p.Label, &keys, &p.LastSeenAt, &p.LastIP, &p.UserAgent, &lines)
+	err := row.Scan(&p.ID, &p.MAC, &p.Vendor, &p.Model, &ext, &p.Label, &keys, &p.LastSeenAt, &p.LastIP, &p.UserAgent, &lines, &p.ZTPState, &p.ZTPError, &p.ZTPAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -71,7 +75,15 @@ func scanPhone(row interface{ Scan(...any) error }) (*Phone, error) {
 }
 
 // Vendors are the phone brands Kiestoon provisions.
-var Vendors = []string{"yealink", "snom", "grandstream", "fanvil", "gigaset", "poly"}
+var Vendors = []string{"yealink", "snom", "grandstream", "fanvil", "gigaset", "poly", "htek", "akuvox", "cisco"}
+
+// SetPhoneZTP stores the result of a registration at the vendor's redirection service.
+func (r *Repo) SetPhoneZTP(ctx context.Context, id int64, state, msg string) {
+	if len(msg) > 300 {
+		msg = msg[:300]
+	}
+	_, _ = r.DB.ExecContext(ctx, `UPDATE phones SET ztp_state = ?, ztp_error = ?, ztp_at = strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE id = ?`, state, msg, id)
+}
 
 // Phones returns all phones.
 func (r *Repo) Phones(ctx context.Context) ([]Phone, error) {

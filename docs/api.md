@@ -32,6 +32,8 @@ curl -H "Authorization: Bearer kt_…" https://pbx.example.com/api/pbx/extension
 | POST | `/api/phonebook` | reception | Add a contact `{name, company, work, mobile, other, email, notes}` |
 | POST | `/api/calls` | reception | Click-to-call `{extension: "201", number: "0201234567"}`: the extension rings first |
 | GET | `/api/faxes` | reception | Received faxes; `GET /api/faxes/{id}/pdf` downloads one |
+| POST | `/api/fax/send` | reception | Send a fax `{boxId, number, name, pdf}`; `pdf` is the PDF in base64 (at most about 11 MB) |
+| GET | `/api/fax/jobs` | reception | Outgoing faxes with their status (`queued`, `sending`, `success`, `failed`) |
 
 ## Webhooks
 
@@ -88,3 +90,33 @@ network are allowed. The last 200 deliveries of each webhook are shown in the po
 - LDAP: base DN `ou=phonebook,dc=kiestoon`, attributes `cn`, `sn`, `givenName`, `o`, `telephoneNumber`,
   `mobile`, `homePhone`, `mail`. Bind as `cn=<provisioning user>,ou=phonebook,dc=kiestoon` with the provisioning
   password when "Require a password" is on. Only reachable from the networks that may use SIP.
+
+## Prometheus metrics
+
+Turn on **System → Internet access → Prometheus metrics**. Kiestoon then serves `GET /metrics` (outside
+`/api/`) in the Prometheus text format. Prometheus sends the token as a bearer token; addresses in the
+"allowed without a token" list may scrape without one.
+
+```yaml
+- job_name: kiestoon
+  scheme: https
+  authorization:
+    credentials: <token>
+  static_configs:
+    - targets: ['pbx.example.com']
+```
+
+| Metric | What |
+| --- | --- |
+| `kiestoon_info{version}` | Always 1, with the running version |
+| `kiestoon_uptime_seconds` | Seconds since the portal started |
+| `kiestoon_asterisk_connected` | 1 when the portal talks to Asterisk |
+| `kiestoon_active_calls`, `kiestoon_active_calls_by_direction{direction}` | Calls in progress |
+| `kiestoon_calls_today` | Calls since midnight |
+| `kiestoon_extensions`, `kiestoon_registered_endpoints` | Extensions and registered phones |
+| `kiestoon_trunk_up{trunk}` | 1 when a trunk is registered or reachable |
+| `kiestoon_queue_waiting_callers{queue}`, `kiestoon_queue_longest_wait_seconds{queue}`, `kiestoon_queue_available_agents{queue}` | Queue state |
+| `kiestoon_queue_completed_total{queue}`, `kiestoon_queue_abandoned_total{queue}` | Queue counters since the last Asterisk restart |
+| `kiestoon_fax_jobs{status}` | Outgoing faxes per status |
+| `kiestoon_mail_queue_length` | Mails waiting to be sent |
+| `kiestoon_backup_last_success_timestamp_seconds{target}` | Last successful backup per location |

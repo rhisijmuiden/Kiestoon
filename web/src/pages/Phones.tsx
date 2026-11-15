@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Eye, Pencil, Plus, Smartphone, Trash2 } from 'lucide-react'
-import { Badge, CopyField, Empty, Modal, Select, SectionTitle, Table, Toggle, formatDate, td, useApi } from '../components/kit'
+import { Badge, CopyField, Empty, Modal, Select, SectionTitle, Table, Tabs, Toggle, formatDate, td, useApi } from '../components/kit'
+import { FirmwarePanel, ZtpBadge, ZtpPanel, vendorName } from './PhoneExtras'
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
 import type { Extension, Phone, PhoneKey, PhoneModel, ProvSettings } from '../lib/types'
 
-const vendors = ['yealink', 'snom', 'grandstream', 'fanvil', 'gigaset', 'poly'] as const
-const vendorName = (v: string) => (v === 'poly' ? 'Poly' : v[0].toUpperCase() + v.slice(1))
-const untested = new Set<string>(['grandstream', 'fanvil', 'gigaset', 'poly'])
+const vendors = ['yealink', 'snom', 'grandstream', 'fanvil', 'gigaset', 'poly', 'htek', 'akuvox', 'cisco'] as const
+const untested = new Set<string>(['grandstream', 'fanvil', 'gigaset', 'poly', 'htek', 'akuvox', 'cisco'])
 
 export function Phones() {
   const { t, i18n } = useTranslation()
@@ -17,6 +17,9 @@ export function Phones() {
   const exts = useApi<Extension[]>('/pbx/extensions')
   const [edit, setEdit] = useState<Phone | null>(null)
   const [preview, setPreview] = useState<{ phone: Phone; body: string } | null>(null)
+  const [tab, setTab] = useState<'phones' | 'firmware' | 'ztp'>('phones')
+  const ztp = useApi<{ settings: { yealink: { enabled: boolean } } }>('/provisioning/ztp')
+  const rps = !!ztp.data?.settings.yealink.enabled
   const extLabel = (id: number | null) => {
     const e = exts.data?.find((x) => x.id === id)
     return e ? `${e.number} · ${e.name}` : '–'
@@ -37,10 +40,14 @@ export function Phones() {
           <Plus className="size-4" aria-hidden /> {t('phones.add')}
         </Button>
       </PageHeader>
+      <Tabs value={tab} onChange={setTab} tabs={[{ key: 'phones', label: t('phones.tabPhones') }, { key: 'firmware', label: t('phones.tabFirmware') }, { key: 'ztp', label: t('phones.tabZtp') }]} />
+      {tab === 'firmware' && models.data && <FirmwarePanel models={models.data} />}
+      {tab === 'ztp' && <ZtpPanel />}
+      {tab === 'phones' && <>
       <ProvisioningCard />
       <Card>
         <ErrorMessage error={list.error} />
-        <Table head={[t('phones.label'), t('phones.mac'), t('phones.model'), t('phones.extension'), t('phones.lastSeen'), '']}
+        <Table head={[t('phones.label'), t('phones.mac'), t('phones.model'), t('phones.extension'), t('phones.lastSeen'), t('phones.ztp'), '']}
           empty={list.data?.length === 0 && <Empty icon={<Smartphone className="size-7" />} title={t('phones.emptyTitle')} text={t('phones.emptyText')} />}>
           {list.data?.map((p) => (
             <tr key={p.id}>
@@ -52,6 +59,7 @@ export function Phones() {
               </td>
               <td className={td}>{extLabel(p.extensionId)}</td>
               <td className={td}>{p.lastSeenAt ? <><Badge tone="ok" dot>{formatDate(p.lastSeenAt, i18n.language)}</Badge> <span className="font-mono text-xs text-subtle">{p.lastIp}</span></> : <Badge>{t('phones.never')}</Badge>}</td>
+              <td className={td}>{p.vendor === 'yealink' && rps ? <ZtpBadge phoneId={p.id} state={p.ztpState} error={p.ztpError} onDone={list.reload} /> : <span className="text-xs text-subtle">–</span>}</td>
               <td className={`${td} whitespace-nowrap text-right`}>
                 <button type="button" onClick={() => showPreview(p)} aria-label={t('phones.preview')} title={t('phones.preview')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-white/5 hover:text-accent"><Eye className="size-4" /></button>
                 <button type="button" onClick={() => setEdit(p)} aria-label={t('common.edit')} title={t('common.edit')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-white/5 hover:text-ink"><Pencil className="size-4" /></button>
@@ -61,6 +69,7 @@ export function Phones() {
           ))}
         </Table>
       </Card>
+      </>}
       {edit && models.data && <PhoneForm value={edit} models={models.data} exts={exts.data ?? []} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); list.reload() }} />}
       {preview && (
         <Modal wide title={t('phones.preview')} subtitle={preview.phone.mac} onClose={() => setPreview(null)}>

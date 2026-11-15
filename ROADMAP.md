@@ -123,7 +123,7 @@ Notes on phase 3:
 - OneDrive signs in with the Microsoft device code flow (an Entra app registration with public client flows).
   The refresh token is renewed before every backup run.
 - Fax: a fax box is a destination for inbound routes. Faxes arrive as TIFF through SpanDSP, are converted to PDF with
-  `tiff2pdf` and mailed through the mail queue. T.38 is switched on per trunk. Sending faxes is not planned.
+  `tiff2pdf` and mailed through the mail queue. T.38 is switched on per trunk. Sending faxes followed in phase 4.
 - Phone book: contacts are served as XML phone books (Yealink, Snom, Grandstream, Fanvil, through provisioning) and as
   a read-only LDAP directory (389/636, own network only). Incoming callers in the phone book get their name shown.
 - The REST API is the same API the portal uses. Tokens are stored as hashes, never have more rights than their owner
@@ -135,17 +135,40 @@ Notes on phase 3:
 
 ## Phase 4 · Extensions
 
-Ongoing.
+Goal: fit into existing networks and save work for the installer. Released as `v0.5.0-rc.1` on the testing channel.
 
-- [ ] Support for running behind your own reverse proxy (trusted proxies)
-- [ ] Zero-touch provisioning via vendor redirection services (Yealink RPS, Snom SRAPS, Grandstream GDMS, Fanvil FDPS)
-- [ ] Firmware management per phone model
-- [ ] Provisioning: Htek, Akuvox, Cisco 8800 MPP
-- [ ] Local text-to-speech (Piper) for own IVR prompts typed in the portal, speech-to-text for voicemail
-- [ ] Email-to-fax / send a fax from the portal (depends on T.38 support of the SIP provider)
-- [ ] More backup destinations: S3, WebDAV, SMB
-- [ ] Optional Prometheus metrics
-- [ ] Research: multi-tenant with Kamailio in front
+- [x] Support for running behind your own reverse proxy (trusted proxies)
+- [x] Zero-touch provisioning via vendor redirection services (Yealink RPS automatic; Snom SRAPS, Grandstream GDMS, Fanvil FDPS, Htek, Poly, Gigaset and Cisco guided)
+- [x] Firmware management per phone model
+- [x] Provisioning: Htek, Akuvox, Cisco 8800 MPP
+- [x] Local text-to-speech (Piper) for own IVR prompts typed in the portal, speech-to-text for voicemail
+- [x] Email-to-fax / send a fax from the portal (depends on T.38 support of the SIP provider)
+- [x] More backup destinations: S3, WebDAV, SMB
+- [x] Optional Prometheus metrics
+- [x] Research: multi-tenant with Kamailio in front ([docs/multi-tenant-research.md](docs/multi-tenant-research.md))
+
+Notes on phase 4:
+
+- Reverse proxy: trusted proxy addresses and a public URL under Internet access. `X-Forwarded-For` is only read from
+  those addresses (walked from the right), loopback is always trusted. Examples for nginx, Traefik, HAProxy and Caddy
+  are in [docs/reverse-proxy.md](docs/reverse-proxy.md).
+- Zero-touch: only Yealink RPS has a documented public API; Kiestoon registers and removes Yealink phones there
+  automatically when an AccessKey is set. The other vendors have no public API, so the portal shows the address to
+  enter in their portal and exports the MAC addresses as CSV for a bulk import.
+- Firmware: uploaded once (or downloaded from the vendor site), linked to models and activated. Phones get it from
+  `/prov/fw/<random token>/` on their next provisioning, without internet access. A `.zip` is unpacked.
+- Speech: the separate `kiestoon-speech` package holds Piper and whisper.cpp (~66 MB). Voices and Whisper models are
+  downloaded from the portal (Speech page) with pinned SHA-256 checksums. Typed text becomes a prompt; voicemail is
+  transcribed and the text is added to the voicemail e-mail and the user portal. No audio leaves the server.
+- Fax sending: a PDF from the portal or by e-mail (IMAP mailbox, allowed senders per fax box, optional PIN, SPF/DMARC
+  failures refused) is converted with Ghostscript and sent with SpanDSP, at most two at once, three attempts each.
+  The sender gets the result by e-mail.
+- Backups: S3 (AWS and compatible providers), WebDAV (Nextcloud, ownCloud) and SMB through rclone, encrypted by
+  restic as before.
+- Prometheus: `/metrics` with a bearer token or an allow list, off by default. Metrics are listed in
+  [docs/api.md](docs/api.md).
+- Not yet tested on real hardware or accounts: Htek, Akuvox and Cisco provisioning, firmware rollout per vendor,
+  Yealink RPS with a real account, and T.38 fax sending through a provider.
 
 ## Phase 5 · Multi-site (after v1.0)
 

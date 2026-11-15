@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"regexp"
 	"slices"
 	"strconv"
@@ -139,6 +140,15 @@ func (s *Server) portalMessages(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "internal")
 		return
+	}
+	if st := s.speechSettings(r.Context()); st.STT.Enabled && st.STT.Voicemail {
+		for i := range msgs {
+			if p, err := s.Spool.MessageAudio(e.Number, msgs[i].Folder, msgs[i].ID); err == nil {
+				if b, err := os.ReadFile(p); err == nil {
+					msgs[i].Transcript = s.transcript(b)
+				}
+			}
+		}
 	}
 	writeJSON(w, http.StatusOK, msgs)
 }

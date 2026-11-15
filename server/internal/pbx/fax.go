@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"regexp"
 	"strings"
 )
 
@@ -16,6 +17,26 @@ type FaxBox struct {
 	KeepDays int    `json:"keepDays"`
 	ECM      bool   `json:"ecm"` // error correction mode
 	Enabled  bool   `json:"enabled"`
+	// Number is the fax number of the box: the caller ID and station ID of sent faxes.
+	Number string `json:"number"`
+	// SendEnabled allows sending faxes from this box (portal and e-mail).
+	SendEnabled bool `json:"sendEnabled"`
+	// Senders are the e-mail addresses that may send a fax by e-mail (comma separated).
+	Senders string `json:"senders"`
+	// SendPIN, when set, has to be in the subject of a fax e-mail.
+	SendPIN    string `json:"sendPin,omitempty"`
+	SendPINSet bool   `json:"sendPinSet"`
+}
+
+// SenderList returns the allowed sender addresses in lower case.
+func (f FaxBox) SenderList() []string {
+	out := []string{}
+	for _, e := range strings.Split(f.Senders, ",") {
+		if e = strings.ToLower(strings.TrimSpace(e)); e != "" {
+			out = append(out, e)
+		}
+	}
+	return out
 }
 
 // Recipients returns the e-mail addresses.
@@ -52,19 +73,67 @@ func (f *FaxBox) validate() error {
 	if f.KeepDays < 0 || f.KeepDays > 3650 {
 		return invalid("invalid", "keepDays")
 	}
+	f.Number = strings.TrimSpace(f.Number)
+	if f.Number != "" && !reFaxNumber.MatchString(f.Number) {
+		return invalid("invalid", "number")
+	}
+	if f.SendEnabled && f.Number == "" {
+		return invalid("required", "number")
+	}
+	senders := []string{}
+	for _, e := range strings.Split(f.Senders, ",") {
+		e = strings.ToLower(strings.TrimSpace(e))
+		if e == "" {
+			continue
+		}
+		if !strings.Contains(e, "@") || strings.ContainsAny(e, " <>\"\r\n;") || len(e) > 120 {
+			return invalid("invalid", "senders")
+		}
+		senders = append(senders, e)
+	}
+	if len(senders) > 50 {
+		return invalid("invalid", "senders")
+	}
+	f.Senders = strings.Join(senders, ", ")
+	f.SendPIN = strings.TrimSpace(f.SendPIN)
+	if f.SendPIN != "" && !reFaxPIN.MatchString(f.SendPIN) {
+		return invalid("invalid", "sendPin")
+	}
 	return nil
 }
 
-const faxBoxCols = `id, name, emails, keep_days, ecm, enabled`
+var (
+	reFaxNumber = regexp.MustCompile(`^\+?[0-9]{3,20}$`)
+	reFaxPIN    = regexp.MustCompile(`^[A-Za-z0-9]{4,20}$`)
+	// reFaxDial is a number a fax can be sent to.
+	reFaxDial = regexp.MustCompile(`^\+?[0-9]{3,20}$`)
+)
+
+// FaxDialNumber cleans a destination number ("020-123 45 67" becomes "0201234567"), or "".
+func FaxDialNumber(s string) string {
+	n := strings.Map(func(r rune) rune {
+		switch r {
+		case ' ', '-', '.', '(', ')', '/':
+			return -1
+		}
+		return r
+	}, strings.TrimSpace(s))
+	if !reFaxDial.MatchString(n) {
+		return ""
+	}
+	return n
+}
+
+const faxBoxCols = `id, name, emails, keep_days, ecm, enabled, number, send_enabled, senders, send_pin`
 
 func scanFaxBox(row interface{ Scan(...any) error }) (*FaxBox, error) {
 	var f FaxBox
-	var ecm, en int
-	err := row.Scan(&f.ID, &f.Name, &f.Emails, &f.KeepDays, &ecm, &en)
+	var ecm, en, send int
+	err := row.Scan(&f.ID, &f.Name, &f.Emails, &f.KeepDays, &ecm, &en, &f.Number, &send, &f.Senders, &f.SendPIN)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
-	f.ECM, f.Enabled = ecm == 1, en == 1
+	f.ECM, f.Enabled, f.SendEnabled, f.SendPINSet = ecm == 1, en == 1, send == 1, f.SendPIN != ""
 	return &f, err
 }
 
@@ -83,16 +152,25 @@ func (r *Repo) SaveFaxBox(ctx context.Context, f *FaxBox) error {
 	if err := f.validate(); err != nil {
 		return err
 	}
-	args := []any{f.Name, f.Emails, f.KeepDays, b2i(f.ECM), b2i(f.Enabled)}
+	if f.ID != 0 && f.SendPIN == "" && f.SendPINSet {
+		// Keep the stored PIN when the form did not send it again.
+		if old, err := r.FaxBox(ctx, f.ID); err == nil {
+			f.SendPIN = old.SendPIN
+		}
+	}
+	f.SendPINSet = f.SendPIN != ""
+	args := []any{f.Name, f.Emails, f.KeepDays, b2i(f.ECM), b2i(f.Enabled), f.Number, b2i(f.SendEnabled), f.Senders, f.SendPIN}
 	if f.ID == 0 {
-		res, err := r.DB.ExecContext(ctx, `INSERT INTO fax_boxes(name, emails, keep_days, ecm, enabled) VALUES (?,?,?,?,?)`, args...)
+		res, err := r.DB.ExecContext(ctx, `INSERT INTO fax_boxes(name, emails, keep_days, ecm, enabled, number, send_enabled, senders, send_pin)
+			VALUES (?,?,?,?,?,?,?,?,?)`, args...)
 		if err != nil {
 			return err
 		}
 		f.ID, _ = res.LastInsertId()
 		return nil
 	}
-	return updateRow(ctx, r.DB, `UPDATE fax_boxes SET name=?, emails=?, keep_days=?, ecm=?, enabled=? WHERE id=?`, append(args, f.ID), "name")
+	return updateRow(ctx, r.DB, `UPDATE fax_boxes SET name=?, emails=?, keep_days=?, ecm=?, enabled=?, number=?, send_enabled=?, senders=?, send_pin=?
+		WHERE id=?`, append(args, f.ID), "name")
 }
 
 // DeleteFaxBox removes a fax box; routes to it hang up from then on. Received faxes stay.

@@ -101,6 +101,7 @@ func serve(log *slog.Logger) error {
 
 	srv := api.New(cfg, db, log)
 	ensureSetupToken(ctx, cfg, srv, log)
+	srv.LoadProxySettings(ctx)
 
 	go srv.AMI.Run(ctx)
 	go srv.Ast.Run(ctx)
@@ -110,6 +111,7 @@ func serve(log *slog.Logger) error {
 	go srv.RunMaintenance(ctx)
 	go srv.RunIntegrations(ctx)
 	go srv.RunLDAP(ctx)
+	go srv.RunExtensions(ctx)
 	go func() {
 		t := time.NewTicker(time.Hour)
 		defer t.Stop()
@@ -126,6 +128,7 @@ func serve(log *slog.Logger) error {
 	mux := http.NewServeMux()
 	mux.Handle("/api/", srv.Routes())
 	mux.Handle("/prov/", srv.ProvisioningHandler())
+	mux.Handle("GET /metrics", srv.MetricsHandler())
 	mux.Handle("/", web.Handler())
 
 	newServer := func(addr string) *http.Server {

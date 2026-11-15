@@ -62,8 +62,35 @@ jobs:
           path: dist-sounds/*.deb
           retention-days: 3
 
+  speech:
+    name: Local speech package (${{ matrix.arch }})
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache the package
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: dist-speech
+          key: speech-${{ matrix.arch }}-${{ hashFiles('packaging/speech/**') }}
+      - name: Build Piper and whisper.cpp in Debian 13
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: docker run --rm -v "$PWD:/src" -w /src debian:trixie packaging/speech/build.sh dist-speech
+      - uses: actions/upload-artifact@v4
+        with:
+          name: speech-${{ matrix.arch }}
+          path: dist-speech/*.deb
+          retention-days: 3
+
   release:
-    needs: [asterisk, sounds]
+    needs: [asterisk, sounds, speech]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -123,6 +150,14 @@ jobs:
           name: sounds-nl
           path: dist
 
+      - name: Local speech packages
+        if: env.SKIP != '1'
+        uses: actions/download-artifact@v5
+        with:
+          pattern: speech-*
+          path: dist
+          merge-multiple: true
+
       - name: Build Proxmox LXC template (amd64)
         if: env.SKIP != '1'
         env:
@@ -130,7 +165,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq debootstrap
-          sudo ./lxc/build-lxc.sh "dist/kiestoon_${VERSION#v}_amd64.deb" dist/ dist/kiestoon-asterisk_*_amd64.deb dist/kiestoon-sounds-nl_*_all.deb
+          sudo ./lxc/build-lxc.sh "dist/kiestoon_${VERSION#v}_amd64.deb" dist/ dist/kiestoon-asterisk_*_amd64.deb dist/kiestoon-sounds-nl_*_all.deb \
+            dist/kiestoon-speech_*_amd64.deb
           sudo chown -R "$(id -u):$(id -g)" dist
 
       - name: Checksums

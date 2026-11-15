@@ -10,6 +10,7 @@
 #   --deb /path/to/kiestoon.deb    Install a local package (for development)
 #   --asterisk-deb /path/to.deb    Local kiestoon-asterisk package to install with --deb
 #   --sounds-deb /path/to.deb      Local kiestoon-sounds-nl package (Dutch prompts) to install with --deb
+#   --speech-deb /path/to.deb      Local kiestoon-speech package (text-to-speech, speech-to-text) to install with --deb
 set -euo pipefail
 
 REPO="${KIESTOON_REPO:-rhisijmuiden/kiestoon}"
@@ -29,6 +30,7 @@ while [ $# -gt 0 ]; do
     --deb) LOCAL_DEB="${2:-}"; shift 2 ;;
     --asterisk-deb) AST_PATH="$(readlink -f "${2:-}")"; shift 2 ;;
     --sounds-deb) SND_PATH="$(readlink -f "${2:-}")"; shift 2 ;;
+    --speech-deb) SPEECH_PATH="$(readlink -f "${2:-}")"; shift 2 ;;
     -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
     *) die "unknown option: $1" ;;
   esac
@@ -83,6 +85,13 @@ else
     (cd "$WORK" && grep -E " [* ]?${SND_DEB}\$" SHA256SUMS | sha256sum -c --status -) || die "checksum does not match for $SND_DEB"
     SND_PATH="$WORK/$SND_DEB"
   fi
+  SPEECH_DEB="$(grep -oE "kiestoon-speech_[0-9A-Za-z.+~-]+_${ARCH}\.deb" "$WORK/SHA256SUMS" | head -n1 || true)"
+  if [ -n "$SPEECH_DEB" ]; then
+    echo "Downloading local speech ($SPEECH_DEB)…"
+    curl -fsSL -o "$WORK/$SPEECH_DEB" "https://github.com/$REPO/releases/download/$VERSION/$SPEECH_DEB" || die "download failed: $SPEECH_DEB"
+    (cd "$WORK" && grep -E " [* ]?${SPEECH_DEB}\$" SHA256SUMS | sha256sum -c --status -) || die "checksum does not match for $SPEECH_DEB"
+    SPEECH_PATH="$WORK/$SPEECH_DEB"
+  fi
 fi
 
 # Remember the channel before the service starts for the first time.
@@ -95,6 +104,7 @@ echo "Installing…"
 PKGS=("$DEB_PATH")
 [ -n "$AST_PATH" ] && PKGS+=("$AST_PATH")
 [ -n "$SND_PATH" ] && PKGS+=("$SND_PATH")
+[ -n "$SPEECH_PATH" ] && PKGS+=("$SPEECH_PATH")
 apt-get install -y -qq --allow-downgrades "${PKGS[@]}" >/dev/null
 sed -i "s/^KIESTOON_CHANNEL=.*/KIESTOON_CHANNEL=$CHANNEL/" /etc/kiestoon/kiestoon.env
 systemctl restart kiestoon.service

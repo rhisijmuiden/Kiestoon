@@ -33,3 +33,19 @@ func TestFaxAndCallerID(t *testing.T) {
 		t.Error("caller ID lookup while switched off")
 	}
 }
+
+func TestFaxSend(t *testing.T) {
+	s := sample()
+	s.FaxBoxes = []pbx.FaxBox{{ID: 3, Name: "Fax", Emails: "fax@example.com", Enabled: true}}
+	if dp := Generate(s, Options{})["extensions.conf"]; strings.Contains(dp, "kiestoon-faxsend") {
+		t.Error("fax send contexts without a sending box")
+	}
+	s.FaxBoxes[0].SendEnabled, s.FaxBoxes[0].Number = true, "0201234500"
+	dp := Generate(s, Options{})["extensions.conf"]
+	for _, want := range []string{"[kiestoon-faxout]", "Set(KT_OUTCID=${KT_FAXCID})", "Goto(kiestoon-outbound,${EXTEN},1)",
+		"[kiestoon-faxsend]", "SendFAX(${KT_FAXFILE},z)", "UserEvent(KiestoonFaxOut,Job: ${KT_FAXJOB}"} {
+		if !strings.Contains(dp, want) {
+			t.Errorf("extensions.conf misses %q", want)
+		}
+	}
+}

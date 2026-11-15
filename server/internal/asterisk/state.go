@@ -218,3 +218,23 @@ func (a *AMI) VoicemailRefresh(ctx context.Context, mailbox string) {
 func (a *AMI) SetDeviceState(ctx context.Context, device, state string) {
 	_, _ = a.Action(ctx, Message{{"Action", "Setvar"}, {"Variable", "DEVICE_STATE(" + device + ")"}, {"Value", state}})
 }
+
+// OriginateApp calls channel and, when it answers, runs context/exten in the dialplan. vars are
+// NAME=value channel variables. Async: the result arrives as an OriginateResponse event.
+func (a *AMI) OriginateApp(ctx context.Context, channel, context_, exten, callerID string, timeout time.Duration, vars ...string) error {
+	m := Message{
+		{"Action", "Originate"}, {"Channel", channel}, {"Context", context_}, {"Exten", exten}, {"Priority", "1"},
+		{"CallerID", callerID}, {"Timeout", strconv.Itoa(int(timeout.Milliseconds()))}, {"Async", "true"},
+	}
+	for _, v := range vars {
+		m = append(m, KV{"Variable", v})
+	}
+	r, err := a.Action(ctx, m)
+	if err != nil {
+		return err
+	}
+	if strings.EqualFold(r.Get("Response"), "Error") {
+		return &ActionError{Msg: r.Get("Message")}
+	}
+	return nil
+}

@@ -10,7 +10,9 @@ const blank: BackupTarget = {
   id: 0, name: '', kind: 'sftp', host: '', port: 22, username: '', passwordSet: false, keySet: false, path: 'kiestoon',
   implicitTls: false, enabled: true,
 }
-const defaultPorts: Record<BackupTarget['kind'], number> = { ftp: 21, ftps: 21, sftp: 22, scp: 22, onedrive: 443 }
+const defaultPorts: Record<BackupTarget['kind'], number> = { ftp: 21, ftps: 21, sftp: 22, scp: 22, onedrive: 443, s3: 443, webdav: 443, smb: 445 }
+const s3Providers = ['AWS', 'Minio', 'Wasabi', 'Ceph', 'DigitalOcean', 'Scaleway', 'Hetzner', 'Cloudflare', 'Other']
+const davVendors = ['nextcloud', 'owncloud', 'sharepoint-ntlm', 'other']
 
 type RestoreStatus = { state: '' | 'running' | 'success' | 'failed'; snapshot: string; message: string; at: string }
 
@@ -235,25 +237,32 @@ function TargetForm({ value, onClose, onSaved }: { value: BackupTarget; onClose:
     <Modal title={v.id ? t('backups.editTarget') : t('backups.addTarget')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <Input label={t('backups.name')} value={v.name} onChange={(e) => set('name', e.target.value)} placeholder="NAS office" />
-      <div className="grid gap-3 sm:grid-cols-[1fr_2fr_1fr]">
         <Select label={t('backups.protocol')} value={v.kind} onChange={(e) => {
           const k = e.target.value as BackupTarget['kind']
           setV((o) => ({
             ...o, kind: k, port: o.port === defaultPorts[o.kind] ? defaultPorts[k] : o.port,
             onedrive: k === 'onedrive' ? o.onedrive ?? { tenant: 'common', clientId: '' } : o.onedrive,
+            provider: k === 's3' ? (s3Providers.includes(o.provider ?? '') ? o.provider : 'AWS') : k === 'webdav' ? (davVendors.includes(o.provider ?? '') ? o.provider : 'nextcloud') : '',
+            region: k === 's3' ? o.region || 'us-east-1' : '',
+            path: k === 's3' && o.path === blank.path ? 'kiestoon-backup' : k !== 's3' && o.path === 'kiestoon-backup' ? blank.path : o.path,
           }))
         }}>
           <option value="sftp">SFTP</option>
           <option value="scp">SCP (SSH)</option>
           <option value="ftps">FTPS</option>
           <option value="ftp">FTP</option>
+          <option value="smb">SMB / Windows share</option>
+          <option value="webdav">WebDAV (Nextcloud)</option>
+          <option value="s3">S3 (object storage)</option>
           <option value="onedrive">Microsoft OneDrive</option>
         </Select>
-        {v.kind !== 'onedrive' && <>
-          <Input label={t('backups.host')} value={v.host} onChange={(e) => set('host', e.target.value)} placeholder="backup.example.com" />
+      {v.kind !== 'onedrive' && (
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+          <Input label={v.kind === 's3' ? t('backups.endpoint') : t('backups.host')} value={v.host} onChange={(e) => set('host', e.target.value)}
+            placeholder={v.kind === 's3' ? 's3.eu-central-1.amazonaws.com' : v.kind === 'smb' ? 'nas.office.lan' : 'backup.example.com'} />
           <Input label={t('backups.port')} type="number" value={v.port} onChange={(e) => set('port', Number(e.target.value))} />
-        </>}
-      </div>
+        </div>
+      )}
       {v.kind === 'onedrive' && v.onedrive && <>
         <p className="text-xs text-subtle">{t('backups.onedrive.intro')}</p>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -267,13 +276,36 @@ function TargetForm({ value, onClose, onSaved }: { value: BackupTarget; onClose:
           onChange={(e) => set('onedrive', { ...v.onedrive!, clientSecret: e.target.value })} />
         {!v.id && <Alert tone="warn">{t('backups.onedrive.connectAfterSave')}</Alert>}
       </>}
+      {v.kind === 's3' && <>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Select label={t('backups.s3.provider')} value={v.provider ?? 'AWS'} onChange={(e) => set('provider', e.target.value)}>
+            {s3Providers.map((p) => <option key={p} value={p}>{p === 'Other' ? t('backups.s3.other') : p}</option>)}
+          </Select>
+          <Input label={t('backups.s3.region')} value={v.region ?? ''} onChange={(e) => set('region', e.target.value.trim())} placeholder="eu-central-1" className="font-mono" hint={t('backups.s3.regionHint')} />
+        </div>
+        <p className="text-xs text-subtle">{t('backups.s3.hint')}</p>
+      </>}
+      {v.kind === 'webdav' && <>
+        <Select label={t('backups.webdav.vendor')} value={v.provider ?? 'nextcloud'} onChange={(e) => set('provider', e.target.value)}>
+          {davVendors.map((p) => <option key={p} value={p}>{t(`backups.webdav.vendors.${p}`)}</option>)}
+        </Select>
+        <p className="text-xs text-subtle">{t('backups.webdav.hint')}</p>
+      </>}
+      {v.kind === 'smb' && <>
+        <Input label={t('backups.smb.domain')} value={v.domain ?? ''} onChange={(e) => set('domain', e.target.value.trim())} placeholder="WORKGROUP" hint={t('backups.smb.domainHint')} />
+        <p className="text-xs text-subtle">{t('backups.smb.hint')}</p>
+      </>}
+      {(v.kind === 's3' || v.kind === 'webdav') && (
+        <Toggle label={t('backups.plain')} hint={t('backups.plainHint')} checked={!!v.plain}
+          onChange={(x) => setV((o) => ({ ...o, plain: x, port: o.port === 443 && x ? 80 : o.port === 80 && !x ? 443 : o.port }))} />
+      )}
       {v.kind === 'ftp' && <Alert tone="warn">{t('backups.ftpWarn')}</Alert>}
       {v.kind === 'scp' && <p className="text-xs text-subtle">{t('backups.scpHint')}</p>}
       {v.kind === 'ftps' && <Toggle label={t('backups.implicitTls')} hint={t('backups.implicitTlsHint')} checked={v.implicitTls} onChange={(x) => set('implicitTls', x)} />}
       {v.kind !== 'onedrive' && (
         <div className="grid gap-3 sm:grid-cols-2">
-          <Input label={t('backups.username')} value={v.username} onChange={(e) => set('username', e.target.value)} autoComplete="off" />
-          <Input label={t('backups.password')} type="password" value={v.password ?? ''} onChange={(e) => set('password', e.target.value)}
+          <Input label={v.kind === 's3' ? t('backups.s3.accessKey') : t('backups.username')} value={v.username} onChange={(e) => set('username', e.target.value)} autoComplete="off" className={v.kind === 's3' ? 'font-mono' : undefined} />
+          <Input label={v.kind === 's3' ? t('backups.s3.secretKey') : t('backups.password')} type="password" value={v.password ?? ''} onChange={(e) => set('password', e.target.value)}
             placeholder={v.passwordSet ? t('common.keepSecret') : ''} autoComplete="new-password" hint={ssh ? t('backups.passwordOrKey') : undefined} />
         </div>
       )}
@@ -281,7 +313,9 @@ function TargetForm({ value, onClose, onSaved }: { value: BackupTarget; onClose:
         <Textarea label={t('backups.privateKey')} value={v.privateKey ?? ''} onChange={(e) => set('privateKey', e.target.value)}
           placeholder={v.keySet ? t('common.keepSecret') : '-----BEGIN OPENSSH PRIVATE KEY-----'} hint={t('backups.privateKeyHint')} />
       )}
-      <Input label={t('backups.path')} value={v.path} onChange={(e) => set('path', e.target.value)} hint={t('backups.pathHint')} />
+      <Input label={v.kind === 's3' ? t('backups.s3.bucket') : v.kind === 'smb' ? t('backups.smb.share') : t('backups.path')} value={v.path} onChange={(e) => set('path', e.target.value)}
+        placeholder={v.kind === 'smb' ? 'Backups/kiestoon' : v.kind === 'webdav' ? 'kiestoon' : undefined}
+        hint={v.kind === 's3' ? t('backups.s3.bucketHint') : v.kind === 'smb' ? t('backups.smb.shareHint') : v.kind === 'webdav' ? t('backups.webdav.pathHint') : t('backups.pathHint')} />
       <Toggle label={t('common.enabled')} hint={t('backups.enabledHint')} checked={v.enabled} onChange={(x) => set('enabled', x)} />
       {!v.id && <p className="text-xs text-subtle">{t('backups.encryption')}</p>}
       <ErrorMessage error={error} />

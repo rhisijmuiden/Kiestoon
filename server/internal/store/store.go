@@ -459,6 +459,87 @@ var migrations = []string{
 		last_used_at  TEXT NOT NULL DEFAULT ''
 	);
 	CREATE INDEX passkeys_user ON passkeys(user_id);`,
+	// 6: phase 4, extensions. Rebuilds phones (vendor list checked in Go from now on) and
+	// backup_targets (S3, WebDAV, SMB); adds firmware, ZTP state and fax sending.
+	fkOff + `CREATE TABLE phones_new (
+		id           INTEGER PRIMARY KEY AUTOINCREMENT,
+		mac          TEXT NOT NULL UNIQUE,
+		vendor       TEXT NOT NULL,
+		model        TEXT NOT NULL,
+		extension_id INTEGER REFERENCES extensions(id) ON DELETE SET NULL,
+		label        TEXT NOT NULL DEFAULT '',
+		keys         TEXT NOT NULL DEFAULT '[]',
+		last_seen_at TEXT NOT NULL DEFAULT '',
+		last_ip      TEXT NOT NULL DEFAULT '',
+		user_agent   TEXT NOT NULL DEFAULT '',
+		created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		lines        TEXT NOT NULL DEFAULT '[]',
+		ztp_state    TEXT NOT NULL DEFAULT '',
+		ztp_error    TEXT NOT NULL DEFAULT '',
+		ztp_at       TEXT NOT NULL DEFAULT ''
+	);
+	INSERT INTO phones_new(id, mac, vendor, model, extension_id, label, keys, last_seen_at, last_ip, user_agent, created_at, lines)
+		SELECT id, mac, vendor, model, extension_id, label, keys, last_seen_at, last_ip, user_agent, created_at, lines FROM phones;
+	DROP TABLE phones;
+	ALTER TABLE phones_new RENAME TO phones;
+
+	CREATE TABLE backup_targets_new (
+		id            INTEGER PRIMARY KEY AUTOINCREMENT,
+		name          TEXT NOT NULL,
+		kind          TEXT NOT NULL,
+		host          TEXT NOT NULL,
+		port          INTEGER NOT NULL DEFAULT 0,
+		username      TEXT NOT NULL DEFAULT '',
+		password      TEXT NOT NULL DEFAULT '',
+		private_key   TEXT NOT NULL DEFAULT '',
+		path          TEXT NOT NULL DEFAULT '',
+		implicit_tls  INTEGER NOT NULL DEFAULT 0,
+		repo_password TEXT NOT NULL,
+		enabled       INTEGER NOT NULL DEFAULT 1,
+		created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		onedrive      TEXT NOT NULL DEFAULT '{}',
+		extra         TEXT NOT NULL DEFAULT '{}'
+	);
+	INSERT INTO backup_targets_new(id, name, kind, host, port, username, password, private_key, path, implicit_tls, repo_password, enabled, created_at, onedrive)
+		SELECT id, name, kind, host, port, username, password, private_key, path, implicit_tls, repo_password, enabled, created_at, onedrive FROM backup_targets;
+	DROP TABLE backup_targets;
+	ALTER TABLE backup_targets_new RENAME TO backup_targets;
+
+	CREATE TABLE firmware (
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		vendor     TEXT NOT NULL,
+		models     TEXT NOT NULL DEFAULT '[]',
+		version    TEXT NOT NULL DEFAULT '',
+		filename   TEXT NOT NULL,
+		token      TEXT NOT NULL UNIQUE,
+		size       INTEGER NOT NULL DEFAULT 0,
+		sha256     TEXT NOT NULL DEFAULT '',
+		active     INTEGER NOT NULL DEFAULT 0,
+		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+
+	ALTER TABLE fax_boxes ADD COLUMN number TEXT NOT NULL DEFAULT '';
+	ALTER TABLE fax_boxes ADD COLUMN send_enabled INTEGER NOT NULL DEFAULT 0;
+	ALTER TABLE fax_boxes ADD COLUMN senders TEXT NOT NULL DEFAULT '';
+	ALTER TABLE fax_boxes ADD COLUMN send_pin TEXT NOT NULL DEFAULT '';
+	CREATE TABLE fax_jobs (
+		id           INTEGER PRIMARY KEY AUTOINCREMENT,
+		box_id       INTEGER REFERENCES fax_boxes(id) ON DELETE SET NULL,
+		user_id      INTEGER REFERENCES users(id) ON DELETE SET NULL,
+		source       TEXT NOT NULL DEFAULT 'portal',
+		sender       TEXT NOT NULL DEFAULT '',
+		number       TEXT NOT NULL,
+		document     TEXT NOT NULL DEFAULT '',
+		file         TEXT NOT NULL DEFAULT '',
+		pages        INTEGER NOT NULL DEFAULT 0,
+		status       TEXT NOT NULL DEFAULT 'queued',
+		attempts     INTEGER NOT NULL DEFAULT 0,
+		error        TEXT NOT NULL DEFAULT '',
+		created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		next_at      TEXT NOT NULL DEFAULT ''
+	);
+	CREATE INDEX fax_jobs_status ON fax_jobs(status, next_at);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

@@ -46,6 +46,8 @@ type Message struct {
 	CallerID string `json:"callerId"`
 	Date     string `json:"date"`
 	Duration int    `json:"duration"`
+	// Transcript is the text of the message when speech-to-text is on.
+	Transcript string `json:"transcript,omitempty"`
 }
 
 func readInfo(path string) map[string]string {

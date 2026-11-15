@@ -28,6 +28,7 @@ stap eigen audio.
 | **Toetskeuze** | "Toets 1": de beller drukte deze toets | Eén |
 | **Geen invoer** | De beller drukte niets of een ongebruikte toets, nadat het menu herhaald is | Eén |
 | **Audio afspelen** | Speelt een bericht en volgt dan de lijn | Eén |
+| **Spraakvraag** | Vraagt waarvoor de beller belt en luistert naar het antwoord (zie [hieronder](#spraakvraag)) | Eén per antwoord, plus *Niet begrepen* |
 | **Toestel, Belgroep, Wachtrij, Voicemail** | Verbindt het gesprek daarheen door | Eindpunt |
 | **Submenu** | Een ander keuzemenu | Eindpunt |
 | **Extern nummer** | Schakelt door naar een nummer buiten | Eindpunt |
@@ -68,6 +69,31 @@ audiobericht, met een golfvormspeler om het te beluisteren. Kies de bron in het 
 
 Gegenereerde, opgenomen en geüploade audio wordt bewaard onder **Gesproken teksten**, zodat je hem opnieuw kunt
 gebruiken in wachtrijen en andere menu's.
+
+## Spraakvraag
+
+Met een **Spraakvraag** zeggen bellers waarvoor ze bellen in plaats van een toets te kiezen
+("Vertel ons in een paar woorden waarvoor u belt").
+
+![Een menu met een spraakvraag](shot:ivr-speech)
+
+1. De stap speelt de vraag en neemt het antwoord op (maximaal 12 seconden; 3 seconden stilte beëindigt het).
+2. Het antwoord wordt **op deze server** uitgeschreven door Whisper; de beller hoort zolang even wachtmuziek.
+3. Elk **antwoord** van de stap heeft een naam en trefwoorden. Het antwoord met de meeste trefwoorden in wat de
+   beller zei wint. Een trefwoord past ook op langere woorden (*factu* past op *factuur* en *facturen*);
+   hoofdletters en accenten maken niet uit, en een trefwoord van meer woorden (*werkt niet*) moet in die volgorde voorkomen.
+4. Met **Laat AI kiezen als geen trefwoord past** kiest de [AI-engine](ai.md) het antwoord dat het best past.
+   Claude doet daar een seconde of twee over; een lokaal model kan de eerste keer veel langer nodig hebben.
+5. Past er niets, of staat spraak-naar-tekst uit: het gesprek volgt de lijn **Niet begrepen**.
+
+Elk antwoord heeft een eigen poort rechts aan de stap; trek van elk een lijn naar waar het gesprek heen moet.
+Een handige opzet: verbind **Geen invoer** met de spraakvraag en zet **Menu herhalen** op 0. Wie niets drukt, mag
+het zeggen; wie de toets kent, drukt gewoon. Het [gespreksverloop](call-journey.md) toont hoe het antwoord van
+de beller is herkend.
+
+!!! note "Vereisten"
+    Spraak-naar-tekst moet aan staan onder [Spraak](prompts.md#spraak) met een gedownload Whisper-model. Het
+    model *base* of *small* houdt de wachttijd kort.
 
 ## Testgesprek
 

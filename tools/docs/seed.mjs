@@ -116,6 +116,31 @@ const ivr = await c.post('/api/pbx/ivrs', {
     ],
   },
 })
+// A menu that asks what the caller wants (speech step).
+await c.post('/api/pbx/ivrs', {
+  name: 'Speech menu', promptId: prompts.welcome, timeout: 3, retries: 0, directDial: false, options: [], timeoutDestination: { type: '', target: '' },
+  flow: {
+    nodes: [
+      { id: 'entry', type: 'entry', x: 40, y: 160, promptId: prompts.welcome },
+      { id: 'k1', type: 'key', x: 360, y: 20, digit: '1', label: 'Support' },
+      { id: 'to', type: 'timeout', x: 360, y: 200 },
+      { id: 'sp', type: 'speech', x: 680, y: 160, label: 'What are you calling about?', promptId: prompts.sales, ai: true, intents: [
+        { label: 'Sales', keywords: ['quote', 'offerte', 'price', 'prijs', 'bestel'] },
+        { label: 'Support', keywords: ['fault', 'storing', 'broken', 'kapot', 'werkt niet'] },
+        { label: 'Invoices', keywords: ['invoice', 'factu', 'payment', 'betaling'] },
+      ] },
+      { id: 'd1', type: 'destination', x: 1020, y: 40, destination: { type: 'ringgroup', target: String(sales.data.id) } },
+      { id: 'd2', type: 'destination', x: 1020, y: 170, destination: { type: 'queue', target: String(support.data.id) } },
+      { id: 'd3', type: 'destination', x: 1020, y: 300, destination: { type: 'extension', target: '203' } },
+      { id: 'd4', type: 'destination', x: 1020, y: 430, destination: { type: 'voicemail', target: '201' } },
+    ],
+    edges: [
+      { from: 'entry', port: 'out', to: 'k1' }, { from: 'entry', port: 'out', to: 'to' }, { from: 'k1', port: 'out', to: 'd2' },
+      { from: 'to', port: 'out', to: 'sp' }, { from: 'sp', port: 'i1', to: 'd1' }, { from: 'sp', port: 'i2', to: 'd2' },
+      { from: 'sp', port: 'i3', to: 'd3' }, { from: 'sp', port: 'nomatch', to: 'd4' },
+    ],
+  },
+})
 const tc = await c.post('/api/pbx/timeconditions', {
   name: 'Office hours', schedule: [{ days: [1, 2, 3, 4], from: '08:30', to: '17:30' }, { days: [5], from: '08:30', to: '16:00' }],
   useHolidays: true, mode: 'auto', open: { type: 'ivr', target: String(ivr.data.id) }, closed: { type: 'voicemail', target: '201' },

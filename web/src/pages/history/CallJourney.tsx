@@ -94,7 +94,8 @@ function stepResult(t: TFunction, s: JourneyStep): { text: string; tone?: 'ok' |
     case 'timecondition':
       return r ? { text: t(`journey.tc.${r}`, { defaultValue: r }), tone: r === 'open' ? 'ok' : 'warn' } : null
     case 'ivr': {
-      const key = s.subs?.filter((x) => x.kind === 'key').at(-1)
+      const key = s.subs?.filter((x) => x.kind === 'key' || x.kind === 'speech').at(-1)
+      if (key?.kind === 'speech') return key.value ? { text: t('journey.ivr.said', { intent: key.value }), tone: 'accent' } : { text: t('journey.ivr.notUnderstood'), tone: 'warn' }
       if (key) return { text: t('journey.ivr.pressed', { key: key.value }), tone: 'accent' }
       return { text: t('journey.ivr.none'), tone: 'warn' }
     }
@@ -165,6 +166,8 @@ function subText(t: TFunction, x: JourneySub) {
       return t(`journey.ivr.${x.kind}`, { n: x.value })
     case 'repeat':
       return t('journey.ivr.repeat')
+    case 'speech':
+      return x.value ? t('journey.ivr.said', { intent: x.value }) : t('journey.ivr.notUnderstood')
     default:
       return partyLabel(t, x.party)
   }

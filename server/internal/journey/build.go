@@ -278,7 +278,7 @@ func (b *builder) event(e Event) {
 	case "kt_ivr":
 		b.cur = nil
 		b.add(&Step{Kind: "ivr", At: e.At, Ref: d["id"], Name: b.names("ivr", d["id"]), Tone: "accent"})
-	case "kt_ivrkey", "kt_ivrtimeout", "kt_ivrinvalid", "kt_ivrrepeat":
+	case "kt_ivrkey", "kt_ivrtimeout", "kt_ivrinvalid", "kt_ivrrepeat", "kt_ivrspeech":
 		s := b.lastStep("ivr")
 		if s == nil || s.Ref != d["id"] {
 			s = b.add(&Step{Kind: "ivr", At: e.At, Ref: d["id"], Name: b.names("ivr", d["id"]), Tone: "accent"})
@@ -287,6 +287,9 @@ func (b *builder) event(e Event) {
 		val := d["key"]
 		if kind == "timeout" || kind == "invalid" {
 			val = d["try"]
+		}
+		if kind == "speech" {
+			val = d["intent"]
 		}
 		s.Subs = append(s.Subs, &Sub{Kind: kind, At: e.At, Value: val, DurationMs: ms(e.At.Sub(s.At))})
 		if kind == "key" {

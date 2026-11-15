@@ -96,7 +96,8 @@ func (s *Server) plan(ctx context.Context) pbx.NumberPlan {
 }
 
 func (s *Server) asteriskOptions(ctx context.Context) asterisk.Options {
-	o := asterisk.Options{AMIUser: "kiestoon", AMISecret: s.AMI.Secret, MailCmd: "/usr/bin/kiestoon sendmail -t", PromptDir: s.promptDir(), FaxDir: s.faxSpool()}
+	o := asterisk.Options{AMIUser: "kiestoon", AMISecret: s.AMI.Secret, MailCmd: "/usr/bin/kiestoon sendmail -t", PromptDir: s.promptDir(), FaxDir: s.faxSpool(),
+		SpeechDir: s.speechSpool(), AGIAddr: s.agiAddr()}
 	if cert, key, _, err := certs.Current(s.Cfg.PBXDir()); err == nil {
 		o.TLSCert, o.TLSKey = cert, key
 	}

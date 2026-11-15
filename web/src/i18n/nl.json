@@ -1351,7 +1351,8 @@
       "remote": "Andere locatie",
       "followsun": "Follow the sun",
       "entry": "Binnenkomend gesprek",
-      "destination": "Doorverbinden"
+      "destination": "Doorverbinden",
+      "speech": "Spraakvraag"
     },
     "node": {
       "press": "Druk",
@@ -1361,14 +1362,18 @@
       "choose": "Kies een bestemming",
       "repeatText": "Terug naar het begin van het menu",
       "open": "open",
-      "closed": "dicht"
+      "closed": "dicht",
+      "intentUnnamed": "Antwoord zonder naam",
+      "notUnderstood": "Niet begrepen"
     },
     "problem": {
       "notInMenu": "Hoort niet bij het menu: trek een lijn van het binnenkomende gesprek naar deze stap.",
       "unreachable": "Er loopt geen lijn naar deze stap.",
       "noLine": "Er loopt geen lijn uit: het gesprek stopt hier.",
       "chooseTime": "Kies een tijdconditie.",
-      "chooseTarget": "Kies waar het gesprek heen gaat."
+      "chooseTarget": "Kies waar het gesprek heen gaat.",
+      "noIntents": "Voeg minstens één antwoord met trefwoorden toe",
+      "intentIncomplete": "Elk antwoord heeft een naam en trefwoorden nodig"
     },
     "panel": {
       "title": "Stap bewerken",
@@ -1401,7 +1406,8 @@
         "entry": "speelt als eerste",
         "key": "speelt als deel van het menu",
         "timeout": "speelt voor het opgeven",
-        "audio": "speelt, en volgt dan de lijn"
+        "audio": "speelt, en volgt dan de lijn",
+        "speech": "stelt de vraag"
       },
       "manage": "Beheren",
       "keypress": "Toets",
@@ -1418,8 +1424,19 @@
         "audio": "Audio afspelen",
         "destination": "Gesprek doorsturen",
         "time": "Openingstijden controleren",
-        "repeat": "Menu herhalen"
-      }
+        "repeat": "Menu herhalen",
+        "speech": "Vraag waarvoor de beller belt"
+      },
+      "speechIntro": "De beller antwoordt in eigen woorden. Kiestoon schrijft het antwoord uit op deze server (Whisper) en volgt de lijn van het antwoord waarvan het de trefwoorden hoort.",
+      "intent": "Antwoord {{n}}",
+      "intentPlaceholder": "bijv. Facturen",
+      "keywords": "Trefwoorden, gescheiden door komma's",
+      "keywordsPlaceholder": "factu, betaling, rekening",
+      "addIntent": "Antwoord toevoegen",
+      "keywordsHint": "Een trefwoord past ook op langere woorden: “factu” past op factuur en facturen. Hoofdletters en accenten maken niet uit. Het antwoord met de meeste trefwoorden wint.",
+      "speechAI": "Laat AI kiezen als geen trefwoord past",
+      "speechAIHint": "Gebruikt de engine van de AI-pagina (Claude is het snelst). Zonder AI gaat het gesprek via de lijn “Niet begrepen”.",
+      "speechLinesHint": "Trek een lijn van elk antwoord, en van “Niet begrepen”, naar de volgende stap. Spraak-naar-tekst moet aan staan onder Spraak."
     },
     "test": {
       "button": "Testgesprek",
@@ -2843,7 +2860,9 @@
       "timeout": "Geen keuze gemaakt (poging {{n}})",
       "invalid": "Ongeldige keuze (poging {{n}})",
       "repeat": "Menu opnieuw afgespeeld",
-      "none": "Geen keuze gemaakt"
+      "none": "Geen keuze gemaakt",
+      "said": "Zei: {{intent}}",
+      "notUnderstood": "Antwoord niet begrepen"
     },
     "ring": {
       "answered": "Opgenomen",

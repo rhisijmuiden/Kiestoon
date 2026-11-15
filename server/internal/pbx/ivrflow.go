@@ -23,6 +23,9 @@ import (
 //   - destination: sends the call to an extension, group, queue, voicemail, other menu, ... End point.
 //   - time:        checks a time condition (with its day/night switch). Ports "open" and "closed".
 //   - repeat:      plays the menu again. End point.
+//   - speech:      asks a question ("say what you are calling about"), records the answer, has it
+//     transcribed by the local Whisper and follows the line of the first matching intent (ports
+//     "i1".."i8", by keywords, optionally helped by AI) or "nomatch".
 const (
 	NodeEntry       = "entry"
 	NodeKey         = "key"
@@ -31,7 +34,20 @@ const (
 	NodeDestination = "destination"
 	NodeTime        = "time"
 	NodeRepeat      = "repeat"
+	NodeSpeech      = "speech"
 )
+
+// MaxIntents limits the intents of one speech step.
+const MaxIntents = 8
+
+// SpeechIntent is one thing a caller can say at a speech step.
+type SpeechIntent struct {
+	Label    string   `json:"label"`
+	Keywords []string `json:"keywords"`
+}
+
+// SpeechPort is the port of intent i (from 1).
+func SpeechPort(i int) string { return "i" + strconv.Itoa(i) }
 
 // MaxFlowNodes limits the size of one menu.
 const MaxFlowNodes = 200
@@ -47,6 +63,9 @@ type FlowNode struct {
 	PromptID int64   `json:"promptId,omitempty"`
 	// Destination of a destination node; for a time node the time condition (type timecondition).
 	Destination *Destination `json:"destination,omitempty"`
+	// Intents of a speech step; AI lets the AI engine choose when no keyword matches.
+	Intents []SpeechIntent `json:"intents,omitempty"`
+	AI      bool           `json:"ai,omitempty"`
 }
 
 // FlowEdge is a line from a node's port to another node.
@@ -138,7 +157,7 @@ func (f *Flow) Steps() map[string]int {
 	m := map[string]int{}
 	for _, n := range f.Nodes {
 		switch n.Type {
-		case NodeAudio, NodeDestination, NodeTime, NodeRepeat:
+		case NodeAudio, NodeDestination, NodeTime, NodeRepeat, NodeSpeech:
 			m[n.ID] = len(m) + 1
 		}
 	}
@@ -165,6 +184,9 @@ func (f *Flow) FirstDestination(from *FlowNode) Destination {
 			return Destination{Type: DestHangup}
 		case NodeRepeat:
 			return Destination{Type: DestHangup}
+		case NodeSpeech:
+			n = f.Next(n.ID, "nomatch")
+			continue
 		}
 		n = f.Next(n.ID, "out")
 	}
@@ -249,6 +271,9 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 		if n.Type != NodeKey {
 			n.Digit = ""
 		}
+		if n.Type != NodeSpeech {
+			n.Intents, n.AI = nil, false
+		}
 		switch n.Type {
 		case NodeEntry:
 			entries++
@@ -263,6 +288,24 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 			}
 			digits[n.Digit] = true
 		case NodeAudio, NodeRepeat:
+		case NodeSpeech:
+			if len(n.Intents) > MaxIntents {
+				return invalid("too_large", "flow")
+			}
+			for j := range n.Intents {
+				in := &n.Intents[j]
+				in.Label = cleanText(in.Label, 40)
+				kws := []string{}
+				for _, k := range in.Keywords {
+					if k = cleanText(k, 40); k != "" && len(kws) < 30 && !slices.Contains(kws, k) {
+						kws = append(kws, k)
+					}
+				}
+				in.Keywords = kws
+				if in.Label == "" {
+					return invalid("invalid", "flow")
+				}
+			}
 		case NodeDestination:
 			if n.Destination == nil {
 				n.Destination = &Destination{Type: DestHangup}
@@ -281,7 +324,7 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 			return invalid("invalid", "flow")
 		}
 		switch n.Type {
-		case NodeEntry, NodeKey, NodeTimeout, NodeAudio:
+		case NodeEntry, NodeKey, NodeTimeout, NodeAudio, NodeSpeech:
 		default:
 			n.PromptID = 0
 		}
@@ -317,6 +360,14 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 			}
 		case NodeTime:
 			if (e.Port != "open" && e.Port != "closed") || to.Type == NodeKey || to.Type == NodeTimeout {
+				return invalid("invalid_line", "flow")
+			}
+		case NodeSpeech:
+			ok := e.Port == "nomatch"
+			for j := range from.Intents {
+				ok = ok || e.Port == SpeechPort(j+1)
+			}
+			if !ok || to.Type == NodeKey || to.Type == NodeTimeout {
 				return invalid("invalid_line", "flow")
 			}
 		default:

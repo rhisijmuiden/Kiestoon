@@ -15,7 +15,7 @@ import { useTheme } from '../../lib/theme'
 import type { Extension, InboundRoute, IVR, Prompt, TimeCondition } from '../../lib/types'
 import { NodePanel } from './NodePanel'
 import {
-  NODE_W, autoLayout, blankFlow, canConnect, dataForKind, fromFlow, kindTone, kinds, makeEdge, newId, toFlow, toneOf, tones,
+  NODE_W, autoLayout, blankFlow, canConnect, dataForKind, fromFlow, intentPort, kindTone, kinds, makeEdge, newId, toFlow, toneOf, tones,
   type Kind, type StepData, type StepNode,
 } from './flow'
 import { FlowInfoContext, kindIcon, nodeTypes, type FlowInfo } from './nodes'
@@ -173,6 +173,21 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
     // Lines take the colour of their start node.
     if (d.destination) setEdges((es) => es.map((e) => (e.source === id ? makeEdge(e.source, (e.sourceHandle ?? 'out') as 'out', e.target, { ...byId.get(id)!.data, ...d }) : e)))
   }
+  // Removing intent i (from 1) of a speech step drops its line and renumbers the later ports.
+  function removeIntent(id: string, i: number) {
+    const n = byId.get(id)
+    if (!n) return
+    commit()
+    const intents = (n.data.intents ?? []).filter((_, j) => j !== i - 1)
+    const data = { ...n.data, intents }
+    setNodes((ns) => ns.map((x) => (x.id === id ? { ...x, data } : x)))
+    setEdges((es) => es.flatMap((e) => {
+      if (e.source !== id || !e.sourceHandle?.startsWith('i')) return [e]
+      const k = Number(e.sourceHandle.slice(1))
+      if (k === i) return []
+      return [k > i ? makeEdge(id, intentPort(k - 1), e.target, data) : e]
+    }))
+  }
   function remove(id: string) {
     commit()
     setNodes((ns) => ns.filter((n) => n.id !== id))
@@ -212,6 +227,8 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
       else if (d.type !== 'entry' && d.type !== 'key' && d.type !== 'timeout' && !into.has(n.id)) m.set(n.id, t('ivr.problem.unreachable'))
       else if ((d.type === 'key' || d.type === 'audio' || d.type === 'timeout') && !from.has(n.id)) m.set(n.id, t('ivr.problem.noLine'))
       else if (d.type === 'time' && !d.destination?.target) m.set(n.id, t('ivr.problem.chooseTime'))
+      else if (d.type === 'speech' && !(d.intents ?? []).length) m.set(n.id, t('ivr.problem.noIntents'))
+      else if (d.type === 'speech' && (d.intents ?? []).some((i) => !i.label.trim() || !i.keywords.some((k) => k.trim()))) m.set(n.id, t('ivr.problem.intentIncomplete'))
       else if (d.type === 'destination' && d.destination?.type !== 'hangup' && !d.destination?.target) m.set(n.id, t('ivr.problem.chooseTarget'))
     }
     return m
@@ -299,7 +316,7 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
             <div className="absolute inset-0 z-10 bg-surface-2 lg:static lg:inset-auto lg:w-[380px] lg:flex-none lg:border-l lg:border-line">
               <NodePanel node={sel} ivr={ivr} setIvr={(fn) => { setIvr(fn); setDirty(true) }}
                 prompts={prompts.data ?? []} onPromptsChanged={prompts.reload} timeConditions={tcs.data ?? []} usedDigits={usedDigits}
-                onChange={(d) => changeData(sel.id, d)} onDelete={() => remove(sel.id)} onDuplicate={() => duplicate(sel.id)} onClose={() => setSelected(null)} />
+                onChange={(d) => changeData(sel.id, d)} onRemoveIntent={(i) => removeIntent(sel.id, i)} onDelete={() => remove(sel.id)} onDuplicate={() => duplicate(sel.id)} onClose={() => setSelected(null)} />
             </div>
           )}
         </div>

@@ -294,8 +294,9 @@ the testing channel.
 - [x] AI (`v0.7.0-rc.2`): transcription of recorded calls (whisper.cpp, local), summaries, topic, mood and
   follow-ups of calls and voicemail, by a local model (llama.cpp with Qwen3, default) or Claude with the
   installation's own API key; shown with recordings, in the portal, the softphone and the voicemail mail
-- [ ] Speech IVR: "say what you are calling about": a new IVR step that listens, recognises the spoken intent from
-  phrases per line (local Whisper) and falls back to keys
+- [x] Speech IVR (`v0.7.0-rc.3`): a "speech question" step in the IVR builder asks what the caller wants,
+  transcribes the answer locally (Whisper, via a FastAGI listener on localhost) and follows the line of the
+  answer whose keywords match, optionally helped by the AI engine; "not understood" as fallback
 - [ ] Mobile app (iOS and Android), the counterpart of the Windows softphone: calls with push notifications when
   the app is closed (CallKit / Android ConnectionService), colleagues and presence, voicemail, history, queues
 - [ ] WhatsApp and SMS in the portal next to calls: a shared inbox per team or number, conversations linked to the

@@ -1,14 +1,14 @@
 import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { Ban, ChevronDown, Copy, Library, Loader2, Mic, Sparkles, Square, Trash2, Upload, X } from 'lucide-react'
+import { Ban, ChevronDown, Copy, Library, Loader2, Mic, Plus, Sparkles, Square, Trash2, Upload, X } from 'lucide-react'
 import { Select, Textarea, Toggle, useApi } from '../../components/kit'
 import { DestinationPicker } from '../../components/pbx'
 import { Button, ErrorMessage, Input } from '../../components/ui'
 import { WavePlayer, promptSrc } from '../../components/WavePlayer'
 import { ApiError, api } from '../../lib/api'
 import { startRecording, toTelephoneWav } from '../../lib/audio'
-import type { IVR, Prompt, SpeechData, TimeCondition } from '../../lib/types'
+import type { IVR, Prompt, SpeechData, SpeechIntent, TimeCondition } from '../../lib/types'
 import { KEYS, hasAudio, toneOf, tones, type StepData, type StepNode } from './flow'
 import { NodeTitle, iconOf } from './nodes'
 
@@ -184,7 +184,7 @@ function AudioSource({ promptId, onPrompt, promptName, prompts, onPromptsChanged
   )
 }
 
-export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeConditions, usedDigits, onChange, onDelete, onDuplicate, onClose }: {
+export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeConditions, usedDigits, onChange, onRemoveIntent, onDelete, onDuplicate, onClose }: {
   node: StepNode
   ivr: IVR
   setIvr: (fn: (v: IVR) => IVR) => void
@@ -193,6 +193,7 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
   timeConditions: TimeCondition[]
   usedDigits: string[]
   onChange: (d: Partial<StepData>) => void
+  onRemoveIntent: (i: number) => void
   onDelete: () => void
   onDuplicate: () => void
   onClose: () => void
@@ -245,7 +246,8 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
                 <Input label={t('ivr.label')} value={d.label ?? ''} onChange={(e) => onChange({ label: e.target.value })} placeholder={t('ivr.labelPlaceholder')} maxLength={40} />
               </div>
             )}
-            {(d.type === 'audio' || d.type === 'destination' || d.type === 'repeat' || d.type === 'time' || d.type === 'timeout') && (
+            {d.type === 'speech' && <SpeechIntents d={d} onChange={onChange} onRemoveIntent={onRemoveIntent} />}
+            {(d.type === 'audio' || d.type === 'destination' || d.type === 'repeat' || d.type === 'time' || d.type === 'timeout' || d.type === 'speech') && (
               <Input label={t('ivr.label')} value={d.label ?? ''} onChange={(e) => onChange({ label: e.target.value })} hint={t('ivr.labelHint')} maxLength={40} />
             )}
             {d.type === 'destination' && (
@@ -263,7 +265,7 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
             )}
             {d.type === 'timeout' && <p className="text-xs text-subtle">{t('ivr.noInputHint', { retries: ivr.retries })}</p>}
             {d.type === 'repeat' && <p className="text-xs text-subtle">{t('ivr.panel.repeatHint')}</p>}
-            <p className="text-xs text-subtle">{t(d.type === 'key' || d.type === 'timeout' || d.type === 'audio' || d.type === 'time' ? 'ivr.panel.linesHint' : 'ivr.panel.endHint')}</p>
+            <p className="text-xs text-subtle">{t(d.type === 'speech' ? 'ivr.panel.speechLinesHint' : d.type === 'key' || d.type === 'timeout' || d.type === 'audio' || d.type === 'time' ? 'ivr.panel.linesHint' : 'ivr.panel.endHint')}</p>
           </Section>
         )}
 
@@ -275,5 +277,36 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
         )}
       </div>
     </aside>
+  )
+}
+
+/** The intents of a speech step: a name and the keywords that choose it. */
+function SpeechIntents({ d, onChange, onRemoveIntent }: { d: StepData; onChange: (d: Partial<StepData>) => void; onRemoveIntent: (i: number) => void }) {
+  const { t } = useTranslation()
+  const intents = d.intents ?? []
+  const set = (i: number, p: Partial<SpeechIntent>) => onChange({ intents: intents.map((x, j) => (j === i ? { ...x, ...p } : x)) })
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-xs text-muted">{t('ivr.panel.speechIntro')}</p>
+      {intents.map((it, i) => (
+        <div key={i} className="flex flex-col gap-2 rounded-xl border border-line bg-surface-2/60 p-3">
+          <div className="flex items-end gap-2">
+            <div className="min-w-0 flex-1">
+              <Input label={t('ivr.panel.intent', { n: i + 1 })} value={it.label} maxLength={40} placeholder={t('ivr.panel.intentPlaceholder')}
+                onChange={(e) => set(i, { label: e.target.value })} />
+            </div>
+            <button type="button" onClick={() => onRemoveIntent(i + 1)} aria-label={t('common.delete')}
+              className="inline-flex size-10 flex-none items-center justify-center rounded-lg text-muted hover:bg-danger/10 hover:text-danger"><Trash2 className="size-4" aria-hidden /></button>
+          </div>
+          <Input label={t('ivr.panel.keywords')} value={it.keywords.join(',')} placeholder={t('ivr.panel.keywordsPlaceholder')}
+            onChange={(e) => set(i, { keywords: e.target.value.split(',').slice(0, 30) })} />
+        </div>
+      ))}
+      {intents.length < 8 && (
+        <Button variant="secondary" onClick={() => onChange({ intents: [...intents, { label: '', keywords: [] }] })}><Plus className="size-4" aria-hidden />{t('ivr.panel.addIntent')}</Button>
+      )}
+      <p className="text-xs text-subtle">{t('ivr.panel.keywordsHint')}</p>
+      <Toggle label={t('ivr.panel.speechAI')} hint={t('ivr.panel.speechAIHint')} checked={!!d.ai} onChange={(v) => onChange({ ai: v })} />
+    </div>
   )
 }

@@ -27,6 +27,7 @@ export function toneOf(d: StepData): Tone {
       return 'accent2'
     case 'key':
     case 'repeat':
+    case 'speech':
       return 'accent'
     case 'audio':
       return 'ok'
@@ -38,11 +39,16 @@ export function toneOf(d: StepData): Tone {
 }
 
 /** Which node types can hold a voice prompt. */
-export const hasAudio = (t: FlowNodeType) => t === 'entry' || t === 'key' || t === 'timeout' || t === 'audio'
+export const hasAudio = (t: FlowNodeType) => t === 'entry' || t === 'key' || t === 'timeout' || t === 'audio' || t === 'speech'
+
+/** The port of intent i (from 1) of a speech step. */
+export const intentPort = (i: number): FlowPort => `i${i}`
 
 /** The output ports of a node type. */
-export function portsOf(t: FlowNodeType): FlowPort[] {
+export function portsOf(t: FlowNodeType, intents = 0): FlowPort[] {
   switch (t) {
+    case 'speech':
+      return [...Array.from({ length: intents }, (_, i) => intentPort(i + 1)), 'nomatch']
     case 'entry':
     case 'key':
     case 'timeout':
@@ -59,18 +65,19 @@ export function portsOf(t: FlowNodeType): FlowPort[] {
 export function canConnect(from: StepData | undefined, to: StepData | undefined): boolean {
   if (!from || !to || to.type === 'entry') return false
   if (from.type === 'entry') return to.type === 'key' || to.type === 'timeout'
-  if (from.type === 'key' || from.type === 'timeout' || from.type === 'audio' || from.type === 'time') return to.type !== 'key' && to.type !== 'timeout'
+  if (from.type === 'key' || from.type === 'timeout' || from.type === 'audio' || from.type === 'time' || from.type === 'speech') return to.type !== 'key' && to.type !== 'timeout'
   return false
 }
 
 /** The building blocks offered in the palette. */
-export type Kind = 'key' | 'audio' | 'extension' | 'ringgroup' | 'queue' | 'voicemail' | 'ivr' | 'external' | 'time' | 'repeat' | 'hangup' | 'timeout'
-export const kinds: Kind[] = ['key', 'audio', 'extension', 'ringgroup', 'queue', 'voicemail', 'time', 'ivr', 'external', 'repeat', 'hangup', 'timeout']
+export type Kind = 'key' | 'audio' | 'speech' | 'extension' | 'ringgroup' | 'queue' | 'voicemail' | 'ivr' | 'external' | 'time' | 'repeat' | 'hangup' | 'timeout'
+export const kinds: Kind[] = ['key', 'audio', 'speech', 'extension', 'ringgroup', 'queue', 'voicemail', 'time', 'ivr', 'external', 'repeat', 'hangup', 'timeout']
 
 export function kindTone(k: Kind): Tone {
   switch (k) {
     case 'key':
     case 'repeat':
+    case 'speech':
       return 'accent'
     case 'audio':
       return 'ok'
@@ -94,6 +101,8 @@ export function dataForKind(k: Kind, usedDigits: string[]): StepData {
       return { type: 'time', destination: { type: 'timecondition', target: '' } }
     case 'repeat':
       return { type: 'repeat' }
+    case 'speech':
+      return { type: 'speech', label: '', intents: [], ai: false }
     case 'timeout':
       return { type: 'timeout' }
     case 'hangup':
@@ -117,7 +126,7 @@ export function fromFlow(f: Flow): { nodes: StepNode[]; edges: Edge[] } {
 }
 
 export function makeEdge(from: string, port: FlowPort, to: string, src: StepData): Edge {
-  const tone = port === 'closed' ? 'warn' : toneOf(src)
+  const tone = port === 'closed' || port === 'nomatch' ? 'warn' : toneOf(src)
   return {
     id: `${from}:${port}:${to}`, source: from, sourceHandle: port, target: to, targetHandle: 'in',
     type: 'smoothstep', pathOptions: { borderRadius: 14 },
@@ -134,6 +143,10 @@ export function toFlow(nodes: StepNode[], edges: Edge[]): Flow {
       if (d.label) out.label = d.label
       if (d.promptId) out.promptId = d.promptId
       if (d.destination) out.destination = d.destination
+      if (d.type === 'speech') {
+        out.intents = (d.intents ?? []).map((i) => ({ label: i.label.trim(), keywords: i.keywords.map((k) => k.trim()).filter(Boolean) }))
+        if (d.ai) out.ai = true
+      }
       return out
     }),
     edges: edges.map((e) => ({ from: e.source, port: (e.sourceHandle ?? 'out') as FlowPort, to: e.target })),

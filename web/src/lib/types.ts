@@ -141,7 +141,7 @@ export type Phone = {
 
 // ---- phase 2: business features ---------------------------------------------
 
-export type DestType = 'extension' | 'voicemail' | 'ringgroup' | 'queue' | 'ivr' | 'timecondition' | 'conference' | 'fax' | 'external' | 'hangup'
+export type DestType = 'extension' | 'voicemail' | 'ringgroup' | 'queue' | 'ivr' | 'timecondition' | 'conference' | 'fax' | 'external' | 'hangup' | 'remote' | 'followsun'
 export type Destination = { type: DestType | ''; target: string }
 export type DestOption = { type: DestType; target: string; label: string }
 export type Destinations = { types: DestType[]; options: DestOption[] }
@@ -165,7 +165,9 @@ export type Queue = {
   id: number; number: string; name: string; strategy: string; music: string; announcePosition: boolean; announceFrequency: number
   agentTimeout: number; retry: number; wrapup: number; maxWait: number; maxCallers: number; joinEmpty: boolean; record: boolean
   cidPrefix: string; greetingPrompt: number; overflow: Destination; enabled: boolean; members: QueueMember[]
+  remoteMembers?: RemoteMember[]
 }
+export type RemoteMember = { peerId: number; number: string; name: string; site: string; penalty: number }
 export type QueueAgentLive = { number: string; name: string; status: string; paused: boolean; inCall: boolean; callsTaken: number; lastCall: number }
 export type QueueCallerLive = { position: number; callerId: string; name: string; wait: number }
 export type QueueView = Queue & {
@@ -289,3 +291,46 @@ export type ProxyData = {
   settings: ProxySettings; remoteAddr: string; clientIp: string; forwardedFor: string; forwardedProto: string; secure: boolean; host: string
 }
 export type MetricsSettings = { enabled: boolean; token: string; allowFrom: string[] }
+
+// ---- Multi-site and high availability ----------------------------------------
+
+export type HubSettings = { enabled: boolean; subnet: string; publicKey: string; listenPort: number; host: string }
+export type EdgeSite = {
+  id: number; name: string; paired: boolean; pairExpires: string; publicKey: string; tunnelIp: string; hostname: string; version: string
+  lanAddress: string; lanNet: string; services: Record<string, string> | null; lastSeen: string; pairedAt: string; createdAt: string
+  connected: boolean; remote: string
+}
+export type SitesView = {
+  hub: HubSettings; edges: EdgeSite[]; helperAvailable: boolean; wireguardInstalled: boolean; tunnelsUp: string[] | null
+  tunnelErrors: Record<string, string> | null; portalUrl: string; pinned: boolean
+}
+export type DirectoryEntry = { number: string; name: string; kind: string }
+export type FedPeer = {
+  id: number; name: string; prefix: string; role: 'hosted' | 'joined'; state: string; inviteExpires: string; publicKey: string
+  tunnelIp: string; localIp: string; endpoint: string; sipPort: number; portalPort: number; directDial: boolean
+  directory: { name: string; timezone: string; version: string; entries: DirectoryEntry[] | null }
+  version: string; lastSeen: string; createdAt: string; connected: boolean; states: Record<string, string> | null
+}
+export type FederationView = { name: string; hubEnabled: boolean; peers: FedPeer[]; helperAvailable: boolean }
+export type SunRule = { label: string; timezone: string; days: number[]; from: string; to: string; destination: Destination }
+export type SunRoute = { id: number; name: string; rules: SunRule[]; fallback: Destination; enabled: boolean }
+
+export type ClusterNode = {
+  enabled: boolean; mode: 'vip' | 'manual' | ''; name: string; address: string; interface: string; vip: string; tunnel: string
+  peer: { name: string; address: string; publicKey: string; tunnel: string } | null; joinOpen: boolean
+}
+export type ClusterRole = { role: 'primary' | 'standby'; epoch: number; lastSeq: number; changedAt: string; reason: string }
+export type SnapshotMeta = { seq: number; epoch: number; at: string; size: number; sha256: string }
+export type ClusterStatusHelper = { keepalivedInstalled: boolean; keepalivedActive: boolean; vrrpState: string; vipHere: boolean; interface: string; asteriskActive: boolean }
+export type ClusterView = {
+  node: ClusterNode; role: ClusterRole; status: ClusterStatusHelper; helperAvailable: boolean; busy: boolean; lastError: string; version: string
+  defaultAddress: string; snapshot: SnapshotMeta
+  peerState: null | { lastSeen: string; version: string; replica: SnapshotMeta; lastFileSync: string; files: number; lagSeconds: number; inSync: boolean; online: boolean }
+}
+export type StandbyView = {
+  node: ClusterNode; role: ClusterRole; status: ClusterStatusHelper; helperAvailable: boolean; version: string; hostname: string
+  replication: {
+    primaryReachable: boolean; primaryName: string; primaryVersion: string; lastContact: string; lastDbSync: string; lastFileSync: string
+    files: number; replica: SnapshotMeta; primary: SnapshotMeta; lastError: string
+  }
+}

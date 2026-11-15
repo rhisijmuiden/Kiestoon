@@ -170,24 +170,44 @@ Notes on phase 4:
 - Not yet tested on real hardware or accounts: Htek, Akuvox and Cisco provisioning, firmware rollout per vendor,
   Yealink RPS with a real account, and T.38 fax sending through a provider.
 
-## Phase 5 · Multi-site (after v1.0)
+## Phase 5 · Multi-site & high availability
 
-Goal: one phone system across several offices and data centres.
+Goal: one phone system across several offices and data centres. Released as `v0.6.0-rc.1` on the testing channel.
 
-- [ ] Kiestoon Edge: a satellite for a branch office, as Raspberry Pi image (arm64), LXC template or `.deb`
-  - [ ] WireGuard tunnel to the central Kiestoon in the data centre, paired with a code from the portal
-  - [ ] Local SIP proxy and media relay (Kamailio + rtpengine) to solve NAT problems
-  - [ ] Local provisioning server for the phones in that office
-- [ ] Federation of two or more Kiestoon systems over a tunnel (WireGuard + SIP-TLS)
-  - [ ] Shared phone book and number plan with a location prefix
-  - [ ] Internal transfers and BLF between locations
-  - [ ] Agents from several locations in one queue
-  - [ ] Follow-the-sun routing based on time zone
-- [ ] High availability: an active/passive pair
-  - [ ] Virtual IP with keepalived (VRRP), DNS SRV records as an alternative
-  - [ ] Continuous database replication (for example Litestream) and sync of voicemail, recordings and prompts
-  - [ ] Cluster status and manual failover in the UI
-  - [ ] Note: calls in progress are dropped on failover
+- [x] Kiestoon Edge: a satellite for a branch office, as Raspberry Pi image (arm64), LXC template or `.deb`
+  - [x] WireGuard tunnel to the central Kiestoon in the data centre, paired with a code from the portal
+  - [x] Local SIP proxy and media relay (Kamailio + rtpengine) to solve NAT problems
+  - [x] Local provisioning for the phones in that office (proxied to the central Kiestoon)
+- [x] Federation of two or more Kiestoon systems over a WireGuard tunnel
+  - [x] Shared phone book and number plan with a site prefix
+  - [x] Internal calls, transfers and BLF between sites
+  - [x] Agents from several sites in one queue
+  - [x] Follow-the-sun routing based on time zone
+- [x] High availability: an active/passive pair
+  - [x] Virtual IP with keepalived (VRRP), DNS (by hand) as an alternative
+  - [x] Continuous database replication and sync of voicemail, recordings, prompts, fax and certificates
+  - [x] Cluster status, switch-over and manual promotion in the UI
+  - [x] Note: calls in progress are dropped on failover
+
+Notes on phase 5:
+
+- Everything between sites runs over WireGuard. The central Kiestoon is the hub (`kt0`, UDP 51820) for edges and
+  linked systems; only the hub needs an open port. The HA pair has its own tunnel (`kt-ha`, UDP 51821).
+- Pairing codes (`KT1-E-…`, `KT1-F-…`, `KT1-H-…`) hold the portal address, the SHA-256 fingerprint of its certificate
+  and a one-time secret (24 hours). Self-signed certificates are safe because the other side pins exactly that one.
+- Edge: Kamailio adds a `Path` header on REGISTER, so the central Asterisk reaches office phones back through the edge;
+  rtpengine anchors media between the office network and the tunnel. Provisioning through the edge names the edge as
+  SIP server. Headless pairing with `kiestoon-edge.txt` on the boot partition. See [docs/edge.md](docs/edge.md).
+- Federation: each link is a PJSIP endpoint over TCP through the tunnel; a linked system only routes to its own
+  internal numbers, never to its trunks. Phone book every minute, BLF pushed on change. Remote queue agents are Local
+  channels with a custom device state. See [docs/multi-site.md](docs/multi-site.md).
+- HA: no Litestream: the primary takes a consistent SQLite snapshot (`VACUUM INTO`) within seconds of every change and
+  the standby pulls it, plus the files by checksum, through the tunnel. Generated configuration is rebuilt from the
+  database. Split brain and data-loss window are described in [docs/high-availability.md](docs/high-availability.md).
+- Tested in CI: an edge is paired with a real Kiestoon in Docker (WireGuard, Kamailio, rtpengine), a phone registers
+  through it and Asterisk reaches the phone back through the edge. The Raspberry Pi image is built on an arm64 runner.
+- Not yet tested on real hardware: the Raspberry Pi image on a Pi, audio through rtpengine with real phones, a VRRP
+  failover between two Proxmox hosts, and federation between two systems on different networks.
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

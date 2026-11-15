@@ -146,8 +146,6 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 		x.f("rewrite_contact=yes")
 		x.f("dtmf_mode=rfc4733")
 		x.f("send_pai=yes")
-		// Phones behind a Kiestoon Edge register through its proxy, which adds a Path header.
-		x.f("support_path=yes")
 		x.f("device_state_busy_at=0")
 		x.f("tos_audio=ef")
 		x.f("cos_audio=5")
@@ -173,6 +171,7 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 		x.f("max_contacts=%d", e.MaxContacts)
 		x.f("remove_existing=yes")
 		x.f("qualify_frequency=60")
+		// Phones behind a Kiestoon Edge register through its proxy, which adds a Path header.
 		x.f("support_path=yes")
 		x.nl()
 		if e.WebRTC {

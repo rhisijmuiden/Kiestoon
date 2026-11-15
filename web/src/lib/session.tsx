@@ -5,6 +5,7 @@ import { api, ApiError, type Me } from './api'
 export type SessionState =
   | { kind: 'loading' }
   | { kind: 'setup' }
+  | { kind: 'standby' }
   | { kind: 'signedOut' }
   | { kind: 'mfa' }
   | { kind: 'enroll'; me: Me }
@@ -18,7 +19,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const setup = await api<{ setupRequired: boolean }>('GET', '/setup/status')
+      const setup = await api<{ setupRequired: boolean; standby?: boolean }>('GET', '/setup/status')
+      if (setup.standby) return setState({ kind: 'standby' })
       if (setup.setupRequired) return setState({ kind: 'setup' })
       const me = await api<Me>('GET', '/me')
       if (me.user.language && me.user.language !== i18n.language) i18n.changeLanguage(me.user.language)

@@ -32,6 +32,10 @@ depends:
   - ghostscript
   # Direct internet access: Let's Encrypt certificates and HTTPS on 443 (off until switched on).
   - caddy
+  # Branch offices (Kiestoon Edge) and linked Kiestoons: encrypted tunnels.
+  - wireguard-tools
+  # High availability: the virtual IP of an active/passive pair (off until switched on).
+  - keepalived
 
 recommends:
   - kiestoon-sounds-nl

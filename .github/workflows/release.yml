@@ -89,8 +89,44 @@ jobs:
           path: dist-speech/*.deb
           retention-days: 3
 
+  edge-pi:
+    name: Kiestoon Edge Raspberry Pi image
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - name: Determine version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then TAG="$GITHUB_REF_NAME"; else TAG="$(tr -d '[:space:]' < VERSION)"; fi
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+      - name: Cache the base image
+        uses: actions/cache@v4
+        with:
+          path: pi-cache
+          key: raspios-${{ hashFiles('packaging/edge/pi-image.sh') }}
+      - name: Build the image
+        env:
+          VERSION: ${{ env.TAG }}
+        run: |
+          GOTOOLCHAIN=auto go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
+          make edge-deb VERSION="$VERSION" GOARCH=arm64
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq parted e2fsprogs xz-utils
+          sudo CACHE_DIR="$PWD/pi-cache" ./packaging/edge/pi-image.sh "dist/kiestoon-edge_${VERSION#v}_arm64.deb" dist-pi/
+          sudo chown -R "$(id -u):$(id -g)" dist-pi pi-cache
+      - uses: actions/upload-artifact@v4
+        with:
+          name: edge-pi
+          path: dist-pi/*.img.xz
+          retention-days: 3
+
   release:
-    needs: [asterisk, sounds, speech]
+    needs: [asterisk, sounds, speech, edge-pi]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -134,6 +170,8 @@ jobs:
           (cd server && go test ./...)
           make deb VERSION="$VERSION" GOARCH=amd64
           make deb VERSION="$VERSION" GOARCH=arm64
+          make edge-deb VERSION="$VERSION" GOARCH=amd64
+          make edge-deb VERSION="$VERSION" GOARCH=arm64
 
       - name: Asterisk packages
         if: env.SKIP != '1'
@@ -167,13 +205,21 @@ jobs:
           sudo apt-get install -y -qq debootstrap
           sudo ./lxc/build-lxc.sh "dist/kiestoon_${VERSION#v}_amd64.deb" dist/ dist/kiestoon-asterisk_*_amd64.deb dist/kiestoon-sounds-nl_*_all.deb \
             dist/kiestoon-speech_*_amd64.deb
+          sudo ./lxc/build-lxc.sh "dist/kiestoon-edge_${VERSION#v}_amd64.deb" dist/
           sudo chown -R "$(id -u):$(id -g)" dist
+
+      - name: Raspberry Pi image
+        if: env.SKIP != '1'
+        uses: actions/download-artifact@v5
+        with:
+          name: edge-pi
+          path: dist
 
       - name: Checksums
         if: env.SKIP != '1'
         run: |
           cd dist
-          sha256sum -- *.deb *.tar.zst > SHA256SUMS
+          sha256sum -- *.deb *.tar.zst *.img.xz > SHA256SUMS
           cat SHA256SUMS
 
       - name: Publish GitHub release
@@ -183,5 +229,5 @@ jobs:
         run: |
           flags=()
           if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); else flags+=(--latest); fi
-          gh release create "$TAG" dist/*.deb dist/*.tar.zst dist/SHA256SUMS \
+          gh release create "$TAG" dist/*.deb dist/*.tar.zst dist/*.img.xz dist/SHA256SUMS \
             --target "$GITHUB_SHA" --title "Kiestoon $TAG" --generate-notes "${flags[@]}"

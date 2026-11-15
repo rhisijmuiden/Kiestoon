@@ -27,6 +27,11 @@ import { MfaEnroll } from './pages/MfaEnroll'
 import { Phones } from './pages/Phones'
 import { Prompts } from './pages/Prompts'
 import { Speech } from './pages/Speech'
+import { Standby } from './pages/Standby'
+import { Sites } from './pages/Sites'
+import { Federation } from './pages/Federation'
+import { SunRoutes } from './pages/SunRoutes'
+import { Cluster } from './pages/Cluster'
 import { Queues } from './pages/Queues'
 import { Reception } from './pages/Reception'
 import { Recordings } from './pages/Recordings'
@@ -53,6 +58,7 @@ const pages: Record<string, ReactElement> = {
   conferences: <Conferences />, prompts: <Prompts />, trunks: <Trunks />, phones: <Phones />, users: <Users />, sso: <Sso />,
   features: <Features />, firewall: <Firewall />, backups: <Backups />, mail: <Mail />, audit: <Audit />, settings: <Settings />,
   phonebook: <Phonebook />, wallboard: <Wallboard />, fax: <Fax />, internet: <Internet />, integrations: <Integrations />, speech: <Speech />,
+  sites: <Sites />, federation: <Federation />, sunRoutes: <SunRoutes />, cluster: <Cluster />,
 }
 
 function NoExtension() {
@@ -74,6 +80,8 @@ export function App() {
       )
     case 'setup':
       return <Setup />
+    case 'standby':
+      return <Standby />
     case 'signedOut':
       return <Login mfa={false} />
     case 'mfa':

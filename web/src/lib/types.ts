@@ -178,9 +178,16 @@ export type QueueView = Queue & {
 }
 
 export type IVROption = { digit: string; destination: Destination }
+export type FlowNodeType = 'entry' | 'key' | 'timeout' | 'audio' | 'destination' | 'time' | 'repeat'
+export type FlowNode = {
+  id: string; type: FlowNodeType; x: number; y: number; digit?: string; label?: string; promptId?: number; destination?: Destination
+}
+export type FlowPort = 'out' | 'open' | 'closed'
+export type FlowEdge = { from: string; port: FlowPort; to: string }
+export type Flow = { nodes: FlowNode[]; edges: FlowEdge[] }
 export type IVR = {
   id: number; name: string; promptId: number; timeout: number; retries: number; directDial: boolean; options: IVROption[]
-  timeoutDestination: Destination; layout: unknown
+  timeoutDestination: Destination; flow: Flow | null
 }
 
 export type TimeRange = { days: number[]; from: string; to: string }

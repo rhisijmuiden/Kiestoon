@@ -153,19 +153,20 @@ func replaceDestinations(ctx context.Context, db execQuerier, fn func(*Destinati
 		}
 	}
 	// IVR options are a JSON list.
-	rows, err := db.QueryContext(ctx, `SELECT id, options FROM ivrs`)
+	// The flow drawn on the canvas sits in the layout column.
+	rows, err := db.QueryContext(ctx, `SELECT id, options, layout FROM ivrs`)
 	if err != nil {
 		return err
 	}
-	type upd struct {
-		id  int64
-		raw string
+	type ivrUpd struct {
+		id           int64
+		opts, layout string
 	}
-	var ups []upd
+	var ivrUps []ivrUpd
 	for rows.Next() {
 		var id int64
-		var raw string
-		if err := rows.Scan(&id, &raw); err != nil {
+		var raw, layout string
+		if err := rows.Scan(&id, &raw, &layout); err != nil {
 			rows.Close()
 			return err
 		}
@@ -177,23 +178,28 @@ func replaceDestinations(ctx context.Context, db execQuerier, fn func(*Destinati
 				changed = true
 			}
 		}
-		if changed {
+		newLayout, flowChanged := replaceLayoutDestinations(layout, fn)
+		if changed || flowChanged {
 			b, _ := json.Marshal(opts)
-			ups = append(ups, upd{id, string(b)})
+			ivrUps = append(ivrUps, ivrUpd{id, string(b), newLayout})
 		}
 	}
 	rows.Close()
-	for _, u := range ups {
-		if _, err := db.ExecContext(ctx, `UPDATE ivrs SET options = ? WHERE id = ?`, u.raw, u.id); err != nil {
+	for _, u := range ivrUps {
+		if _, err := db.ExecContext(ctx, `UPDATE ivrs SET options = ?, layout = ? WHERE id = ?`, u.opts, u.layout, u.id); err != nil {
 			return err
 		}
 	}
+	type upd struct {
+		id  int64
+		raw string
+	}
+	var ups []upd
 	// Follow-the-sun rules are a JSON list too.
 	rows, err = db.QueryContext(ctx, `SELECT id, rules FROM sun_routes`)
 	if err != nil {
 		return err
 	}
-	ups = ups[:0]
 	for rows.Next() {
 		var id int64
 		var raw string
@@ -802,8 +808,8 @@ type IVR struct {
 	Options    []IVROption `json:"options"`
 	// TimeoutDest is used when the caller presses nothing or a wrong key too often.
 	TimeoutDest Destination `json:"timeoutDestination"`
-	// Layout stores the node positions of the visual builder.
-	Layout json.RawMessage `json:"layout"`
+	// Flow is the menu as drawn on the canvas; the fields above are derived from it on save.
+	Flow *Flow `json:"flow"`
 }
 
 const ivrCols = `id, name, prompt_id, timeout, retries, direct_dial, options, timeout_type, timeout_target, layout`
@@ -821,11 +827,16 @@ func scanIVR(row interface{ Scan(...any) error }) (*IVR, error) {
 	if v.Options == nil {
 		v.Options = []IVROption{}
 	}
-	if layout == "" || !json.Valid([]byte(layout)) {
-		layout = "{}"
+	if err != nil {
+		return nil, err
 	}
-	v.Layout = json.RawMessage(layout)
-	return &v, err
+	var l ivrLayout
+	_ = json.Unmarshal([]byte(layout), &l)
+	v.Flow = l.Flow
+	if v.Flow == nil {
+		v.Flow = LegacyFlow(&v, l.Labels)
+	}
+	return &v, nil
 }
 
 // IVRs returns all voice menus.
@@ -855,34 +866,41 @@ func (r *Repo) SaveIVR(ctx context.Context, v *IVR) error {
 	if v.Retries < 0 || v.Retries > 5 {
 		return invalid("invalid", "retries")
 	}
-	if v.PromptID != 0 {
-		if _, err := r.Prompt(ctx, v.PromptID); err != nil {
-			return invalid("unknown_prompt", "promptId")
+	if v.Flow == nil {
+		// An API client that only sends options: check them and build the flow from them.
+		if v.PromptID != 0 {
+			if _, err := r.Prompt(ctx, v.PromptID); err != nil {
+				return invalid("unknown_prompt", "promptId")
+			}
 		}
-	}
-	seen := map[string]bool{}
-	if v.Options == nil {
-		v.Options = []IVROption{}
-	}
-	for i := range v.Options {
-		o := &v.Options[i]
-		if !reIVRDigit.MatchString(o.Digit) || seen[o.Digit] {
-			return invalid("invalid", "options")
+		seen := map[string]bool{}
+		if v.Options == nil {
+			v.Options = []IVROption{}
 		}
-		seen[o.Digit] = true
-		if err := r.ValidateDestination(ctx, &o.Destination, "options"); err != nil {
+		for i := range v.Options {
+			o := &v.Options[i]
+			if !reIVRDigit.MatchString(o.Digit) || seen[o.Digit] {
+				return invalid("invalid", "options")
+			}
+			seen[o.Digit] = true
+			if err := r.ValidateDestination(ctx, &o.Destination, "options"); err != nil {
+				return err
+			}
+		}
+		if err := r.ValidateDestination(ctx, &v.TimeoutDest, "timeoutDestination"); err != nil {
 			return err
 		}
+		v.Flow = LegacyFlow(v, nil)
 	}
-	slices.SortFunc(v.Options, func(a, b IVROption) int { return strings.Compare(a.Digit, b.Digit) })
-	if err := r.ValidateDestination(ctx, &v.TimeoutDest, "timeoutDestination"); err != nil {
+	if err := r.validateFlow(ctx, v); err != nil {
 		return err
 	}
-	if len(v.Layout) == 0 || !json.Valid(v.Layout) || len(v.Layout) > 20000 {
-		v.Layout = json.RawMessage("{}")
+	layout, _ := json.Marshal(ivrLayout{Flow: v.Flow})
+	if len(layout) > 512<<10 {
+		return invalid("too_large", "flow")
 	}
 	opts, _ := json.Marshal(v.Options)
-	args := []any{v.Name, v.PromptID, v.Timeout, v.Retries, b2i(v.DirectDial), string(opts), v.TimeoutDest.Type, v.TimeoutDest.Target, string(v.Layout)}
+	args := []any{v.Name, v.PromptID, v.Timeout, v.Retries, b2i(v.DirectDial), string(opts), v.TimeoutDest.Type, v.TimeoutDest.Target, string(layout)}
 	if v.ID == 0 {
 		res, err := r.DB.ExecContext(ctx, `INSERT INTO ivrs(name, prompt_id, timeout, retries, direct_dial, options, timeout_type,
 			timeout_target, layout) VALUES (?,?,?,?,?,?,?,?,?)`, args...)
@@ -1167,7 +1185,10 @@ func (r *Repo) SavePrompt(ctx context.Context, p *Prompt) error {
 func (r *Repo) PromptInUse(ctx context.Context, id int64) (bool, error) {
 	var n int
 	err := r.DB.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM ivrs WHERE prompt_id = ?) + (SELECT COUNT(*) FROM queues WHERE greeting_prompt = ?)`, id, id).Scan(&n)
-	return n > 0, err
+	if err != nil || n > 0 {
+		return n > 0, err
+	}
+	return r.promptUsedByFlows(ctx, id)
 }
 
 // DeletePrompt removes the prompt metadata.

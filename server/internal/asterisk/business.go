@@ -476,6 +476,23 @@ func genQueuesConf(s *pbx.Snapshot) string {
 
 func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 	for _, v := range s.IVRs {
+		f := v.Flow
+		if f == nil || f.Entry() == nil {
+			f = pbx.LegacyFlow(&v, nil)
+		}
+		steps := f.Steps()
+		flowCtx := fmt.Sprintf("kiestoon-ivr-%d-flow", v.ID)
+		// gotoNode sends the call to the step a port leads to; nothing connected hangs up.
+		gotoNode := func(n *pbx.FlowNode) string {
+			if n == nil {
+				return "Hangup()"
+			}
+			if i, ok := steps[n.ID]; ok {
+				return fmt.Sprintf("Goto(%s,%d,1)", flowCtx, i)
+			}
+			return "Hangup()"
+		}
+		entry := f.Entry()
 		x.f("[kiestoon-ivr-%d]", v.ID)
 		if v.DirectDial {
 			x.f("include => kiestoon-direct")
@@ -485,20 +502,70 @@ func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 		x.f(" same => n,Set(KT_TRIES=0)")
 		x.f(" same => n(start),Set(TIMEOUT(digit)=3)")
 		x.f(" same => n,Set(TIMEOUT(response)=%d)", v.Timeout)
-		if v.PromptID != 0 {
-			x.f(" same => n,Background(%s)", promptPath(o, v.PromptID))
+		if entry.PromptID != 0 {
+			x.f(" same => n,Background(%s)", promptPath(o, entry.PromptID))
+		}
+		keys := f.MenuKeys()
+		for _, k := range keys {
+			if k.PromptID != 0 {
+				x.f(" same => n,Background(%s)", promptPath(o, k.PromptID))
+			}
 		}
 		x.f(" same => n,WaitExten(%d)", v.Timeout)
-		for _, opt := range v.Options {
-			x.f("exten => %s,1,%s", opt.Digit, destGoto(opt.Destination))
+		for _, k := range keys {
+			x.f("exten => %s,1,%s", k.Digit, gotoNode(f.Next(k.ID, "out")))
 		}
+		timeout := f.TimeoutNode()
 		for _, ev := range []string{"t", "i"} {
 			x.f("exten => %s,1,Set(KT_TRIES=$[${KT_TRIES} + 1])", ev)
 			if ev == "i" {
 				x.f(" same => n,Playback(option-is-invalid)")
 			}
 			x.f(" same => n,GotoIf($[${KT_TRIES} <= %d]?s,start)", v.Retries)
-			x.f(" same => n,%s", destGoto(v.TimeoutDest))
+			if timeout == nil {
+				x.f(" same => n,Hangup()")
+				continue
+			}
+			if timeout.PromptID != 0 {
+				x.f(" same => n,Playback(%s)", promptPath(o, timeout.PromptID))
+			}
+			x.f(" same => n,%s", gotoNode(f.Next(timeout.ID, "out")))
+		}
+		x.nl()
+
+		// The steps after a key: audio, destinations, time checks and "play the menu again".
+		x.f("[%s]", flowCtx)
+		for _, n := range f.Nodes {
+			i, ok := steps[n.ID]
+			if !ok {
+				continue
+			}
+			x.f("exten => %d,1,NoOp(%s %s)", i, n.Type, esc(n.Label))
+			switch n.Type {
+			case pbx.NodeAudio:
+				if n.PromptID != 0 {
+					x.f(" same => n,Playback(%s)", promptPath(o, n.PromptID))
+				}
+				x.f(" same => n,%s", gotoNode(f.Next(n.ID, "out")))
+			case pbx.NodeDestination:
+				d := pbx.Destination{Type: pbx.DestHangup}
+				if n.Destination != nil {
+					d = *n.Destination
+				}
+				x.f(" same => n,%s", destGoto(d))
+			case pbx.NodeTime:
+				if n.Destination == nil || n.Destination.Type != pbx.DestTimeCondition {
+					x.f(" same => n,Hangup()")
+					continue
+				}
+				x.f(" same => n,Gosub(kiestoon-tcstate-%s,s,1)", n.Destination.Target)
+				x.f(` same => n,GotoIf($["${GOSUB_RETVAL}" = "open"]?open)`)
+				x.f(" same => n,%s", gotoNode(f.Next(n.ID, "closed")))
+				x.f(" same => n(open),%s", gotoNode(f.Next(n.ID, "open")))
+			case pbx.NodeRepeat:
+				x.f(" same => n,Set(KT_TRIES=0)")
+				x.f(" same => n,Goto(kiestoon-ivr-%d,s,start)", v.ID)
+			}
 		}
 		x.nl()
 	}

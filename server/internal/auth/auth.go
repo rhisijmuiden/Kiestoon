@@ -39,7 +39,9 @@ type User struct {
 	Role        string `json:"role"`
 	TOTPEnabled bool   `json:"mfaEnabled"`
 	Language    string `json:"language"`
-	Email       string `json:"email"`
+	// Theme is the UI theme: "system" (follow the device), "dark" or "light".
+	Theme string `json:"theme"`
+	Email string `json:"email"`
 	// ExtensionID links the account to its phone (for the user portal).
 	ExtensionID *int64 `json:"extensionId"`
 	// SSOProvider is the identity provider the account signs in with (0: local password).
@@ -136,14 +138,14 @@ func (s *Service) CreateUser(ctx context.Context, username, displayName, passwor
 	return s.UserByID(ctx, id)
 }
 
-const userCols = `id, username, display_name, role, totp_enabled, language, totp_secret, password_hash, email, extension_id,
+const userCols = `id, username, display_name, role, totp_enabled, language, theme, totp_secret, password_hash, email, extension_id,
 	sso_provider, enabled, last_login_at, created_at`
 
 func scanUser(row interface{ Scan(...any) error }) (*User, error) {
 	u := &User{}
 	var totp, enabled int
 	var ext sql.NullInt64
-	if err := row.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Role, &totp, &u.Language, &u.totpSecret, &u.hash, &u.Email, &ext,
+	if err := row.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Role, &totp, &u.Language, &u.Theme, &u.totpSecret, &u.hash, &u.Email, &ext,
 		&u.SSOProvider, &enabled, &u.LastLoginAt, &u.CreatedAt); err != nil {
 		return nil, err
 	}
@@ -185,6 +187,20 @@ func (s *Service) SetLanguage(ctx context.Context, userID int64, lang string) er
 	}
 	_, err := s.DB.ExecContext(ctx, `UPDATE users SET language = ? WHERE id = ?`, lang, userID)
 	return err
+}
+
+// SetTheme stores the user's preferred UI theme ("system", "dark" or "light").
+func (s *Service) SetTheme(ctx context.Context, userID int64, theme string) error {
+	if !ValidTheme(theme) {
+		theme = "system"
+	}
+	_, err := s.DB.ExecContext(ctx, `UPDATE users SET theme = ? WHERE id = ?`, theme, userID)
+	return err
+}
+
+// ValidTheme reports whether theme is a known UI theme.
+func ValidTheme(theme string) bool {
+	return theme == "system" || theme == "dark" || theme == "light"
 }
 
 func randomToken(n int) string {

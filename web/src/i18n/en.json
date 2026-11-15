@@ -2165,5 +2165,13 @@
     "promote": "Promote",
     "confirm": "Make this node the primary node now?",
     "promoted": "Promoting… The phone system starts on this node and this page reloads."
+  },
+  "theme": {
+    "label": "Theme",
+    "title": "Appearance",
+    "hint": "Light, dark, or follow the setting of your device. Saved on your account.",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
   }
 }

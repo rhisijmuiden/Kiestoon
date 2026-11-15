@@ -105,9 +105,9 @@ function SunForm({ value, onClose, onSaved }: { value: SunRoute; onClose: () => 
                 </button>
               ))}
             </div>
-            <input type="time" aria-label={t('timeConditions.from')} value={x.from} onChange={(e) => setRule(i, { from: e.target.value })} className="min-h-10 rounded-lg border border-line bg-[#0A1224] px-2 font-mono text-sm text-ink" />
+            <input type="time" aria-label={t('timeConditions.from')} value={x.from} onChange={(e) => setRule(i, { from: e.target.value })} className="min-h-10 rounded-lg border border-line bg-field px-2 font-mono text-sm text-ink" />
             <span className="text-subtle">–</span>
-            <input type="time" aria-label={t('timeConditions.to')} value={x.to === '24:00' ? '23:59' : x.to} onChange={(e) => setRule(i, { to: e.target.value })} className="min-h-10 rounded-lg border border-line bg-[#0A1224] px-2 font-mono text-sm text-ink" />
+            <input type="time" aria-label={t('timeConditions.to')} value={x.to === '24:00' ? '23:59' : x.to} onChange={(e) => setRule(i, { to: e.target.value })} className="min-h-10 rounded-lg border border-line bg-field px-2 font-mono text-sm text-ink" />
           </div>
           <DestinationPicker label={t('sun.goesTo')} value={x.destination} onChange={(d) => setRule(i, { destination: d })} exclude={exclude} />
         </div>

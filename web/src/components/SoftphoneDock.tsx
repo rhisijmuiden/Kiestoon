@@ -31,7 +31,7 @@ export function SoftphoneDock() {
         aria-label={t('softphone.title')}
         aria-expanded={p.open}
         className={`fixed bottom-16 right-6 z-40 inline-flex size-14 items-center justify-center rounded-2xl border shadow-2xl transition ${
-          c?.state === 'ringing' ? 'animate-bounce border-ok/60 bg-ok/25 text-ok' : c ? 'border-danger/50 bg-danger/20 text-[#FECACA]' : 'border-accent/45 bg-surface text-accent hover:bg-accent/10'
+          c?.state === 'ringing' ? 'animate-bounce border-ok/60 bg-ok/25 text-ok' : c ? 'border-danger/50 bg-danger/20 text-danger-ink' : 'border-accent/45 bg-surface text-accent hover:bg-accent/10'
         }`}
       >
         {c?.state === 'ringing' ? <PhoneIncoming className="size-6" aria-hidden /> : <Headset className="size-6" aria-hidden />}
@@ -46,7 +46,7 @@ export function SoftphoneDock() {
               <span className="text-sm font-medium text-ink">{t('softphone.title')}</span>
               <span className="text-xs text-subtle">{t(`softphone.status.${p.status}`)}</span>
             </div>
-            <button type="button" onClick={() => p.setOpen(false)} aria-label={t('common.close')} className="inline-flex size-9 items-center justify-center rounded-lg text-muted hover:bg-white/5 hover:text-ink">
+            <button type="button" onClick={() => p.setOpen(false)} aria-label={t('common.close')} className="inline-flex size-9 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-ink">
               <X className="size-4" aria-hidden />
             </button>
           </div>
@@ -54,7 +54,7 @@ export function SoftphoneDock() {
           {p.status === 'off' || p.status === 'failed' ? (
             <div className="flex flex-col gap-3 text-sm text-muted">
               <p>{p.status === 'failed' ? t('softphone.failedText') : t('softphone.offText')}</p>
-              <button type="button" onClick={p.enable} className="min-h-11 rounded-[10px] bg-gradient-to-br from-accent to-accent-2 font-semibold text-[#06121F]">{t('softphone.enable')}</button>
+              <button type="button" onClick={p.enable} className="min-h-11 rounded-[10px] bg-gradient-to-br from-accent to-accent-2 font-semibold text-on-accent">{t('softphone.enable')}</button>
             </div>
           ) : p.status === 'insecure' ? (
             <p className="text-sm text-warn">{t('softphone.insecureText')}</p>
@@ -76,7 +76,7 @@ export function SoftphoneDock() {
               {c.state === 'active' && showPad && <Keypad onPress={press} />}
               <div className="flex gap-4">
                 {c.state === 'ringing' && c.direction === 'incoming' && (
-                  <button type="button" onClick={p.answer} aria-label={t('softphone.answer')} className="inline-flex size-14 items-center justify-center rounded-full bg-ok text-[#06121F] shadow-[0_0_30px_-6px_var(--color-ok)]">
+                  <button type="button" onClick={p.answer} aria-label={t('softphone.answer')} className="inline-flex size-14 items-center justify-center rounded-full bg-ok text-on-accent shadow-[0_0_30px_-6px_var(--color-ok)]">
                     <Phone className="size-6" aria-hidden />
                   </button>
                 )}
@@ -87,13 +87,13 @@ export function SoftphoneDock() {
             </div>
           ) : (
             <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); p.dial(number); setNumber('') }}>
-              <div className="flex items-center gap-1 rounded-[10px] border border-line bg-[#0A1224] pl-3">
+              <div className="flex items-center gap-1 rounded-[10px] border border-line bg-field pl-3">
                 <input value={number} onChange={(e) => setNumber(e.target.value.replace(/[^0-9+*#]/g, ''))} inputMode="tel" aria-label={t('softphone.number')}
                   placeholder={t('softphone.number')} className="min-h-12 flex-1 bg-transparent font-mono text-xl text-ink outline-none placeholder:font-sans placeholder:text-sm placeholder:text-subtle" />
                 {number && <button type="button" onClick={() => setNumber(number.slice(0, -1))} aria-label={t('softphone.backspace')} className="inline-flex size-10 items-center justify-center text-muted hover:text-ink"><Delete className="size-4" aria-hidden /></button>}
               </div>
               <Keypad onPress={press} />
-              <button type="submit" disabled={!number || p.status !== 'registered'} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[10px] bg-ok font-semibold text-[#06121F] disabled:opacity-40">
+              <button type="submit" disabled={!number || p.status !== 'registered'} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[10px] bg-ok font-semibold text-on-accent disabled:opacity-40">
                 <Phone className="size-5" aria-hidden /> {t('softphone.call.start')}
               </button>
             </form>
@@ -119,7 +119,7 @@ function Keypad({ onPress }: { onPress: (d: string) => void }) {
 function CtrlButton({ label, active, onClick, children }: { label: string; active?: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button type="button" onClick={onClick} aria-label={label} title={label} aria-pressed={active}
-      className={`inline-flex size-12 items-center justify-center rounded-xl border transition ${active ? 'border-warn/50 bg-warn/15 text-warn' : 'border-line text-ink-2 hover:bg-white/5'}`}>
+      className={`inline-flex size-12 items-center justify-center rounded-xl border transition ${active ? 'border-warn/50 bg-warn/15 text-warn' : 'border-line text-ink-2 hover:bg-tint/5'}`}>
       {children}
     </button>
   )

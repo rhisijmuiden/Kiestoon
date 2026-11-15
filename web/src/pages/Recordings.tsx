@@ -30,7 +30,7 @@ export function RecordingList({ base, canDelete, query }: { base: string; canDel
             <td className={`${td} font-mono`}>{formatDuration(r.duration)}<span className="ml-2 text-xs text-subtle">{formatBytes(r.size)}</span></td>
             <td className={td}><audio controls preload="none" src={`/api${base}/${r.name}`} className="h-9 w-56 max-w-full" /></td>
             <td className={`${td} whitespace-nowrap text-right`}>
-              <a href={`/api${base}/${r.name}`} download={r.name} title={t('recordings.download')} aria-label={t('recordings.download')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-white/5 hover:text-ink">
+              <a href={`/api${base}/${r.name}`} download={r.name} title={t('recordings.download')} aria-label={t('recordings.download')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-ink">
                 <Download className="size-4" aria-hidden />
               </a>
               {canDelete && <IconButton label={t('common.delete')} danger onClick={() => remove(r)}><Trash2 className="size-4" aria-hidden /></IconButton>}

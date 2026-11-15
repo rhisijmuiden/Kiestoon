@@ -122,7 +122,7 @@ export function InfoDialog({ admin, onClose }: { admin: boolean; onClose: () => 
             <p className="font-mono text-sm text-accent">{info?.version ?? '…'}</p>
           </div>
         </div>
-        <button type="button" onClick={() => ref.current?.close()} aria-label={t('common.close')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-white/5 hover:text-ink">
+        <button type="button" onClick={() => ref.current?.close()} aria-label={t('common.close')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-ink">
           <X className="size-5" aria-hidden />
         </button>
       </div>
@@ -149,7 +149,7 @@ export function InfoDialog({ admin, onClose }: { admin: boolean; onClose: () => 
                     <label
                       key={c}
                       className={`flex cursor-pointer gap-3 rounded-xl border p-3 transition ${
-                        active ? 'border-accent/50 bg-accent/10' : 'border-line hover:bg-white/5'
+                        active ? 'border-accent/50 bg-accent/10' : 'border-line hover:bg-tint/5'
                       } ${busy ? 'pointer-events-none opacity-60' : ''}`}
                     >
                       <input type="radio" name="channel" className="sr-only" checked={active} onChange={() => setChannel(c)} disabled={busy} />
@@ -176,7 +176,7 @@ export function InfoDialog({ admin, onClose }: { admin: boolean; onClose: () => 
               <div className="rounded-xl border border-line bg-surface-2/70 p-4 text-sm">
                 {!check.latest && <p className="text-muted">{t('info.noReleases')}</p>}
                 {check.latest && !check.updateAvailable && !check.downgrade && (
-                  <p className="flex items-center gap-2 text-[#A7F3D0]"><CheckCircle2 className="size-4" aria-hidden />{t('info.upToDate')}</p>
+                  <p className="flex items-center gap-2 text-ok-ink"><CheckCircle2 className="size-4" aria-hidden />{t('info.upToDate')}</p>
                 )}
                 {check.latest && (check.updateAvailable || check.downgrade) && (
                   <div className="flex flex-col gap-3">
@@ -197,7 +197,7 @@ export function InfoDialog({ admin, onClose }: { admin: boolean; onClose: () => 
                     )}
                     {confirming ? (
                       <div className="flex flex-col gap-3 rounded-lg border border-warn/40 bg-warn/10 p-3">
-                        <p className="text-[#FDE68A]">{t('info.confirm', { version: check.latest.version })}</p>
+                        <p className="text-warn-ink">{t('info.confirm', { version: check.latest.version })}</p>
                         <div className="flex flex-wrap gap-2">
                           <Button onClick={apply}>{t('info.updateNow')}</Button>
                           <Button variant="ghost" onClick={() => setConfirming(false)}>{t('common.cancel')}</Button>

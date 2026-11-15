@@ -144,6 +144,7 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("POST /api/account/mfa/enroll", enroll(s.mfaEnroll))
 	mux.Handle("POST /api/account/mfa/confirm", enroll(s.mfaConfirm))
 	mux.Handle("PUT /api/account/language", enroll(s.setLanguage))
+	mux.Handle("PUT /api/account/theme", enroll(s.setTheme))
 	mux.Handle("PUT /api/account/password", full(s.changePassword))
 
 	mux.Handle("GET /api/system/info", enroll(s.systemInfo))
@@ -572,6 +573,21 @@ func (s *Server) setLanguage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"language": req.Language})
+}
+
+func (s *Server) setTheme(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Theme string `json:"theme"`
+	}
+	if err := decode(r, &req); err != nil || !auth.ValidTheme(req.Theme) {
+		writeErr(w, http.StatusBadRequest, "bad_request")
+		return
+	}
+	if err := s.Auth.SetTheme(r.Context(), sessionFrom(r).User.ID, req.Theme); err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"theme": req.Theme})
 }
 
 func (s *Server) changePassword(w http.ResponseWriter, r *http.Request) {

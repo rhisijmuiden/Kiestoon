@@ -122,7 +122,7 @@ export function Firewall() {
         <Card>
           <details>
             <summary className="cursor-pointer text-sm text-ink-2">{t('firewall.showRules')}</summary>
-            <pre className="mt-3 max-h-96 overflow-auto rounded-xl border border-line bg-[#0A1224] p-4 font-mono text-xs text-ink-2">{st.ruleset}</pre>
+            <pre className="mt-3 max-h-96 overflow-auto rounded-xl border border-line bg-field p-4 font-mono text-xs text-ink-2">{st.ruleset}</pre>
           </details>
         </Card>
       )}
@@ -173,9 +173,9 @@ function GeoCard({ c, set }: { c: FirewallConfig; set: <K extends keyof Firewall
               <div className="flex flex-wrap gap-1.5">
                 {list.length === 0 && <span className="text-sm text-subtle">{t('firewall.geo.none')}</span>}
                 {list.map((code) => (
-                  <span key={code} className="inline-flex items-center gap-1 rounded-full border border-line bg-white/5 py-0.5 pl-2.5 pr-1 text-xs text-ink-2">
+                  <span key={code} className="inline-flex items-center gap-1 rounded-full border border-line bg-tint/5 py-0.5 pl-2.5 pr-1 text-xs text-ink-2">
                     <span className="font-mono text-subtle">{code}</span> {countryName(code, i18n.language)}
-                    <button type="button" aria-label={t('common.remove')} onClick={() => set('geoCountries', list.filter((x) => x !== code))} className="inline-flex size-6 items-center justify-center rounded-full hover:bg-white/10"><X className="size-3" aria-hidden /></button>
+                    <button type="button" aria-label={t('common.remove')} onClick={() => set('geoCountries', list.filter((x) => x !== code))} className="inline-flex size-6 items-center justify-center rounded-full hover:bg-tint/10"><X className="size-3" aria-hidden /></button>
                   </span>
                 ))}
               </div>
@@ -183,7 +183,7 @@ function GeoCard({ c, set }: { c: FirewallConfig; set: <K extends keyof Firewall
                 <div className="min-w-60 flex-1">
                   <label className="sr-only" htmlFor="geo-pick">{t('firewall.geo.addCountry')}</label>
                   <select id="geo-pick" value={pick} onChange={(e) => { if (e.target.value) add([e.target.value]); setPick('') }}
-                    className="min-h-11 w-full rounded-[10px] border border-line bg-[#0A1224] px-3.5 text-[15px] text-ink">
+                    className="min-h-11 w-full rounded-[10px] border border-line bg-field px-3.5 text-[15px] text-ink">
                     <option value="">{t('firewall.geo.addCountry')}</option>
                     {sorted.filter((x) => !list.includes(x)).map((x) => <option key={x} value={x}>{countryName(x, i18n.language)} ({x})</option>)}
                   </select>

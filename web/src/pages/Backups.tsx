@@ -157,7 +157,7 @@ export function Backups() {
 function IconBtn({ label, onClick, danger, children }: { label: string; onClick: () => void; danger?: boolean; children: React.ReactNode }) {
   return (
     <button type="button" onClick={onClick} title={label} aria-label={label}
-      className={`inline-flex size-11 items-center justify-center rounded-lg text-muted hover:bg-white/5 ${danger ? 'hover:bg-danger/10 hover:text-danger' : 'hover:text-ink'}`}>
+      className={`inline-flex size-11 items-center justify-center rounded-lg text-muted hover:bg-tint/5 ${danger ? 'hover:bg-danger/10 hover:text-danger' : 'hover:text-ink'}`}>
       {children}
     </button>
   )

@@ -93,7 +93,7 @@ export function Login({ mfa }: { mfa: boolean }) {
               <div className="flex flex-col gap-2.5">
                 {providers.map((p) => (
                   <a key={p.id} href={`/api/auth/sso/${p.id}/start`}
-                    className="inline-flex min-h-11 items-center justify-center gap-2.5 rounded-[10px] border border-accent/45 bg-accent/10 px-4 text-sm font-medium text-[#A5F3FC] transition hover:bg-accent/15">
+                    className="inline-flex min-h-11 items-center justify-center gap-2.5 rounded-[10px] border border-accent/45 bg-accent/10 px-4 text-sm font-medium text-accent-ink transition hover:bg-accent/15">
                     {p.kind === 'entra' && <MicrosoftMark />}
                     {t('login.ssoWith', { name: p.name })}
                   </a>

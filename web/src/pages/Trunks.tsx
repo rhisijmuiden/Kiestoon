@@ -30,7 +30,7 @@ export function Trunks() {
 function IconBtn({ label, onClick, danger, children }: { label: string; onClick: () => void; danger?: boolean; children: React.ReactNode }) {
   return (
     <button type="button" onClick={onClick} title={label} aria-label={label}
-      className={`inline-flex size-10 items-center justify-center rounded-lg text-muted ${danger ? 'hover:bg-danger/10 hover:text-danger' : 'hover:bg-white/5 hover:text-ink'}`}>
+      className={`inline-flex size-10 items-center justify-center rounded-lg text-muted ${danger ? 'hover:bg-danger/10 hover:text-danger' : 'hover:bg-tint/5 hover:text-ink'}`}>
       {children}
     </button>
   )

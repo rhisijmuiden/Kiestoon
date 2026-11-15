@@ -7,10 +7,10 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
 const variants: Record<Variant, string> = {
   primary:
-    'bg-gradient-to-br from-accent to-accent-2 text-[#06121F] font-semibold shadow-[0_8px_30px_-10px_rgb(34_211_238_/_0.6)] hover:brightness-110',
-  secondary: 'border border-accent/45 bg-accent/10 text-[#A5F3FC] hover:bg-accent/15',
-  ghost: 'border border-line text-ink-2 hover:bg-white/5',
-  danger: 'border border-danger/50 bg-danger/10 text-[#FECACA] hover:bg-danger/15',
+    'bg-gradient-to-br from-accent to-accent-2 text-on-accent font-semibold shadow-[0_8px_30px_-10px_rgb(34_211_238_/_0.6)] hover:brightness-110',
+  secondary: 'border border-accent/45 bg-accent/10 text-accent-ink hover:bg-accent/15',
+  ghost: 'border border-line text-ink-2 hover:bg-tint/5',
+  danger: 'border border-danger/50 bg-danger/10 text-danger-ink hover:bg-danger/15',
 }
 
 export function Button({
@@ -45,7 +45,7 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
           id={id}
           aria-describedby={hint ? `${id}-hint` : undefined}
           {...rest}
-          className={`min-h-11 rounded-[10px] border border-line bg-[#0A1224] px-3.5 text-[15px] text-ink placeholder:text-subtle outline-none transition focus:border-accent/60 focus:ring-2 focus:ring-accent/20 ${className}`}
+          className={`min-h-11 rounded-[10px] border border-line bg-field px-3.5 text-[15px] text-ink placeholder:text-subtle outline-none transition focus:border-accent/60 focus:ring-2 focus:ring-accent/20 ${className}`}
         />
         {hint && (
           <p id={`${id}-hint`} className="text-xs text-subtle">
@@ -63,9 +63,9 @@ export function Card({ className = '', children }: { className?: string; childre
 
 export function Alert({ tone = 'danger', children }: { tone?: 'danger' | 'ok' | 'warn'; children: ReactNode }) {
   const styles = {
-    danger: 'border-danger/40 bg-danger/10 text-[#FECACA]',
-    ok: 'border-ok/40 bg-ok/10 text-[#A7F3D0]',
-    warn: 'border-warn/40 bg-warn/10 text-[#FDE68A]',
+    danger: 'border-danger/40 bg-danger/10 text-danger-ink',
+    ok: 'border-ok/40 bg-ok/10 text-ok-ink',
+    warn: 'border-warn/40 bg-warn/10 text-warn-ink',
   }[tone]
   const Icon = tone === 'ok' ? CheckCircle2 : AlertTriangle
   return (

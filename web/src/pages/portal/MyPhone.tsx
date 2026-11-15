@@ -68,7 +68,7 @@ export function MyPhone() {
           onClick={() => save({ ...f, dnd: !f.dnd })} label={f.dnd ? t('portal.on') : t('portal.off')} />
         <div className={`card flex flex-col gap-3 p-5 ${toMobile ? 'shadow-[inset_0_0_0_1px_rgb(34_211_238_/_0.45)]' : ''}`}>
           <div className="flex items-start gap-3">
-            <span className={`flex size-10 flex-none items-center justify-center rounded-xl ${toMobile ? 'bg-accent/20 text-accent' : 'bg-white/5 text-muted'}`}><Smartphone className="size-5" aria-hidden /></span>
+            <span className={`flex size-10 flex-none items-center justify-center rounded-xl ${toMobile ? 'bg-accent/20 text-accent' : 'bg-tint/5 text-muted'}`}><Smartphone className="size-5" aria-hidden /></span>
             <div>
               <h2 className="font-medium text-ink">{t('portal.toMobile')}</h2>
               <p className="text-xs text-subtle">{t('portal.toMobileHint')}</p>
@@ -128,12 +128,12 @@ function QuickTile({ icon, title, text, active, onClick, label, tone }: { icon: 
   const on = tone === 'danger' ? 'border-danger/50 bg-danger/10' : 'border-accent/50 bg-accent/10'
   return (
     <button type="button" onClick={onClick} aria-pressed={active} className={`card flex items-start gap-3 p-5 text-left transition ${active ? on : 'hover:border-accent/30'}`}>
-      <span className={`flex size-10 flex-none items-center justify-center rounded-xl ${active ? (tone === 'danger' ? 'bg-danger/20 text-danger' : 'bg-accent/20 text-accent') : 'bg-white/5 text-muted'}`}>{icon}</span>
+      <span className={`flex size-10 flex-none items-center justify-center rounded-xl ${active ? (tone === 'danger' ? 'bg-danger/20 text-danger' : 'bg-accent/20 text-accent') : 'bg-tint/5 text-muted'}`}>{icon}</span>
       <span className="flex-1">
         <span className="block font-medium text-ink">{title}</span>
         <span className="block text-xs text-subtle">{text}</span>
       </span>
-      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${active ? 'bg-danger/20 text-[#FECACA]' : 'bg-white/5 text-muted'}`}>{label}</span>
+      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${active ? 'bg-danger/20 text-danger-ink' : 'bg-tint/5 text-muted'}`}>{label}</span>
     </button>
   )
 }

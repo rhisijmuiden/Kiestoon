@@ -124,7 +124,7 @@ function IVRBuilder({ value, prompts, onClose, onSaved }: { value: IVR; prompts:
         <div className="flex min-w-0 flex-col gap-6">
           {/* Flow canvas */}
           <section className="card relative overflow-x-auto p-6" aria-label={t('ivr.flow')}>
-            <div className="absolute inset-0 bg-[radial-gradient(rgb(255_255_255_/_0.05)_1px,transparent_1px)] [background-size:22px_22px]" aria-hidden />
+            <div className="absolute inset-0 bg-[radial-gradient(var(--color-grid-dot)_1px,transparent_1px)] [background-size:22px_22px]" aria-hidden />
             <div className="relative flex min-w-max flex-col items-center">
               <FlowNode icon={<PhoneIncoming className="size-4" aria-hidden />} title={t('ivr.caller')} />
               <Stem />
@@ -178,7 +178,7 @@ function Stem() {
 function FlowNode({ icon, title, sub, accent }: { icon: ReactNode; title: string; sub?: string; accent?: boolean }) {
   return (
     <div className={`flex min-w-[220px] items-center gap-3 rounded-xl border px-4 py-3 ${accent ? 'border-accent/50 bg-accent/10 shadow-[0_0_40px_-16px_var(--color-accent)]' : 'border-line bg-surface-2'}`}>
-      <span className="flex size-8 items-center justify-center rounded-lg bg-white/5 text-accent">{icon}</span>
+      <span className="flex size-8 items-center justify-center rounded-lg bg-tint/5 text-accent">{icon}</span>
       <div className="min-w-0">
         <div className="truncate text-sm font-medium text-ink">{title}</div>
         {sub && <div className="truncate text-xs text-subtle">{sub}</div>}

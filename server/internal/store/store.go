@@ -597,6 +597,7 @@ var migrations = []string{
 		fallback      TEXT NOT NULL DEFAULT '',
 		enabled       INTEGER NOT NULL DEFAULT 1
 	);`,
+	`ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'system';`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

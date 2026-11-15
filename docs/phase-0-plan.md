@@ -29,6 +29,7 @@ after Reinder tests, merge `testing` into `main` and tag `v0.1.0`.
   - `GET /api/me` → user + `mfaEnrollmentRequired` (admin without TOTP)
   - `POST /api/account/mfa/enroll` → `{secret, otpauthUrl}`; `POST /api/account/mfa/confirm {code}` → `{recoveryCodes}`
   - `PUT /api/account/language {language}`
+  - `PUT /api/account/theme {theme}` (`system` | `dark` | `light`)
   - `GET /api/system/info`; `PUT /api/system/channel {channel}` (admin)
   - `POST /api/system/updates/check`; `POST /api/system/updates/apply` (admin); `GET /api/system/updates/status`
   - Admins without MFA get 403 `mfa_enrollment_required` on everything except me/enroll/confirm/logout/info.

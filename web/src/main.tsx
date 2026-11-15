@@ -11,6 +11,7 @@ import '@fontsource/jetbrains-mono/400.css'
 import '@fontsource/jetbrains-mono/500.css'
 import './styles/index.css'
 import './i18n'
+import './lib/theme'
 import { App } from './App'
 import { SessionProvider } from './lib/session'
 

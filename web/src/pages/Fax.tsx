@@ -62,7 +62,7 @@ function Received({ admin }: { admin: boolean }) {
             <td className={`${td} whitespace-nowrap text-right`}>
               {f.size > 0 && (
                 <a href={`/api/faxes/${f.id}/pdf`} title={`${t('fax.download')} (${formatBytes(f.size)})`} aria-label={t('fax.download')}
-                  className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-white/5 hover:text-accent"><Download className="size-4" aria-hidden /></a>
+                  className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent"><Download className="size-4" aria-hidden /></a>
               )}
               {admin && <IconButton label={t('common.delete')} danger onClick={() => remove(f)}><Trash2 className="size-4" aria-hidden /></IconButton>}
             </td>

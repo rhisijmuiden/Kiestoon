@@ -18,7 +18,7 @@ export function IconButton({ label, onClick, danger, children, disabled }: {
       title={label}
       aria-label={label}
       disabled={disabled}
-      className={`inline-flex size-10 items-center justify-center rounded-lg text-muted transition disabled:opacity-40 ${danger ? 'hover:bg-danger/10 hover:text-danger' : 'hover:bg-white/5 hover:text-ink'}`}
+      className={`inline-flex size-10 items-center justify-center rounded-lg text-muted transition disabled:opacity-40 ${danger ? 'hover:bg-danger/10 hover:text-danger' : 'hover:bg-tint/5 hover:text-ink'}`}
     >
       {children}
     </button>
@@ -29,7 +29,7 @@ export function IconButton({ label, onClick, danger, children, disabled }: {
 export function Segmented<T extends string>({ label, options, value, onChange }: {
   label?: string; options: { key: T; label: string; tone?: 'ok' | 'danger' | 'accent' }[]; value: T; onChange: (v: T) => void
 }) {
-  const tone = { ok: 'bg-ok/15 text-[#A7F3D0] shadow-[inset_0_0_0_1px_rgb(52_211_153_/_0.4)]', danger: 'bg-danger/15 text-[#FECACA] shadow-[inset_0_0_0_1px_rgb(248_113_113_/_0.45)]', accent: 'bg-accent/15 text-ink shadow-[inset_0_0_0_1px_rgb(34_211_238_/_0.35)]' }
+  const tone = { ok: 'bg-ok/15 text-ok-ink shadow-[inset_0_0_0_1px_rgb(52_211_153_/_0.4)]', danger: 'bg-danger/15 text-danger-ink shadow-[inset_0_0_0_1px_rgb(248_113_113_/_0.45)]', accent: 'bg-accent/15 text-ink shadow-[inset_0_0_0_1px_rgb(34_211_238_/_0.35)]' }
   return (
     <div className="flex flex-col gap-1.5">
       {label && <span className="text-sm font-medium text-ink-2">{label}</span>}

@@ -2165,5 +2165,13 @@
     "promote": "Promoveren",
     "confirm": "Deze node nu de primaire node maken?",
     "promoted": "Bezig met promoveren… De telefooncentrale start op deze node en deze pagina laadt opnieuw."
+  },
+  "theme": {
+    "label": "Thema",
+    "title": "Weergave",
+    "hint": "Licht, donker of de instelling van je apparaat volgen. Wordt opgeslagen bij je account.",
+    "system": "Systeem",
+    "light": "Licht",
+    "dark": "Donker"
   }
 }

@@ -20,7 +20,7 @@ export function History() {
   return (
     <>
       <PageHeader title={t('history.title')} subtitle={t('history.subtitle')}>
-        <a href={exportUrl} className="inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-accent/45 bg-accent/10 px-4 text-sm font-medium text-[#A5F3FC] hover:bg-accent/15">
+        <a href={exportUrl} className="inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-accent/45 bg-accent/10 px-4 text-sm font-medium text-accent-ink hover:bg-accent/15">
           <Download className="size-4" aria-hidden /> {t('history.export')}
         </a>
       </PageHeader>

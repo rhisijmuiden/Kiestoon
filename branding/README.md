@@ -4,6 +4,10 @@ Kiestoon has a dark, high-tech look: a deep night background, glassy cards, cyan
 colour and indigo as the second accent. Status colours are only used for status, always with a
 label or icon next to them.
 
+There is also a **light theme** with the same look in daylight colours. Every user picks
+System (follow the device), Light or Dark with the switch in the top bar or under My account; the
+choice is saved on their account.
+
 The source of truth for colours and type is [`tokens.json`](tokens.json). The web UI reads the same
 values as CSS variables in `web/src/styles/index.css`.
 
@@ -30,6 +34,27 @@ values as CSS variables in `web/src/styles/index.css`.
 | `ok` | `#34D399` | Online, available, success |
 | `warn` | `#FBBF24` | Waiting, attention |
 | `danger` | `#F87171` | Offline, busy, errors |
+
+### Light theme
+
+Same roles, tuned for a white background. Cyan and indigo are one step darker so links and the
+active menu item stay readable (WCAG AA).
+
+| Token | Value |
+| --- | --- |
+| `bg` | `#F4F7FB` |
+| `surface` / `surface-sidebar` | `#FFFFFF` |
+| `border` | `rgba(15,23,42,.12)` |
+| `text` | `#0F172A` |
+| `text-muted` | `#526072` |
+| `text-subtle` | `#64748B` |
+| `accent` | `#0891B2` |
+| `accent-2` | `#6366F1` |
+| `ok` | `#059669` |
+| `warn` | `#D97706` |
+| `danger` | `#DC2626` |
+
+The "Powered by RHIS" badge stays dark in both themes, so the white RHIS logo keeps its own colours.
 
 ## Type
 

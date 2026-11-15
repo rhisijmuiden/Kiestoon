@@ -31,6 +31,7 @@ export type User = {
   role: Role
   mfaEnabled: boolean
   language: 'en' | 'nl'
+  theme?: 'system' | 'dark' | 'light'
   email: string
   extensionId: number | null
   ssoProvider: number

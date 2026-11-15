@@ -1,4 +1,4 @@
-# Kiestoon Edge
+# Branch offices (Edge)
 
 Kiestoon Edge is a small satellite for a branch office. It connects the office to the central Kiestoon (for example
 in a data centre) through a WireGuard tunnel and runs a SIP proxy (Kamailio) and media relay (rtpengine) for the
@@ -13,6 +13,8 @@ Office phones ──LAN── Kiestoon Edge ══ WireGuard (UDP 51820) ══ 
 Only the central Kiestoon needs a reachable UDP port. The edge connects out, so the office needs **no port
 forwarding** and NAT problems between the office and the data centre are gone: only the tunnel crosses the NAT.
 Extensions, voicemail and all settings stay on the central Kiestoon.
+
+![Sites › Branch offices](shot:sites)
 
 ## Install
 

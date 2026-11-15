@@ -1,11 +1,13 @@
-# Kiestoon REST API
+# API, webhooks and metrics
 
 Everything the web portal does goes through the same JSON API under `/api/`. Other programs (a CRM, a
 helpdesk, scripts) use it with an **API token**. Webhooks tell those programs when something happens.
 
+![System › API & webhooks](shot:integrations)
+
 ## API tokens
 
-Create a token under **System → API & webhooks → API tokens**. The token is shown once; Kiestoon stores only
+Create a token under **API & webhooks › API tokens › New token**. The token is shown once; Kiestoon stores only
 a hash of it.
 
 ```sh
@@ -37,7 +39,7 @@ curl -H "Authorization: Bearer kt_…" https://pbx.example.com/api/pbx/extension
 
 ## Webhooks
 
-Add a webhook under **System → API & webhooks → Webhooks** and choose the events. Kiestoon sends a `POST` with
+Add a webhook under **API & webhooks › Webhooks › Add webhook** and choose the events. Kiestoon sends a `POST` with
 JSON to your URL:
 
 ```json
@@ -93,7 +95,7 @@ network are allowed. The last 200 deliveries of each webhook are shown in the po
 
 ## Prometheus metrics
 
-Turn on **System → Internet access → Prometheus metrics**. Kiestoon then serves `GET /metrics` (outside
+Turn on **Internet access › Prometheus metrics › Publish metrics**. Kiestoon then serves `GET /metrics` (outside
 `/api/`) in the Prometheus text format. Prometheus sends the token as a bearer token; addresses in the
 "allowed without a token" list may scrape without one.
 

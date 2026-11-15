@@ -243,7 +243,9 @@
     "sites": "Branch offices",
     "federation": "Linked systems",
     "sunRoutes": "Follow the sun",
-    "cluster": "High availability"
+    "cluster": "High availability",
+    "help": "Help",
+    "helpTitle": "Open the manual for this page"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -893,7 +895,9 @@
     "sent": "Sent",
     "failed": "Failed",
     "queued_one": "{{count}} e-mail waiting to be sent.",
-    "queued_other": "{{count}} e-mails waiting to be sent."
+    "queued_other": "{{count}} e-mails waiting to be sent.",
+    "m365Hint": "Register an app in Microsoft Entra with the application permission SMTP.SendAsApp (Office 365 Exchange Online) and admin consent, then give the app access to the mailbox in Exchange Online. Fill in the mailbox, tenant ID, client ID and client secret.",
+    "googleHint": "Create an OAuth client in Google Cloud and a refresh token for the mailbox with the scope https://mail.google.com/. Fill in the mailbox, client ID, client secret and refresh token."
   },
   "backups": {
     "title": "Backups",
@@ -1027,7 +1031,9 @@
       "hint": "SMB 2 or 3, as on a Windows server or a NAS (Synology, QNAP).",
       "share": "Share and folder",
       "shareHint": "The share name first, then the folder, for example Backups/kiestoon."
-    }
+    },
+    "existingKey": "Existing encryption key (optional)",
+    "existingKeyHint": "Only when this folder already holds Kiestoon backups, for example to restore them on a new server. Leave empty for a new backup store."
   },
   "settings": {
     "title": "Settings",
@@ -2135,7 +2141,7 @@
     "clientIp": "Your address",
     "secure": "Connection",
     "notTrusted": "A proxy header arrived, but this proxy is not trusted. Add its address above.",
-    "docs": "Example configurations are in docs/reverse-proxy.md. Forward WebSockets for the browser softphone.",
+    "docs": "Example configurations are in the manual under Own reverse proxy. Forward WebSockets for the browser softphone.",
     "saved": "Proxy settings saved."
   },
   "metrics": {

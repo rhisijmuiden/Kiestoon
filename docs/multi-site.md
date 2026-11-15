@@ -1,4 +1,4 @@
-# Linking Kiestoon systems
+# Linked systems
 
 Two or more Kiestoon systems (for example an office in the Netherlands and one in the US) can be linked. They keep
 their own extensions, trunks and settings, and get:
@@ -9,6 +9,8 @@ their own extensions, trunks and settings, and get:
 - queues with agents on both sites;
 - **follow the sun**: a number goes to the site that is open now, each in its own time zone.
 
+![Sites › Linked systems](shot:federation)
+
 ## Link two systems
 
 1. On system A: **Sites → Branch offices**, switch on the tunnel hub and enter its public address. Forward UDP 51820
@@ -17,7 +19,7 @@ their own extensions, trunks and settings, and get:
 3. On system B: **Linked systems → Join with a code**. Paste the code and choose the prefix the numbers of A get on B.
 
 B connects to the hub of A; only A needs open ports. A star works too: several systems join one hub. The code pins the
-certificate of A, like an edge pairing code (see [edge.md](edge.md)).
+certificate of A, like an edge pairing code (see [Branch offices](edge.md)).
 
 A prefix must not overlap with the numbers on the system (extensions, ring groups, queues, conference rooms, parking
 70–79) or with another link. Prefixes start with 1–9; 0 stays the outside line.
@@ -37,12 +39,14 @@ A prefix must not overlap with the numbers on the system (extensions, ring group
 - Routing destinations: *Linked system* (a number on the other site) and *Follow the sun* can be chosen everywhere a
   destination is chosen (inbound routes, IVR, time conditions, queue overflow).
 
-## Follow the sun
+## Follow the sun { #follow-the-sun }
 
 **Sites → Follow the sun**: a list of rules, each with a time zone, days and hours and a destination. The first rule
 that matches the current time in its own time zone gets the call; otherwise the fallback destination does. Example:
 Amsterdam 08:00–17:00 (Europe/Amsterdam) to the Dutch support queue, New York 09:00–17:00 (America/New_York) to the
 American support queue on the linked system, else voicemail.
+
+![Sites › Follow the sun](shot:follow-the-sun)
 
 ## Unlinking
 

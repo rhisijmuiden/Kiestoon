@@ -3,6 +3,8 @@
 Two Kiestoon systems can run as an **active/passive pair**. The primary node runs the phone system; the standby node
 copies its database and files continuously and takes over when the primary fails.
 
+![Sites › High availability](shot:cluster)
+
 ## Set up
 
 1. Install Kiestoon twice, with the **same version** (two LXC containers on different Proxmox hosts, or two machines).

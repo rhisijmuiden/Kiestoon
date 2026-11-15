@@ -1,12 +1,11 @@
-# Kiestoon behind your own reverse proxy
+# Own reverse proxy
 
-Kiestoon can put itself on the internet with Caddy and a Let's Encrypt certificate (**System → Internet
-access**). When you already have a reverse proxy or load balancer (nginx, Traefik, HAProxy, a firewall with a
+Kiestoon can put itself on the internet with Caddy and a Let's Encrypt certificate ([Internet access](internet.md)). When you already have a reverse proxy or load balancer (nginx, Traefik, HAProxy, a firewall with a
 web proxy), keep that switched off and let your proxy forward to Kiestoon instead.
 
 ## 1. Tell Kiestoon which proxy to trust
 
-Go to **System → Internet access → Own reverse proxy**:
+Go to **Internet access › Own reverse proxy**:
 
 1. Switch on **Trust my reverse proxy**.
 2. Enter the IP address of the proxy (or the range of a proxy cluster), one per line. Kiestoon only reads

@@ -6,6 +6,7 @@ import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../compone
 import { api } from '../lib/api'
 import type { DestType, DialPattern, Extension, InboundRoute, Live, OutboundRoute, Trunk, TrunkPreset } from '../lib/types'
 import { DestinationLabel, DestinationPicker } from '../components/pbx'
+import { localDocsUrl } from '../components/help'
 
 type Tab = 'trunks' | 'inbound' | 'outbound'
 
@@ -169,7 +170,7 @@ function TrunkForm({ value, onClose, onSaved }: { value: Trunk; onClose: () => v
 
 /** Step-by-step setup of a provider: what to do in the provider portal and in Kiestoon. */
 function ProviderGuide({ guide, docsUrl, open }: { guide: string; docsUrl?: string; open: boolean }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const steps = (key: string) => {
     const v = t(`trunks.guides.${guide}.${key}`, { returnObjects: true }) as unknown
     return Array.isArray(v) ? (v as string[]) : []
@@ -199,7 +200,7 @@ function ProviderGuide({ guide, docsUrl, open }: { guide: string; docsUrl?: stri
         {steps('troubleshoot').length > 0 && section('troubleshoot')}
         <p className="text-xs text-subtle">{t(`trunks.guides.${guide}.terms`)}</p>
         {docsUrl && (
-          <a href={docsUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline">
+          <a href={localDocsUrl(docsUrl, i18n.language)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline">
             {t('trunks.guideDocs')} <ExternalLink className="size-3.5" aria-hidden />
           </a>
         )}

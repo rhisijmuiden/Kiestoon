@@ -243,7 +243,9 @@
     "sites": "Vestigingen",
     "federation": "Gekoppelde systemen",
     "sunRoutes": "Follow the sun",
-    "cluster": "Hoge beschikbaarheid"
+    "cluster": "Hoge beschikbaarheid",
+    "help": "Help",
+    "helpTitle": "Handleiding voor deze pagina openen"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -893,7 +895,9 @@
     "sent": "Verstuurd",
     "failed": "Mislukt",
     "queued_one": "{{count}} e-mail wacht op verzending.",
-    "queued_other": "{{count}} e-mails wachten op verzending."
+    "queued_other": "{{count}} e-mails wachten op verzending.",
+    "m365Hint": "Registreer een app in Microsoft Entra met de toepassingsmachtiging SMTP.SendAsApp (Office 365 Exchange Online) en beheerderstoestemming, en geef de app toegang tot de mailbox in Exchange Online. Vul de mailbox, tenant-ID, client-ID en het clientgeheim in.",
+    "googleHint": "Maak een OAuth-client in Google Cloud en een refresh token voor de mailbox met de scope https://mail.google.com/. Vul de mailbox, client-ID, het clientgeheim en het refresh token in."
   },
   "backups": {
     "title": "Back-ups",
@@ -1027,7 +1031,9 @@
       "hint": "SMB 2 of 3, zoals op een Windows-server of een NAS (Synology, QNAP).",
       "share": "Share en map",
       "shareHint": "Eerst de naam van de share, dan de map, bijvoorbeeld Backups/kiestoon."
-    }
+    },
+    "existingKey": "Bestaande versleutelingssleutel (optioneel)",
+    "existingKeyHint": "Alleen als deze map al Kiestoon-back-ups bevat, bijvoorbeeld om ze op een nieuwe server te herstellen. Laat leeg voor een nieuwe back-upopslag."
   },
   "settings": {
     "title": "Instellingen",
@@ -2135,7 +2141,7 @@
     "clientIp": "Jouw adres",
     "secure": "Verbinding",
     "notTrusted": "Er kwam een proxy-header binnen, maar deze proxy wordt niet vertrouwd. Voeg het adres hierboven toe.",
-    "docs": "Voorbeeldconfiguraties staan in docs/reverse-proxy.md. Stuur WebSockets door voor de browsertelefoon.",
+    "docs": "Voorbeeldconfiguraties staan in de handleiding onder Eigen reverse proxy. Stuur WebSockets door voor de browsertelefoon.",
     "saved": "Proxy-instellingen opgeslagen."
   },
   "metrics": {

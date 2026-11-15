@@ -1,6 +1,4 @@
-# Voys SIP trunk
-
-[Nederlands](#nederlands) · English
+# Provider: Voys
 
 Kiestoon has a ready-made template for [Voys](https://www.voys.nl). Voys runs on the
 VoIPGRID platform and calls a SIP trunk to your own phone system a **VoIP trunk**.
@@ -83,51 +81,3 @@ Sources: [VoIP-trunk: Mijn eigen PBX instellen](https://help.voys.nl/voip-trunk-
 [Asterisk](https://help.voys.nl/asterisk) (Voys help centre), and the DNS SRV records of
 `ha.voys.nl` (checked November 2026).
 
----
-
-## Nederlands
-
-Kiestoon heeft een kant-en-klaar sjabloon voor Voys. Voys draait op het VoIPGRID-platform
-en noemt een SIP-trunk naar je eigen centrale een **VoIP-trunk**. De tabel hierboven geeft
-de instellingen van het sjabloon.
-
-### 1. In Voys Freedom
-
-1. Log in op [freedom.voys.nl](https://freedom.voys.nl) en open **Beheer → VoIP-trunks**.
-   Klik op **Toevoegen**.
-2. **Beschrijving**: bijvoorbeeld `Kiestoon` (ook de uitgaande naam).
-3. **Aantal lijnen**: het maximale aantal gelijktijdige gesprekken.
-4. **Intern nummer**: een vrij nummer van drie cijfers, bijvoorbeeld `900`.
-5. **Belbevoegdheden**: alleen de bestemmingen die je nodig hebt.
-6. Zet **Caller ID van de trunk gebruiken** aan.
-7. **Opslaan**. Noteer het **Account ID** en **wachtwoord**.
-8. **Geavanceerde (SIP) instellingen**: zet de **CLI-header** op `Remote-Party-ID` en laat
-   de vaste hostname leeg.
-9. Optioneel: sta onder **Extra beveiliging** alleen het publieke IP-adres van je
-   Kiestoon-server toe.
-10. Stuur in het belplan van elk Voys-nummer inkomende gesprekken naar deze VoIP-trunk.
-
-### 2. In Kiestoon
-
-1. **Trunks & routes → Trunks → Trunk toevoegen**, provider **Voys**.
-2. **Gebruikersnaam**: het Account ID. **Wachtwoord**: het trunkwachtwoord.
-3. **Nummerweergave**: een van je Voys-nummers.
-4. **Maximaal aantal gelijktijdige gesprekken**: het aantal lijnen.
-5. Opslaan: binnen een minuut staat de status op **Aangemeld**.
-6. **Inkomende routes**: per Voys-nummer een route.
-7. **Uitgaande routes**: voorinstelling Nederlandse nummers, trunk Voys.
-8. Achter NAT: vul het publieke adres in bij **Instellingen → Netwerk en NAT** en stuur de
-   SIP- en RTP-poorten door.
-
-### Problemen oplossen
-
-- **Geweigerd**: Account ID of wachtwoord klopt niet.
-- **Niet aangemeld**: gebruik host `sipproxy.voipgrid.nl` met poort `5060`.
-- **Verkeerde inkomende route**: zet **Gebeld nummer komt uit** op **To-header**.
-- **Geen of eenzijdig geluid**: controleer NAT en het publieke adres.
-
-### Voorwaarden van Voys
-
-Voys ondersteunt het koppelen van je eigen centrale via een VoIP-trunk, maar niet het
-instellen van de centrale zelf. De fraudedetectie van Voys zet een trunk uit bij verdacht
-belverkeer.

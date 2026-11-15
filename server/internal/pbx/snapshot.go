@@ -134,7 +134,7 @@ var TrunkPresets = []TrunkPreset{
 	// is left at 0 to follow them. Calls come from 195.35.114.0/23 and 185.103.76.0/22.
 	// Source: https://help.voys.nl/voip-trunk-configuratie
 	{ID: "voys", Name: "Voys", AuthMode: "register", Host: "ha.voys.nl", Port: 0, Transport: "udp", DIDSource: "ruri", Codecs: "alaw,g722",
-		MatchIPs: VoysNetworks, Note: "voys", Guide: "voys", DocsURL: "https://github.com/rhisijmuiden/Kiestoon/blob/main/docs/providers/voys.md"},
+		MatchIPs: VoysNetworks, Note: "voys", Guide: "voys", DocsURL: "https://rhisijmuiden.github.io/Kiestoon/providers/voys/"},
 	{ID: "voipgrid", Name: "VoIPGRID platform (Spitsgroep, partners)", AuthMode: "register", Port: 5060, Transport: "udp", DIDSource: "to", Codecs: "alaw,g722", Note: "voipgrid"},
 	{ID: "kpn", Name: "KPN SIP trunk", AuthMode: "ip", Port: 5060, Transport: "udp", DIDSource: "ruri", Codecs: "alaw", Note: "kpn"},
 	{ID: "telnyx", Name: "Telnyx", AuthMode: "register", Host: "sip.telnyx.com", Port: 5061, Transport: "tls", DIDSource: "to", Codecs: "alaw,ulaw,g722", Note: "telnyx"},

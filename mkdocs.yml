@@ -1,0 +1,203 @@
+# Kiestoon manual, published on GitHub Pages by .github/workflows/docs.yml.
+# Local preview: pip install -r tools/docs/requirements.txt && mkdocs serve
+# Every page exists twice: page.md (English) and page.nl.md (Dutch).
+# Screenshots are made from a demo office by tools/docs (see tools/docs/README.md).
+site_name: Kiestoon
+site_description: Manual for Kiestoon, the open source phone system (PBX) for Debian 13. Powered by RHIS.
+site_url: https://rhisijmuiden.github.io/Kiestoon/
+repo_url: https://github.com/rhisijmuiden/Kiestoon
+repo_name: rhisijmuiden/Kiestoon
+edit_uri: edit/testing/docs/
+copyright: Kiestoon is open source (GPL-3.0)
+
+docs_dir: docs
+exclude_docs: |
+  overrides/
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  logo: assets/kiestoon-mark.svg
+  favicon: assets/kiestoon-mark.svg
+  font:
+    text: Inter
+    code: JetBrains Mono
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Dark theme
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Light theme
+  features:
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.tabs.link
+    - content.action.edit
+  icon:
+    repo: fontawesome/brands/github
+
+extra_css:
+  - assets/kiestoon.css
+
+hooks:
+  - tools/docs/site/hooks.py
+
+plugins:
+  - search
+  - glightbox:
+      skip_classes: [no-zoom]
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: nl
+          name: Nederlands
+          build: true
+          site_description: Handleiding voor Kiestoon, de open source telefooncentrale voor Debian 13. Powered by RHIS.
+          nav_translations:
+            Home: Home
+            Getting started: Aan de slag
+            Install: Installeren
+            First setup: Eerste inrichting
+            How Kiestoon works: Hoe Kiestoon werkt
+            Telephony: Telefonie
+            Extensions: Toestellen
+            Phones and provisioning: Telefoons en provisioning
+            Phone keys and modules: Toetsen en uitbreidingsmodules
+            Trunks: Trunks (SIP-providers)
+            "Provider: Voys": "Provider: Voys"
+            "Provider: Cheapconnect": "Provider: Cheapconnect"
+            Inbound and outbound routes: Inkomende en uitgaande routes
+            Ring groups: Belgroepen
+            Call queues: Wachtrijen
+            IVR builder: Keuzemenu's (IVR)
+            Time conditions and holidays: Tijdcondities en feestdagen
+            Conference rooms: Vergaderruimtes
+            Voice prompts and speech: Gesproken teksten en spraak
+            Voicemail: Voicemail
+            Fax: Fax
+            Call history and recordings: Gespreksgeschiedenis en opnames
+            Feature codes: Sneltoetscodes
+            Reception and users: Receptie en gebruikers
+            Switchboard and wallboard: Schakelbord en wallboard
+            Phone book: Telefoonboek
+            User portal: Gebruikersportaal
+            Windows softphone: Windows-softphone
+            Multi-site and HA: Meerdere locaties en HA
+            Branch offices (Edge): Vestigingen (Edge)
+            Linked systems: Gekoppelde systemen
+            High availability: Hoge beschikbaarheid
+            Security: Beveiliging
+            Users, roles and sign-in: Gebruikers, rollen en inloggen
+            Firewall and fraud protection: Firewall en fraudebescherming
+            Internet access and SSL: Internettoegang en SSL
+            Own reverse proxy: Eigen reverse proxy
+            System: Systeem
+            Backups and restore: Back-ups en herstellen
+            Mail server: Mailserver
+            API, webhooks and metrics: API, webhooks en metrics
+            Updates and channels: Updates en kanalen
+            Settings: Instellingen
+            Troubleshooting: Problemen oplossen
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Install: install.md
+      - First setup: first-setup.md
+      - How Kiestoon works: concepts.md
+  - Telephony:
+      - Extensions: extensions.md
+      - Phones and provisioning: phones.md
+      - Phone keys and modules: phone-keys.md
+      - Trunks: trunks.md
+      - "Provider: Voys": providers/voys.md
+      - "Provider: Cheapconnect": providers/cheapconnect.md
+      - Inbound and outbound routes: routes.md
+      - Ring groups: ring-groups.md
+      - Call queues: queues.md
+      - IVR builder: ivr.md
+      - Time conditions and holidays: time-conditions.md
+      - Conference rooms: conferences.md
+      - Voice prompts and speech: prompts.md
+      - Voicemail: voicemail.md
+      - Fax: fax.md
+      - Call history and recordings: history.md
+      - Feature codes: feature-codes.md
+  - Reception and users:
+      - Switchboard and wallboard: switchboard.md
+      - Phone book: phonebook.md
+      - User portal: portal.md
+      - Windows softphone: softphone.md
+  - Multi-site and HA:
+      - Branch offices (Edge): edge.md
+      - Linked systems: multi-site.md
+      - High availability: high-availability.md
+  - Security:
+      - Users, roles and sign-in: users.md
+      - Firewall and fraud protection: firewall.md
+      - Internet access and SSL: internet.md
+      - Own reverse proxy: reverse-proxy.md
+  - System:
+      - Backups and restore: backups.md
+      - Mail server: mail.md
+      - API, webhooks and metrics: api.md
+      - Updates and channels: updates.md
+      - Settings: settings.md
+      - Troubleshooting: troubleshooting.md
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/rhisijmuiden/Kiestoon

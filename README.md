@@ -70,8 +70,11 @@ make test                # Go tests, translation check, type check
 make deb                 # .deb in dist/ (needs nfpm)
 ```
 
-Branches: work on a feature branch, open a pull request into `testing`. Releases are made by pushing a tag
-(`vX.Y.Z-rc.N` on `testing`, `vX.Y.Z` on `main`); the release workflow builds the packages and the LXC template.
+Branches: work on a feature branch, open a pull request into `testing`.
+
+Releases: set the new version in the `VERSION` file (`vX.Y.Z-rc.N` on `testing`, `vX.Y.Z` on `main`) and merge.
+The release workflow then creates the tag and a GitHub release with the `.deb` packages, the LXC template and
+`SHA256SUMS`. Pushing a `v*` tag works too.
 
 ## Licence
 

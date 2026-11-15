@@ -187,6 +187,9 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 		ep := t.Endpoint()
 		transport := "transport-" + t.Transport
 		hostport := fmt.Sprintf("%s:%d", t.Host, t.Port)
+		if t.Port == 0 {
+			hostport = t.Host // no port: PJSIP follows the DNS SRV records of the host
+		}
 		uriSuffix := ""
 		if t.Transport != "udp" {
 			uriSuffix = ";transport=" + t.Transport

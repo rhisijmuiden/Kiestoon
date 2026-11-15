@@ -16,6 +16,12 @@ English by default, fully translated into Dutch. Powered by RHIS.
   and follow-the-sun routing.
 - [High availability](docs/high-availability.md): a standby node that copies everything and takes over.
 
+## Telecom providers
+
+The trunk form has templates for common providers. Step-by-step guides:
+
+- [Voys](docs/providers/voys.md): VoIP trunk in Voys Freedom, with DNS SRV failover and the Voys IP ranges.
+
 ## Install
 
 ### Proxmox LXC template

@@ -48,7 +48,7 @@ export type Trunk = {
 
 export type TrunkPreset = {
   id: string; name: string; authMode: 'register' | 'ip'; host: string; port: number; transport: 'udp' | 'tcp' | 'tls'
-  didSource: 'ruri' | 'to'; codecs: string; note: string
+  didSource: 'ruri' | 'to'; codecs: string; matchIps: string; note: string; guide: string; docsUrl?: string
 }
 
 export type InboundRoute = {

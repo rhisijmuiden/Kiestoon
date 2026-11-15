@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, Waypoints, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, BookOpen, ExternalLink, Pencil, Plus, Trash2, Waypoints, X } from 'lucide-react'
 import { Badge, Empty, Modal, Select, Table, Tabs, Textarea, Toggle, td, useApi } from '../components/kit'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
@@ -72,7 +72,7 @@ function TrunkList() {
         {list.data?.map((x) => (
           <tr key={x.id} className={x.enabled ? '' : 'opacity-50'}>
             <td className={`${td} text-ink`}>{x.name}</td>
-            <td className={`${td} font-mono text-xs`}>{x.host}:{x.port} <span className="uppercase text-subtle">{x.transport}</span></td>
+            <td className={`${td} font-mono text-xs`}>{x.host}{x.port ? `:${x.port}` : ''} {!x.port && <span className="text-subtle">SRV</span>} <span className="uppercase text-subtle">{x.transport}</span></td>
             <td className={td}>{t(`trunks.mode.${x.authMode}`)}</td>
             <td className={td}><Badge tone={statusTone(state(x.id))} dot>{t(`trunks.state.${state(x.id)}`, { defaultValue: state(x.id) })}</Badge></td>
             <td className={`${td} font-mono`}>{x.callerId || '–'}</td>
@@ -98,7 +98,7 @@ function TrunkForm({ value, onClose, onSaved }: { value: Trunk; onClose: () => v
   function applyPreset(id: string) {
     const p = presets.data?.find((q) => q.id === id)
     if (!p) return
-    setX((o) => ({ ...o, provider: p.id, authMode: p.authMode, host: p.host || o.host, port: p.port, transport: p.transport, didSource: p.didSource, codecs: p.codecs, name: o.name || p.name }))
+    setX((o) => ({ ...o, provider: p.id, authMode: p.authMode, host: p.host || o.host, port: p.port, transport: p.transport, didSource: p.didSource, codecs: p.codecs, matchIps: p.matchIps || (p.id === o.provider ? o.matchIps : ''), name: o.name || p.name }))
   }
   async function save() {
     setBusy(true)
@@ -121,6 +121,7 @@ function TrunkForm({ value, onClose, onSaved }: { value: Trunk; onClose: () => v
         {presets.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
       </Select>
       {preset && <Alert tone="warn">{t(`trunks.notes.${preset.note}`)}</Alert>}
+      {preset?.guide && <ProviderGuide guide={preset.guide} docsUrl={preset.docsUrl} open={!x.id} />}
       <div className="grid gap-4 sm:grid-cols-2">
         <Input label={t('trunks.name')} value={x.name} onChange={(e) => set('name', e.target.value)} />
         <Select label={t('trunks.authMode')} value={x.authMode} onChange={(e) => set('authMode', e.target.value as Trunk['authMode'])}>
@@ -130,7 +131,7 @@ function TrunkForm({ value, onClose, onSaved }: { value: Trunk; onClose: () => v
       </div>
       <div className="grid gap-4 sm:grid-cols-[1fr_110px_130px]">
         <Input label={t('trunks.host')} value={x.host} onChange={(e) => set('host', e.target.value.trim())} className="font-mono" placeholder="sip.provider.nl" />
-        <Input label={t('trunks.port')} type="number" value={x.port} onChange={(e) => set('port', Number(e.target.value))} />
+        <Input label={t('trunks.port')} type="number" min={0} value={x.port} hint={x.port === 0 ? t('trunks.portSrv') : undefined} onChange={(e) => set('port', Number(e.target.value))} />
         <Select label={t('trunks.transport')} value={x.transport} onChange={(e) => { const v = e.target.value as Trunk['transport']; setX((o) => ({ ...o, transport: v, srtp: v === 'tls' ? o.srtp : false, port: v === 'tls' && o.port === 5060 ? 5061 : v !== 'tls' && o.port === 5061 ? 5060 : o.port })) }}>
           <option value="udp">UDP</option><option value="tcp">TCP</option><option value="tls">TLS</option>
         </Select>
@@ -163,6 +164,47 @@ function TrunkForm({ value, onClose, onSaved }: { value: Trunk; onClose: () => v
       </details>
       <Toggle label={t('common.enabled')} checked={x.enabled} onChange={(v) => set('enabled', v)} />
     </Modal>
+  )
+}
+
+/** Step-by-step setup of a provider: what to do in the provider portal and in Kiestoon. */
+function ProviderGuide({ guide, docsUrl, open }: { guide: string; docsUrl?: string; open: boolean }) {
+  const { t } = useTranslation()
+  const steps = (key: string) => {
+    const v = t(`trunks.guides.${guide}.${key}`, { returnObjects: true }) as unknown
+    return Array.isArray(v) ? (v as string[]) : []
+  }
+  const section = (key: string) => (
+    <div>
+      <h4 className="mb-2 text-sm font-semibold text-ink">{t(`trunks.guides.${guide}.${key}Title`)}</h4>
+      <ol className="flex flex-col gap-2">
+        {steps(key).map((s, i) => (
+          <li key={i} className="flex gap-3 text-sm text-ink-2">
+            <span className="flex size-6 flex-none items-center justify-center rounded-full bg-accent/15 font-mono text-xs text-accent">{i + 1}</span>
+            <span className="pt-0.5">{s}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+  return (
+    <details open={open} className="rounded-xl border border-accent/30 bg-accent/5 p-4">
+      <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium text-ink">
+        <BookOpen className="size-4 text-accent" aria-hidden /> {t(`trunks.guides.${guide}.title`)}
+      </summary>
+      <div className="mt-4 flex flex-col gap-5">
+        <p className="text-sm text-muted">{t(`trunks.guides.${guide}.intro`)}</p>
+        {section('portal')}
+        {section('kiestoon')}
+        {steps('troubleshoot').length > 0 && section('troubleshoot')}
+        <p className="text-xs text-subtle">{t(`trunks.guides.${guide}.terms`)}</p>
+        {docsUrl && (
+          <a href={docsUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline">
+            {t('trunks.guideDocs')} <ExternalLink className="size-3.5" aria-hidden />
+          </a>
+        )}
+      </div>
+    </details>
   )
 }
 

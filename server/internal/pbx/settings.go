@@ -485,13 +485,14 @@ func validateTrunk(t *Trunk) error {
 	if net.ParseIP(t.Host) == nil && !reHost.MatchString(t.Host) {
 		return invalid("invalid", "host")
 	}
-	if t.Port == 0 {
+	// Port 0 on a host name means "look up DNS SRV records" (RFC 3263); an IP address needs a port.
+	if t.Port == 0 && net.ParseIP(t.Host) != nil {
 		t.Port = 5060
 		if t.Transport == "tls" {
 			t.Port = 5061
 		}
 	}
-	if t.Port < 1 || t.Port > 65535 {
+	if t.Port < 0 || t.Port > 65535 {
 		return invalid("invalid", "port")
 	}
 	switch t.Transport {

@@ -129,7 +129,11 @@
     "duplicate_digit": "Two steps use the same key.",
     "invalid_digit": "Choose a valid key (0-9, * or #).",
     "invalid_line": "A line in the menu connects steps that cannot be connected.",
-    "too_large": "The menu is too large."
+    "too_large": "The menu is too large.",
+    "link_invalid": "This link is invalid or has expired.",
+    "password_mismatch": "The passwords do not match.",
+    "no_email": "This extension has no e-mail address.",
+    "user_disabled": "This account is disabled."
   },
   "setup": {
     "title": "Welcome to Kiestoon",
@@ -2283,5 +2287,31 @@
     "system": "System",
     "light": "Light",
     "dark": "Dark"
+  },
+  "welcome": {
+    "toggle": "Create a portal account and send a welcome e-mail",
+    "toggleHint": "The employee gets a link to set a password, the portal addresses and the details for a softphone app. No password is sent by e-mail.",
+    "needsEmail": "Fill in an e-mail address to send a welcome e-mail.",
+    "language": "Language of the e-mail and the account",
+    "resend": "Send welcome e-mail",
+    "confirm": "Send a welcome e-mail with a new set-password link to {{email}}? An earlier link stops working.",
+    "sent": "Welcome e-mail sent to {{email}} (account {{username}}).",
+    "sentCreated": "Portal account {{username}} created and welcome e-mail sent to {{email}}.",
+    "mail_disabled": "Account {{username}} is ready, but no mail server is configured, so no e-mail was sent. Give the employee the link below or set up the mail server under Mail.",
+    "mail_failed": "Account {{username}} is ready, but the e-mail to {{email}} could not be sent. Check the mail log, or give the employee the link below.",
+    "link": "Set-password link (valid for 72 hours)"
+  },
+  "setPassword": {
+    "title": "Welcome, {{name}}",
+    "subtitle": "Choose a password for your Kiestoon account.",
+    "password": "New password",
+    "repeat": "Repeat password",
+    "hint": "At least 12 characters.",
+    "submit": "Set password",
+    "doneTitle": "Password set",
+    "doneText": "You can now sign in as {{username}}.",
+    "invalidTitle": "Link not valid",
+    "invalidText": "This link has already been used or has expired. Ask your administrator to send a new welcome e-mail.",
+    "toLogin": "Go to sign in"
   }
 }

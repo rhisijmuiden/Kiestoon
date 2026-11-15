@@ -341,3 +341,6 @@ export type StandbyView = {
     files: number; replica: SnapshotMeta; primary: SnapshotMeta; lastError: string
   }
 }
+
+/** What happened to a welcome e-mail. The link is only there when the mail could not be sent. */
+export type WelcomeResult = { sent: boolean; created: boolean; username: string; email: string; error?: string; link?: string }

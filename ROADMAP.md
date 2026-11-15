@@ -216,6 +216,12 @@ Notes on phase 5:
   picked from the prompts. Steps: keypress, play audio, transfer (extension, ring group, queue, voicemail, submenu,
   external number), time condition with open/closed lines, repeat menu, hang up and no input. Undo/redo, tidy up,
   minimap and a test call that rings your own phone. Existing menus are converted automatically.
+- [x] Welcome e-mail for new extensions (`v0.6.0-rc.6`): an extension created with an e-mail address gets a portal
+  account (role user) linked to it, and the employee gets a welcome e-mail in English or Dutch with a one-time link
+  to set a password (72 hours, no password in the mail), the portal addresses (http, https for the softphone, or the
+  public domain), the username and extension, the SIP details for a mobile app and voicemail info, plus a note when
+  SSO is enabled. Admins can send it again from Extensions or Users & roles. Without a mail server the admin gets
+  the link to hand over.
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

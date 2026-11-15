@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { KeyRound, Pencil, Plus, ShieldCheck, Trash2, UserCog } from 'lucide-react'
+import { KeyRound, Mail, Pencil, Plus, ShieldCheck, Trash2, UserCog } from 'lucide-react'
 import { Badge, Empty, Modal, Select, Table, Toggle, formatDate, td, useApi } from '../components/kit'
 import { IconButton } from '../components/pbx'
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api, roles, type Role, type User } from '../lib/api'
 import { useSession } from '../lib/session'
-import type { Extension, SsoProvider } from '../lib/types'
+import type { Extension, SsoProvider, WelcomeResult } from '../lib/types'
+import { WelcomeNotice } from '../components/WelcomeNotice'
 
 type Form = { id: number; username: string; displayName: string; email: string; role: Role; extensionId: number | null; language: 'en' | 'nl'; enabled: boolean; password: string }
 
@@ -21,6 +22,17 @@ export function Users() {
   const sso = useApi<{ providers: SsoProvider[] }>('/sso/providers')
   const [edit, setEdit] = useState<Form | null>(null)
   const [error, setError] = useState<unknown>(null)
+  const [notice, setNotice] = useState<WelcomeResult | null>(null)
+  async function sendWelcome(u: User) {
+    if (!window.confirm(t('welcome.confirm', { email: u.email }))) return
+    setError(null)
+    setNotice(null)
+    try {
+      setNotice(await api<WelcomeResult>('POST', `/users/${u.id}/welcome`, {}))
+    } catch (e) {
+      setError(e)
+    }
+  }
   const extName = (id: number | null) => exts.data?.find((e) => e.id === id)
   const provName = (id: number) => sso.data?.providers.find((p) => p.id === id)?.name
   async function act(fn: () => Promise<unknown>) {
@@ -41,6 +53,7 @@ export function Users() {
         </Button>
       </PageHeader>
       <ErrorMessage error={list.error || error} />
+      {notice && <WelcomeNotice result={notice} />}
       <Card>
         <Table head={[t('users.user'), t('users.role'), t('users.extension'), t('users.signIn'), t('users.lastLogin'), '']}
           empty={list.data?.length === 0 && <Empty icon={<UserCog className="size-7" />} title={t('users.emptyTitle')} />}>
@@ -66,6 +79,9 @@ export function Users() {
                     <IconButton label={t('users.resetMfa')} onClick={() => window.confirm(t('users.resetMfaConfirm', { name: u.displayName })) && act(() => api('POST', `/users/${u.id}/mfa-reset`))}>
                       <KeyRound className="size-4" aria-hidden />
                     </IconButton>
+                  )}
+                  {u.email && u.enabled && u.id !== me?.id && (
+                    <IconButton label={t('welcome.resend')} onClick={() => sendWelcome(u)}><Mail className="size-4" aria-hidden /></IconButton>
                   )}
                   <IconButton label={t('common.edit')} onClick={() => setEdit(toForm(u))}><Pencil className="size-4" aria-hidden /></IconButton>
                   <IconButton label={t('common.delete')} danger disabled={u.id === me?.id}

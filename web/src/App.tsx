@@ -17,6 +17,8 @@ import { Integrations } from './pages/Integrations'
 import { Internet } from './pages/Internet'
 import { Phonebook } from './pages/Phonebook'
 import { Wallboard } from './pages/Wallboard'
+import { WallboardSettings } from './pages/WallboardSettings'
+import { WallScreen } from './pages/WallScreen'
 import { Features } from './pages/Features'
 import { Firewall } from './pages/Firewall'
 import { History } from './pages/History'
@@ -94,6 +96,8 @@ export function App() {
 
   // The link of the welcome e-mail works whether or not someone is signed in on this browser.
   if (pathname === '/set-password') return <SetPassword />
+  // A tv link shows the wallboard without signing in; the key in the link is the secret.
+  if (pathname.startsWith('/wall/')) return <WallScreen wallKey={pathname.slice(6)} />
   // The Windows softphone shows the compact /desktop pages, also after an SSO sign-in that ends on /.
   if (pathname === '/desktop' || pathname.startsWith('/desktop/') || inShell()) return <DesktopApp />
 
@@ -129,6 +133,7 @@ export function App() {
       <Route element={<Layout />}>
         <Route index element={home} />
         <Route path="account" element={<Account />} />
+        {roleRank(role) >= roleRank('admin') && <Route path="wallboard/settings" element={<WallboardSettings />} />}
         {items.map((i) => <Route key={i.key} path={i.path.slice(1)} element={pages[i.key]} />)}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

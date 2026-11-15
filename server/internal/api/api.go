@@ -82,6 +82,8 @@ type Server struct {
 	pairs desktopPairs
 	// journeys records what happens to every call, for the call history.
 	journeys journeyState
+	// wall is the wallboard: agent timers, cached figures and active SLA alerts.
+	wall wallState
 }
 
 // New wires up a server.
@@ -191,6 +193,7 @@ func (s *Server) Routes() http.Handler {
 	s.desktopRoutes(mux, full)
 	s.callbackRoutes(mux, recep)
 	s.aiRoutes(mux, admin, recep, full)
+	s.wallboardRoutes(mux, admin, recep)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)

@@ -106,6 +106,7 @@ plugins:
             Feature codes: Sneltoetscodes
             Reception and users: Receptie en gebruikers
             Switchboard and wallboard: Schakelbord en wallboard
+            Wallboard and SLA alerts: Wallboard en SLA-meldingen
             Phone book: Telefoonboek
             User portal: Gebruikersportaal
             Windows softphone: Windows-softphone
@@ -155,6 +156,7 @@ nav:
       - Feature codes: feature-codes.md
   - Reception and users:
       - Switchboard and wallboard: switchboard.md
+      - Wallboard and SLA alerts: wallboard.md
       - Phone book: phonebook.md
       - User portal: portal.md
       - Windows softphone: softphone.md

@@ -68,6 +68,13 @@ export function Reception() {
 
 export type SpyMode = 'listen' | 'whisper' | 'barge'
 
+/** An SLA value as shown in an alert: wait times as m:ss, percentages with %. */
+export function slaValue(kind: string, v: number) {
+  if (kind === 'wait') return formatDuration(Math.round(v))
+  if (kind === 'level' || kind === 'abandoned') return `${Math.round(v)}%`
+  return String(Math.round(v))
+}
+
 /**
  * Live queues with their callers and agents. onAgent is set when the viewer may steer agents,
  * onSpy when they may listen, whisper or barge in (queues with supervision on; self is skipped).
@@ -84,7 +91,13 @@ export function QueueBoard({ queues, onAgent, myExtensionId, onSpy, self }: {
         const live = q.live
         const agents = new Map((live?.agents ?? []).map((a) => [a.number, a]))
         return (
-          <Card key={q.id}>
+          <Card key={q.id} className={q.alerts?.length ? 'shadow-[inset_0_0_0_1px_rgb(248_113_113_/_0.55)]' : ''}>
+            {q.alerts?.map((a) => (
+              <div key={a.kind} role="alert" className="mb-3 flex items-center gap-2 rounded-lg border border-danger/45 bg-danger/10 px-3 py-2 text-sm text-danger-ink">
+                <span className="size-2 shrink-0 animate-pulse rounded-full bg-danger" aria-hidden />
+                <b>SLA</b> {t(`wallboard.alert.${a.kind}`, { value: slaValue(a.kind, a.value), limit: slaValue(a.kind, a.limit) })}
+              </div>
+            ))}
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-display text-lg font-semibold">{q.name}</h2>

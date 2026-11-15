@@ -111,6 +111,43 @@ for (const [ago, caller, name, pages, status, err] of [
     VALUES (?, ?, ?, ?, '0507001250', ?, ?, ?, ?, '', ?, ?)`).run(box?.id ?? null, iso(ago), caller, name, name, pages, status, err, pages * 48211, status === 'success' ? 1 : 0)
 }
 
+// Queue statistics of today for the wallboard: calls from the morning until now, busier around 10:00 and 14:00.
+{
+  const now = new Date(), start = new Date(now)
+  start.setHours(8, 0, 0, 0)
+  if (now - start < 3 * 3600000) start.setTime(Math.max(now.getTime() - 8 * 3600000, new Date(now).setHours(0, 5, 0, 0)))
+  let seed = 7
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
+  const agents = { 1: [['201', 'Sanne Bakker'], ['202', 'Thomas Jansen'], ['204', 'Emma de Boer'], ['209', 'Milan Vos'], ['205', 'Noor Hendriks']], 2: [['203', 'Daan Visser'], ['207', 'Lotte Smit']] }
+  const ins = db.prepare(`INSERT INTO queue_calls(queue_id, uniqueid, caller, joined_at, result, hold, talk, agent, agent_name, ended_at) VALUES (?,?,?,?,?,?,?,?,?,?)`)
+  let n = 0
+  for (let t = start.getTime(); t < now.getTime() - 120000; t += 60000) {
+    const h = new Date(t).getHours() + new Date(t).getMinutes() / 60
+    const busy = 0.25 + 0.5 * Math.exp(-((h - 10) ** 2) / 2) + 0.35 * Math.exp(-((h - 14) ** 2) / 3)
+    for (const q of [1, 2]) {
+      if (rnd() > busy * (q === 1 ? 1 : 0.45)) continue
+      const r = rnd()
+      const result = r < 0.03 ? 'abandoned' : r < 0.045 ? 'left' : 'answered'
+      const hold = result === 'answered' ? Math.round(4 + rnd() ** 8 * (q === 1 ? 80 : 45)) : Math.round(20 + rnd() * 120)
+      const [ag, name] = result === 'answered' ? agents[q][Math.floor(rnd() * agents[q].length)] : ['', '']
+      const at = new Date(t + rnd() * 50000)
+      ins.run(q, `demo.${n++}`, '06' + String(10000000 + Math.floor(rnd() * 89999999)), at.toISOString().replace(/\.\d+Z$/, 'Z'), result, hold,
+        result === 'answered' ? Math.round(60 + rnd() * 400) : 0, ag, name, new Date(at.getTime() + 300000).toISOString().replace(/\.\d+Z$/, 'Z'))
+    }
+  }
+}
+
+// Wallboard tv links and who gets SLA alerts.
+db.prepare(`INSERT INTO wallboard_screens(name, key, queues, layouts, rotate, theme, hide_names, last_seen) VALUES (?,?,?,?,?,?,?,?)`)
+  .run('Support room', 'k7Q2m-X9vLr-3e8sW-dPz4a', '[]', '["overview","queue","agents"]', 30, 'dark', 0, iso(60000))
+db.prepare(`INSERT INTO wallboard_screens(name, key, queues, layouts, rotate, theme, hide_names, last_seen) VALUES (?,?,?,?,?,?,?,?)`)
+  .run('Reception lobby', 'Lb8vR-2qPxN-7mWc4-ZtK9e', '[1]', '["queue"]', 0, 'light', 1, iso(3 * 60000))
+{
+  const tc = db.prepare('SELECT id FROM time_conditions ORDER BY id LIMIT 1').get()
+  db.prepare(`INSERT INTO settings(key, value) VALUES ('wallboard_alerts', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`)
+    .run(JSON.stringify({ screens: true, email: true, recipients: ['teamlead@example.com', 'support@example.com'], quiet: 15, timeCondition: tc?.id ?? 0, recovered: true }))
+}
+
 // A backup history through the (fake) helper.
 const c = new Client(base)
 await loginAdmin(c, fs.readFileSync(path.join(dataDir, '..', 'mfa-secret'), 'utf8').trim())

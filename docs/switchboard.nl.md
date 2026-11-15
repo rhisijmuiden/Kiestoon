@@ -43,10 +43,6 @@ Zie [terugbellen vanuit de wachtrij](queues.md#terugbellen-vanuit-de-wachtrij).
 
 ![Het wallboard van de wachtrijen](shot:wallboard)
 
-Het wallboard toont de wachtrijen in één oogopslag voor het hele team: nu wachtend, vandaag beantwoord en
-opgehangen, de langste wachttijd, het serviceniveau, en elke medewerker (vrij, in gesprek, gepauzeerd). Klik
-**Volledig scherm** voor een tv aan de muur. Het ververst zichzelf elke paar seconden.
-
-!!! tip "Een vast wallboardscherm"
-    Maak een gebruiker met de rol *Receptie* voor het scherm, log één keer in op de browser van de tv en open het
-    wallboard op volledig scherm.
+Het wallboard toont de wachtrijen in één oogopslag voor het hele team: wie er wacht, de cijfers en het
+servicelevel van vandaag, en elke medewerker. Klik **Volledig scherm** voor een scherm aan de muur. Voor een tv maak
+je liever een tv-link: die heeft geen inlog nodig. Zie [Wallboard en SLA-meldingen](wallboard.md).

@@ -285,10 +285,12 @@ the testing channel.
 - [x] Queue callback (`v0.7.0-rc.1`): the caller presses 1, confirms or types a number, hangs up and keeps their
   place; when an agent is free the agent is connected first and then the caller is called back, with retries, an
   expiry time, own caller ID and a callback list on the switchboard (cancel, retry, add by hand)
-- [ ] Live wallboard v2 for a TV: per queue waiting, longest wait, service level, agents (free, busy, paused),
-  rotating layouts, kiosk link without login (token), dark and light
-- [ ] SLA alerts: thresholds per queue (waiting callers, longest wait, service level, abandoned) shown on the
-  wallboard and sent by e-mail (and later push), with a quiet period
+- [x] Live wallboard v2 for a TV (`v0.7.0-rc.4`): per queue waiting (with callbacks), longest wait, service level
+  ring, today's figures and calls per hour, agents with state timers, three rotating layouts, TV links without
+  login (secret key, new key, revoke, hide caller names), dark and light; supervision buttons in the portal
+- [x] SLA alerts (`v0.7.0-rc.4`): thresholds per queue (target time, service level norm, waiting callers, longest
+  wait, abandoned share) shown on the wallboard and switchboard and sent by e-mail with a quiet period, only during
+  opening hours and a mail when recovered (push follows with the mobile app)
 - [ ] Scheduled reports by e-mail: daily, weekly or monthly per queue and agent (answered, abandoned, waiting time,
   service level, talk time), as HTML mail with CSV
 - [x] AI (`v0.7.0-rc.2`): transcription of recorded calls (whisper.cpp, local), summaries, topic, mood and

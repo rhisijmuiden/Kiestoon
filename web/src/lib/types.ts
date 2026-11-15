@@ -350,3 +350,13 @@ export type StandbyView = {
 
 /** What happened to a welcome e-mail. The link is only there when the mail could not be sent. */
 export type WelcomeResult = { sent: boolean; created: boolean; username: string; email: string; error?: string; link?: string }
+
+// ---- linking phones to extensions -------------------------------------------
+
+/** A phone that asked for its configuration but is not known yet. */
+export type DiscoveredPhone = {
+  mac: string; vendor: PhoneModel['vendor'] | ''; model: string; ip: string; userAgent: string; file: string
+  hits: number; firstSeen: string; lastSeen: string
+}
+export type ResyncState = 'sent' | 'not_registered' | 'failed' | 'skipped'
+export type ResyncResult = { resync: ResyncState; message?: string }

@@ -227,6 +227,13 @@ Notes on phase 5:
   public domain), the username and extension, the SIP details for a mobile app and voicemail info, plus a note when
   SSO is enabled. Admins can send it again from Extensions or Users & roles. Without a mail server the admin gets
   the link to hand over.
+- [x] Link provisioned phones to extensions (`v0.6.0-rc.8`): a phone that fetches its configuration with the
+  provisioning password but whose MAC address is not known yet shows up under "Waiting for an extension", with its
+  vendor and model recognised from the file name and User-Agent. Pick an extension and link it; phones without an
+  extension show up there too. Any phone can be moved to another extension or unlinked, from Phones or from the
+  phone button on Extensions. After a change Kiestoon sends the vendor's SIP NOTIFY (check-sync, resync for Cisco)
+  through the account the phone is registered with, so it fetches the new configuration right away; a phone that is
+  not registered yet picks it up at its next provisioning check or after a reboot.
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Eye, Pencil, Plus, Smartphone, Trash2 } from 'lucide-react'
+import { Eye, Link2, Pencil, Plus, Smartphone, Trash2 } from 'lucide-react'
 import { Badge, CopyField, Empty, Modal, Select, SectionTitle, Table, Tabs, Toggle, formatDate, td, useApi } from '../components/kit'
+import { AssignForm, LinkNoticeAlert, ResyncButton, WaitingPhones, formatMac, type LinkNotice } from '../components/PhoneLink'
 import { FirmwarePanel, ZtpBadge, ZtpPanel, vendorName } from './PhoneExtras'
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
-import type { Extension, Phone, PhoneKey, PhoneModel, ProvSettings } from '../lib/types'
+import type { DiscoveredPhone, Extension, Phone, PhoneKey, PhoneModel, ProvSettings } from '../lib/types'
 
 const vendors = ['yealink', 'snom', 'grandstream', 'fanvil', 'gigaset', 'poly', 'htek', 'akuvox', 'cisco'] as const
 const untested = new Set<string>(['grandstream', 'fanvil', 'gigaset', 'poly', 'htek', 'akuvox', 'cisco'])
@@ -15,6 +16,10 @@ export function Phones() {
   const list = useApi<Phone[]>('/phones')
   const models = useApi<PhoneModel[]>('/provisioning/models')
   const exts = useApi<Extension[]>('/pbx/extensions')
+  const discovered = useApi<DiscoveredPhone[]>('/phones/discovered', 15000)
+  const [assign, setAssign] = useState<Phone | null>(null)
+  const [notice, setNotice] = useState<LinkNotice | null>(null)
+  const changed = (n?: LinkNotice) => { if (n) setNotice(n); list.reload(); discovered.reload() }
   const [edit, setEdit] = useState<Phone | null>(null)
   const [preview, setPreview] = useState<{ phone: Phone; body: string } | null>(null)
   const [tab, setTab] = useState<'phones' | 'firmware' | 'ztp'>('phones')
@@ -44,6 +49,11 @@ export function Phones() {
       {tab === 'firmware' && models.data && <FirmwarePanel models={models.data} />}
       {tab === 'ztp' && <ZtpPanel />}
       {tab === 'phones' && <>
+      {notice && <LinkNoticeAlert notice={notice} onClose={() => setNotice(null)} />}
+      {models.data && exts.data && (
+        <WaitingPhones discovered={discovered.data ?? []} unassigned={(list.data ?? []).filter((p) => p.extensionId === null && !p.lines?.length)}
+          models={models.data} exts={exts.data} onChanged={changed} />
+      )}
       <ProvisioningCard />
       <Card>
         <ErrorMessage error={list.error} />
@@ -52,7 +62,7 @@ export function Phones() {
           {list.data?.map((p) => (
             <tr key={p.id}>
               <td className={`${td} text-ink`}>{p.label || '–'}</td>
-              <td className={`${td} font-mono text-xs`}>{p.mac.match(/.{2}/g)?.join(':').toUpperCase()}</td>
+              <td className={`${td} font-mono text-xs`}>{formatMac(p.mac)}</td>
               <td className={td}>
                 {models.data?.find((m) => m.vendor === p.vendor && m.id === p.model)?.name ?? p.model}
                 {p.lines?.length > 0 && <span className="ml-1.5 text-xs text-subtle">{t('phones.handsetCount', { count: p.lines.length + 1 })}</span>}
@@ -61,6 +71,8 @@ export function Phones() {
               <td className={td}>{p.lastSeenAt ? <><Badge tone="ok" dot>{formatDate(p.lastSeenAt, i18n.language)}</Badge> <span className="font-mono text-xs text-subtle">{p.lastIp}</span></> : <Badge>{t('phones.never')}</Badge>}</td>
               <td className={td}>{p.vendor === 'yealink' && rps ? <ZtpBadge phoneId={p.id} state={p.ztpState} error={p.ztpError} onDone={list.reload} /> : <span className="text-xs text-subtle">–</span>}</td>
               <td className={`${td} whitespace-nowrap text-right`}>
+                <button type="button" onClick={() => setAssign(p)} aria-label={t('phoneLink.assignTitle')} title={t('phoneLink.assignTitle')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent"><Link2 className="size-4" /></button>
+                <ResyncButton phone={p} onDone={setNotice} />
                 <button type="button" onClick={() => showPreview(p)} aria-label={t('phones.preview')} title={t('phones.preview')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent"><Eye className="size-4" /></button>
                 <button type="button" onClick={() => setEdit(p)} aria-label={t('common.edit')} title={t('common.edit')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-ink"><Pencil className="size-4" /></button>
                 <button type="button" onClick={() => remove(p)} aria-label={t('common.delete')} title={t('common.delete')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-danger/10 hover:text-danger"><Trash2 className="size-4" /></button>
@@ -70,7 +82,8 @@ export function Phones() {
         </Table>
       </Card>
       </>}
-      {edit && models.data && <PhoneForm value={edit} models={models.data} exts={exts.data ?? []} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); list.reload() }} />}
+      {assign && <AssignForm phone={assign} exts={exts.data ?? []} onClose={() => setAssign(null)} onDone={(n) => { setAssign(null); changed(n) }} />}
+      {edit && models.data && <PhoneForm value={edit} models={models.data} exts={exts.data ?? []} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); changed() }} />}
       {preview && (
         <Modal wide title={t('phones.preview')} subtitle={preview.phone.mac} onClose={() => setPreview(null)}>
           <pre className="max-h-[60vh] overflow-auto rounded-xl border border-line bg-field p-4 font-mono text-xs text-ink-2">{preview.body}</pre>

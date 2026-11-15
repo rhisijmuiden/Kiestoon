@@ -125,3 +125,30 @@ func TestPhase4Vendors(t *testing.T) {
 		t.Error("akuvox <mac>.cfg")
 	}
 }
+
+func TestGuessModel(t *testing.T) {
+	cases := []struct {
+		file, mac, ua, vendor, model string
+	}{
+		{"001565abcdef.cfg", "001565abcdef", "Yealink SIP-T54W 96.86.0.70 00:15:65:ab:cd:ef", "yealink", "T54W"},
+		{"001565abcdef.cfg", "001565abcdef", "", "", ""},
+		{"snom/000413abcdef.xml", "000413abcdef", "Mozilla/4.0 (compatible; snomD785-SIP 10.1.73.16)", "snom", "D785"},
+		{"cfg000b82abcdef.xml", "000b82abcdef", "Grandstream Model HW GRP2614 SW 1.0.5.33 DevId 000b82abcdef", "grandstream", "GRP2614"},
+		{"cfg000b82abcdef.xml", "000b82abcdef", "", "", ""},
+		{"cfg001fc1abcdef.xml", "001fc1abcdef", "Htek UC926U 2.42.6.5.1", "htek", "UC926U"},
+		{"0004f2abcdef.cfg", "0004f2abcdef", "FileTransport PolycomVVX-VVX_450-UA/6.4.3.5018", "poly", "VVX450"},
+		{"cisco/00562babcdef.xml", "00562babcdef", "Cisco-CP-8851-3PCC/11.3.7", "cisco", "8851"},
+		{"7c2f80abcdef.xml", "7c2f80abcdef", "Gigaset N870E IP PRO/83.V2.40.0", "gigaset", "N870E"},
+		{"0c383eabcdef.cfg", "0c383eabcdef", "Fanvil X7 2.4.11", "fanvil", "X7"},
+	}
+	for _, c := range cases {
+		req, ok := Parse(c.file)
+		if !ok {
+			t.Fatalf("parse %s", c.file)
+		}
+		v, m := GuessModel(req, c.mac, c.ua)
+		if v != c.vendor || m != c.model {
+			t.Errorf("%q: got %s/%s, want %s/%s", c.ua, v, m, c.vendor, c.model)
+		}
+	}
+}

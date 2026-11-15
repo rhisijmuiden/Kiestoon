@@ -62,6 +62,7 @@ func (s *Server) systemRoutes(mux *http.ServeMux, admin func(http.HandlerFunc) h
 	mux.Handle("PUT /api/phones/{id}", admin(s.savePhone))
 	mux.Handle("DELETE /api/phones/{id}", admin(s.deletePhone))
 	mux.Handle("GET /api/phones/{id}/preview", admin(s.previewPhone))
+	s.phoneAssignRoutes(mux, admin)
 
 	mux.Handle("GET /api/system/helper", admin(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]bool{"available": s.Helper.Available(r.Context())})
@@ -850,6 +851,7 @@ func (s *Server) savePhone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.audit(r, "phone.saved", p.MAC)
+	_ = s.PBX.ForgetDiscovery(r.Context(), p.MAC)
 	s.ztpAfterSave(r, &p, old)
 	writeJSON(w, http.StatusOK, p)
 }
@@ -1002,6 +1004,9 @@ func (s *Server) ProvisioningHandler() http.Handler {
 		phone, err := s.PBX.PhoneByMAC(r.Context(), req.MAC)
 		if errors.Is(err, pbx.ErrNotFound) || (err == nil && !req.Matches(phone.Vendor)) {
 			s.Log.Info("provisioning request for unknown phone", "mac", req.MAC, "ip", ip)
+			if errors.Is(err, pbx.ErrNotFound) {
+				s.recordDiscovery(r.Context(), req, name, ip, r.UserAgent())
+			}
 			http.NotFound(w, r)
 			return
 		}

@@ -45,7 +45,7 @@ jobs:
 
       - name: Debian package
         run: |
-          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          GOTOOLCHAIN=auto go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
           make deb VERSION="v0.0.0-ci.${GITHUB_RUN_NUMBER}"
           dpkg-deb -I dist/*.deb
           dpkg-deb -c dist/*.deb

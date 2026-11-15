@@ -31,7 +31,7 @@ jobs:
         env:
           VERSION: ${{ github.ref_name }}
         run: |
-          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          GOTOOLCHAIN=auto go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
           make web
           (cd server && go test ./...)
           make deb VERSION="$VERSION" GOARCH=amd64

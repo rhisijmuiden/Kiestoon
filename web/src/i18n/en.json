@@ -135,7 +135,11 @@
     "not_answered": "Answer the call first, then transfer it.",
     "transfer_in_progress": "A transfer for this call is already in progress.",
     "no_transfer": "There is no transfer in progress for this call.",
-    "self_transfer": "You cannot transfer a call to yourself."
+    "self_transfer": "You cannot transfer a call to yourself.",
+    "link_invalid": "This link is invalid or has expired.",
+    "password_mismatch": "The passwords do not match.",
+    "no_email": "This extension has no e-mail address.",
+    "user_disabled": "This account is disabled."
   },
   "setup": {
     "title": "Welcome to Kiestoon",
@@ -2329,5 +2333,31 @@
       "ringing": "Ringing",
       "talking": "In a call"
     }
+  },
+  "welcome": {
+    "toggle": "Create a portal account and send a welcome e-mail",
+    "toggleHint": "The employee gets a link to set a password, the portal addresses and the details for a softphone app. No password is sent by e-mail.",
+    "needsEmail": "Fill in an e-mail address to send a welcome e-mail.",
+    "language": "Language of the e-mail and the account",
+    "resend": "Send welcome e-mail",
+    "confirm": "Send a welcome e-mail with a new set-password link to {{email}}? An earlier link stops working.",
+    "sent": "Welcome e-mail sent to {{email}} (account {{username}}).",
+    "sentCreated": "Portal account {{username}} created and welcome e-mail sent to {{email}}.",
+    "mail_disabled": "Account {{username}} is ready, but no mail server is configured, so no e-mail was sent. Give the employee the link below or set up the mail server under Mail.",
+    "mail_failed": "Account {{username}} is ready, but the e-mail to {{email}} could not be sent. Check the mail log, or give the employee the link below.",
+    "link": "Set-password link (valid for 72 hours)"
+  },
+  "setPassword": {
+    "title": "Welcome, {{name}}",
+    "subtitle": "Choose a password for your Kiestoon account.",
+    "password": "New password",
+    "repeat": "Repeat password",
+    "hint": "At least 12 characters.",
+    "submit": "Set password",
+    "doneTitle": "Password set",
+    "doneText": "You can now sign in as {{username}}.",
+    "invalidTitle": "Link not valid",
+    "invalidText": "This link has already been used or has expired. Ask your administrator to send a new welcome e-mail.",
+    "toLogin": "Go to sign in"
   }
 }

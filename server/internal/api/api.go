@@ -162,6 +162,7 @@ func (s *Server) Routes() http.Handler {
 	s.systemRoutes(mux, admin)
 	s.businessRoutes(mux, admin, recep)
 	s.userRoutes(mux, admin)
+	s.welcomeRoutes(mux, admin)
 	s.portalRoutes(mux, full)
 	s.transferRoutes(mux, full, recep)
 	s.internetRoutes(mux, admin)

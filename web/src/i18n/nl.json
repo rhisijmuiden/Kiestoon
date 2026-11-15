@@ -135,7 +135,11 @@
     "not_answered": "Neem het gesprek eerst aan en verbind het daarna door.",
     "transfer_in_progress": "Dit gesprek wordt al doorverbonden.",
     "no_transfer": "Voor dit gesprek loopt geen doorverbinding.",
-    "self_transfer": "Je kunt een gesprek niet naar jezelf doorverbinden."
+    "self_transfer": "Je kunt een gesprek niet naar jezelf doorverbinden.",
+    "link_invalid": "Deze link is ongeldig of verlopen.",
+    "password_mismatch": "De wachtwoorden komen niet overeen.",
+    "no_email": "Deze extensie heeft geen e-mailadres.",
+    "user_disabled": "Dit account is uitgeschakeld."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -2329,5 +2333,31 @@
       "ringing": "Gaat over",
       "talking": "In gesprek"
     }
+  },
+  "welcome": {
+    "toggle": "Portalaccount aanmaken en welkomstmail versturen",
+    "toggleHint": "De medewerker krijgt een link om een wachtwoord in te stellen, de adressen van de portal en de gegevens voor een softphone-app. Er gaat geen wachtwoord per e-mail.",
+    "needsEmail": "Vul een e-mailadres in om een welkomstmail te versturen.",
+    "language": "Taal van de e-mail en het account",
+    "resend": "Welkomstmail versturen",
+    "confirm": "Een welkomstmail met een nieuwe link om het wachtwoord in te stellen naar {{email}} sturen? Een eerdere link werkt dan niet meer.",
+    "sent": "Welkomstmail verstuurd naar {{email}} (account {{username}}).",
+    "sentCreated": "Portalaccount {{username}} aangemaakt en welkomstmail verstuurd naar {{email}}.",
+    "mail_disabled": "Account {{username}} staat klaar, maar er is geen mailserver ingesteld, dus er is geen e-mail verstuurd. Geef de medewerker de link hieronder of stel de mailserver in onder Mail.",
+    "mail_failed": "Account {{username}} staat klaar, maar de e-mail naar {{email}} kon niet worden verstuurd. Bekijk het maillog of geef de medewerker de link hieronder.",
+    "link": "Link om wachtwoord in te stellen (72 uur geldig)"
+  },
+  "setPassword": {
+    "title": "Welkom, {{name}}",
+    "subtitle": "Kies een wachtwoord voor je Kiestoon-account.",
+    "password": "Nieuw wachtwoord",
+    "repeat": "Herhaal wachtwoord",
+    "hint": "Minimaal 12 tekens.",
+    "submit": "Wachtwoord instellen",
+    "doneTitle": "Wachtwoord ingesteld",
+    "doneText": "Je kunt nu inloggen als {{username}}.",
+    "invalidTitle": "Link niet geldig",
+    "invalidText": "Deze link is al gebruikt of verlopen. Vraag je beheerder om een nieuwe welkomstmail.",
+    "toLogin": "Naar inloggen"
   }
 }

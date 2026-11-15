@@ -38,6 +38,7 @@ import { Recordings } from './pages/Recordings'
 import { RingGroups } from './pages/RingGroups'
 import { Settings } from './pages/Settings'
 import { Setup } from './pages/Setup'
+import { SetPassword } from './pages/SetPassword'
 import { Sso } from './pages/Sso'
 import { TimeConditions } from './pages/TimeConditions'
 import { Trunks } from './pages/Trunks'
@@ -69,6 +70,9 @@ function NoExtension() {
 export function App() {
   const { t } = useTranslation()
   const { state } = useSession()
+
+  // The link of the welcome e-mail works whether or not someone is signed in on this browser.
+  if (window.location.pathname === '/set-password') return <SetPassword />
 
   switch (state.kind) {
     case 'loading':

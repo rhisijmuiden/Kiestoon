@@ -35,6 +35,9 @@ import (
 	"github.com/rhisijmuiden/kiestoon/server/internal/store"
 )
 
+// ErrDisabled is returned when no mail server is configured.
+var ErrDisabled = errors.New("mail server is not configured")
+
 // SettingsKey is the settings row with the SMTP configuration.
 const SettingsKey = "mail"
 
@@ -397,6 +400,36 @@ func Compose(s Settings, to, subject, body string, atts ...Attachment) []byte {
 	return buf.Bytes()
 }
 
+// ComposeHTML builds a multipart/alternative message with a plain text and an HTML version.
+func ComposeHTML(s Settings, to, subject, text, html string) []byte {
+	var buf bytes.Buffer
+	from := mail.Address{Name: s.FromName, Address: s.FromAddress}
+	domain := "kiestoon.local"
+	if i := strings.LastIndex(s.FromAddress, "@"); i >= 0 {
+		domain = s.FromAddress[i+1:]
+	}
+	var parts bytes.Buffer
+	mw := multipart.NewWriter(&parts)
+	h := textproto.MIMEHeader{}
+	h.Set("From", from.String())
+	h.Set("To", to)
+	h.Set("Subject", mime.QEncoding.Encode("utf-8", subject))
+	h.Set("Date", time.Now().Format(time.RFC1123Z))
+	h.Set("Message-ID", messageID(domain))
+	h.Set("MIME-Version", "1.0")
+	h.Set("Auto-Submitted", "auto-generated")
+	h.Set("X-Mailer", "Kiestoon")
+	h.Set("Content-Type", "multipart/alternative; boundary="+mw.Boundary())
+	writeHeader(&buf, h)
+	for _, p := range []struct{ ct, body string }{{"text/plain; charset=utf-8", text}, {"text/html; charset=utf-8", html}} {
+		w, _ := mw.CreatePart(textproto.MIMEHeader{"Content-Type": {p.ct}, "Content-Transfer-Encoding": {"base64"}})
+		_, _ = w.Write([]byte(strings.ReplaceAll(base64Wrap([]byte(p.body)), "\n", "\r\n")))
+	}
+	mw.Close()
+	buf.Write(parts.Bytes())
+	return buf.Bytes()
+}
+
 func writeHeader(buf *bytes.Buffer, h textproto.MIMEHeader) {
 	keys := make([]string, 0, len(h))
 	for k := range h {
@@ -477,6 +510,20 @@ func (m *Service) SendText(ctx context.Context, kind, to, subject, body string, 
 		return err
 	}
 	err = Send(ctx, s, s.FromAddress, []string{to}, Compose(s, to, subject, body, atts...))
+	m.log(ctx, to, subject, kind, err)
+	return err
+}
+
+// SendHTML composes and sends an e-mail with a text and an HTML version.
+func (m *Service) SendHTML(ctx context.Context, kind, to, subject, text, html string) error {
+	s, err := Load(ctx, m.DB)
+	if err != nil {
+		return err
+	}
+	if !s.Enabled {
+		return ErrDisabled
+	}
+	err = Send(ctx, s, s.FromAddress, []string{to}, ComposeHTML(s, to, subject, text, html))
 	m.log(ctx, to, subject, kind, err)
 	return err
 }

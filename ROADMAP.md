@@ -221,6 +221,12 @@ Notes on phase 5:
   the caller waits, then complete or go back to the caller). Works for desk phones and the browser softphone (AMI
   BlindTransfer/Atxfer). The switchboard drags any live caller onto a target (redirect). A Transfer button and pick
   mode make it work with keyboard and touch too.
+- [x] Welcome e-mail for new extensions (`v0.6.0-rc.7`): an extension created with an e-mail address gets a portal
+  account (role user) linked to it, and the employee gets a welcome e-mail in English or Dutch with a one-time link
+  to set a password (72 hours, no password in the mail), the portal addresses (http, https for the softphone, or the
+  public domain), the username and extension, the SIP details for a mobile app and voicemail info, plus a note when
+  SSO is enabled. Admins can send it again from Extensions or Users & roles. Without a mail server the admin gets
+  the link to hand over.
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

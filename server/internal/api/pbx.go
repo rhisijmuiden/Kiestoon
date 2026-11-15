@@ -248,6 +248,7 @@ func (s *Server) saveExtension(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	e.ID = pathID(r)
+	created := e.ID == 0
 	if e.ID != 0 {
 		old, err := s.PBX.Extension(r.Context(), e.ID)
 		if err != nil {
@@ -267,6 +268,16 @@ func (s *Server) saveExtension(w http.ResponseWriter, r *http.Request) {
 	}
 	s.audit(r, "extension.saved", e.Number)
 	s.Ast.Changed()
+	// A new extension with an e-mail address gets a portal account and a welcome e-mail when the
+	// administrator asks for it (the form does by default).
+	if created && e.Email != "" && r.URL.Query().Get("welcome") == "1" {
+		res := s.welcomeForExtension(r, &e, r.URL.Query().Get("lang"))
+		writeJSON(w, http.StatusOK, struct {
+			pbx.Extension
+			Welcome welcomeResult `json:"welcome"`
+		}{e, res})
+		return
+	}
 	writeJSON(w, http.StatusOK, e)
 }
 

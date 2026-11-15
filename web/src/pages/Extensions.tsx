@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { KeyRound, Pencil, Plus, Trash2, User } from 'lucide-react'
+import { KeyRound, Mail, Pencil, Plus, Trash2, User } from 'lucide-react'
 import { Badge, CopyField, Empty, Modal, Select, Table, Toggle, td, useApi } from '../components/kit'
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
+import { WelcomeNotice } from '../components/WelcomeNotice'
 import { api } from '../lib/api'
-import { blankFeatures, type Extension, type Live } from '../lib/types'
+import { blankFeatures, type Extension, type Live, type WelcomeResult } from '../lib/types'
 
 const blank: Extension = {
   id: 0, number: '', name: '', email: '', transport: 'udp', srtp: false, maxContacts: 3, outboundCallerId: '',
@@ -17,7 +18,9 @@ export function Extensions() {
   const list = useApi<Extension[]>('/pbx/extensions')
   const live = useApi<Live>('/live', 5000)
   const [edit, setEdit] = useState<Extension | null>(null)
-  const [details, setDetails] = useState<Extension | null>(null)
+  const [details, setDetails] = useState<(Extension & { welcome?: WelcomeResult }) | null>(null)
+  const [notice, setNotice] = useState<WelcomeResult | null>(null)
+  const [error, setError] = useState<unknown>(null)
 
   async function openNew() {
     const next = await api<{ number: string }>('GET', '/pbx/extensions/next').catch(() => ({ number: '' }))
@@ -34,6 +37,16 @@ export function Extensions() {
     await api('DELETE', `/pbx/extensions/${e.id}`)
     list.reload()
   }
+  async function resendWelcome(e: Extension) {
+    if (!window.confirm(t('welcome.confirm', { email: e.email }))) return
+    setError(null)
+    setNotice(null)
+    try {
+      setNotice(await api<WelcomeResult>('POST', `/pbx/extensions/${e.id}/welcome`, {}))
+    } catch (err) {
+      setError(err)
+    }
+  }
   const online = new Set((live.data?.contacts ?? []).filter((c) => c.status !== 'Unavailable').map((c) => c.endpoint))
 
   return (
@@ -43,7 +56,8 @@ export function Extensions() {
           <Plus className="size-4" aria-hidden /> {t('extensions.add')}
         </Button>
       </PageHeader>
-      <ErrorMessage error={list.error} />
+      <ErrorMessage error={list.error || error} />
+      {notice && <WelcomeNotice result={notice} />}
       <Card>
         <Table
           head={[t('extensions.number'), t('extensions.name'), t('extensions.status'), t('extensions.voicemail'), t('extensions.security'), '']}
@@ -68,6 +82,11 @@ export function Extensions() {
                 <button type="button" onClick={() => openDetails(e.id)} title={t('extensions.sipDetails')} aria-label={t('extensions.sipDetails')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent">
                   <KeyRound className="size-4" aria-hidden />
                 </button>
+                {e.email && (
+                  <button type="button" onClick={() => resendWelcome(e)} title={t('welcome.resend')} aria-label={t('welcome.resend')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent">
+                    <Mail className="size-4" aria-hidden />
+                  </button>
+                )}
                 <button type="button" onClick={() => openEdit(e.id)} title={t('common.edit')} aria-label={t('common.edit')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-ink">
                   <Pencil className="size-4" aria-hidden />
                 </button>
@@ -85,9 +104,11 @@ export function Extensions() {
   )
 }
 
-function ExtensionForm({ value, onClose, onSaved }: { value: Extension; onClose: () => void; onSaved: (e: Extension) => void }) {
-  const { t } = useTranslation()
+function ExtensionForm({ value, onClose, onSaved }: { value: Extension; onClose: () => void; onSaved: (e: Extension & { welcome?: WelcomeResult }) => void }) {
+  const { t, i18n } = useTranslation()
   const [e, setE] = useState<Extension>(value)
+  const [welcome, setWelcome] = useState(true)
+  const [lang, setLang] = useState<'en' | 'nl'>(i18n.language === 'nl' ? 'nl' : 'en')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const set = <K extends keyof Extension>(k: K, v: Extension[K]) => setE((x) => ({ ...x, [k]: v }))
@@ -96,7 +117,8 @@ function ExtensionForm({ value, onClose, onSaved }: { value: Extension; onClose:
     setBusy(true)
     setError(null)
     try {
-      const saved = await api<Extension>(e.id ? 'PUT' : 'POST', e.id ? `/pbx/extensions/${e.id}` : '/pbx/extensions', e)
+      const path = e.id ? `/pbx/extensions/${e.id}` : welcome && e.email ? `/pbx/extensions?welcome=1&lang=${lang}` : '/pbx/extensions'
+      const saved = await api<Extension & { welcome?: WelcomeResult }>(e.id ? 'PUT' : 'POST', path, e)
       onSaved(saved)
     } catch (err) {
       setError(err)
@@ -117,6 +139,17 @@ function ExtensionForm({ value, onClose, onSaved }: { value: Extension; onClose:
         <Input label={t('extensions.name')} value={e.name} onChange={(x) => set('name', x.target.value)} autoFocus />
       </div>
       <Input label={t('extensions.email')} type="email" value={e.email} onChange={(x) => set('email', x.target.value)} hint={t('extensions.emailHint')} />
+      {!e.id && (
+        <div className="grid gap-3 rounded-xl border border-accent/30 bg-accent/5 p-4">
+          <Toggle label={t('welcome.toggle')} hint={e.email ? t('welcome.toggleHint') : t('welcome.needsEmail')} checked={welcome && !!e.email} disabled={!e.email} onChange={setWelcome} />
+          {welcome && !!e.email && (
+            <Select label={t('welcome.language')} value={lang} onChange={(x) => setLang(x.target.value as 'en' | 'nl')}>
+              <option value="en">English</option>
+              <option value="nl">Nederlands</option>
+            </Select>
+          )}
+        </div>
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
         <Select label={t('extensions.transport')} value={e.transport} onChange={(x) => { const v = x.target.value as Extension['transport']; setE((o) => ({ ...o, transport: v, srtp: v === 'tls' ? o.srtp : false })) }}>
           <option value="udp">UDP</option>
@@ -154,7 +187,7 @@ function ExtensionForm({ value, onClose, onSaved }: { value: Extension; onClose:
   )
 }
 
-function SipDetails({ ext, onClose, onChanged }: { ext: Extension; onClose: () => void; onChanged: (e: Extension) => void }) {
+function SipDetails({ ext, onClose, onChanged }: { ext: Extension & { welcome?: WelcomeResult }; onClose: () => void; onChanged: (e: Extension) => void }) {
   const { t } = useTranslation()
   const host = window.location.hostname
   const [busy, setBusy] = useState(false)
@@ -170,6 +203,7 @@ function SipDetails({ ext, onClose, onChanged }: { ext: Extension; onClose: () =
   return (
     <Modal title={t('extensions.sipDetails')} subtitle={`${ext.number} · ${ext.name}`} onClose={onClose}
       footer={<Button variant="danger" busy={busy} onClick={reset}>{t('extensions.resetSecret')}</Button>}>
+      {ext.welcome && <WelcomeNotice result={ext.welcome} />}
       <p className="text-sm text-muted">{t('extensions.sipDetailsText')}</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <CopyField label={t('extensions.server')} value={host} />

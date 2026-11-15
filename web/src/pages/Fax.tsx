@@ -7,19 +7,25 @@ import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api, isAdmin } from '../lib/api'
 import { useSession } from '../lib/session'
 import type { Fax as FaxRecord, FaxBox } from '../lib/types'
+import { FaxMailSettings, SendFax } from './FaxSend'
 
-const blank: FaxBox = { id: 0, name: '', emails: '', keepDays: 90, ecm: true, enabled: true }
+const blank: FaxBox = { id: 0, name: '', emails: '', keepDays: 90, ecm: true, enabled: true, number: '', sendEnabled: false, senders: '' }
 
 export function Fax() {
   const { t } = useTranslation()
   const { state } = useSession()
   const admin = state.kind === 'ready' && isAdmin(state.me.user)
-  const [tab, setTab] = useState<'received' | 'boxes'>('received')
+  const [tab, setTab] = useState<'received' | 'send' | 'boxes' | 'mail'>('received')
+  const tabs: { key: typeof tab; label: string }[] = [{ key: 'received', label: t('fax.received') }, { key: 'send', label: t('fax.send.tab') }]
+  if (admin) tabs.push({ key: 'boxes', label: t('fax.boxes') }, { key: 'mail', label: t('fax.mail.tab') })
   return (
     <>
       <PageHeader title={t('fax.title')} subtitle={t('fax.subtitle')} />
-      {admin && <Tabs value={tab} onChange={setTab} tabs={[{ key: 'received', label: t('fax.received') }, { key: 'boxes', label: t('fax.boxes') }]} />}
-      {tab === 'received' || !admin ? <Received admin={admin} /> : <Boxes />}
+      <Tabs value={tab} onChange={setTab} tabs={tabs} />
+      {tab === 'received' && <Received admin={admin} />}
+      {tab === 'send' && <SendFax admin={admin} />}
+      {tab === 'boxes' && admin && <Boxes />}
+      {tab === 'mail' && admin && <FaxMailSettings />}
     </>
   )
 }
@@ -85,14 +91,15 @@ function Boxes() {
           <Button onClick={() => setEdit(blank)}><Plus className="size-4" aria-hidden /> {t('fax.addBox')}</Button>
         </div>
         <ErrorMessage error={list.error} />
-        <Table head={[t('common.name'), t('fax.emails'), t('fax.keepDays'), '', '']}
+        <Table head={[t('common.name'), t('fax.number'), t('fax.emails'), t('fax.keepDays'), '', '']}
           empty={list.data?.length === 0 && <Empty icon={<Printer className="size-7" />} title={t('fax.noBoxesTitle')} text={t('fax.noBoxesText')} />}>
           {list.data?.map((b) => (
             <tr key={b.id} className={b.enabled ? '' : 'opacity-50'}>
               <td className={`${td} text-ink`}>{b.name}</td>
+              <td className={`${td} font-mono text-xs`}>{b.number || '–'}</td>
               <td className={`${td} text-xs`}>{b.emails}</td>
               <td className={`${td} font-mono`}>{b.keepDays ? t('fax.days', { count: b.keepDays }) : t('fax.forever')}</td>
-              <td className={td}>{b.ecm && <Badge tone="accent">ECM</Badge>}</td>
+              <td className={td}><span className="inline-flex gap-1.5">{b.ecm && <Badge tone="accent">ECM</Badge>}{b.sendEnabled && <Badge tone="ok">{t('fax.sendBadge')}</Badge>}</span></td>
               <td className={`${td} whitespace-nowrap text-right`}>
                 <IconButton label={t('common.edit')} onClick={() => setEdit(b)}><Pencil className="size-4" aria-hidden /></IconButton>
                 <IconButton label={t('common.delete')} danger onClick={() => remove(b)}><Trash2 className="size-4" aria-hidden /></IconButton>
@@ -121,6 +128,14 @@ function BoxForm({ value, onClose, onSaved }: { value: FaxBox; onClose: () => vo
       <Toggle label={t('fax.ecm')} hint={t('fax.ecmHint')} checked={b.ecm} onChange={(v) => set('ecm', v)} />
       <Toggle label={t('common.enabled')} checked={b.enabled} onChange={(v) => set('enabled', v)} />
       <p className="text-xs text-subtle">{t('fax.routeHint')}</p>
+      <h3 className="mt-2 text-sm font-semibold text-ink">{t('fax.sending')}</h3>
+      <Toggle label={t('fax.sendEnabled')} hint={t('fax.sendEnabledHint')} checked={b.sendEnabled} onChange={(v) => set('sendEnabled', v)} />
+      {b.sendEnabled && <>
+        <Input label={t('fax.number')} value={b.number} onChange={(e) => set('number', e.target.value)} placeholder="+31201234567" className="font-mono" hint={t('fax.numberHint')} />
+        <Input label={t('fax.senders')} value={b.senders} onChange={(e) => set('senders', e.target.value)} placeholder="jan@example.com, office@example.com" hint={t('fax.sendersHint')} />
+        <Input label={t('fax.sendPin')} type="password" value={b.sendPin ?? ''} onChange={(e) => set('sendPin', e.target.value.trim())} autoComplete="new-password"
+          placeholder={b.sendPinSet ? t('common.keepSecret') : ''} hint={t('fax.sendPinHint')} />
+      </>}
     </Modal>
   )
 }

@@ -1,5 +1,5 @@
 import {
-  Activity, Archive, AudioLines, BookUser, Globe, MonitorPlay, Plug, Printer, Clock, Disc3, GitBranch, Headset, History, KeyRound, LayoutGrid, ListOrdered, Mail, MonitorSmartphone,
+  Activity, Archive, AudioLines, AudioWaveform, BookUser, Globe, MonitorPlay, Plug, Printer, Clock, Disc3, GitBranch, Headset, History, KeyRound, LayoutGrid, ListOrdered, Mail, MonitorSmartphone,
   Phone, Presentation, ScrollText, Settings, Shield, ShieldAlert, Smartphone, User, UserCog, UsersRound, Voicemail, Waypoints,
   type LucideIcon,
 } from 'lucide-react'
@@ -56,6 +56,7 @@ export const nav: NavGroup[] = [
       { key: 'firewall', path: '/firewall', icon: Shield },
       { key: 'internet', path: '/internet', icon: Globe },
       { key: 'integrations', path: '/integrations', icon: Plug },
+      { key: 'speech', path: '/speech', icon: AudioWaveform },
       { key: 'backups', path: '/backups', icon: Archive },
       { key: 'mail', path: '/mail', icon: Mail },
       { key: 'audit', path: '/audit', icon: ScrollText },

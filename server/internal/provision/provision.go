@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/rhisijmuiden/kiestoon/server/internal/pbx"
@@ -130,7 +131,26 @@ var Models = []Model{
 	{"poly", "E220", "Poly Edge E220", 3, 0},
 	{"poly", "E350", "Poly Edge E350", 7, 0},
 	{"poly", "E450", "Poly Edge E450", 11, 0},
+	{"htek", "UC912G", "Htek UC912G", 0, 0},
+	{"htek", "UC921G", "Htek UC921G", 0, 0},
+	{"htek", "UC923U", "Htek UC923U", 0, 0},
+	{"htek", "UC924W", "Htek UC924W", 0, 0},
+	{"htek", "UC926U", "Htek UC926U", 0, 0},
+	{"akuvox", "E12W", "Akuvox E12W (door phone)", 0, 0},
+	{"akuvox", "R20A", "Akuvox R20A (door phone)", 0, 0},
+	{"akuvox", "R20K", "Akuvox R20K (door phone)", 0, 0},
+	{"akuvox", "R29C", "Akuvox R29C (door phone)", 0, 0},
+	{"akuvox", "X915", "Akuvox X915 (door phone)", 0, 0},
+	{"cisco", "8811", "Cisco IP Phone 8811 (MPP)", 4, 0},
+	{"cisco", "8841", "Cisco IP Phone 8841 (MPP)", 4, 0},
+	{"cisco", "8845", "Cisco IP Phone 8845 (MPP)", 4, 0},
+	{"cisco", "8851", "Cisco IP Phone 8851 (MPP)", 4, 0},
+	{"cisco", "8861", "Cisco IP Phone 8861 (MPP)", 4, 0},
+	{"cisco", "8865", "Cisco IP Phone 8865 (MPP)", 4, 0},
 }
+
+// FirmwareVendors are the vendors whose configuration can point the phone to a firmware file.
+var FirmwareVendors = []string{"yealink", "snom", "grandstream", "htek", "poly", "cisco"}
 
 // FindModel returns the model, or nil.
 func FindModel(vendor, id string) *Model {
@@ -154,6 +174,12 @@ type Input struct {
 	Lines []*pbx.Extension
 	// PhonebookURL is the address of the XML phone book for this vendor ("" when the phone book is off).
 	PhonebookURL string
+	// Firmware is the address of the firmware file for this model ("" when none is assigned);
+	// FirmwareDir the directory it is in (Grandstream and Htek ask for a directory).
+	Firmware    string
+	FirmwareDir string
+	// Base is the provisioning address with credentials (ends in /prov/).
+	Base string
 }
 
 func transportCode(t string) (yealink, gs int, snom string) {
@@ -229,6 +255,9 @@ func Yealink(in Input) string {
 		w("account.1.dtmf.type", 1)
 	} else {
 		w("account.1.enable", 0)
+	}
+	if in.Firmware != "" {
+		w("static.firmware.url", in.Firmware)
 	}
 	if in.PhonebookURL != "" {
 		w("features.remote_phonebook.enable", 1)
@@ -313,6 +342,10 @@ func Snom(in Input) string {
 	if in.PhonebookURL != "" {
 		w("dkey_directory", "url "+in.PhonebookURL)
 	}
+	if in.Firmware != "" && in.Base != "" {
+		w("update_policy", "auto_update")
+		w("firmware_status", in.Base+"snom/firmware-"+strings.ToLower(in.Phone.Model)+".xml")
+	}
 	b.WriteString("  </phone-settings>\n  <functionKeys e=\"2\">\n")
 	for i, k := range in.Phone.Keys {
 		val := ""
@@ -383,6 +416,7 @@ func Grandstream(in Input) string {
 		p(331, strings.TrimSuffix(path, "/phonebook.xml"))
 		p(332, 60)
 	}
+	firmwareP(&b, p, in)
 	// Multi-purpose keys 1-7: mode P323+i, account P301+3i, name P302+3i, value P303+3i.
 	for i, k := range in.Phone.Keys {
 		if i >= 7 {
@@ -415,18 +449,25 @@ type Request struct {
 	PolyConfig bool
 	// Phonebook is the XML phone book of a vendor (MAC empty).
 	Phonebook bool
+	// Firmware is the Snom firmware pointer of a model.
+	Firmware bool
+	// Shared lists the vendors that ask for the same file name.
+	Shared []string
 }
 
 var (
 	reMACcfg   = regexp.MustCompile(`^([0-9a-fA-F]{12})\.cfg$`)
 	reSnomMAC  = regexp.MustCompile(`^snom/([0-9a-fA-F]{12})\.xml$`)
+	reSnomFW   = regexp.MustCompile(`^snom/firmware-([a-z0-9]{2,10})\.xml$`)
 	reSnomIdx  = regexp.MustCompile(`^snom([A-Za-z0-9]{2,8})(-([0-9A-Fa-f]{12}))?\.htm$`)
 	reGrand    = regexp.MustCompile(`^cfg([0-9a-fA-F]{12})(\.xml)?$`)
 	reYealinkC = regexp.MustCompile(`^y0{12}\.cfg$`)
 	rePolyC    = regexp.MustCompile(`^0{12}\.cfg$`)
 	rePolyCfg  = regexp.MustCompile(`^kiestoon-([0-9a-fA-F]{12})\.cfg$`)
 	reGigaset  = regexp.MustCompile(`^(gigaset/)?([0-9a-fA-F]{12})\.xml$`)
-	rePhonebk  = regexp.MustCompile(`^phonebook/(yealink|snom|grandstream|fanvil|poly)(/phonebook)?\.xml$`)
+	rePhonebk  = regexp.MustCompile(`^phonebook/(yealink|snom|grandstream|fanvil|poly|cisco)(/phonebook)?\.xml$`)
+	reCisco    = regexp.MustCompile(`^cisco/([0-9a-fA-F]{12})\.xml$`)
+	reCiscoC   = regexp.MustCompile(`^(?i)(CP-?\d{4}[A-Z]?(-3PCC)?|spa\d{3,4})\.xml$`)
 )
 
 // Parse recognises the file names the vendors ask for.
@@ -441,6 +482,8 @@ func Parse(name string) (Request, bool) {
 		return Request{MAC: lower(reMACcfg, 1)}, true
 	case rePolyCfg.MatchString(name):
 		return Request{Vendor: "poly", MAC: lower(rePolyCfg, 1), PolyConfig: true}, true
+	case reSnomFW.MatchString(name):
+		return Request{Vendor: "snom", Model: reSnomFW.FindStringSubmatch(name)[1], Firmware: true}, true
 	case reSnomMAC.MatchString(name):
 		return Request{Vendor: "snom", MAC: lower(reSnomMAC, 1)}, true
 	case reSnomIdx.MatchString(name):
@@ -450,7 +493,12 @@ func Parse(name string) (Request, bool) {
 		}
 		return Request{Vendor: "snom", Model: m[1], Common: true}, true
 	case reGrand.MatchString(name):
-		return Request{Vendor: "grandstream", MAC: lower(reGrand, 1)}, true
+		// Grandstream and Htek both ask for cfg<mac>.xml: the stored phone decides.
+		return Request{Vendor: "grandstream", MAC: lower(reGrand, 1), Shared: []string{"grandstream", "htek"}}, true
+	case reCisco.MatchString(name):
+		return Request{Vendor: "cisco", MAC: lower(reCisco, 1)}, true
+	case reCiscoC.MatchString(name):
+		return Request{Vendor: "cisco", Common: true}, true
 	case reGigaset.MatchString(name):
 		return Request{Vendor: "gigaset", MAC: lower(reGigaset, 2)}, true
 	case rePhonebk.MatchString(name):
@@ -462,7 +510,10 @@ func Parse(name string) (Request, bool) {
 // Matches reports whether the stored phone may be served the file of the request.
 func (r Request) Matches(vendor string) bool {
 	if r.Vendor == "" {
-		return vendor == "yealink" || vendor == "fanvil" || vendor == "poly"
+		return vendor == "yealink" || vendor == "fanvil" || vendor == "poly" || vendor == "akuvox"
+	}
+	if len(r.Shared) > 0 {
+		return slices.Contains(r.Shared, vendor)
 	}
 	return r.Vendor == vendor
 }
@@ -481,6 +532,12 @@ func Render(in Input) (body, contentType string) {
 		return Gigaset(in), "application/xml; charset=utf-8"
 	case "poly":
 		return Poly(in), "application/xml; charset=utf-8"
+	case "htek":
+		return Htek(in), "application/xml; charset=utf-8"
+	case "akuvox":
+		return Akuvox(in), "text/plain; charset=utf-8"
+	case "cisco":
+		return Cisco(in), "application/xml; charset=utf-8"
 	}
 	return Yealink(in), "text/plain; charset=utf-8"
 }

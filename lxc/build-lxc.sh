@@ -1,7 +1,7 @@
 #!/bin/bash
 # Builds a Proxmox LXC template (Debian 13 + Kiestoon) from a Kiestoon .deb.
 #
-#   sudo ./lxc/build-lxc.sh dist/kiestoon_0.1.0_amd64.deb dist/ [dist/kiestoon-asterisk_22.x_amd64.deb] [dist/kiestoon-sounds-nl_x_all.deb]
+#   sudo ./lxc/build-lxc.sh dist/kiestoon_0.1.0_amd64.deb dist/ [dist/kiestoon-asterisk_22.x_amd64.deb] [dist/kiestoon-sounds-nl_x_all.deb] [dist/kiestoon-speech_x_amd64.deb]
 #
 # Result: dist/kiestoon-<version>-debian-13-<arch>.tar.zst
 # Upload it to Proxmox (Datacenter > storage > CT Templates > Upload) and create a container from it.
@@ -14,6 +14,8 @@ AST_DEB="${3:-}"
 [ -n "$AST_DEB" ] && AST_DEB="$(readlink -f "$AST_DEB")"
 SND_DEB="${4:-}"
 [ -n "$SND_DEB" ] && SND_DEB="$(readlink -f "$SND_DEB")"
+SPEECH_DEB="${5:-}"
+[ -n "$SPEECH_DEB" ] && SPEECH_DEB="$(readlink -f "$SPEECH_DEB")"
 MIRROR="${MIRROR:-http://deb.debian.org/debian}"
 [ "$(id -u)" = "0" ] || { echo "run as root" >&2; exit 1; }
 command -v debootstrap >/dev/null || { echo "install debootstrap first" >&2; exit 1; }
@@ -67,6 +69,10 @@ fi
 if [ -n "$SND_DEB" ]; then
   cp "$SND_DEB" "$ROOT/tmp/kiestoon-sounds-nl.deb"
   PKGS+=(/tmp/kiestoon-sounds-nl.deb)
+fi
+if [ -n "$SPEECH_DEB" ]; then
+  cp "$SPEECH_DEB" "$ROOT/tmp/kiestoon-speech.deb"
+  PKGS+=(/tmp/kiestoon-speech.deb)
 fi
 chroot "$ROOT" env DEBIAN_FRONTEND=noninteractive apt-get install -y "${PKGS[@]}"
 rm -f "$ROOT"/tmp/kiestoon*.deb

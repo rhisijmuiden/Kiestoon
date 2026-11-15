@@ -6,6 +6,7 @@ set -euo pipefail
 KT_DEB="$1"
 AST_DEB="$2"
 SND_DEB="${3:-}"
+SPEECH_DEB="${4:-}"
 NAME=kt-install-test
 
 # DOCKER_RUN_ARGS: extra options for docker run, for example --network host behind a proxy.
@@ -25,6 +26,10 @@ EXTRA=""
 if [ -n "$SND_DEB" ]; then
   docker cp "$SND_DEB" "$NAME:/root/kiestoon-sounds-nl.deb"
   EXTRA=/root/kiestoon-sounds-nl.deb
+fi
+if [ -n "$SPEECH_DEB" ]; then
+  docker cp "$SPEECH_DEB" "$NAME:/root/kiestoon-speech.deb"
+  EXTRA="$EXTRA /root/kiestoon-speech.deb"
 fi
 ct "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq /root/kiestoon-asterisk.deb /root/kiestoon.deb $EXTRA >/dev/null"
 
@@ -58,5 +63,10 @@ ct 'test -f /var/lib/kiestoon/pbx/pjsip.conf && stat -c "%U:%G %a %n" /var/lib/k
 ct 'asterisk -rx "dialplan show 112@kiestoon-emergency"' | grep -q '112' || fail "emergency dialplan"
 ct 'fail2ban-client status | grep -q kiestoon-sip' || fail "fail2ban jails"
 ct 'command -v tiff2pdf >/dev/null' || fail "tiff2pdf missing"
+ct 'command -v gs >/dev/null' || fail "ghostscript missing (fax sending)"
+if [ -n "$SPEECH_DEB" ]; then
+  ct '/opt/kiestoon-speech/bin/whisper-cli --help >/dev/null 2>&1' || fail "whisper-cli does not start"
+  ct 'echo Kiestoon | /opt/kiestoon-speech/bin/piper --help >/dev/null' || fail "piper does not start"
+fi
 ct '! systemctl is-active --quiet caddy.service' || fail "caddy runs while internet mode is off"
 echo "install test passed"

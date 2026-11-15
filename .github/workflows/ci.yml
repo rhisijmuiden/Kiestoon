@@ -62,6 +62,30 @@ jobs:
           path: dist-sounds/*.deb
           retention-days: 3
 
+  speech:
+    name: Local speech package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache the package
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: dist-speech
+          key: speech-amd64-${{ hashFiles('packaging/speech/**') }}
+      - name: Build Piper and whisper.cpp in Debian 13
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: docker run --rm -v "$PWD:/src" -w /src debian:trixie packaging/speech/build.sh dist-speech
+      - name: Show package
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" dist-speech
+          dpkg-deb -I dist-speech/*.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: speech-amd64
+          path: dist-speech/*.deb
+          retention-days: 3
+
   test:
     name: Test and build
     runs-on: ubuntu-24.04
@@ -92,7 +116,7 @@ jobs:
       - name: Shell scripts
         run: |
           shellcheck -S warning install.sh lxc/build-lxc.sh packaging/kiestoon-updater packaging/fix-permissions \
-            packaging/scripts/*.sh packaging/asterisk/*.sh packaging/ci/*.sh packaging/sounds-nl/*.sh
+            packaging/scripts/*.sh packaging/asterisk/*.sh packaging/ci/*.sh packaging/sounds-nl/*.sh packaging/speech/*.sh
 
       - name: Debian package
         run: |
@@ -109,7 +133,7 @@ jobs:
 
   install:
     name: Install test (Debian 13)
-    needs: [asterisk, sounds, test]
+    needs: [asterisk, sounds, speech, test]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -118,4 +142,4 @@ jobs:
           path: dist
           merge-multiple: true
       - name: Install both packages and check the services
-        run: packaging/ci/install-test.sh dist/kiestoon_*_amd64.deb dist/kiestoon-asterisk_*_amd64.deb dist/kiestoon-sounds-nl_*_all.deb
+        run: packaging/ci/install-test.sh dist/kiestoon_*_amd64.deb dist/kiestoon-asterisk_*_amd64.deb dist/kiestoon-sounds-nl_*_all.deb dist/kiestoon-speech_*_amd64.deb

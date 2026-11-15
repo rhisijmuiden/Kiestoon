@@ -33,7 +33,11 @@ func (s *Server) onAMIEvent(m asterisk.Message) {
 			go s.featureCode(m.Get("Action"), m.Get("Ext"), m.Get("Value"), m.Get("Queue"), m.Get("Id"))
 		case "KiestoonFax":
 			go s.onFax(m)
+		case "KiestoonFaxOut":
+			go s.onFaxOut(m)
 		}
+	case "OriginateResponse":
+		go s.onOriginateResponse(m)
 	case "DialBegin", "DialEnd", "MessageWaiting", "QueueCallerAbandon":
 		s.callEvent(m)
 	}

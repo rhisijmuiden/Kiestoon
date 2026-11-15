@@ -36,10 +36,11 @@ func XML(vendor string, entries []pbx.Entry) (string, bool) {
 	var b strings.Builder
 	b.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
 	switch vendor {
-	case "yealink", "snom", "fanvil":
-		root := map[string]string{"yealink": "YealinkIPPhoneDirectory", "snom": "SnomIPPhoneDirectory", "fanvil": "PhoneBook"}[vendor]
+	case "yealink", "snom", "fanvil", "cisco":
+		root := map[string]string{"yealink": "YealinkIPPhoneDirectory", "snom": "SnomIPPhoneDirectory", "fanvil": "PhoneBook",
+			"cisco": "CiscoIPPhoneDirectory"}[vendor]
 		fmt.Fprintf(&b, "<%s>\n", root)
-		if vendor == "snom" {
+		if vendor == "snom" || vendor == "cisco" {
 			b.WriteString("  <Title>Kiestoon</Title>\n")
 		}
 		for _, e := range entries {

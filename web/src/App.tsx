@@ -26,6 +26,7 @@ import { Mail } from './pages/Mail'
 import { MfaEnroll } from './pages/MfaEnroll'
 import { Phones } from './pages/Phones'
 import { Prompts } from './pages/Prompts'
+import { Speech } from './pages/Speech'
 import { Queues } from './pages/Queues'
 import { Reception } from './pages/Reception'
 import { Recordings } from './pages/Recordings'
@@ -51,7 +52,7 @@ const pages: Record<string, ReactElement> = {
   extensions: <Extensions />, ringGroups: <RingGroups />, queues: <Queues />, ivr: <IVRs />, timeConditions: <TimeConditions />,
   conferences: <Conferences />, prompts: <Prompts />, trunks: <Trunks />, phones: <Phones />, users: <Users />, sso: <Sso />,
   features: <Features />, firewall: <Firewall />, backups: <Backups />, mail: <Mail />, audit: <Audit />, settings: <Settings />,
-  phonebook: <Phonebook />, wallboard: <Wallboard />, fax: <Fax />, internet: <Internet />, integrations: <Integrations />,
+  phonebook: <Phonebook />, wallboard: <Wallboard />, fax: <Fax />, internet: <Internet />, integrations: <Integrations />, speech: <Speech />,
 }
 
 function NoExtension() {

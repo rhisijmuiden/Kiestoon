@@ -81,3 +81,14 @@ export async function startRecording(): Promise<{ stop: () => Promise<Blob> }> {
       }),
   }
 }
+
+/** Turns a base64 8 kHz WAV from the server (text-to-speech) into a Wav for the audio inputs. */
+export function wavFromBase64(base64: string): Wav {
+  const bin = atob(base64)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  const view = new DataView(bytes.buffer)
+  const rate = bytes.length > 44 ? view.getUint32(24, true) : 8000
+  const bytesPerSec = bytes.length > 44 ? view.getUint32(28, true) : rate * 2
+  return { base64, seconds: Math.max(0, bytes.length - 44) / (bytesPerSec || 16000), url: URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' })) }
+}

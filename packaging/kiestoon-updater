@@ -83,11 +83,25 @@ if [ -n "$SND_DEB" ]; then
   fi
 fi
 
+# And local speech (Piper, whisper.cpp) for this architecture, when it changed.
+SPEECH_DEB="$(grep -oE "kiestoon-speech_[0-9A-Za-z.+~-]+_${ARCH}\.deb" "$WORK/SHA256SUMS" | head -n1 || true)"
+if [ -n "$SPEECH_DEB" ]; then
+  SPEECH_VER="$(echo "$SPEECH_DEB" | sed -E 's/^kiestoon-speech_(.*)_[^_]+\.deb$/\1/')"
+  if [ "$(dpkg-query -W -f '${Version}' kiestoon-speech 2>/dev/null || true)" != "$SPEECH_VER" ]; then
+    log "downloading $SPEECH_DEB"
+    curl -fsSL --retry 3 --max-time 900 -o "$WORK/$SPEECH_DEB" "$BASE/$SPEECH_DEB" || fail "download of $SPEECH_DEB failed"
+    (cd "$WORK" && grep -E " [* ]?${SPEECH_DEB}\$" SHA256SUMS | sha256sum -c --status -) || fail "checksum of $SPEECH_DEB does not match"
+    PKGS+=("$WORK/$SPEECH_DEB")
+  fi
+fi
+
 log "backing up $DATA_DIR"
 install -d -m 0700 "$BACKUP_DIR"
 systemctl stop kiestoon.service || true
 BACKUP="$BACKUP_DIR/pre-update-$(date -u +%Y%m%dT%H%M%SZ)-$(kiestoon version 2>/dev/null | awk '{print $2}').tar.zst"
-tar --zstd -cf "$BACKUP" -C "$(dirname "$DATA_DIR")" "$(basename "$DATA_DIR")" || fail "backup failed"
+# Downloaded speech models and phone firmware are left out: they can be downloaded again.
+tar --zstd -cf "$BACKUP" --exclude="$(basename "$DATA_DIR")/speech" --exclude="$(basename "$DATA_DIR")/firmware" \
+  -C "$(dirname "$DATA_DIR")" "$(basename "$DATA_DIR")" || fail "backup failed"
 # Keep only the newest backups.
 ls -1t "$BACKUP_DIR"/pre-update-*.tar.zst 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) | xargs -r rm -f
 

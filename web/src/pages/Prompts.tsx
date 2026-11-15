@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AudioLines, Pencil, Plus, Trash2 } from 'lucide-react'
-import { Empty, Modal, Table, formatDate, td, useApi } from '../components/kit'
+import { AudioLines, Pencil, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { Empty, Modal, Table, Textarea, formatDate, td, useApi } from '../components/kit'
 import { AudioInput, IconButton } from '../components/pbx'
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
-import type { Wav } from '../lib/audio'
-import type { Prompt } from '../lib/types'
+import { wavFromBase64, type Wav } from '../lib/audio'
+import type { Prompt, SpeechData } from '../lib/types'
 
 export function Prompts() {
   const { t, i18n } = useTranslation()
@@ -75,7 +75,45 @@ function PromptForm({ value, onClose, onSaved }: { value: Prompt; onClose: () =>
       <ErrorMessage error={error} />
       <Input label={t('common.name')} value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder={t('prompts.namePlaceholder')} />
       {value.id > 0 && <p className="text-sm text-muted">{t('prompts.replaceHint')}</p>}
+      <SpeakText onAudio={setWav} />
       <AudioInput value={wav} onChange={setWav} />
     </Modal>
+  )
+}
+
+/** Generates a prompt from typed text with the local voice (Settings > Speech). */
+function SpeakText({ onAudio }: { onAudio: (w: Wav) => void }) {
+  const { t, i18n } = useTranslation()
+  const speech = useApi<SpeechData>('/speech')
+  const [text, setText] = useState('')
+  const [lang, setLang] = useState(i18n.language.startsWith('nl') ? 'nl' : 'en')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<unknown>(null)
+  if (!speech.data?.settings.tts.enabled) {
+    return speech.data ? <p className="text-xs text-subtle">{t('prompts.ttsOff')}</p> : null
+  }
+  async function generate() {
+    setBusy(true)
+    setError(null)
+    try {
+      const r = await api<{ audio: string }>('POST', '/speech/tts', { text, language: lang })
+      onAudio(wavFromBase64(r.audio))
+    } catch (e) {
+      setError(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-accent/25 bg-accent/5 p-4">
+      <Textarea label={t('prompts.ttsLabel')} value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} placeholder={t('prompts.ttsPlaceholder')} />
+      <div className="flex flex-wrap items-center gap-3">
+        <select aria-label={t('common.language')} value={lang} onChange={(e) => setLang(e.target.value)} className="min-h-10 rounded-lg border border-line bg-[#0A1224] px-2 text-sm">
+          <option value="nl">Nederlands</option><option value="en">English</option>
+        </select>
+        <Button variant="secondary" busy={busy} disabled={!text.trim()} onClick={generate}><Sparkles className="size-4" aria-hidden />{t('prompts.ttsGenerate')}</Button>
+      </div>
+      <ErrorMessage error={error} />
+    </div>
   )
 }

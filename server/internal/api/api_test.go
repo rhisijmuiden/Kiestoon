@@ -144,3 +144,43 @@ func TestLoginRateLimitAndJSONOnly(t *testing.T) {
 }
 
 func jsonDecode(resp *http.Response, v any) error { return json.NewDecoder(resp.Body).Decode(v) }
+
+func TestClientIPTrustedProxies(t *testing.T) {
+	defer setTrustedProxies(nil)
+	req := func(remote, xff string) *http.Request {
+		r := httptest.NewRequest("GET", "/", nil)
+		r.RemoteAddr = remote
+		if xff != "" {
+			r.Header.Set("X-Forwarded-For", xff)
+		}
+		return r
+	}
+	setTrustedProxies(nil)
+	if got := clientIP(req("10.0.0.5:1234", "1.2.3.4")); got != "10.0.0.5" {
+		t.Fatalf("untrusted proxy must not set the address, got %s", got)
+	}
+	if got := clientIP(req("127.0.0.1:1234", "1.2.3.4")); got != "1.2.3.4" {
+		t.Fatalf("loopback proxy, got %s", got)
+	}
+	setTrustedProxies([]string{"10.0.0.0/24", "192.168.1.10"})
+	if got := clientIP(req("10.0.0.5:1234", "6.6.6.6, 1.2.3.4")); got != "1.2.3.4" {
+		t.Fatalf("trusted proxy, got %s", got)
+	}
+	if got := clientIP(req("10.0.0.5:1234", "6.6.6.6, 1.2.3.4, 192.168.1.10")); got != "1.2.3.4" {
+		t.Fatalf("chained proxies, got %s", got)
+	}
+	if got := clientIP(req("[::ffff:10.0.0.5]:1234", "1.2.3.4")); got != "1.2.3.4" {
+		t.Fatalf("mapped address, got %s", got)
+	}
+	if got := clientIP(req("10.0.1.5:1234", "1.2.3.4")); got != "10.0.1.5" {
+		t.Fatalf("outside the range, got %s", got)
+	}
+	p := ProxySettings{Enabled: true, TrustedProxies: []string{"0.0.0.0/0"}}
+	if p.Validate() == nil {
+		t.Fatal("0.0.0.0/0 must be refused")
+	}
+	p = ProxySettings{Enabled: true, TrustedProxies: []string{" 10.0.0.7 ", "10.1.2.3/16"}, PublicURL: "https://pbx.example.com/"}
+	if err := p.Validate(); err != nil || p.TrustedProxies[1] != "10.1.0.0/16" || p.PublicURL != "https://pbx.example.com" {
+		t.Fatalf("validate: %v %+v", err, p)
+	}
+}

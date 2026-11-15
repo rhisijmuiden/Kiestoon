@@ -37,7 +37,10 @@ export function Voicemail() {
           {msgs.data?.map((m) => (
             <tr key={`${m.folder}-${m.id}`}>
               <td className={td}>{m.folder === 'INBOX' ? <Badge tone="accent" dot>{t('voicemail.new')}</Badge> : <Badge>{t('voicemail.heard')}</Badge>}</td>
-              <td className={`${td} text-ink`}>{m.callerId.replace(/"/g, '') || t('reception.unknownCaller')}</td>
+              <td className={`${td} text-ink`}>
+                {m.callerId.replace(/"/g, '') || t('reception.unknownCaller')}
+                {m.transcript && <p className="mt-1 max-w-md text-xs font-normal italic text-muted" title={t('voicemail.transcript')}>“{m.transcript}”</p>}
+              </td>
               <td className={`${td} whitespace-nowrap font-mono text-xs`}>{formatDate(m.date, i18n.language)}</td>
               <td className={`${td} font-mono`}>{formatDuration(m.duration)}</td>
               <td className={td}><audio controls preload="none" src={`/api/portal/voicemail/${m.folder}/${m.id}/audio`} onEnded={() => played(m)} className="h-9 w-56 max-w-full" /></td>

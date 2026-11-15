@@ -350,15 +350,16 @@ func (s *Server) firewallUnban(w http.ResponseWriter, r *http.Request) {
 
 // ---- backups ----------------------------------------------------------------
 
-const targetCols = `id, name, kind, host, port, username, password, private_key, path, implicit_tls, repo_password, enabled, onedrive`
+const targetCols = `id, name, kind, host, port, username, password, private_key, path, implicit_tls, repo_password, enabled, onedrive, extra`
 
 func scanTarget(row interface{ Scan(...any) error }) (*backup.Target, error) {
 	var t backup.Target
 	var tls, en int
-	var od string
-	if err := row.Scan(&t.ID, &t.Name, &t.Kind, &t.Host, &t.Port, &t.Username, &t.Password, &t.PrivateKey, &t.Path, &tls, &t.RepoPassword, &en, &od); err != nil {
+	var od, extra string
+	if err := row.Scan(&t.ID, &t.Name, &t.Kind, &t.Host, &t.Port, &t.Username, &t.Password, &t.PrivateKey, &t.Path, &tls, &t.RepoPassword, &en, &od, &extra); err != nil {
 		return nil, err
 	}
+	_ = json.Unmarshal([]byte(extra), &t.Extra)
 	t.ImplicitTLS, t.Enabled = tls == 1, en == 1
 	if t.Kind == "onedrive" {
 		t.OneDrive = &backup.OneDrive{}
@@ -466,22 +467,27 @@ func (s *Server) backupSaveTarget(w http.ResponseWriter, r *http.Request) {
 		fieldErr(w, err.Error())
 		return
 	}
-	args := []any{t.Name, t.Kind, t.Host, t.Port, t.Username, t.Password, t.PrivateKey, t.Path, b2i(t.ImplicitTLS), t.RepoPassword, b2i(t.Enabled), oneDriveJSON(t)}
+	args := []any{t.Name, t.Kind, t.Host, t.Port, t.Username, t.Password, t.PrivateKey, t.Path, b2i(t.ImplicitTLS), t.RepoPassword, b2i(t.Enabled), oneDriveJSON(t), extraJSON(t)}
 	if t.ID == 0 {
 		res, err := s.DB.ExecContext(r.Context(), `INSERT INTO backup_targets(name, kind, host, port, username, password, private_key,
-			path, implicit_tls, repo_password, enabled, onedrive) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
+			path, implicit_tls, repo_password, enabled, onedrive, extra) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
 		if err != nil {
 			writeErr(w, http.StatusInternalServerError, "internal")
 			return
 		}
 		t.ID, _ = res.LastInsertId()
 	} else if _, err := s.DB.ExecContext(r.Context(), `UPDATE backup_targets SET name=?, kind=?, host=?, port=?, username=?, password=?,
-		private_key=?, path=?, implicit_tls=?, repo_password=?, enabled=?, onedrive=? WHERE id=?`, append(args, t.ID)...); err != nil {
+		private_key=?, path=?, implicit_tls=?, repo_password=?, enabled=?, onedrive=?, extra=? WHERE id=?`, append(args, t.ID)...); err != nil {
 		writeErr(w, http.StatusInternalServerError, "internal")
 		return
 	}
 	s.audit(r, "backup.target.saved", t.Name)
 	writeJSON(w, http.StatusOK, publicTarget(t))
+}
+
+func extraJSON(t backup.Target) string {
+	b, _ := json.Marshal(t.Extra)
+	return string(b)
 }
 
 func b2i(b bool) int {
@@ -825,18 +831,27 @@ func (s *Server) savePhone(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	var old *pbx.Phone
+	if p.ID != 0 {
+		old, _ = s.PBX.Phone(r.Context(), p.ID)
+	}
 	if err := s.PBX.SavePhone(r.Context(), &p, m.Keys, m.MaxLines()); err != nil {
 		s.saveErr(w, err)
 		return
 	}
 	s.audit(r, "phone.saved", p.MAC)
+	s.ztpAfterSave(r, &p, old)
 	writeJSON(w, http.StatusOK, p)
 }
 
 func (s *Server) deletePhone(w http.ResponseWriter, r *http.Request) {
+	old, _ := s.PBX.Phone(r.Context(), pathID(r))
 	if err := s.PBX.DeletePhone(r.Context(), pathID(r)); err != nil {
 		s.saveErr(w, err)
 		return
+	}
+	if old != nil {
+		s.ztpRemove(old)
 	}
 	s.audit(r, "phone.deleted", r.PathValue("id"))
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
@@ -868,9 +883,14 @@ func (s *Server) provInput(ctx context.Context, p *pbx.Phone, host, scheme strin
 		}
 	}
 	in.Org, _ = store.GetSetting(ctx, s.DB, "organization", "Kiestoon")
+	in.Base = s.provBase(scheme, set, host)
+	if fw := s.Firmware.ForModel(ctx, p.Vendor, p.Model); fw != nil {
+		in.FirmwareDir = s.firmwareBase(scheme, host) + fw.Token + "/"
+		in.Firmware = in.FirmwareDir + fw.Filename
+	}
 	if pb := s.ldapSettings(ctx); pb.XMLEnabled {
 		switch p.Vendor {
-		case "yealink", "snom", "fanvil":
+		case "yealink", "snom", "fanvil", "cisco":
 			in.PhonebookURL = s.provBase(scheme, set, host) + "phonebook/" + p.Vendor + ".xml"
 		case "grandstream":
 			// Grandstream appends phonebook.xml to the directory it is given.
@@ -918,6 +938,10 @@ func (s *Server) ProvisioningHandler() http.Handler {
 			http.Error(w, "too many attempts", http.StatusTooManyRequests)
 			return
 		}
+		if strings.HasPrefix(r.URL.Path, "/prov/fw/") {
+			s.serveFirmware(w, r, ip)
+			return
+		}
 		set, err := provision.Load(r.Context(), s.DB)
 		if err != nil || !set.Enabled {
 			http.NotFound(w, r)
@@ -944,6 +968,10 @@ func (s *Server) ProvisioningHandler() http.Handler {
 			s.phonebookXML(w, r, req.Vendor)
 			return
 		}
+		if req.Firmware {
+			s.snomFirmware(w, r, req.Model)
+			return
+		}
 		if req.Common {
 			switch req.Vendor {
 			case "yealink":
@@ -951,7 +979,10 @@ func (s *Server) ProvisioningHandler() http.Handler {
 				_, _ = w.Write([]byte(provision.YealinkCommon()))
 			case "poly":
 				w.Header().Set("Content-Type", "application/xml; charset=utf-8")
-				_, _ = w.Write([]byte(provision.PolyMaster()))
+				_, _ = w.Write([]byte(provision.PolyMaster("")))
+			case "cisco":
+				w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+				_, _ = w.Write([]byte(provision.CiscoCommon(s.provBase(s.scheme(r), set, r.Host))))
 			default:
 				w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 				_, _ = w.Write([]byte(provision.SnomIndex(s.provBase(s.scheme(r), set, r.Host))))
@@ -970,8 +1001,12 @@ func (s *Server) ProvisioningHandler() http.Handler {
 		}
 		// Poly asks for <mac>.cfg first: that is the master file pointing to kiestoon-<mac>.cfg.
 		if phone.Vendor == "poly" && !req.PolyConfig {
+			fw := ""
+			if f := s.Firmware.ForModel(r.Context(), phone.Vendor, phone.Model); f != nil {
+				fw = s.firmwareBase(s.scheme(r), r.Host) + f.Token + "/" + f.Filename
+			}
 			w.Header().Set("Content-Type", "application/xml; charset=utf-8")
-			_, _ = w.Write([]byte(provision.PolyMaster()))
+			_, _ = w.Write([]byte(provision.PolyMaster(fw)))
 			return
 		}
 		in, err := s.provInput(r.Context(), phone, r.Host, s.scheme(r))

@@ -535,6 +535,7 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 	x.nl()
 	genCallerIDNames(&x, s)
 	genFax(&x, s, o)
+	genFaxSend(&x, s)
 
 	x.f("[kiestoon-did]")
 	var catchAll *pbx.InboundRoute

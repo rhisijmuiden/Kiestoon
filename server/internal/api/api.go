@@ -9,7 +9,6 @@ import (
 	"errors"
 	"log/slog"
 	"mime"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -21,6 +20,7 @@ import (
 	"github.com/rhisijmuiden/kiestoon/server/internal/auth"
 	"github.com/rhisijmuiden/kiestoon/server/internal/cdr"
 	"github.com/rhisijmuiden/kiestoon/server/internal/config"
+	"github.com/rhisijmuiden/kiestoon/server/internal/firmware"
 	"github.com/rhisijmuiden/kiestoon/server/internal/helper"
 	"github.com/rhisijmuiden/kiestoon/server/internal/mail"
 	"github.com/rhisijmuiden/kiestoon/server/internal/media"
@@ -68,6 +68,11 @@ type Server struct {
 	ldapOn    bool
 	hooks     *webhookQueue
 	passkeys  passkeyStore
+	Firmware  *firmware.Store
+	speech    speechState
+	faxMu     sync.Mutex
+	extBusy   sync.Mutex
+	sttBusy   sync.Mutex
 }
 
 // New wires up a server.
@@ -90,6 +95,7 @@ func New(cfg config.Config, db *sql.DB, log *slog.Logger) *Server {
 		provLimit:  auth.NewLimiter(20, 10*time.Minute),
 		started:    time.Now(),
 		hooks:      &webhookQueue{},
+		Firmware:   &firmware.Store{DB: db, Dir: filepath.Join(cfg.DataDir, "firmware")},
 	}
 	secret, _ := store.GetSetting(context.Background(), db, "ami_secret", "")
 	if secret == "" {
@@ -97,6 +103,7 @@ func New(cfg config.Config, db *sql.DB, log *slog.Logger) *Server {
 		_ = store.SetSetting(context.Background(), db, "ami_secret", secret)
 	}
 	s.AMI = &asterisk.AMI{Addr: cfg.AMIAddr, User: "kiestoon", Secret: secret, Log: log, OnEvent: s.onAMIEvent}
+	s.Mail.Prepare = s.prepareMail
 	s.Live = &asterisk.LiveCache{AMI: s.AMI}
 	s.States = &asterisk.StateCache{AMI: s.AMI}
 	s.Ast = &asterisk.Manager{Dir: cfg.PBXDir(), Repo: s.PBX, AMI: s.AMI, Log: log, Options: s.asteriskOptions}
@@ -142,6 +149,8 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("POST /api/system/updates/apply", admin(s.applyUpdate))
 	mux.Handle("GET /api/system/updates/status", admin(s.updateStatus))
 	mux.Handle("GET /api/system/audit", admin(s.auditLog))
+	mux.Handle("GET /api/system/proxy", admin(s.proxyGet))
+	mux.Handle("PUT /api/system/proxy", admin(s.proxySave))
 
 	s.pbxRoutes(mux, admin, recep)
 	s.systemRoutes(mux, admin)
@@ -153,6 +162,7 @@ func (s *Server) Routes() http.Handler {
 	s.phonebookRoutes(mux, admin, recep, full)
 	s.integrationRoutes(mux, admin, recep)
 	s.passkeyRoutes(mux, full)
+	s.extensionRoutes(mux, admin, recep, full)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)
@@ -172,6 +182,16 @@ func (s *Server) jsonOnly(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+		// Firmware arrives as a binary upload. A cross-site page cannot send the custom header without a
+		// CORS preflight, which is never allowed, so the header blocks CSRF like the JSON rule does.
+		if r.Method == http.MethodPost && r.URL.Path == "/api/firmware/upload" {
+			if r.Header.Get("X-Kiestoon-Upload") != "1" {
+				writeErr(w, http.StatusForbidden, "upload_header_required")
+				return
+			}
+			next.ServeHTTP(w, r)
+			return
+		}
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			ct, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
 			if ct != "application/json" {
@@ -181,6 +201,9 @@ func (s *Server) jsonOnly(next http.Handler) http.Handler {
 			limit := int64(1 << 20)
 			if strings.HasPrefix(r.URL.Path, "/api/pbx/prompts") || strings.HasPrefix(r.URL.Path, "/api/portal/greetings/") {
 				limit = 8 << 20 // base64 audio
+			}
+			if r.URL.Path == "/api/fax/send" {
+				limit = 16 << 20 // base64 PDF of up to 10 MB
 			}
 			r.Body = http.MaxBytesReader(w, r.Body, limit)
 		}
@@ -276,30 +299,25 @@ func decode(r *http.Request, v any) error {
 	return dec.Decode(v)
 }
 
-// fromProxy reports whether the request came through Caddy (internet mode) on this machine.
+// fromProxy reports whether the request came through a trusted proxy: Caddy of internet mode on
+// this machine, or an own reverse proxy listed in the proxy settings.
 func fromProxy(r *http.Request) bool {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		host = r.RemoteAddr
-	}
-	ip := net.ParseIP(host)
-	return ip != nil && ip.IsLoopback() && r.Header.Get("X-Forwarded-For") != ""
+	a, ok := remoteAddr(r)
+	return ok && isTrustedProxy(a) && r.Header.Get("X-Forwarded-For") != ""
 }
 
-// clientIP is the address of the browser or phone. Behind Caddy on the same machine it is the
-// address Caddy puts in X-Forwarded-For (Caddy replaces what the client sent).
+// clientIP is the address of the browser or phone. Behind a trusted proxy it is the right-most
+// address in X-Forwarded-For that is not a trusted proxy itself.
 func clientIP(r *http.Request) string {
 	if fromProxy(r) {
-		parts := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
-		if ip := net.ParseIP(strings.TrimSpace(parts[len(parts)-1])); ip != nil {
-			return ip.String()
+		if a, ok := forwardedClient(r); ok {
+			return a.String()
 		}
 	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
+	if a, ok := remoteAddr(r); ok {
+		return a.String()
 	}
-	return host
+	return r.RemoteAddr
 }
 
 func (s *Server) secure(r *http.Request) bool {

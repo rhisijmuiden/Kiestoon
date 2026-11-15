@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { KeyRound, Mail, Pencil, Plus, Trash2, User } from 'lucide-react'
+import { KeyRound, Mail, Pencil, Plus, Smartphone, Trash2, User } from 'lucide-react'
 import { Badge, CopyField, Empty, Modal, Select, Table, Toggle, td, useApi } from '../components/kit'
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { WelcomeNotice } from '../components/WelcomeNotice'
+import { ExtensionPhones } from '../components/PhoneLink'
 import { api } from '../lib/api'
 import { blankFeatures, type Extension, type Live, type WelcomeResult } from '../lib/types'
 
@@ -21,6 +22,7 @@ export function Extensions() {
   const [details, setDetails] = useState<(Extension & { welcome?: WelcomeResult }) | null>(null)
   const [notice, setNotice] = useState<WelcomeResult | null>(null)
   const [error, setError] = useState<unknown>(null)
+  const [phonesOf, setPhonesOf] = useState<Extension | null>(null)
 
   async function openNew() {
     const next = await api<{ number: string }>('GET', '/pbx/extensions/next').catch(() => ({ number: '' }))
@@ -79,6 +81,9 @@ export function Extensions() {
                 {e.srtp && <Badge tone="ok">SRTP</Badge>}
               </td>
               <td className={`${td} text-right whitespace-nowrap`}>
+                <button type="button" onClick={() => setPhonesOf(e)} title={t('phoneLink.extTitle')} aria-label={t('phoneLink.extTitle')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent">
+                  <Smartphone className="size-4" aria-hidden />
+                </button>
                 <button type="button" onClick={() => openDetails(e.id)} title={t('extensions.sipDetails')} aria-label={t('extensions.sipDetails')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent">
                   <KeyRound className="size-4" aria-hidden />
                 </button>
@@ -99,6 +104,7 @@ export function Extensions() {
         </Table>
       </Card>
       {edit && <ExtensionForm value={edit} onClose={() => setEdit(null)} onSaved={(e) => { setEdit(null); list.reload(); if (!edit.id) setDetails(e) }} />}
+      {phonesOf && <ExtensionPhones ext={phonesOf} onClose={() => setPhonesOf(null)} />}
       {details && <SipDetails ext={details} onClose={() => setDetails(null)} onChanged={setDetails} />}
     </>
   )

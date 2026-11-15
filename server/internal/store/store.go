@@ -605,6 +605,18 @@ var migrations = []string{
 		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
 	);
 	CREATE INDEX password_tokens_user ON password_tokens(user_id);`,
+	// Phones that asked for their configuration but are not known yet, so an admin can adopt them.
+	`CREATE TABLE phone_discoveries (
+		mac        TEXT PRIMARY KEY,
+		vendor     TEXT NOT NULL DEFAULT '',
+		model      TEXT NOT NULL DEFAULT '',
+		ip         TEXT NOT NULL DEFAULT '',
+		user_agent TEXT NOT NULL DEFAULT '',
+		file       TEXT NOT NULL DEFAULT '',
+		hits       INTEGER NOT NULL DEFAULT 1,
+		first_seen TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		last_seen  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

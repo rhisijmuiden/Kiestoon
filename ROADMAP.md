@@ -95,3 +95,26 @@ Ongoing.
 - [ ] More backup destinations: S3, WebDAV, SMB
 - [ ] Optional Prometheus metrics
 - [ ] Research: multi-tenant with Kamailio in front
+
+## Phase 5 · Multi-site (after v1.0)
+
+Goal: one phone system across several offices and data centres.
+
+- [ ] Kiestoon Edge: a satellite for a branch office, as Raspberry Pi image (arm64), LXC template or `.deb`
+  - [ ] WireGuard tunnel to the central Kiestoon in the data centre, paired with a code from the portal
+  - [ ] Local SIP proxy and media relay (Kamailio + rtpengine) to solve NAT problems
+  - [ ] Local provisioning server for the phones in that office
+- [ ] Federation of two or more Kiestoon systems over a tunnel (WireGuard + SIP-TLS)
+  - [ ] Shared phone book and number plan with a location prefix
+  - [ ] Internal transfers and BLF between locations
+  - [ ] Agents from several locations in one queue
+  - [ ] Follow-the-sun routing based on time zone
+- [ ] High availability: an active/passive pair
+  - [ ] Virtual IP with keepalived (VRRP), DNS SRV records as an alternative
+  - [ ] Continuous database replication (for example Litestream) and sync of voicemail, recordings and prompts
+  - [ ] Cluster status and manual failover in the UI
+  - [ ] Note: calls in progress are dropped on failover
+
+Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
+and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.
+That keeps backups, restores and high availability simple.

@@ -49,6 +49,8 @@ var migrations = []string{
 		detail   TEXT NOT NULL DEFAULT '',
 		ip       TEXT NOT NULL DEFAULT ''
 	);`,
+	// 2: remember the last accepted TOTP time step so a code cannot be used twice.
+	`ALTER TABLE users ADD COLUMN totp_last_step INTEGER NOT NULL DEFAULT 0;`,
 }
 
 // Open opens (and creates if needed) the database at path and migrates it to the latest schema.

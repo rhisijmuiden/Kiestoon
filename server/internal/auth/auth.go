@@ -241,7 +241,8 @@ func (s *Service) ConfirmTOTPEnrollment(ctx context.Context, u *User, code strin
 	if fresh.TOTPEnabled || fresh.totpSecret == "" {
 		return nil, errors.New("no enrollment in progress")
 	}
-	if !totp.Validate(strings.TrimSpace(code), fresh.totpSecret) {
+	step, ok := matchTOTP(fresh.totpSecret, code, s.Now())
+	if !ok {
 		return nil, ErrInvalidCode
 	}
 	codes := make([]string, 8)
@@ -259,7 +260,7 @@ func (s *Service) ConfirmTOTPEnrollment(ctx context.Context, u *User, code strin
 			return nil, err
 		}
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE users SET totp_enabled = 1 WHERE id = ?`, u.ID); err != nil {
+	if _, err := tx.ExecContext(ctx, `UPDATE users SET totp_enabled = 1, totp_last_step = ? WHERE id = ?`, step, u.ID); err != nil {
 		return nil, err
 	}
 	return codes, tx.Commit()
@@ -275,8 +276,20 @@ func (s *Service) VerifySecondFactor(ctx context.Context, u *User, code string) 
 		return ErrInvalidCode
 	}
 	code = strings.TrimSpace(code)
-	if len(code) == 6 && totp.Validate(code, fresh.totpSecret) {
-		return nil
+	if len(code) == 6 {
+		step, ok := matchTOTP(fresh.totpSecret, code, s.Now())
+		if !ok {
+			return ErrInvalidCode
+		}
+		// Only accept a step newer than the last one used: a code that was seen once cannot be replayed.
+		res, err := s.DB.ExecContext(ctx, `UPDATE users SET totp_last_step = ? WHERE id = ? AND totp_last_step < ?`, step, u.ID, step)
+		if err != nil {
+			return err
+		}
+		if n, _ := res.RowsAffected(); n == 1 {
+			return nil
+		}
+		return ErrInvalidCode
 	}
 	res, err := s.DB.ExecContext(ctx, `UPDATE recovery_codes SET used = 1 WHERE user_id = ? AND code_hash = ? AND used = 0`,
 		u.ID, hashToken(normalizeCode(code)))
@@ -287,6 +300,42 @@ func (s *Service) VerifySecondFactor(ctx context.Context, u *User, code string) 
 		return nil
 	}
 	return ErrInvalidCode
+}
+
+// matchTOTP checks a 6-digit code against the current time step and one step either side
+// (to allow for clock drift) and returns the matching step.
+func matchTOTP(secret, code string, now time.Time) (int64, bool) {
+	code = strings.TrimSpace(code)
+	if len(code) != 6 || secret == "" {
+		return 0, false
+	}
+	opts := totp.ValidateOpts{Period: 30, Digits: otp.DigitsSix, Algorithm: otp.AlgorithmSHA1}
+	base := now.Unix() / 30
+	for _, d := range []int64{0, -1, 1} {
+		step := base + d
+		want, err := totp.GenerateCodeCustom(secret, time.Unix(step*30, 0), opts)
+		if err == nil && ConstantTimeEqual(want, code) {
+			return step, true
+		}
+	}
+	return 0, false
+}
+
+// ChangePassword replaces the password after checking the current one.
+func (s *Service) ChangePassword(ctx context.Context, u *User, current, next string) error {
+	fresh, err := s.UserByID(ctx, u.ID)
+	if err != nil {
+		return err
+	}
+	if bcrypt.CompareHashAndPassword([]byte(fresh.hash), []byte(current)) != nil {
+		return ErrInvalidCredentials
+	}
+	h, err := HashPassword(next)
+	if err != nil {
+		return err
+	}
+	_, err = s.DB.ExecContext(ctx, `UPDATE users SET password_hash = ? WHERE id = ?`, h, u.ID)
+	return err
 }
 
 func newRecoveryCode() string {

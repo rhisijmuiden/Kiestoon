@@ -1,0 +1,569 @@
+// Package api serves the JSON API used by the web portal.
+package api
+
+import (
+	"context"
+	"crypto/subtle"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"log/slog"
+	"mime"
+	"net"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/rhisijmuiden/kiestoon/server/internal/auth"
+	"github.com/rhisijmuiden/kiestoon/server/internal/config"
+	"github.com/rhisijmuiden/kiestoon/server/internal/store"
+	"github.com/rhisijmuiden/kiestoon/server/internal/updates"
+	"github.com/rhisijmuiden/kiestoon/server/internal/version"
+)
+
+// CookieName is the session cookie.
+const CookieName = "kiestoon_session"
+
+// Server holds everything the handlers need.
+type Server struct {
+	Cfg     config.Config
+	DB      *sql.DB
+	Auth    *auth.Service
+	Updates *updates.Checker
+	Log     *slog.Logger
+	// loginLimit counts failed password and MFA attempts per IP.
+	loginLimit *auth.Limiter
+	started    time.Time
+}
+
+// New wires up a server.
+func New(cfg config.Config, db *sql.DB, log *slog.Logger) *Server {
+	return &Server{
+		Cfg:        cfg,
+		DB:         db,
+		Auth:       auth.New(db),
+		Updates:    updates.NewChecker(cfg.Repo, cfg.DataDir),
+		Log:        log,
+		loginLimit: auth.NewLimiter(5, 10*time.Minute),
+		started:    time.Now(),
+	}
+}
+
+type ctxKey struct{}
+
+func sessionFrom(r *http.Request) *auth.Session {
+	s, _ := r.Context().Value(ctxKey{}).(*auth.Session)
+	return s
+}
+
+// Routes returns the API handler, mounted under /api/.
+func (s *Server) Routes() http.Handler {
+	mux := http.NewServeMux()
+
+	// Public
+	mux.HandleFunc("GET /api/health", s.health)
+	mux.HandleFunc("GET /api/setup/status", s.setupStatus)
+	mux.HandleFunc("POST /api/setup", s.setup)
+	mux.HandleFunc("POST /api/auth/login", s.login)
+
+	// Signed in, second factor may still be pending
+	mux.Handle("POST /api/auth/mfa", s.signedIn(http.HandlerFunc(s.verifyMFA), false))
+	mux.Handle("POST /api/auth/logout", s.signedIn(http.HandlerFunc(s.logout), false))
+
+	// Signed in and MFA passed (or not yet enrolled: then only the enrollment routes work)
+	full := func(h http.HandlerFunc) http.Handler { return s.signedIn(s.mfaEnrolled(h), true) }
+	enroll := func(h http.HandlerFunc) http.Handler { return s.signedIn(h, true) }
+	admin := func(h http.HandlerFunc) http.Handler { return s.signedIn(s.mfaEnrolled(s.adminOnly(h)), true) }
+
+	mux.Handle("GET /api/me", enroll(s.me))
+	mux.Handle("POST /api/account/mfa/enroll", enroll(s.mfaEnroll))
+	mux.Handle("POST /api/account/mfa/confirm", enroll(s.mfaConfirm))
+	mux.Handle("PUT /api/account/language", enroll(s.setLanguage))
+	mux.Handle("PUT /api/account/password", full(s.changePassword))
+
+	mux.Handle("GET /api/system/info", enroll(s.systemInfo))
+	mux.Handle("PUT /api/system/channel", admin(s.setChannel))
+	mux.Handle("POST /api/system/updates/check", admin(s.checkUpdates))
+	mux.Handle("POST /api/system/updates/apply", admin(s.applyUpdate))
+	mux.Handle("GET /api/system/updates/status", admin(s.updateStatus))
+	mux.Handle("GET /api/system/audit", admin(s.auditLog))
+
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
+	return s.jsonOnly(mux)
+}
+
+// ---- middleware -------------------------------------------------------------
+
+// jsonOnly rejects state-changing requests that are not JSON. Browsers cannot send a cross-site
+// application/json request without a CORS preflight, which we never allow, so this blocks CSRF
+// together with the SameSite=Strict cookie.
+func (s *Server) jsonOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			ct, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+			if ct != "application/json" {
+				writeErr(w, http.StatusUnsupportedMediaType, "json_required")
+				return
+			}
+			r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) signedIn(next http.Handler, needMFA bool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := r.Cookie(CookieName)
+		if err != nil {
+			writeErr(w, http.StatusUnauthorized, "not_signed_in")
+			return
+		}
+		sess, err := s.Auth.SessionFromToken(r.Context(), c.Value)
+		if err != nil {
+			s.clearCookie(w, r)
+			writeErr(w, http.StatusUnauthorized, "not_signed_in")
+			return
+		}
+		if needMFA && !sess.MFAPassed {
+			writeErr(w, http.StatusUnauthorized, "mfa_required")
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, sess)))
+	})
+}
+
+// mfaEnrolled blocks admins that have not set up MFA yet from everything but enrollment.
+func (s *Server) mfaEnrolled(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u := sessionFrom(r).User
+		if u.IsAdmin() && !u.TOTPEnabled {
+			writeErr(w, http.StatusForbidden, "mfa_enrollment_required")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) adminOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !sessionFrom(r).User.IsAdmin() {
+			writeErr(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// ---- helpers ----------------------------------------------------------------
+
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(v)
+}
+
+// writeErr sends a stable error code; the UI translates codes into English or Dutch text.
+func writeErr(w http.ResponseWriter, status int, code string) {
+	writeJSON(w, status, map[string]string{"error": code})
+}
+
+func decode(r *http.Request, v any) error {
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	return dec.Decode(v)
+}
+
+func clientIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
+}
+
+func (s *Server) secure(r *http.Request) bool { return s.Cfg.SecureCookies || r.TLS != nil }
+
+func (s *Server) setCookie(w http.ResponseWriter, r *http.Request, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name: CookieName, Value: token, Path: "/", HttpOnly: true, Secure: s.secure(r),
+		SameSite: http.SameSiteStrictMode, MaxAge: int(auth.SessionTTL.Seconds()),
+	})
+}
+
+func (s *Server) clearCookie(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{Name: CookieName, Value: "", Path: "/", HttpOnly: true, Secure: s.secure(r), SameSite: http.SameSiteStrictMode, MaxAge: -1})
+}
+
+// ---- setup ------------------------------------------------------------------
+
+// SetupTokenPath is where the one-time setup token lives. The installer prints it, so only someone
+// with access to the console can create the first administrator.
+func SetupTokenPath(dataDir string) string { return filepath.Join(dataDir, "setup-token") }
+
+func (s *Server) setupNeeded(ctx context.Context) (bool, error) {
+	n, err := s.Auth.UserCount(ctx)
+	return n == 0, err
+}
+
+func (s *Server) setupStatus(w http.ResponseWriter, r *http.Request) {
+	needed, err := s.setupNeeded(r.Context())
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	_, statErr := os.Stat(SetupTokenPath(s.Cfg.DataDir))
+	writeJSON(w, http.StatusOK, map[string]any{"setupRequired": needed, "tokenRequired": needed && statErr == nil})
+}
+
+type setupReq struct {
+	Token        string `json:"token"`
+	Organization string `json:"organization"`
+	Username     string `json:"username"`
+	DisplayName  string `json:"displayName"`
+	Password     string `json:"password"`
+	Language     string `json:"language"`
+}
+
+func (s *Server) setup(w http.ResponseWriter, r *http.Request) {
+	ip := clientIP(r)
+	if s.loginLimit.Blocked(ip) {
+		writeErr(w, http.StatusTooManyRequests, "too_many_attempts")
+		return
+	}
+	var req setupReq
+	if err := decode(r, &req); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request")
+		return
+	}
+	needed, err := s.setupNeeded(r.Context())
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	if !needed {
+		writeErr(w, http.StatusConflict, "setup_done")
+		return
+	}
+	if want, err := os.ReadFile(SetupTokenPath(s.Cfg.DataDir)); err == nil {
+		if subtle.ConstantTimeCompare([]byte(strings.TrimSpace(string(want))), []byte(strings.TrimSpace(req.Token))) != 1 {
+			s.loginLimit.Fail(ip)
+			writeErr(w, http.StatusForbidden, "invalid_setup_token")
+			return
+		}
+	}
+	u, err := s.Auth.CreateUser(r.Context(), req.Username, req.DisplayName, req.Password, "superadmin", req.Language)
+	if errors.Is(err, auth.ErrWeakPassword) {
+		writeErr(w, http.StatusBadRequest, "weak_password")
+		return
+	}
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid_user")
+		return
+	}
+	org := strings.TrimSpace(req.Organization)
+	if org == "" {
+		org = "Kiestoon"
+	}
+	_ = store.SetSetting(r.Context(), s.DB, "organization", org)
+	_ = os.Remove(SetupTokenPath(s.Cfg.DataDir))
+	store.Audit(r.Context(), s.DB, u.ID, "setup.completed", u.Username, ip)
+
+	// No MFA yet, so the session is "MFA passed" but every route except enrollment stays blocked.
+	token, err := s.Auth.CreateSession(r.Context(), u, true)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	s.setCookie(w, r, token)
+	writeJSON(w, http.StatusCreated, s.meBody(r.Context(), u, true))
+}
+
+// ---- auth -------------------------------------------------------------------
+
+func (s *Server) login(w http.ResponseWriter, r *http.Request) {
+	ip := clientIP(r)
+	if s.loginLimit.Blocked(ip) {
+		writeErr(w, http.StatusTooManyRequests, "too_many_attempts")
+		return
+	}
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := decode(r, &req); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request")
+		return
+	}
+	u, err := s.Auth.CheckPassword(r.Context(), req.Username, req.Password)
+	if err != nil {
+		s.loginLimit.Fail(ip)
+		store.Audit(r.Context(), s.DB, 0, "login.failed", req.Username, ip)
+		writeErr(w, http.StatusUnauthorized, "invalid_credentials")
+		return
+	}
+	mfaRequired := u.TOTPEnabled
+	token, err := s.Auth.CreateSession(r.Context(), u, !mfaRequired)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	if !mfaRequired {
+		s.loginLimit.Reset(ip)
+		store.Audit(r.Context(), s.DB, u.ID, "login.success", "", ip)
+	}
+	s.setCookie(w, r, token)
+	writeJSON(w, http.StatusOK, map[string]any{"mfaRequired": mfaRequired})
+}
+
+func (s *Server) verifyMFA(w http.ResponseWriter, r *http.Request) {
+	ip := clientIP(r)
+	if s.loginLimit.Blocked(ip) {
+		writeErr(w, http.StatusTooManyRequests, "too_many_attempts")
+		return
+	}
+	var req struct {
+		Code string `json:"code"`
+	}
+	if err := decode(r, &req); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request")
+		return
+	}
+	sess := sessionFrom(r)
+	if err := s.Auth.VerifySecondFactor(r.Context(), sess.User, req.Code); err != nil {
+		s.loginLimit.Fail(ip)
+		store.Audit(r.Context(), s.DB, sess.User.ID, "mfa.failed", "", ip)
+		writeErr(w, http.StatusUnauthorized, "invalid_code")
+		return
+	}
+	if err := s.Auth.MarkMFAPassed(r.Context(), sess); err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	s.loginLimit.Reset(ip)
+	store.Audit(r.Context(), s.DB, sess.User.ID, "login.success", "mfa", ip)
+	writeJSON(w, http.StatusOK, s.meBody(r.Context(), sess.User, true))
+}
+
+func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
+	_ = s.Auth.DeleteSession(r.Context(), sessionFrom(r))
+	s.clearCookie(w, r)
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (s *Server) meBody(ctx context.Context, u *auth.User, mfaPassed bool) map[string]any {
+	org, _ := store.GetSetting(ctx, s.DB, "organization", "Kiestoon")
+	return map[string]any{
+		"user":                  u,
+		"mfaPassed":             mfaPassed,
+		"mfaEnrollmentRequired": u.IsAdmin() && !u.TOTPEnabled,
+		"organization":          org,
+	}
+}
+
+func (s *Server) me(w http.ResponseWriter, r *http.Request) {
+	sess := sessionFrom(r)
+	writeJSON(w, http.StatusOK, s.meBody(r.Context(), sess.User, sess.MFAPassed))
+}
+
+func (s *Server) mfaEnroll(w http.ResponseWriter, r *http.Request) {
+	u := sessionFrom(r).User
+	if u.TOTPEnabled {
+		writeErr(w, http.StatusConflict, "mfa_already_enabled")
+		return
+	}
+	secret, url, err := s.Auth.BeginTOTPEnrollment(r.Context(), u)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"secret": secret, "otpauthUrl": url})
+}
+
+func (s *Server) mfaConfirm(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Code string `json:"code"`
+	}
+	if err := decode(r, &req); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request")
+		return
+	}
+	sess := sessionFrom(r)
+	codes, err := s.Auth.ConfirmTOTPEnrollment(r.Context(), sess.User, req.Code)
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid_code")
+		return
+	}
+	_ = s.Auth.MarkMFAPassed(r.Context(), sess)
+	store.Audit(r.Context(), s.DB, sess.User.ID, "mfa.enabled", "totp", clientIP(r))
+	writeJSON(w, http.StatusOK, map[string]any{"recoveryCodes": codes})
+}
+
+func (s *Server) setLanguage(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Language string `json:"language"`
+	}
+	if err := decode(r, &req); err != nil || (req.Language != "en" && req.Language != "nl") {
+		writeErr(w, http.StatusBadRequest, "bad_request")
+		return
+	}
+	if err := s.Auth.SetLanguage(r.Context(), sessionFrom(r).User.ID, req.Language); err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"language": req.Language})
+}
+
+func (s *Server) changePassword(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Current string `json:"current"`
+		New     string `json:"new"`
+	}
+	if err := decode(r, &req); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request")
+		return
+	}
+	u := sessionFrom(r).User
+	switch err := s.Auth.ChangePassword(r.Context(), u, req.Current, req.New); {
+	case errors.Is(err, auth.ErrInvalidCredentials):
+		writeErr(w, http.StatusBadRequest, "invalid_current_password")
+	case errors.Is(err, auth.ErrWeakPassword):
+		writeErr(w, http.StatusBadRequest, "weak_password")
+	case err != nil:
+		writeErr(w, http.StatusInternalServerError, "internal")
+	default:
+		store.Audit(r.Context(), s.DB, u.ID, "password.changed", "", clientIP(r))
+		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	}
+}
+
+// ---- system -----------------------------------------------------------------
+
+func (s *Server) health(w http.ResponseWriter, r *http.Request) {
+	if err := s.DB.PingContext(r.Context()); err != nil {
+		writeErr(w, http.StatusServiceUnavailable, "database_unavailable")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "version": version.Version})
+}
+
+func (s *Server) channel(ctx context.Context) string {
+	c, _ := store.GetSetting(ctx, s.DB, "update_channel", s.Cfg.DefaultChannel)
+	if !updates.ValidChannel(c) {
+		return updates.ChannelProduction
+	}
+	return c
+}
+
+func (s *Server) systemInfo(w http.ResponseWriter, r *http.Request) {
+	host, _ := os.Hostname()
+	writeJSON(w, http.StatusOK, map[string]any{
+		"version":   version.Version,
+		"commit":    version.Commit,
+		"buildDate": version.BuildDate,
+		"channel":   s.channel(r.Context()),
+		"hostname":  host,
+		"uptime":    int64(time.Since(s.started).Seconds()),
+		"repo":      s.Cfg.Repo,
+	})
+}
+
+func (s *Server) setChannel(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Channel string `json:"channel"`
+	}
+	if err := decode(r, &req); err != nil || !updates.ValidChannel(req.Channel) {
+		writeErr(w, http.StatusBadRequest, "bad_request")
+		return
+	}
+	if err := store.SetSetting(r.Context(), s.DB, "update_channel", req.Channel); err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	store.Audit(r.Context(), s.DB, sessionFrom(r).User.ID, "updates.channel", req.Channel, clientIP(r))
+	writeJSON(w, http.StatusOK, map[string]string{"channel": req.Channel})
+}
+
+func (s *Server) checkUpdates(w http.ResponseWriter, r *http.Request) {
+	res, err := s.Updates.Check(r.Context(), version.Version, s.channel(r.Context()), true)
+	if err != nil {
+		s.Log.Warn("update check failed", "err", err)
+		writeErr(w, http.StatusBadGateway, "update_check_failed")
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+func (s *Server) applyUpdate(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Version string `json:"version"`
+	}
+	if err := decode(r, &req); err != nil || req.Version == "" {
+		writeErr(w, http.StatusBadRequest, "bad_request")
+		return
+	}
+	ch := s.channel(r.Context())
+	rel, err := s.Updates.Find(r.Context(), req.Version, ch)
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, "unknown_version")
+		return
+	}
+	u := sessionFrom(r).User
+	err = s.Updates.RequestUpdate(updates.Request{Version: rel.Version, Channel: ch, RequestedAt: time.Now().UTC(), RequestedBy: u.Username})
+	if errors.Is(err, updates.ErrBusy) {
+		writeErr(w, http.StatusConflict, "update_in_progress")
+		return
+	}
+	if err != nil {
+		s.Log.Error("queue update", "err", err)
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	store.Audit(r.Context(), s.DB, u.ID, "updates.requested", rel.Version, clientIP(r))
+	writeJSON(w, http.StatusAccepted, s.Updates.Status())
+}
+
+func (s *Server) updateStatus(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, s.Updates.Status())
+}
+
+func (s *Server) auditLog(w http.ResponseWriter, r *http.Request) {
+	rows, err := s.DB.QueryContext(r.Context(), `SELECT a.id, a.at, COALESCE(u.username, ''), a.action, a.detail, a.ip
+		FROM audit_log a LEFT JOIN users u ON u.id = a.user_id ORDER BY a.id DESC LIMIT 200`)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	defer rows.Close()
+	type entry struct {
+		ID     int64  `json:"id"`
+		At     string `json:"at"`
+		User   string `json:"user"`
+		Action string `json:"action"`
+		Detail string `json:"detail"`
+		IP     string `json:"ip"`
+	}
+	out := []entry{}
+	for rows.Next() {
+		var e entry
+		if rows.Scan(&e.ID, &e.At, &e.User, &e.Action, &e.Detail, &e.IP) == nil {
+			out = append(out, e)
+		}
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// SecurityHeaders adds strict browser security headers to every response.
+func SecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("Referrer-Policy", "no-referrer")
+		h.Set("Permissions-Policy", "camera=(), geolocation=(), microphone=(self)")
+		next.ServeHTTP(w, r)
+	})
+}

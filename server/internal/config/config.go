@@ -18,15 +18,18 @@ type Config struct {
 	Repo string
 	// SecureCookies forces the Secure flag on session cookies (set when served over HTTPS).
 	SecureCookies bool
+	// DefaultChannel is the update channel used until an admin picks one in the UI ("production" or "testing").
+	DefaultChannel string
 }
 
 // Load reads the configuration from environment variables, falling back to defaults.
 func Load() Config {
 	return Config{
-		Listen:        env("KIESTOON_LISTEN", ":8080"),
-		DataDir:       env("KIESTOON_DATA_DIR", "/var/lib/kiestoon"),
-		Repo:          env("KIESTOON_REPO", "rhisijmuiden/kiestoon"),
-		SecureCookies: os.Getenv("KIESTOON_SECURE_COOKIES") == "true",
+		Listen:         env("KIESTOON_LISTEN", ":8080"),
+		DataDir:        env("KIESTOON_DATA_DIR", "/var/lib/kiestoon"),
+		Repo:           env("KIESTOON_REPO", "rhisijmuiden/kiestoon"),
+		SecureCookies:  os.Getenv("KIESTOON_SECURE_COOKIES") == "true",
+		DefaultChannel: env("KIESTOON_CHANNEL", "production"),
 	}
 }
 

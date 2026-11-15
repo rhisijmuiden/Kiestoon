@@ -26,6 +26,19 @@ in de wacht staat; daarna **Doorverbinden voltooien** of **Terug naar beller**.
 Geen muis? Druk op de knop **Doorverbinden** bij een gesprek en kies het doel; <kbd>Esc</kbd> annuleert. Dit werkt
 ook op touchscreens.
 
+### Supervisie
+
+Naast een medewerker in een wachtrijgesprek van een wachtrij met [supervisie](queues.md#supervisie-meeluisteren-influisteren-inbreken)
+aan, staan de knoppen **Meeluisteren**, **Influisteren** en **Inbreken**. Je eigen toestel gaat over; neem op om
+aan te sluiten.
+
+### Terugbelverzoeken
+
+De lijst **Terugbelverzoeken** toont de bellers die een wachtrij gevraagd hebben ze terug te bellen, met hun status:
+*Ingepland*, *Wacht in de wachtrij*, *Wordt teruggebeld* (met de medewerker), *Teruggebeld*, *Niet bereikt* of
+*Geannuleerd*. Annuleer een open verzoek, probeer een mislukt verzoek opnieuw of voeg met de hand een verzoek toe.
+Zie [terugbellen vanuit de wachtrij](queues.md#terugbellen-vanuit-de-wachtrij).
+
 ## Wallboard
 
 ![Het wallboard van de wachtrijen](shot:wallboard)

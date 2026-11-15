@@ -343,6 +343,16 @@ func (b *builder) event(e Event) {
 			s.Result, s.Tone = strings.ToLower(d["status"]), "warn"
 		}
 		b.cur = nil
+	case "kt_callback":
+		// The caller pressed 1 to be called back (the callback itself is a new call).
+		if s := b.lastStep("queue"); s != nil {
+			s.Result, s.Tone = "callback", "accent"
+			if s.Detail == nil {
+				s.Detail = map[string]string{}
+			}
+			s.Detail["callbackNumber"] = d["num"]
+		}
+		b.cur = nil
 	case "kt_rg":
 		b.cur = b.add(&Step{Kind: "ringgroup", At: e.At, Ref: d["id"], Name: b.names("rg", d["id"]), Tone: "accent"})
 	case "kt_rgend":

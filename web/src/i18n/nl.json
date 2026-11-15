@@ -1275,7 +1275,19 @@
       "wrandom": "Willekeurig, waarbij een hogere prioriteitswaarde minder kans geeft."
     },
     "remoteAgents": "Agents op gekoppelde systemen",
-    "remoteAgentsHint": "Hun toestellen gaan via de tunnel over voor deze wachtrij. Hun bezetlampje vertelt de wachtrij wanneer ze in gesprek zijn."
+    "remoteAgentsHint": "Hun toestellen gaan via de tunnel over voor deze wachtrij. Hun bezetlampje vertelt de wachtrij wanneer ze in gesprek zijn.",
+    "callback": "Terugbellen vanuit de wachtrij",
+    "callbackHint": "Wachtende bellers horen dat ze op 1 kunnen drukken om teruggebeld te worden. Ze houden hun plaats in de wachtrij; zodra er een medewerker vrij is, wordt eerst de medewerker verbonden en daarna de beller teruggebeld.",
+    "callbackOfferEvery": "Aanbieden elke",
+    "callbackRetries": "Extra pogingen",
+    "callbackRetriesHint": "Als de beller niet opneemt",
+    "callbackRetryDelay": "Tijd tussen pogingen",
+    "callbackExpire": "Opgeven na",
+    "callbackExpireHint": "Minuten na het verzoek",
+    "callbackCallerId": "Nummerweergave bij terugbellen",
+    "callbackCallerIdHint": "Leeg: het nummer van de uitgaande route",
+    "supervision": "Supervisie",
+    "supervisionHint": "Receptie en beheerders met een toestel kunnen meeluisteren, de medewerker influisteren of inbreken op gesprekken van deze wachtrij (schakelbord of *33, *34, *35 + toestel). Informeer je medewerkers: meeluisteren is privacygevoelig. Elk gebruik staat in het auditlog."
   },
   "ivr": {
     "title": "Keuzemenu's",
@@ -1679,7 +1691,42 @@
     "signIn": "Aanmelden",
     "signOut": "Afmelden",
     "pause": "Pauzeren",
-    "resume": "Hervatten"
+    "resume": "Hervatten",
+    "spyListen": "Meeluisteren met {{name}}",
+    "spyWhisper": "{{name}} influisteren (alleen de medewerker hoort je)",
+    "spyBarge": "Inbreken op het gesprek van {{name}}",
+    "callbacks": "Terugbelverzoeken",
+    "callbacksHint": "Bellers die teruggebeld willen worden. Ze houden hun plaats in de wachtrij en worden gebeld zodra er een medewerker vrij is.",
+    "callbacksEmpty": "Vandaag geen terugbelverzoeken",
+    "cbCaller": "Beller",
+    "cbQueue": "Wachtrij",
+    "cbStatus": "Status",
+    "cbAttempts": "Pogingen",
+    "cbAsked": "Gevraagd om",
+    "cbCancel": "Terugbelverzoek annuleren",
+    "cbRetry": "Opnieuw proberen",
+    "cbNumber": "Telefoonnummer",
+    "cbName": "Naam (optioneel)",
+    "cbAdd": "Terugbelverzoek toevoegen",
+    "cb": {
+      "scheduled": "Ingepland",
+      "waiting": "Wacht in de wachtrij",
+      "calling": "Wordt teruggebeld",
+      "done": "Teruggebeld",
+      "failed": "Niet bereikt",
+      "cancelled": "Geannuleerd"
+    },
+    "cbNote": {
+      "restarted": "terug in de wachtrij na een herstart",
+      "interrupted": "onderbroken door een herstart",
+      "cancelled": "geannuleerd",
+      "answered": "opgenomen",
+      "queue_left": "wachtrij verlaten zonder medewerker",
+      "no_answer": "niet opgenomen",
+      "queue_gone": "wachtrij niet beschikbaar",
+      "redirect_failed": "medewerker kon niet verbonden worden",
+      "start_failed": "kon niet in de wachtrij"
+    }
   },
   "softphone": {
     "title": "Softphone",
@@ -2806,7 +2853,8 @@
       "leaveempty": "Niemand meer aangemeld",
       "joinunavail": "Niemand beschikbaar",
       "leaveunavail": "Niemand meer beschikbaar",
-      "continue": "Doorgegaan"
+      "continue": "Doorgegaan",
+      "callback": "Wil teruggebeld worden"
     },
     "extResult": {
       "answered": "Opgenomen",

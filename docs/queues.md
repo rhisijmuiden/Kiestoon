@@ -40,6 +40,48 @@ are spread over the agents by a distribution strategy. Numbers are in the 700 ra
 | **Accept callers when no agent is signed in** | Off: callers go straight to the overflow destination |
 | **Record queue calls** | Every answered call in this queue is recorded |
 
+## Callback from the queue
+
+Turn on **Queue callback** and waiting callers regularly hear that they can press **1** to be called back. They
+confirm their number (or type another one followed by #) and hang up. They keep their place in the queue: a
+placeholder waits for them. As soon as an agent is free, that agent's phone rings first (the display shows
+`CB` and the caller), the agent hears a short message and Kiestoon calls the caller through the outbound routes.
+
+| Setting | Meaning |
+| --- | --- |
+| **Offer every** | How often waiting callers hear the offer |
+| **Extra attempts** | How many more times Kiestoon tries when the caller does not answer (a retry goes to the front of the queue) |
+| **Time between attempts** | Wait before the next attempt |
+| **Give up after** | Minutes after the request after which an unanswered callback stops |
+| **Caller ID for callbacks** | The number the caller sees; empty uses the outbound route |
+
+The open callbacks are on the [switchboard](switchboard.md#callbacks), where reception can cancel one, try again
+or add a callback by hand (for example after a missed call).
+
+!!! note
+    Callers with a hidden number are asked to type their number. Callbacks that were waiting when Kiestoon or
+    Asterisk restarts are placed back in the queue; a callback that was being dialled at that moment is marked
+    *Not reached* and can be tried again.
+
+## Supervision: listen, whisper, barge in
+
+With **Supervision** on, users with the role *Reception* or higher who have their own extension can join queue
+calls of that queue:
+
+| Mode | Switchboard | Phone | Who hears the supervisor |
+| --- | --- | --- | --- |
+| **Listen** | ear button | `*33<extension>` | nobody |
+| **Whisper** (coach) | speech button | `*34<extension>` | only the agent |
+| **Barge in** | people button | `*35<extension>` | agent and caller |
+
+On the switchboard the buttons appear next to an agent who is in a queue call; your own phone rings and you are
+connected. During the call, press **4** to listen, **5** to whisper and **6** to barge in. Only queue calls can be
+joined, never other calls of the agent, and every use is written to the audit log.
+
+!!! warning "Privacy"
+    Listening in on calls is processing of personal data. Tell your employees (and, where needed, callers) that
+    calls in this queue can be listened to, for example in the greeting and in your privacy policy.
+
 ## Agents on other sites
 
 With [linked systems](multi-site.md), agents of another Kiestoon can join the queue (**Agents on linked systems**).

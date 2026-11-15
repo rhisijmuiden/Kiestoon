@@ -18,6 +18,9 @@ meteen (bijvoorbeeld de stand van niet storen). De lijst staat ook op de pagina 
 | `70` | Het gesprek parkeren (doorverbinden naar 70); je hoort de parkeerplaats |
 | `71` … `79` | Een geparkeerd gesprek oppakken van die plaats |
 | `*80<toestel>` | Intercom: het andere toestel neemt op via de luidspreker |
+| `*33<toestel>` | Supervisors: meeluisteren met het wachtrijgesprek van dat toestel |
+| `*34<toestel>` | Supervisors: de medewerker influisteren (alleen de medewerker hoort je) |
+| `*35<toestel>` | Supervisors: inbreken op het wachtrijgesprek |
 | `*1` | Opname starten of stoppen tijdens een gesprek (als opnemen "op verzoek" staat) |
 | `*28<id>` | Een tijdconditie wisselen tussen dag en nacht (het id staat bij de tijdconditie) |
 | `*2` | Doorverbinden met ruggespraak tijdens een gesprek |

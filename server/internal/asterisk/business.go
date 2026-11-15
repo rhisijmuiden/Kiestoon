@@ -453,7 +453,11 @@ func genQueues(x *w, s *pbx.Snapshot, o Options) {
 		if q.MaxWait > 0 {
 			maxWait = strconv.Itoa(q.MaxWait)
 		}
-		x.f(" same => n,Queue(kiestoon-q-%d,tT,,,%s)", q.ID, maxWait)
+		gosub := ""
+		if q.Options.Supervision {
+			gosub = "kiestoon-qconnect"
+		}
+		x.f(" same => n(join),Queue(kiestoon-q-%d,tT,,,%s,,%s,,${KT_QPOS})", q.ID, maxWait, gosub)
 		x.f(" same => n,NoOp(Queue result ${QUEUESTATUS})")
 		mark(x, "queueend", fmt.Sprintf("id=%d", q.ID), "status=${QUEUESTATUS}")
 		x.f(" same => n,%s", destGoto(q.Overflow))
@@ -487,6 +491,11 @@ func genQueuesConf(s *pbx.Snapshot) string {
 		x.f("ringinuse=no")
 		x.f("setinterfacevar=yes")
 		x.f("announce-holdtime=no")
+		if q.Options.Callback.Enabled {
+			x.f("context=kiestoon-qcb-%d", q.ID)
+			x.f("periodic-announce=kt-callback-offer")
+			x.f("periodic-announce-frequency=%d", q.Options.Callback.OfferEvery)
+		}
 		if q.AnnouncePosition {
 			x.f("announce-position=yes")
 			x.f("announce-frequency=%d", q.AnnounceFrequency)
@@ -836,6 +845,11 @@ func genFeatureCodes(x *w, s *pbx.Snapshot) {
 	x.f("exten => _**X.,1,Pickup(${EXTEN:2}@PICKUPMARK)")
 	x.f(" same => n,Hangup()")
 	x.f("exten => _*80X.,1,Goto(kiestoon-intercom,${FILTER(0-9,${EXTEN:3})},1)")
+	x.f("; *33 listen, *34 whisper, *35 barge on a queue call of <extension> (supervisors only)")
+	x.f("exten => _*3[345]X.,1,GotoIf(${DIALPLAN_EXISTS(kiestoon-spy-${KT_EXT},${EXTEN:2},1)}?kiestoon-spy-${KT_EXT},${EXTEN:2},1)")
+	x.f(" same => n,Answer()")
+	x.f(" same => n,Playback(pbx-invalid)")
+	x.f(" same => n,Hangup()")
 	for _, t := range s.TimeConditions {
 		x.f("exten => *28%d,hint,Custom:kt-tc-%d", t.ID, t.ID)
 		x.f("exten => *28%d,1,Answer()", t.ID)

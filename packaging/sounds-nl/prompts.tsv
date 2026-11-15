@@ -189,3 +189,10 @@ digits/mon-10	november
 digits/mon-11	december
 letters/at	apenstaartje
 letters/dot	punt
+# Queue callback (phase 6)
+kt-callback-offer	Wilt u liever teruggebeld worden? Druk dan op 1. U behoudt uw plaats in de wachtrij.
+kt-callback-number	Wij bellen u terug op het nummer
+kt-callback-confirm	Druk op 1 om te bevestigen, of op 2 om een ander nummer in te toetsen.
+kt-callback-enter	Toets uw telefoonnummer in, gevolgd door het hekje.
+kt-callback-thanks	Dank u wel. Wij bellen u terug zodra er een medewerker vrij is. Tot ziens.
+kt-callback-agent	Terugbelverzoek uit de wachtrij. U wordt nu verbonden met de beller.

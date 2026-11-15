@@ -178,6 +178,14 @@ export type Queue = {
   agentTimeout: number; retry: number; wrapup: number; maxWait: number; maxCallers: number; joinEmpty: boolean; record: boolean
   cidPrefix: string; greetingPrompt: number; overflow: Destination; enabled: boolean; members: QueueMember[]
   remoteMembers?: RemoteMember[]
+  options: QueueOptions
+}
+export type CallbackOptions = { enabled: boolean; offerEvery: number; retries: number; retryDelay: number; expire: number; callerId: string }
+export type QueueOptions = { supervision: boolean; callback: CallbackOptions }
+export type CallbackStatus = 'scheduled' | 'waiting' | 'calling' | 'done' | 'failed' | 'cancelled'
+export type QueueCallback = {
+  id: number; queueId: number; number: string; name: string; position: number; status: CallbackStatus; attempts: number
+  agent: string; note: string; nextAt: string; createdAt: string; updatedAt: string
 }
 export type RemoteMember = { peerId: number; number: string; name: string; site: string; penalty: number }
 export type QueueAgentLive = { number: string; name: string; status: string; paused: boolean; inCall: boolean; callsTaken: number; lastCall: number }

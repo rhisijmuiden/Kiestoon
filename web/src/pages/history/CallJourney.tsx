@@ -100,7 +100,7 @@ function stepResult(t: TFunction, s: JourneyStep): { text: string; tone?: 'ok' |
     }
     case 'queue':
       if (!r) return null
-      return { text: t(`journey.queueResult.${r}`, { defaultValue: r }), tone: r === 'answered' ? 'ok' : r === 'abandoned' ? 'danger' : 'warn' }
+      return { text: t(`journey.queueResult.${r}`, { defaultValue: r }), tone: r === 'answered' ? 'ok' : r === 'abandoned' ? 'danger' : r === 'callback' ? 'accent' : 'warn' }
     case 'extension':
     case 'ringgroup':
     case 'outbound':

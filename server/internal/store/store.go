@@ -642,6 +642,24 @@ var migrations = []string{
 	);
 	CREATE INDEX call_events_linked ON call_events(linkedid, at);
 	CREATE INDEX call_events_at ON call_events(at);`,
+	// Phase 6: queue options (supervision, callback) and the queue callback list.
+	`ALTER TABLE queues ADD COLUMN options TEXT NOT NULL DEFAULT '{}';
+	CREATE TABLE queue_callbacks (
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		queue_id   INTEGER NOT NULL REFERENCES queues(id) ON DELETE CASCADE,
+		number     TEXT NOT NULL,
+		name       TEXT NOT NULL DEFAULT '',
+		position   INTEGER NOT NULL DEFAULT 0,
+		status     TEXT NOT NULL DEFAULT 'scheduled',
+		attempts   INTEGER NOT NULL DEFAULT 0,
+		agent      TEXT NOT NULL DEFAULT '',
+		linkedid   TEXT NOT NULL DEFAULT '',
+		note       TEXT NOT NULL DEFAULT '',
+		next_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+	CREATE INDEX queue_callbacks_status ON queue_callbacks(status, next_at);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

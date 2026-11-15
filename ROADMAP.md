@@ -274,6 +274,32 @@ Notes on phase 5:
   the audit log, the session loses the skip when it is used from outside the network, X-Forwarded-For only from
   trusted proxies, ranges wider than /8 refused and a warning for public ranges. SSO and API tokens are not affected.
 
+## Phase 6 · AI, wallboard and mobile
+
+Goal: smarter calls, insight for the team lead and the phone system in your pocket. Released as `v0.7.0-rc.N` on
+the testing channel.
+
+- [x] Supervisor (`v0.7.0-rc.1`): listen, whisper (coach) and barge in on queue calls, from the switchboard and
+  with `*33` / `*34` / `*35` + extension on desk phones; per queue switched on, for reception and admins with an
+  extension, only queue calls (never other calls of the agent), every use in the audit log
+- [x] Queue callback (`v0.7.0-rc.1`): the caller presses 1, confirms or types a number, hangs up and keeps their
+  place; when an agent is free the agent is connected first and then the caller is called back, with retries, an
+  expiry time, own caller ID and a callback list on the switchboard (cancel, retry, add by hand)
+- [ ] Live wallboard v2 for a TV: per queue waiting, longest wait, service level, agents (free, busy, paused),
+  rotating layouts, kiosk link without login (token), dark and light
+- [ ] SLA alerts: thresholds per queue (waiting callers, longest wait, service level, abandoned) shown on the
+  wallboard and sent by e-mail (and later push), with a quiet period
+- [ ] Scheduled reports by e-mail: daily, weekly or monthly per queue and agent (answered, abandoned, waiting time,
+  service level, talk time), as HTML mail with CSV
+- [ ] AI: transcription of recorded calls (whisper.cpp, local), summaries and action points of calls and voicemail,
+  searchable in the call history and the user portal
+- [ ] Speech IVR: "say what you are calling about": a new IVR step that listens, recognises the spoken intent from
+  phrases per line (local Whisper) and falls back to keys
+- [ ] Mobile app (iOS and Android), the counterpart of the Windows softphone: calls with push notifications when
+  the app is closed (CallKit / Android ConnectionService), colleagues and presence, voicemail, history, queues
+- [ ] WhatsApp and SMS in the portal next to calls: a shared inbox per team or number, conversations linked to the
+  phone book and the call history, notifications
+
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.
 That keeps backups, restores and high availability simple.

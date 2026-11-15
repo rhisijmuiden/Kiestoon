@@ -538,22 +538,80 @@ type Queue struct {
 	RemoteMembers []RemoteMember `json:"remoteMembers"`
 	Enabled       bool           `json:"enabled"`
 	Members       []QueueMember  `json:"members"`
+	// Options holds the phase 6 settings: supervision, callback and service levels.
+	Options QueueOptions `json:"options"`
+}
+
+// QueueOptions are the queue settings stored as JSON.
+type QueueOptions struct {
+	// Supervision lets supervisors (reception, admin) listen, whisper and barge on calls of this queue.
+	Supervision bool            `json:"supervision"`
+	Callback    CallbackOptions `json:"callback"`
+}
+
+// CallbackOptions configure the queue callback: a waiting caller presses 1, hangs up and keeps their
+// place; when an agent is free the agent is connected first and then the caller is called back.
+type CallbackOptions struct {
+	Enabled bool `json:"enabled"`
+	// OfferEvery is how often (seconds) the offer is played to waiting callers.
+	OfferEvery int `json:"offerEvery"`
+	// Retries is how many more times an unanswered callback is tried.
+	Retries int `json:"retries"`
+	// RetryDelay is the time (seconds) between attempts.
+	RetryDelay int `json:"retryDelay"`
+	// Expire (minutes) gives up on a callback that has not reached an agent by then.
+	Expire int `json:"expire"`
+	// CallerID is the number shown to the caller when called back ("" = the route default).
+	CallerID string `json:"callerId"`
+}
+
+func (o *QueueOptions) normalize() error {
+	c := &o.Callback
+	def := func(v *int, d, min, max int, field string) error {
+		if *v == 0 {
+			*v = d
+		}
+		if *v < min || *v > max {
+			return invalid("invalid", "options.callback."+field)
+		}
+		return nil
+	}
+	if err := def(&c.OfferEvery, 60, 15, 600, "offerEvery"); err != nil {
+		return err
+	}
+	if c.Retries < 0 || c.Retries > 5 {
+		return invalid("invalid", "options.callback.retries")
+	}
+	if err := def(&c.RetryDelay, 120, 30, 3600, "retryDelay"); err != nil {
+		return err
+	}
+	if err := def(&c.Expire, 240, 10, 1440, "expire"); err != nil {
+		return err
+	}
+	c.CallerID = strings.TrimSpace(c.CallerID)
+	if c.CallerID != "" && !regexp.MustCompile(`^\+?[0-9]{3,20}$`).MatchString(c.CallerID) {
+		return invalid("invalid", "options.callback.callerId")
+	}
+	return nil
 }
 
 // QueueStrategies are the ring strategies Asterisk supports.
 var QueueStrategies = []string{"ringall", "rrmemory", "leastrecent", "fewestcalls", "random", "linear", "wrandom"}
 
 const queueCols = `id, number, name, strategy, music, announce_position, announce_frequency, agent_timeout, retry, wrapup,
-	max_wait, max_callers, join_empty, record, cid_prefix, greeting_prompt, overflow_type, overflow, enabled`
+	max_wait, max_callers, join_empty, record, cid_prefix, greeting_prompt, overflow_type, overflow, enabled, options`
 
 func scanQueue(row interface{ Scan(...any) error }) (*Queue, error) {
 	var q Queue
 	var ap, je, rec, en int
+	var opts string
 	err := row.Scan(&q.ID, &q.Number, &q.Name, &q.Strategy, &q.Music, &ap, &q.AnnounceFrequency, &q.AgentTimeout, &q.Retry,
-		&q.Wrapup, &q.MaxWait, &q.MaxCallers, &je, &rec, &q.CIDPrefix, &q.GreetingPrompt, &q.Overflow.Type, &q.Overflow.Target, &en)
+		&q.Wrapup, &q.MaxWait, &q.MaxCallers, &je, &rec, &q.CIDPrefix, &q.GreetingPrompt, &q.Overflow.Type, &q.Overflow.Target, &en, &opts)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
+	_ = json.Unmarshal([]byte(opts), &q.Options)
+	_ = q.Options.normalize()
 	q.AnnouncePosition, q.JoinEmpty, q.Record, q.Enabled = ap == 1, je == 1, rec == 1, en == 1
 	q.Members = []QueueMember{}
 	return &q, err
@@ -687,6 +745,10 @@ func (r *Repo) SaveQueue(ctx context.Context, plan NumberPlan, q *Queue) error {
 	if err := validateRemoteMembers(ctx, r, q.RemoteMembers); err != nil {
 		return err
 	}
+	if err := q.Options.normalize(); err != nil {
+		return err
+	}
+	optsJSON, _ := json.Marshal(q.Options)
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -694,11 +756,11 @@ func (r *Repo) SaveQueue(ctx context.Context, plan NumberPlan, q *Queue) error {
 	defer tx.Rollback()
 	args := []any{q.Number, q.Name, q.Strategy, q.Music, b2i(q.AnnouncePosition), q.AnnounceFrequency, q.AgentTimeout, q.Retry,
 		q.Wrapup, q.MaxWait, q.MaxCallers, b2i(q.JoinEmpty), b2i(q.Record), q.CIDPrefix, q.GreetingPrompt, q.Overflow.Type,
-		q.Overflow.Target, b2i(q.Enabled)}
+		q.Overflow.Target, b2i(q.Enabled), string(optsJSON)}
 	if q.ID == 0 {
 		res, err := tx.ExecContext(ctx, `INSERT INTO queues(number, name, strategy, music, announce_position, announce_frequency,
 			agent_timeout, retry, wrapup, max_wait, max_callers, join_empty, record, cid_prefix, greeting_prompt, overflow_type,
-			overflow, enabled) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
+			overflow, enabled, options) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
 		if err != nil {
 			return uniqueErr(err, "number")
 		}
@@ -706,7 +768,7 @@ func (r *Repo) SaveQueue(ctx context.Context, plan NumberPlan, q *Queue) error {
 	} else {
 		res, err := tx.ExecContext(ctx, `UPDATE queues SET number=?, name=?, strategy=?, music=?, announce_position=?,
 			announce_frequency=?, agent_timeout=?, retry=?, wrapup=?, max_wait=?, max_callers=?, join_empty=?, record=?, cid_prefix=?,
-			greeting_prompt=?, overflow_type=?, overflow=?, enabled=? WHERE id=?`, append(args, q.ID)...)
+			greeting_prompt=?, overflow_type=?, overflow=?, enabled=?, options=? WHERE id=?`, append(args, q.ID)...)
 		if err != nil {
 			return uniqueErr(err, "number")
 		}

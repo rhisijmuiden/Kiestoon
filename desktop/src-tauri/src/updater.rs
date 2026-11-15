@@ -80,16 +80,19 @@ fn pick(releases: Vec<GhRelease>, channel: &str) -> Option<Release> {
             let v = parse_version(&r.tag_name)?;
             let msi = r.assets.iter().find(|a| is_msi(&a.name))?;
             let sums = r.assets.iter().find(|a| a.name == "SHA256SUMS")?;
-            Some((v, Release {
-                version: r.tag_name.clone(),
-                notes: r.body.clone().unwrap_or_default(),
-                published_at: r.published_at.clone().unwrap_or_default(),
-                url: r.html_url.clone(),
-                msi_url: msi.browser_download_url.clone(),
-                msi_name: msi.name.clone(),
-                msi_size: msi.size,
-                sums_url: sums.browser_download_url.clone(),
-            }))
+            Some((
+                v,
+                Release {
+                    version: r.tag_name.clone(),
+                    notes: r.body.clone().unwrap_or_default(),
+                    published_at: r.published_at.clone().unwrap_or_default(),
+                    url: r.html_url.clone(),
+                    msi_url: msi.browser_download_url.clone(),
+                    msi_name: msi.name.clone(),
+                    msi_size: msi.size,
+                    sums_url: sums.browser_download_url.clone(),
+                },
+            ))
         })
         .max_by(|a, b| a.0.cmp(&b.0))
         .map(|(_, r)| r)
@@ -113,7 +116,12 @@ pub async fn check(repo: &str, channel: &str, current: &str) -> Result<Check, St
         (Some(_), None) => true,
         _ => false,
     };
-    Ok(Check { current: current.to_string(), channel: channel.to_string(), latest, available })
+    Ok(Check {
+        current: current.to_string(),
+        channel: channel.to_string(),
+        latest,
+        available,
+    })
 }
 
 /// Finds the checksum of a file in a SHA256SUMS file ("<hex>  <name>" per line).
@@ -129,7 +137,14 @@ pub fn sum_for(sums: &str, name: &str) -> Option<String> {
 /// Downloads the MSI of a release and checks it. Reports progress in percent.
 pub async fn download(r: &Release, progress: impl Fn(u8)) -> Result<PathBuf, String> {
     let c = client()?;
-    let sums = c.get(&r.sums_url).send().await.map_err(|e| e.to_string())?.text().await.map_err(|e| e.to_string())?;
+    let sums = c
+        .get(&r.sums_url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .text()
+        .await
+        .map_err(|e| e.to_string())?;
     let want = sum_for(&sums, &r.msi_name).ok_or("no checksum for the installer")?;
     let res = c.get(&r.msi_url).send().await.map_err(|e| e.to_string())?;
     if !res.status().is_success() {
@@ -164,10 +179,23 @@ mod tests {
 
     fn rel(tag: &str, pre: bool) -> GhRelease {
         GhRelease {
-            tag_name: tag.into(), body: None, published_at: None, html_url: String::new(), draft: false, prerelease: pre,
+            tag_name: tag.into(),
+            body: None,
+            published_at: None,
+            html_url: String::new(),
+            draft: false,
+            prerelease: pre,
             assets: vec![
-                GhAsset { name: format!("Kiestoon-Softphone_{tag}_x64.msi"), browser_download_url: "u".into(), size: 1 },
-                GhAsset { name: "SHA256SUMS".into(), browser_download_url: "s".into(), size: 1 },
+                GhAsset {
+                    name: format!("Kiestoon-Softphone_{tag}_x64.msi"),
+                    browser_download_url: "u".into(),
+                    size: 1,
+                },
+                GhAsset {
+                    name: "SHA256SUMS".into(),
+                    browser_download_url: "s".into(),
+                    size: 1,
+                },
             ],
         }
     }
@@ -190,7 +218,11 @@ mod tests {
     fn versions_and_sums() {
         assert!(parse_version("v0.7.0").unwrap() > parse_version("v0.7.0-rc.9").unwrap());
         assert!(parse_version("v0.7.0-rc.10").unwrap() > parse_version("v0.7.0-rc.9").unwrap());
-        let sums = format!("{}  kiestoon_0.7.0_amd64.deb\n{}  Kiestoon-Softphone_v0.7.0_x64.msi\n", "a".repeat(64), "B".repeat(64));
+        let sums = format!(
+            "{}  kiestoon_0.7.0_amd64.deb\n{}  Kiestoon-Softphone_v0.7.0_x64.msi\n",
+            "a".repeat(64),
+            "B".repeat(64)
+        );
         assert_eq!(sum_for(&sums, "Kiestoon-Softphone_v0.7.0_x64.msi"), Some("b".repeat(64)));
         assert_eq!(sum_for(&sums, "other"), None);
     }

@@ -38,7 +38,10 @@ impl Config {
     }
 
     pub fn load(path: &PathBuf) -> Config {
-        std::fs::read(path).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default()
+        std::fs::read(path)
+            .ok()
+            .and_then(|b| serde_json::from_slice(&b).ok())
+            .unwrap_or_default()
     }
 
     pub fn save(&self, path: &PathBuf) -> Result<(), String> {
@@ -66,7 +69,11 @@ pub fn normalize_origin(input: &str) -> Result<String, String> {
     if !u.username().is_empty() || u.password().is_some() {
         return Err("invalid".into());
     }
-    let host = if host.contains(':') && !host.starts_with('[') { format!("[{host}]") } else { host.to_string() };
+    let host = if host.contains(':') && !host.starts_with('[') {
+        format!("[{host}]")
+    } else {
+        host.to_string()
+    };
     Ok(match u.port() {
         Some(p) => format!("https://{host}:{p}"),
         None => format!("https://{host}"),
@@ -81,7 +88,10 @@ mod tests {
     fn origins() {
         assert_eq!(normalize_origin("pbx.example.com").unwrap(), "https://pbx.example.com");
         assert_eq!(normalize_origin(" https://10.0.0.5:8443/ ").unwrap(), "https://10.0.0.5:8443");
-        assert_eq!(normalize_origin("https://pbx.example.com/desktop").unwrap(), "https://pbx.example.com");
+        assert_eq!(
+            normalize_origin("https://pbx.example.com/desktop").unwrap(),
+            "https://pbx.example.com"
+        );
         assert!(normalize_origin("http://pbx.example.com").is_err());
         assert!(normalize_origin("").is_err());
         assert!(normalize_origin("https://user:pw@pbx").is_err());

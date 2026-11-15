@@ -50,14 +50,44 @@ fn label<'a>(labels: &'a HashMap<String, String>, key: &str, default: &'a str) -
 
 pub fn menu<R: Runtime>(app: &AppHandle<R>, labels: &HashMap<String, String>) -> tauri::Result<Menu<R>> {
     let m = Menu::new(app)?;
-    m.append(&MenuItem::with_id(app, "open", label(labels, "open", "Open Kiestoon"), true, None::<&str>)?)?;
+    m.append(&MenuItem::with_id(
+        app,
+        "open",
+        label(labels, "open", "Open Kiestoon"),
+        true,
+        None::<&str>,
+    )?)?;
     m.append(&PredefinedMenuItem::separator(app)?)?;
-    m.append(&MenuItem::with_id(app, "available", format!("● {}", label(labels, "available", "Available")), true, None::<&str>)?)?;
-    m.append(&MenuItem::with_id(app, "dnd", format!("● {}", label(labels, "dnd", "Do not disturb")), true, None::<&str>)?)?;
+    m.append(&MenuItem::with_id(
+        app,
+        "available",
+        format!("● {}", label(labels, "available", "Available")),
+        true,
+        None::<&str>,
+    )?)?;
+    m.append(&MenuItem::with_id(
+        app,
+        "dnd",
+        format!("● {}", label(labels, "dnd", "Do not disturb")),
+        true,
+        None::<&str>,
+    )?)?;
     if labels.get("hasQueues").is_some_and(|v| !v.is_empty()) {
         m.append(&PredefinedMenuItem::separator(app)?)?;
-        m.append(&MenuItem::with_id(app, "queues-in", label(labels, "queuesIn", "Sign in to all queues"), true, None::<&str>)?)?;
-        m.append(&MenuItem::with_id(app, "queues-out", label(labels, "queuesOut", "Sign out of all queues"), true, None::<&str>)?)?;
+        m.append(&MenuItem::with_id(
+            app,
+            "queues-in",
+            label(labels, "queuesIn", "Sign in to all queues"),
+            true,
+            None::<&str>,
+        )?)?;
+        m.append(&MenuItem::with_id(
+            app,
+            "queues-out",
+            label(labels, "queuesOut", "Sign out of all queues"),
+            true,
+            None::<&str>,
+        )?)?;
     }
     m.append(&PredefinedMenuItem::separator(app)?)?;
     m.append(&MenuItem::with_id(app, "info", label(labels, "info", "Info"), true, None::<&str>)?)?;
@@ -90,7 +120,12 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
             }
         })
         .on_tray_icon_event(|tray, e| {
-            if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = e {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = e
+            {
                 let app = tray.app_handle();
                 match app.get_webview_window("main") {
                     Some(w) if w.is_visible().unwrap_or(false) && w.is_focused().unwrap_or(false) => {

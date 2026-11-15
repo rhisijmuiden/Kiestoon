@@ -34,7 +34,9 @@ pub fn install<R: Runtime>(win: &WebviewWindow<R>, origin: String, fingerprint: 
                 let uri = take_pwstr(uri);
                 let mut kind = COREWEBVIEW2_PERMISSION_KIND::default();
                 args.PermissionKind(&mut kind)?;
-                if origin_of(&uri) == o && (kind == COREWEBVIEW2_PERMISSION_KIND_MICROPHONE || kind == COREWEBVIEW2_PERMISSION_KIND_AUTOPLAY) {
+                if origin_of(&uri) == o
+                    && (kind == COREWEBVIEW2_PERMISSION_KIND_MICROPHONE || kind == COREWEBVIEW2_PERMISSION_KIND_AUTOPLAY)
+                {
                     args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW)?;
                 }
                 Ok(())

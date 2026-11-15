@@ -46,7 +46,14 @@ struct Recorder {
 }
 
 impl ServerCertVerifier for Recorder {
-    fn verify_server_cert(&self, end: &CertificateDer<'_>, inter: &[CertificateDer<'_>], name: &ServerName<'_>, ocsp: &[u8], now: UnixTime) -> Result<ServerCertVerified, Error> {
+    fn verify_server_cert(
+        &self,
+        end: &CertificateDer<'_>,
+        inter: &[CertificateDer<'_>],
+        name: &ServerName<'_>,
+        ocsp: &[u8],
+        now: UnixTime,
+    ) -> Result<ServerCertVerified, Error> {
         let trusted = self.inner.verify_server_cert(end, inter, name, ocsp, now).is_ok();
         *self.seen.lock().unwrap() = Some((end.to_vec(), trusted));
         if let Some(pin) = &self.pin {
@@ -56,14 +63,26 @@ impl ServerCertVerifier for Recorder {
         }
         Ok(ServerCertVerified::assertion())
     }
-    fn verify_tls12_signature(&self, m: &[u8], c: &CertificateDer<'_>, d: &DigitallySignedStruct) -> Result<HandshakeSignatureValid, Error> {
+    fn verify_tls12_signature(
+        &self,
+        m: &[u8],
+        c: &CertificateDer<'_>,
+        d: &DigitallySignedStruct,
+    ) -> Result<HandshakeSignatureValid, Error> {
         rustls::crypto::verify_tls12_signature(m, c, d, &rustls::crypto::ring::default_provider().signature_verification_algorithms)
     }
-    fn verify_tls13_signature(&self, m: &[u8], c: &CertificateDer<'_>, d: &DigitallySignedStruct) -> Result<HandshakeSignatureValid, Error> {
+    fn verify_tls13_signature(
+        &self,
+        m: &[u8],
+        c: &CertificateDer<'_>,
+        d: &DigitallySignedStruct,
+    ) -> Result<HandshakeSignatureValid, Error> {
         rustls::crypto::verify_tls13_signature(m, c, d, &rustls::crypto::ring::default_provider().signature_verification_algorithms)
     }
     fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
-        rustls::crypto::ring::default_provider().signature_verification_algorithms.supported_schemes()
+        rustls::crypto::ring::default_provider()
+            .signature_verification_algorithms
+            .supported_schemes()
     }
 }
 
@@ -78,8 +97,14 @@ fn roots() -> rustls::RootCertStore {
 /// Connects to the server, records its certificate and asks it for /api/desktop/info.
 pub async fn probe(origin: &str, pin: Option<String>) -> Result<Probe, String> {
     let provider = Arc::new(rustls::crypto::ring::default_provider());
-    let inner = WebPkiServerVerifier::builder_with_provider(Arc::new(roots()), provider.clone()).build().map_err(|e| e.to_string())?;
-    let rec = Arc::new(Recorder { inner, seen: Mutex::new(None), pin });
+    let inner = WebPkiServerVerifier::builder_with_provider(Arc::new(roots()), provider.clone())
+        .build()
+        .map_err(|e| e.to_string())?;
+    let rec = Arc::new(Recorder {
+        inner,
+        seen: Mutex::new(None),
+        pin,
+    });
     let tls = rustls::ClientConfig::builder_with_provider(provider)
         .with_safe_default_protocol_versions()
         .map_err(|e| e.to_string())?
@@ -93,10 +118,18 @@ pub async fn probe(origin: &str, pin: Option<String>) -> Result<Probe, String> {
         .build()
         .map_err(|e| e.to_string())?;
     let res = client.get(format!("{origin}/api/desktop/info")).send().await.map_err(|e| {
-        if e.is_connect() || e.is_timeout() { "unreachable".to_string() } else { format!("tls: {e}") }
+        if e.is_connect() || e.is_timeout() {
+            "unreachable".to_string()
+        } else {
+            format!("tls: {e}")
+        }
     })?;
     if !res.status().is_success() {
-        return Err(if res.status().as_u16() == 404 { "not_kiestoon".into() } else { format!("http {}", res.status()) });
+        return Err(if res.status().as_u16() == 404 {
+            "not_kiestoon".into()
+        } else {
+            format!("http {}", res.status())
+        });
     }
     let info: serde_json::Value = res.json().await.map_err(|_| "not_kiestoon".to_string())?;
     let (der, trusted) = rec.seen.lock().unwrap().clone().ok_or("no certificate")?;
@@ -111,7 +144,11 @@ pub async fn probe(origin: &str, pin: Option<String>) -> Result<Probe, String> {
 
 /// "ab12cd…" -> "AB:12:CD:…", as the portal shows it.
 pub fn pretty(fp: &str) -> String {
-    fp.as_bytes().chunks(2).map(|c| String::from_utf8_lossy(c).to_uppercase()).collect::<Vec<_>>().join(":")
+    fp.as_bytes()
+        .chunks(2)
+        .map(|c| String::from_utf8_lossy(c).to_uppercase())
+        .collect::<Vec<_>>()
+        .join(":")
 }
 
 #[cfg(test)]

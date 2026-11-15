@@ -41,7 +41,10 @@ pub fn action_name(hook_from: bool, hook_to: bool) -> Option<&'static str> {
 
 #[cfg(windows)]
 pub fn start(shared: Shared, emit: impl Fn(&'static str) + Send + 'static) {
-    std::thread::Builder::new().name("headset".into()).spawn(move || win::run(shared, emit)).ok();
+    std::thread::Builder::new()
+        .name("headset".into())
+        .spawn(move || win::run(shared, emit))
+        .ok();
 }
 
 #[cfg(not(windows))]
@@ -94,7 +97,13 @@ mod win {
                 led_ring: layout.find(Kind::Output, hid_desc::PAGE_LED, hid_desc::LED_RING),
                 led_mute: layout.find(Kind::Output, hid_desc::PAGE_LED, hid_desc::LED_MUTE),
                 ringer: layout.find(Kind::Output, hid_desc::PAGE_TELEPHONY, hid_desc::TEL_RINGER),
-                dev, layout, hook, mute, last_hook: None, last_mute: false, written: None,
+                dev,
+                layout,
+                hook,
+                mute,
+                last_hook: None,
+                last_mute: false,
+                written: None,
             });
         }
         (opened, infos)
@@ -102,10 +111,15 @@ mod win {
 
     /// Writes the lights. Fields can live in different output reports, so each report is sent once.
     fn write(o: &mut Open, st: LineState) {
-        let fields: Vec<(Field, bool)> = [(o.led_off, st.offhook), (o.led_ring, st.ringing), (o.led_mute, st.muted), (o.ringer, st.ringing)]
-            .into_iter()
-            .filter_map(|(f, v)| f.map(|f| (f, v)))
-            .collect();
+        let fields: Vec<(Field, bool)> = [
+            (o.led_off, st.offhook),
+            (o.led_ring, st.ringing),
+            (o.led_mute, st.muted),
+            (o.ringer, st.ringing),
+        ]
+        .into_iter()
+        .filter_map(|(f, v)| f.map(|f| (f, v)))
+        .collect();
         let mut ids: Vec<u8> = fields.iter().map(|(f, _)| f.report_id).collect();
         ids.dedup();
         for id in ids {
@@ -151,7 +165,11 @@ mod win {
                         Ok(0) => break,
                         Ok(n) => {
                             // Reports start with the report ID when the device uses IDs.
-                            let (id, data) = if o.layout.fields.iter().any(|f| f.report_id != 0) { (buf[0], &buf[1..n]) } else { (0, &buf[..n]) };
+                            let (id, data) = if o.layout.fields.iter().any(|f| f.report_id != 0) {
+                                (buf[0], &buf[1..n])
+                            } else {
+                                (0, &buf[..n])
+                            };
                             if let Some(h) = o.hook.filter(|f| f.report_id == id) {
                                 let now = hid_desc::get(data, &h) != 0;
                                 if let Some(a) = o.last_hook.and_then(|was| action_name(was, now)) {

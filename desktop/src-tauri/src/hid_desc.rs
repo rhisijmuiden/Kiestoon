@@ -39,11 +39,18 @@ pub struct Layout {
 
 impl Layout {
     pub fn find(&self, kind: Kind, page: u16, usage: u16) -> Option<Field> {
-        self.fields.iter().copied().find(|f| f.kind == kind && f.page == page && f.usage == usage)
+        self.fields
+            .iter()
+            .copied()
+            .find(|f| f.kind == kind && f.page == page && f.usage == usage)
     }
 
     pub fn len(&self, kind: Kind, report_id: u8) -> usize {
-        self.lengths.iter().find(|(k, id, _)| *k == kind && *id == report_id).map(|x| x.2).unwrap_or(0)
+        self.lengths
+            .iter()
+            .find(|(k, id, _)| *k == kind && *id == report_id)
+            .map(|x| x.2)
+            .unwrap_or(0)
     }
 }
 
@@ -113,7 +120,14 @@ pub fn parse(desc: &[u8]) -> Layout {
                     }
                     for n in 0..g.report_count {
                         let Some(&(page, usage)) = list.get(n).or(list.last()) else { break };
-                        out.fields.push(Field { kind, report_id: g.report_id, bit: start + n * g.report_size, size: g.report_size, page, usage });
+                        out.fields.push(Field {
+                            kind,
+                            report_id: g.report_id,
+                            bit: start + n * g.report_size,
+                            size: g.report_size,
+                            page,
+                            usage,
+                        });
                     }
                 }
                 let end = start + g.report_size * g.report_count;

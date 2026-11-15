@@ -35,8 +35,20 @@ pub const VERSION: &str = match option_env!("KIESTOON_VERSION") {
 
 /// Commands the pages may call. The remote (server) capability lists them explicitly.
 const COMMANDS: &[&str] = &[
-    "app_info", "set_channel", "check_update", "install_update", "notify", "incoming_show", "incoming_hide", "set_status",
-    "headset_state", "headset_list", "open_external", "unpair", "focus_main", "set_autostart",
+    "app_info",
+    "set_channel",
+    "check_update",
+    "install_update",
+    "notify",
+    "incoming_show",
+    "incoming_hide",
+    "set_status",
+    "headset_state",
+    "headset_list",
+    "open_external",
+    "unpair",
+    "focus_main",
+    "set_autostart",
 ];
 
 struct AppState {
@@ -60,7 +72,11 @@ impl AppState {
 
 /// A page of the app itself (the setup screen, the incoming-call popup).
 fn local_url(page: &str) -> Url {
-    let base = if cfg!(windows) { "http://tauri.localhost/" } else { "tauri://localhost/" };
+    let base = if cfg!(windows) {
+        "http://tauri.localhost/"
+    } else {
+        "tauri://localhost/"
+    };
     Url::parse(base).unwrap().join(page).unwrap()
 }
 
@@ -75,7 +91,10 @@ fn server_url(origin: &str, code: &str) -> Result<Url, String> {
 /// Lets the pages of this server (and only this server) call the shell.
 fn allow_server<R: Runtime>(app: &AppHandle<R>, origin: &str) -> Result<(), String> {
     let id = format!("server-{}", &pin::fingerprint(origin.as_bytes())[..12]);
-    let mut cap = CapabilityBuilder::new(id).remote(format!("{origin}/*")).window("main").permission("core:event:default");
+    let mut cap = CapabilityBuilder::new(id)
+        .remote(format!("{origin}/*"))
+        .window("main")
+        .permission("core:event:default");
     for c in COMMANDS {
         cap = cap.permission(format!("allow-{}", c.replace('_', "-")));
     }
@@ -110,17 +129,29 @@ fn app_info<R: Runtime>(app: AppHandle<R>, state: State<'_, AppState>) -> AppInf
     AppInfo {
         version: VERSION.into(),
         channel: c.channel().into(),
-        os: if cfg!(windows) { "Windows".into() } else { std::env::consts::OS.into() },
+        os: if cfg!(windows) {
+            "Windows".into()
+        } else {
+            std::env::consts::OS.into()
+        },
         autostart: app.autolaunch().is_enabled().unwrap_or(false),
         server: c.server.clone(),
-        fingerprint: if c.fingerprint.is_empty() { String::new() } else { pin::pretty(&c.fingerprint) },
+        fingerprint: if c.fingerprint.is_empty() {
+            String::new()
+        } else {
+            pin::pretty(&c.fingerprint)
+        },
     }
 }
 
 #[tauri::command]
 fn set_channel(state: State<'_, AppState>, channel: String) -> Result<(), String> {
     let mut c = state.cfg();
-    c.channel = if channel == "testing" { "testing".into() } else { "production".into() };
+    c.channel = if channel == "testing" {
+        "testing".into()
+    } else {
+        "production".into()
+    };
     state.save(c)
 }
 
@@ -151,8 +182,16 @@ fn run_installer(msi: &std::path::Path) -> Result<(), String> {
     {
         use std::os::windows::process::CommandExt;
         let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-        let cmd = format!("msiexec /i \"{}\" /passive /norestart && start \"\" \"{}\"", msi.display(), exe.display());
-        std::process::Command::new("cmd").args(["/C", &cmd]).creation_flags(0x0800_0000).spawn().map_err(|e| e.to_string())?;
+        let cmd = format!(
+            "msiexec /i \"{}\" /passive /norestart && start \"\" \"{}\"",
+            msi.display(),
+            exe.display()
+        );
+        std::process::Command::new("cmd")
+            .args(["/C", &cmd])
+            .creation_flags(0x0800_0000)
+            .spawn()
+            .map_err(|e| e.to_string())?;
         Ok(())
     }
     #[cfg(not(windows))]
@@ -170,7 +209,11 @@ fn notify<R: Runtime>(app: AppHandle<R>, title: String, body: String) {
 #[tauri::command]
 fn incoming_show<R: Runtime>(app: AppHandle<R>, name: String, number: String, via: String, lang: String) -> Result<(), String> {
     let mut url = local_url("incoming.html");
-    url.query_pairs_mut().append_pair("name", &name).append_pair("number", &number).append_pair("via", &via).append_pair("lang", &lang);
+    url.query_pairs_mut()
+        .append_pair("name", &name)
+        .append_pair("number", &number)
+        .append_pair("via", &via)
+        .append_pair("lang", &lang);
     if let Some(w) = app.get_webview_window("incoming") {
         w.navigate(url).map_err(|e| e.to_string())?;
         let _ = w.show();
@@ -253,7 +296,11 @@ fn open_external<R: Runtime>(app: AppHandle<R>, url: String) -> Result<(), Strin
 #[tauri::command]
 fn unpair<R: Runtime>(app: AppHandle<R>, state: State<'_, AppState>) -> Result<(), String> {
     let c = state.cfg();
-    state.save(Config { channel: c.channel, repo: c.repo, ..Config::default() })?;
+    state.save(Config {
+        channel: c.channel,
+        repo: c.repo,
+        ..Config::default()
+    })?;
     app.restart();
 }
 
@@ -279,7 +326,10 @@ struct SetupInfo {
 
 #[tauri::command]
 fn setup_info(state: State<'_, AppState>) -> SetupInfo {
-    SetupInfo { version: VERSION.into(), server: state.cfg().server }
+    SetupInfo {
+        version: VERSION.into(),
+        server: state.cfg().server,
+    }
 }
 
 #[tauri::command]
@@ -293,7 +343,13 @@ async fn probe_server(url: String) -> Result<pin::Probe, String> {
 /// Links the softphone to a server. `accepted` is the fingerprint the user confirmed (or the one
 /// in a pairing link from the portal); it is only needed when the certificate is not trusted.
 #[tauri::command]
-async fn connect<R: Runtime>(app: AppHandle<R>, state: State<'_, AppState>, url: String, accepted: String, code: String) -> Result<(), String> {
+async fn connect<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    url: String,
+    accepted: String,
+    code: String,
+) -> Result<(), String> {
     link(&app, &state, &url, &accepted, &code).await
 }
 
@@ -301,12 +357,18 @@ async fn connect<R: Runtime>(app: AppHandle<R>, state: State<'_, AppState>, url:
 #[tauri::command]
 fn browser_login<R: Runtime>(app: AppHandle<R>, url: String) -> Result<(), String> {
     let origin = config::normalize_origin(&url)?;
-    app.opener().open_url(format!("{origin}/desktop-link"), None::<&str>).map_err(|e| e.to_string())
+    app.opener()
+        .open_url(format!("{origin}/desktop-link"), None::<&str>)
+        .map_err(|e| e.to_string())
 }
 
 async fn link<R: Runtime>(app: &AppHandle<R>, state: &AppState, url: &str, accepted: &str, code: &str) -> Result<(), String> {
     let origin = config::normalize_origin(url)?;
-    let accepted: String = accepted.chars().filter(|c| c.is_ascii_hexdigit()).collect::<String>().to_ascii_lowercase();
+    let accepted: String = accepted
+        .chars()
+        .filter(|c| c.is_ascii_hexdigit())
+        .collect::<String>()
+        .to_ascii_lowercase();
     let probe = pin::probe(&origin, (!accepted.is_empty()).then(|| accepted.clone())).await?;
     if !probe.trusted {
         if accepted.is_empty() {
@@ -347,7 +409,11 @@ fn open_urls<R: Runtime>(app: &AppHandle<R>, urls: Vec<Url>) {
         match u.scheme() {
             "kiestoon" => {
                 let q: HashMap<String, String> = u.query_pairs().into_owned().collect();
-                let (server, code, fp) = (q.get("server").cloned().unwrap_or_default(), q.get("code").cloned().unwrap_or_default(), q.get("fp").cloned().unwrap_or_default());
+                let (server, code, fp) = (
+                    q.get("server").cloned().unwrap_or_default(),
+                    q.get("code").cloned().unwrap_or_default(),
+                    q.get("fp").cloned().unwrap_or_default(),
+                );
                 if server.is_empty() {
                     continue;
                 }
@@ -357,7 +423,10 @@ fn open_urls<R: Runtime>(app: &AppHandle<R>, urls: Vec<Url>) {
                     if let Err(e) = link(&app, &state, &server, &fp, &code).await {
                         // Show the setup screen with the details, so the user can check and retry.
                         let mut page = local_url("index.html");
-                        page.query_pairs_mut().append_pair("server", &server).append_pair("code", &code).append_pair("error", &e);
+                        page.query_pairs_mut()
+                            .append_pair("server", &server)
+                            .append_pair("code", &code)
+                            .append_pair("error", &e);
                         if let Some(w) = app.get_webview_window("main") {
                             let _ = w.navigate(page);
                         }
@@ -367,8 +436,17 @@ fn open_urls<R: Runtime>(app: &AppHandle<R>, urls: Vec<Url>) {
             }
             "tel" | "sip" | "sips" | "callto" => {
                 let raw = u.as_str().split_once(':').map(|x| x.1).unwrap_or_default();
-                let raw = url::form_urlencoded::parse(raw.as_bytes()).map(|(k, _)| k.into_owned()).collect::<String>();
-                let number: String = raw.trim_start_matches('/').split(['@', ';', '?']).next().unwrap_or_default().chars().filter(|c| c.is_ascii_digit() || "+*#".contains(*c)).collect();
+                let raw = url::form_urlencoded::parse(raw.as_bytes())
+                    .map(|(k, _)| k.into_owned())
+                    .collect::<String>();
+                let number: String = raw
+                    .trim_start_matches('/')
+                    .split(['@', ';', '?'])
+                    .next()
+                    .unwrap_or_default()
+                    .chars()
+                    .filter(|c| c.is_ascii_digit() || "+*#".contains(*c))
+                    .collect();
                 if !number.is_empty() {
                     tray::show_main(app);
                     let _ = app.emit_to("main", "dial", serde_json::json!({ "number": number }));
@@ -387,10 +465,30 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec!["--hidden"])))
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec!["--hidden"]),
+        ))
         .invoke_handler(tauri::generate_handler![
-            app_info, set_channel, check_update, install_update, notify, incoming_show, incoming_hide, incoming_action, set_status,
-            headset_state, headset_list, open_external, unpair, focus_main, set_autostart, setup_info, probe_server, connect, browser_login
+            app_info,
+            set_channel,
+            check_update,
+            install_update,
+            notify,
+            incoming_show,
+            incoming_hide,
+            incoming_action,
+            set_status,
+            headset_state,
+            headset_list,
+            open_external,
+            unpair,
+            focus_main,
+            set_autostart,
+            setup_info,
+            probe_server,
+            connect,
+            browser_login
         ])
         .on_window_event(|w, e| {
             // Closing the main window keeps the softphone running in the tray.
@@ -409,7 +507,13 @@ pub fn run() {
                 let _ = cfg.save(&path);
             }
             let shared: headset::Shared = Arc::new(headset::Headsets::default());
-            app.manage(AppState { cfg: Mutex::new(cfg.clone()), path, headsets: shared.clone(), labels: Mutex::new(HashMap::new()), release: Mutex::new(None) });
+            app.manage(AppState {
+                cfg: Mutex::new(cfg.clone()),
+                path,
+                headsets: shared.clone(),
+                labels: Mutex::new(HashMap::new()),
+                release: Mutex::new(None),
+            });
 
             let handle = app.handle().clone();
             let start = if cfg.server.is_empty() {
@@ -457,7 +561,10 @@ mod tests {
     #[test]
     fn urls() {
         assert_eq!(server_url("https://pbx:8443", "").unwrap().as_str(), "https://pbx:8443/desktop");
-        assert_eq!(server_url("https://pbx", "AB CD").unwrap().as_str(), "https://pbx/desktop?pair=AB+CD");
+        assert_eq!(
+            server_url("https://pbx", "AB CD").unwrap().as_str(),
+            "https://pbx/desktop?pair=AB+CD"
+        );
         assert!(browser_args("abc=").ends_with("--ignore-certificate-errors-spki-list=abc="));
     }
 }

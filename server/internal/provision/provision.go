@@ -405,13 +405,14 @@ func Snom(in Input) string {
 		}
 		wi("codec_priority_list", "g722,pcma,pcmu,telephone-event")
 	}
-	// Intercom: auto-answer on the Call-Info answer-after header.
+	// Intercom: auto-answer on the Call-Info answer-after header. answer_after_policy is off, idle,
+	// not_busy or always ("always" needs call waiting, which is on by default).
 	ic := in.Phone.Options.Intercom
 	switch {
 	case !ic.Allow:
-		w("answer_after_policy", "none")
+		w("answer_after_policy", "off")
 	case ic.Barge:
-		w("answer_after_policy", "all")
+		w("answer_after_policy", "always")
 	default:
 		w("answer_after_policy", "idle")
 	}

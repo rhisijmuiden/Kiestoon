@@ -158,6 +158,13 @@ function ProvSettingsForm({ value, onClose, onSaved }: { value: ProvSettings; on
   )
 }
 
+// Intercom options each brand's provisioning file can set (auto-answer itself works on all of them).
+// Gigaset DECT handsets have no intercom auto-answer, so the section is hidden there.
+const icSupport: Record<string, ('tone' | 'mute' | 'barge')[]> = {
+  yealink: ['tone', 'mute', 'barge'], snom: ['tone', 'mute', 'barge'], fanvil: ['tone', 'mute', 'barge'],
+  poly: ['mute'], grandstream: [], htek: [], cisco: [], akuvox: [],
+}
+
 function PhoneForm({ value, models, moduleTypes, exts, onClose, onSaved }: { value: Phone; models: PhoneModel[]; moduleTypes: ModuleType[]; exts: Extension[]; onClose: () => void; onSaved: (resync?: ResyncState) => void }) {
   const { t } = useTranslation()
   const [x, setX] = useState<Phone>({ ...value, modules: value.modules ?? [], options: value.options ?? { intercom: { allow: true, mute: false, tone: true, barge: false } } })
@@ -280,7 +287,7 @@ function PhoneForm({ value, models, moduleTypes, exts, onClose, onSaved }: { val
             onKeys={(k) => setX((o) => ({ ...o, keys: k }))} onModules={(m) => setX((o) => ({ ...o, modules: m }))} />
         )}
       </div>
-      {['yealink', 'snom', 'grandstream'].includes(x.vendor) && (
+      {icSupport[x.vendor] && (
         <div className="flex flex-col gap-3 border-t border-line pt-4">
           <div>
             <h3 className="text-sm font-medium text-ink-2">{t('keys.intercom')}</h3>
@@ -288,11 +295,12 @@ function PhoneForm({ value, models, moduleTypes, exts, onClose, onSaved }: { val
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Toggle label={t('keys.icAllow')} checked={ic.allow} onChange={(v) => setIc({ allow: v })} />
-            <Toggle label={t('keys.icTone')} checked={ic.tone} disabled={!ic.allow || x.vendor === 'grandstream'} onChange={(v) => setIc({ tone: v })} />
-            <Toggle label={t('keys.icMute')} checked={ic.mute} disabled={!ic.allow || x.vendor === 'grandstream'} onChange={(v) => setIc({ mute: v })} />
-            <Toggle label={t('keys.icBarge')} hint={t('keys.icBargeHint')} checked={ic.barge} disabled={!ic.allow || x.vendor === 'grandstream'} onChange={(v) => setIc({ barge: v })} />
+            {icSupport[x.vendor].includes('tone') && <Toggle label={t('keys.icTone')} checked={ic.tone} disabled={!ic.allow} onChange={(v) => setIc({ tone: v })} />}
+            {icSupport[x.vendor].includes('mute') && <Toggle label={t('keys.icMute')} checked={ic.mute} disabled={!ic.allow} onChange={(v) => setIc({ mute: v })} />}
+            {icSupport[x.vendor].includes('barge') && <Toggle label={t('keys.icBarge')} hint={t('keys.icBargeHint')} checked={ic.barge} disabled={!ic.allow} onChange={(v) => setIc({ barge: v })} />}
           </div>
-          {x.vendor === 'grandstream' && <p className="text-xs text-subtle">{t('keys.icGrandstream')}</p>}
+          {icSupport[x.vendor].length === 0 && <p className="text-xs text-subtle">{t('keys.icOnlyAllow')}</p>}
+          {x.vendor === 'akuvox' && <p className="text-xs text-subtle">{t('keys.icAkuvox')}</p>}
         </div>
       )}
     </Modal>

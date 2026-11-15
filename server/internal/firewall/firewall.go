@@ -63,6 +63,14 @@ type Ports struct {
 	SIPTLS   int
 	RTPStart int
 	RTPEnd   int
+	// WireGuard are the UDP ports of Kiestoon tunnels (open to everyone: WireGuard only answers
+	// packets signed with a known key).
+	WireGuard []int
+	// Tunnels lets traffic that arrives through a Kiestoon tunnel (interfaces kt*) reach SIP, the
+	// media ports and the portal.
+	Tunnels bool
+	// ClusterPeer is the other node of a high-availability pair: it may send VRRP.
+	ClusterPeer string
 }
 
 func normalizeList(in []string) ([]string, error) {
@@ -277,6 +285,16 @@ func Ruleset(c Config, p Ports, trunkIPs []string, geo *Geo) (string, error) {
 			fmt.Fprintf(&b, "\t\t%s saddr @%s udp dport %d accept\n", fam, setName, p.SIP)
 			fmt.Fprintf(&b, "\t\t%s saddr @%s tcp dport { %d, %d } accept\n", fam, setName, p.SIP, p.SIPTLS)
 		}
+	}
+	if len(p.WireGuard) > 0 {
+		fmt.Fprintf(&b, "\t\tudp dport %s accept\n", ports(p.WireGuard))
+	}
+	if p.Tunnels {
+		fmt.Fprintf(&b, "\t\tiifname \"kt*\" udp dport %d accept\n", p.SIP)
+		fmt.Fprintf(&b, "\t\tiifname \"kt*\" tcp dport %s accept\n", ports(append([]int{p.SIP, p.SIPTLS}, p.Portal...)))
+	}
+	if ip := net.ParseIP(p.ClusterPeer); ip != nil && ip.To4() != nil {
+		fmt.Fprintf(&b, "\t\tip saddr %s ip protocol vrrp accept\n", ip.String())
 	}
 	fmt.Fprintf(&b, "\t\tudp dport %d-%d accept\n", p.RTPStart, p.RTPEnd)
 	if p.UDPTL[0] > 0 && p.UDPTL[1] >= p.UDPTL[0] {

@@ -35,6 +35,10 @@ func destGoto(d pbx.Destination) string {
 		return fmt.Sprintf("Goto(kiestoon-external,%s,1)", d.Target)
 	case pbx.DestFax:
 		return fmt.Sprintf("Goto(kiestoon-fax-%s,s,1)", d.Target)
+	case pbx.DestFollowSun:
+		return fmt.Sprintf("Goto(kiestoon-sun-%s,s,1)", d.Target)
+	case pbx.DestRemote:
+		return remoteGoto(d.Target)
 	}
 	return "Hangup()"
 }
@@ -464,6 +468,7 @@ func genQueuesConf(s *pbx.Snapshot) string {
 			x.f("member => Local/%s@kiestoon-ring/n,%d,%s,hint:%s@kiestoon-extensions", m.Number, m.Penalty,
 				esc(strings.ReplaceAll(m.Name, ",", " ")), m.Number)
 		}
+		remoteQueueMembers(&x, s, q)
 		x.nl()
 	}
 	return x.b.String()

@@ -92,7 +92,7 @@ func setTrustedProxies(list []string) {
 
 func isTrustedProxy(a netip.Addr) bool {
 	a = a.Unmap()
-	if a.IsLoopback() {
+	if a.IsLoopback() || isEdgeProxy(a) {
 		return true
 	}
 	if l := trusted.Load(); l != nil {

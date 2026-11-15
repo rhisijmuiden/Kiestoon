@@ -71,6 +71,9 @@ type Server struct {
 	Firmware  *firmware.Store
 	speech    speechState
 	faxMu     sync.Mutex
+	siteMu    sync.Mutex
+	fed       fedState
+	ha        haState
 	extBusy   sync.Mutex
 	sttBusy   sync.Mutex
 }
@@ -163,6 +166,9 @@ func (s *Server) Routes() http.Handler {
 	s.integrationRoutes(mux, admin, recep)
 	s.passkeyRoutes(mux, full)
 	s.extensionRoutes(mux, admin, recep, full)
+	s.siteRoutes(mux, admin)
+	s.federationRoutes(mux, admin)
+	s.clusterRoutes(mux, admin)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)

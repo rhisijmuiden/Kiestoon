@@ -40,6 +40,11 @@ func (s *Server) onAMIEvent(m asterisk.Message) {
 		go s.onOriginateResponse(m)
 	case "DialBegin", "DialEnd", "MessageWaiting", "QueueCallerAbandon":
 		s.callEvent(m)
+	case "ExtensionStatus":
+		// BLF changes of local extensions go to linked Kiestoon systems.
+		if m.Get("Context") == "kiestoon-extensions" {
+			s.fedLocalState(m.Get("Exten"), asterisk.ExtStatus(m.Get("Status")))
+		}
 	}
 }
 

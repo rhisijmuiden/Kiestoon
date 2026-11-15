@@ -1,4 +1,4 @@
-# Wallboard and SLA alerts
+# Wallboard, SLA alerts and reports
 
 The wallboard shows your queues in large print for a screen on the wall: who is waiting, how long, today's service
 level and what every agent is doing. Kiestoon watches the thresholds you set per queue and warns the team when a
@@ -89,3 +89,28 @@ Kiestoon checks the thresholds every 5 seconds. Under **Alerts** you choose wher
 - **Also mail when it is fine again** sends a short mail when the queue is back within the threshold.
 
 Push notifications in the mobile app follow with the app.
+
+## Scheduled reports
+
+Under **Scheduled reports** you make an overview that Kiestoon mails by itself. Click **New report** and choose:
+
+| Period | Sent | Covers | Compared with |
+| --- | --- | --- | --- |
+| **Daily** | every day (or only workdays) at the time you choose | that day | the same day a week earlier |
+| **Weekly** | on the day and time you choose | the previous week, Monday to Sunday | the week before |
+| **Monthly** | on the 1st at the time you choose | the previous month | the month before |
+
+Choose the queues, the content (per queue, per agent, per hour, and the change against the period before), the
+recipients and the language (English or Dutch) of the mail.
+
+![Preview of a weekly report](shot:report-preview)
+
+The mail is a plain HTML mail that works in every mail program. At the top it shows the calls, service level,
+average wait and hung up share, each with the change against the period before. Below that the tables per queue,
+per agent and per hour, the busiest hour and the number of SLA alerts. The figures per day and queue and per agent
+are attached as a CSV file, which opens in Excel.
+
+- **Preview** shows the mail with the current figures.
+- **Send now to me** mails it to your own address (set it under [Users](users.md)).
+- A report that cannot be delivered is not retried every minute: it waits for its next send moment. The
+  [mail log](mail.md) shows what went wrong.

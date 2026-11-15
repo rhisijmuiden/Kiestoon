@@ -194,6 +194,7 @@ func (s *Server) Routes() http.Handler {
 	s.callbackRoutes(mux, recep)
 	s.aiRoutes(mux, admin, recep, full)
 	s.wallboardRoutes(mux, admin, recep)
+	s.reportRoutes(mux, admin)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)

@@ -400,16 +400,22 @@ func Compose(s Settings, to, subject, body string, atts ...Attachment) []byte {
 	return buf.Bytes()
 }
 
-// ComposeHTML builds a multipart/alternative message with a plain text and an HTML version.
-func ComposeHTML(s Settings, to, subject, text, html string) []byte {
+// ComposeHTML builds a multipart/alternative message with a plain text and an HTML version, inside a
+// multipart/mixed message when there are attachments.
+func ComposeHTML(s Settings, to, subject, text, html string, atts ...Attachment) []byte {
 	var buf bytes.Buffer
 	from := mail.Address{Name: s.FromName, Address: s.FromAddress}
 	domain := "kiestoon.local"
 	if i := strings.LastIndex(s.FromAddress, "@"); i >= 0 {
 		domain = s.FromAddress[i+1:]
 	}
-	var parts bytes.Buffer
-	mw := multipart.NewWriter(&parts)
+	var alt bytes.Buffer
+	aw := multipart.NewWriter(&alt)
+	for _, p := range []struct{ ct, body string }{{"text/plain; charset=utf-8", text}, {"text/html; charset=utf-8", html}} {
+		w, _ := aw.CreatePart(textproto.MIMEHeader{"Content-Type": {p.ct}, "Content-Transfer-Encoding": {"base64"}})
+		_, _ = w.Write([]byte(strings.ReplaceAll(base64Wrap([]byte(p.body)), "\n", "\r\n")))
+	}
+	aw.Close()
 	h := textproto.MIMEHeader{}
 	h.Set("From", from.String())
 	h.Set("To", to)
@@ -419,11 +425,25 @@ func ComposeHTML(s Settings, to, subject, text, html string) []byte {
 	h.Set("MIME-Version", "1.0")
 	h.Set("Auto-Submitted", "auto-generated")
 	h.Set("X-Mailer", "Kiestoon")
-	h.Set("Content-Type", "multipart/alternative; boundary="+mw.Boundary())
+	if len(atts) == 0 {
+		h.Set("Content-Type", "multipart/alternative; boundary="+aw.Boundary())
+		writeHeader(&buf, h)
+		buf.Write(alt.Bytes())
+		return buf.Bytes()
+	}
+	var parts bytes.Buffer
+	mw := multipart.NewWriter(&parts)
+	h.Set("Content-Type", "multipart/mixed; boundary="+mw.Boundary())
 	writeHeader(&buf, h)
-	for _, p := range []struct{ ct, body string }{{"text/plain; charset=utf-8", text}, {"text/html; charset=utf-8", html}} {
-		w, _ := mw.CreatePart(textproto.MIMEHeader{"Content-Type": {p.ct}, "Content-Transfer-Encoding": {"base64"}})
-		_, _ = w.Write([]byte(strings.ReplaceAll(base64Wrap([]byte(p.body)), "\n", "\r\n")))
+	w, _ := mw.CreatePart(textproto.MIMEHeader{"Content-Type": {"multipart/alternative; boundary=" + aw.Boundary()}})
+	_, _ = w.Write(alt.Bytes())
+	for _, a := range atts {
+		pw, _ := mw.CreatePart(textproto.MIMEHeader{
+			"Content-Type":              {a.ContentType + "; name=\"" + a.Name + "\""},
+			"Content-Disposition":       {"attachment; filename=\"" + a.Name + "\""},
+			"Content-Transfer-Encoding": {"base64"},
+		})
+		_, _ = pw.Write([]byte(strings.ReplaceAll(base64Wrap(a.Data), "\n", "\r\n")))
 	}
 	mw.Close()
 	buf.Write(parts.Bytes())
@@ -515,7 +535,7 @@ func (m *Service) SendText(ctx context.Context, kind, to, subject, body string, 
 }
 
 // SendHTML composes and sends an e-mail with a text and an HTML version.
-func (m *Service) SendHTML(ctx context.Context, kind, to, subject, text, html string) error {
+func (m *Service) SendHTML(ctx context.Context, kind, to, subject, text, html string, atts ...Attachment) error {
 	s, err := Load(ctx, m.DB)
 	if err != nil {
 		return err
@@ -523,7 +543,7 @@ func (m *Service) SendHTML(ctx context.Context, kind, to, subject, text, html st
 	if !s.Enabled {
 		return ErrDisabled
 	}
-	err = Send(ctx, s, s.FromAddress, []string{to}, ComposeHTML(s, to, subject, text, html))
+	err = Send(ctx, s, s.FromAddress, []string{to}, ComposeHTML(s, to, subject, text, html, atts...))
 	m.log(ctx, to, subject, kind, err)
 	return err
 }

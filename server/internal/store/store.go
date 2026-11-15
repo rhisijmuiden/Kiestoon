@@ -690,6 +690,28 @@ var migrations = []string{
 	);
 	CREATE INDEX queue_calls_joined ON queue_calls(joined_at);
 	CREATE INDEX queue_calls_open ON queue_calls(uniqueid, result);`,
+	// Phase 6: scheduled queue reports and the log of SLA alerts they count.
+	`CREATE TABLE wallboard_reports (
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		name       TEXT NOT NULL UNIQUE,
+		period     TEXT NOT NULL,
+		time       TEXT NOT NULL,
+		weekday    INTEGER NOT NULL DEFAULT 1,
+		workdays   INTEGER NOT NULL DEFAULT 0,
+		queues     TEXT NOT NULL DEFAULT '[]',
+		sections   TEXT NOT NULL DEFAULT '["queues"]',
+		recipients TEXT NOT NULL DEFAULT '[]',
+		language   TEXT NOT NULL DEFAULT 'en',
+		enabled    INTEGER NOT NULL DEFAULT 1,
+		last_sent  TEXT NOT NULL DEFAULT ''
+	);
+	CREATE TABLE sla_alerts (
+		id       INTEGER PRIMARY KEY AUTOINCREMENT,
+		queue_id INTEGER NOT NULL,
+		kind     TEXT NOT NULL,
+		at       TEXT NOT NULL
+	);
+	CREATE INDEX sla_alerts_at ON sla_alerts(at);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

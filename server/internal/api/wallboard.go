@@ -607,6 +607,7 @@ func (s *Server) checkSLA(ctx context.Context, now time.Time) {
 		a.since = now
 		a.Since = now.UTC().Format(time.RFC3339)
 		s.wall.active[k] = &a
+		go s.logSLAAlert(context.Background(), a, now)
 		if last, ok := s.wall.mailed[k]; !ok || now.Sub(last) >= time.Duration(set.Quiet)*time.Minute {
 			jobs = append(jobs, mailJob{a: a})
 		}

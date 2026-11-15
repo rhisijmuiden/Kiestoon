@@ -35,6 +35,7 @@ export const shots = [
   { name: 'wallboard-tv', path: '/wall/k7Q2m-X9vLr-3e8sW-dPz4a', viewport: { width: 1600, height: 900 }, wait: 6000 },
   { name: 'wallboard-tv-light', path: '/wall/Lb8vR-2qPxN-7mWc4-ZtK9e', viewport: { width: 1600, height: 900 }, wait: 2500 },
   { name: 'wallboard-settings', path: '/wallboard/settings', full: true, wait: 1200 },
+  { name: 'report-preview', path: '/wallboard/settings', run: async (p) => { await p.waitForTimeout(800); await p.getByRole('row').filter({ hasText: 'Weekly overview support' }).getByRole('button', { name: /^(Preview|Voorbeeld)$/ }).click() }, selector: dialog, wait: 1200 },
   { name: 'fax', path: '/fax' },
   { name: 'history', path: '/history' },
   { name: 'call-journey', path: '/history?call=1731644.1', wait: 1200, full: true },

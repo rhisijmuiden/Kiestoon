@@ -21,6 +21,13 @@ import (
 // SessionTTL is how long a session stays valid without logging in again.
 const SessionTTL = 12 * time.Hour
 
+// DesktopTTL is how long a session of the Windows softphone stays valid. It slides: every day the
+// softphone is used it is extended again, so a desk that is used daily never has to sign in again.
+const DesktopTTL = 30 * 24 * time.Hour
+
+// MethodDesktop marks a session of the Windows softphone. It may only use the user portal API.
+const MethodDesktop = "desktop"
+
 // Issuer is the name shown in authenticator apps.
 const Issuer = "Kiestoon"
 
@@ -83,7 +90,9 @@ type Session struct {
 	MFAPassed bool
 	// Method is how the session signed in: password, or sso / sso-mfa (the identity provider
 	// already asked for a second factor, so Kiestoon does not).
-	Method    string
+	Method string
+	// Renewed is set when a desktop session was just extended, so the cookie is sent again.
+	Renewed   bool
 	tokenHash string
 }
 
@@ -224,11 +233,15 @@ func (s *Service) CreateSession(ctx context.Context, u *User, mfaPassed bool) (s
 
 // CreateSessionMethod starts a session and records how the user signed in.
 func (s *Service) CreateSessionMethod(ctx context.Context, u *User, mfaPassed bool, method string) (string, error) {
+	ttl := SessionTTL
+	if method == MethodDesktop {
+		ttl = DesktopTTL
+	}
 	token := randomToken(32)
 	now := s.Now().UTC()
 	_, err := s.DB.ExecContext(ctx,
 		`INSERT INTO sessions(token_hash, user_id, mfa_passed, created_at, expires_at, method) VALUES(?, ?, ?, ?, ?, ?)`,
-		hashToken(token), u.ID, boolInt(mfaPassed), now.Format(time.RFC3339), now.Add(SessionTTL).Format(time.RFC3339), method)
+		hashToken(token), u.ID, boolInt(mfaPassed), now.Format(time.RFC3339), now.Add(ttl).Format(time.RFC3339), method)
 	if err == nil {
 		_, _ = s.DB.ExecContext(ctx, `UPDATE users SET last_login_at = ? WHERE id = ?`, now.Format(time.RFC3339), u.ID)
 	}
@@ -261,7 +274,14 @@ func (s *Service) SessionFromToken(ctx context.Context, token string) (*Session,
 	if err != nil || !u.Enabled {
 		return nil, ErrNoSession
 	}
-	return &Session{User: u, MFAPassed: mfa == 1, Method: method, tokenHash: th}, nil
+	sess := &Session{User: u, MFAPassed: mfa == 1, Method: method, tokenHash: th}
+	if method == MethodDesktop && exp.Sub(s.Now()) < DesktopTTL-24*time.Hour {
+		next := s.Now().UTC().Add(DesktopTTL).Format(time.RFC3339)
+		if _, err := s.DB.ExecContext(ctx, `UPDATE sessions SET expires_at = ? WHERE token_hash = ?`, next, th); err == nil {
+			sess.Renewed = true
+		}
+	}
+	return sess, nil
 }
 
 // MarkMFAPassed records that the session completed the second factor.

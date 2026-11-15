@@ -72,6 +72,10 @@ contents:
     dst: /etc/kiestoon/kiestoon.env
     type: config|noreplace
     file_info: { mode: 0640 }
+  # The Windows softphone installer, offered by the portal at /download/kiestoon-softphone.msi.
+  - src: ./build/softphone/
+    dst: /usr/share/kiestoon/softphone/
+    type: tree
   - src: ./packaging/profile.sh
     dst: /etc/profile.d/kiestoon.sh
     file_info: { mode: 0644 }

@@ -53,30 +53,46 @@ Notes on phase 1:
   the key per location can be shown in the UI and is needed to restore on a new server.
 - Firewall, fail2ban, backups and restore run through a small root helper (`kiestoon-helper.service`);
   the portal itself runs unprivileged.
-- Grandstream phones get their accounts now; the visual key layout for Grandstream follows later.
-- Voice prompts are English for now. Dutch prompts follow with the IVR builder in phase 2.
+- Grandstream phones get their accounts now; the visual key layout for Grandstream followed in phase 2.
+- Voice prompts were English in phase 1. Dutch prompts followed with the IVR builder in phase 2.
 
 ## Phase 2 · Business features
 
-Goal: a complete business phone system, including the reception.
+Goal: a complete business phone system, including the reception. Released as `v0.3.0-rc.1` on the testing channel.
 
-- [ ] Call queues: ring strategies, music on hold, position announcements, overflow, agent login/logout
-- [ ] Hunt groups / ring groups: simultaneous, sequential, rotating
-- [ ] Visual IVR builder (digital receptionist): menus, prompts, time conditions, transfer, voicemail, queue, dial-by-extension
-- [ ] Time conditions and holiday calendar (Dutch holidays preloaded), manual day/night switch
-- [ ] SSO for admins and users: OpenID Connect (Microsoft Entra ID, Google Workspace, Keycloak, Authentik), IdP groups mapped to roles
-- [ ] Roles: superadmin, admin, reception, user, with per-role permissions
-- [ ] User portal (SSO):
-  - [ ] call forwarding (always, busy, no answer), follow-me to mobile, do not disturb, time-based profiles
-  - [ ] voicemail in the browser, greetings, email notifications
-  - [ ] WebRTC softphone: call and be called with a headset from the browser
-  - [ ] hunt group status, queue sign-in / sign-out and live queue status
-  - [ ] own call history and recordings, BLF overview of colleagues with click-to-call
-  - [ ] own keys (BLF, speed dial), SIP details / QR code for a mobile softphone
-- [ ] Call recording: per user, per queue or on demand, with retention period (GDPR)
-- [ ] BLF / presence, call pickup groups, call parking, intercom and paging
-- [ ] Conference rooms with PIN
-- [ ] Outbound fraud protection: block premium and international destinations per user, max concurrent outbound calls, alert mail on unusual traffic
+- [x] Call queues: ring strategies, music on hold, position announcements, overflow, agent login/logout
+- [x] Hunt groups / ring groups: simultaneous, sequential, rotating (and paging)
+- [x] Visual IVR builder (digital receptionist): menus, prompts, time conditions, transfer, voicemail, queue, dial-by-extension
+- [x] Time conditions and holiday calendar (Dutch holidays preloaded), manual day/night switch
+- [x] SSO for admins and users: OpenID Connect (Microsoft Entra ID, Google Workspace, Keycloak, Authentik), IdP groups mapped to roles
+- [x] Roles: superadmin, admin, reception, user, with per-role permissions
+- [x] User portal (SSO):
+  - [x] call forwarding (always, busy, no answer), follow-me to mobile, do not disturb, time-based profiles
+  - [x] voicemail in the browser, greetings, email notifications
+  - [x] WebRTC softphone: call and be called with a headset from the browser
+  - [x] hunt group status, queue sign-in / sign-out and live queue status
+  - [x] own call history and recordings, BLF overview of colleagues with click-to-call
+  - [x] own keys (BLF, speed dial), SIP details / QR code for a mobile softphone
+- [x] Call recording: per user, per queue or on demand, with retention period (GDPR)
+- [x] BLF / presence, call pickup groups, call parking, intercom and paging
+- [x] Conference rooms with PIN
+- [x] Outbound fraud protection: block premium and international destinations per user, max concurrent outbound calls, alert mail on unusual traffic
+- [x] Dutch voice prompts (`kiestoon-sounds-nl`, generated with Piper from an open CC0 voice)
+- [x] Visual key layout for Grandstream (memory keys 1 to 7)
+
+Notes on phase 2:
+
+- Everything is stored in the database; queues, IVRs, time conditions and feature codes are generated into the
+  Asterisk dialplan. Feature codes (*76, *72, *45, *28 …) report back to the portal, so the portal and the phone
+  always show the same state.
+- The WebRTC softphone connects through the portal itself (`/api/webrtc/ws`), so no extra port is opened.
+  Browsers only allow the microphone over https: use the portal on port 8443 (or 443 with internet mode in phase 3).
+- Single sign-on uses OpenID Connect with PKCE. Admins who sign in with SSO can skip the Kiestoon MFA code
+  when the provider enforces MFA ("trust the provider's MFA").
+- Dutch prompts cover voicemail, queues, conference rooms, feature codes, numbers and dates. Anything missing
+  falls back to English. Own IVR and queue prompts are uploaded or recorded in the browser.
+- The Grandstream memory-key mapping (P-values) follows the vendor documentation and still needs a check on real hardware.
+- Fraud alerts count the outbound calls of the last hour after every outbound call; "block on alert" stops all outbound calls except 112 until an admin unblocks.
 
 ## Phase 3 · Integrations
 
@@ -101,7 +117,7 @@ Ongoing.
 - [ ] Zero-touch provisioning via vendor redirection services (Yealink RPS, Snom SRAPS, Grandstream GDMS, Fanvil FDPS)
 - [ ] Firmware management per phone model
 - [ ] Provisioning: Htek, Akuvox, Cisco 8800 MPP
-- [ ] Local text-to-speech (Piper) for IVR prompts, speech-to-text for voicemail
+- [ ] Local text-to-speech (Piper) for own IVR prompts typed in the portal, speech-to-text for voicemail
 - [ ] Email-to-fax / send a fax from the portal (depends on T.38 support of the SIP provider)
 - [ ] More backup destinations: S3, WebDAV, SMB
 - [ ] Optional Prometheus metrics

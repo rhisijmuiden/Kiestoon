@@ -71,6 +71,18 @@ if [ -n "$AST_DEB" ]; then
   fi
 fi
 
+# And the Dutch voice prompts (architecture all), when they changed.
+SND_DEB="$(grep -oE "kiestoon-sounds-nl_[0-9A-Za-z.+~-]+_all\.deb" "$WORK/SHA256SUMS" | head -n1 || true)"
+if [ -n "$SND_DEB" ]; then
+  SND_VER="$(echo "$SND_DEB" | sed -E 's/^kiestoon-sounds-nl_(.*)_all\.deb$/\1/')"
+  if [ "$(dpkg-query -W -f '${Version}' kiestoon-sounds-nl 2>/dev/null || true)" != "$SND_VER" ]; then
+    log "downloading $SND_DEB"
+    curl -fsSL --retry 3 --max-time 600 -o "$WORK/$SND_DEB" "$BASE/$SND_DEB" || fail "download of $SND_DEB failed"
+    (cd "$WORK" && grep -E " [* ]?${SND_DEB}\$" SHA256SUMS | sha256sum -c --status -) || fail "checksum of $SND_DEB does not match"
+    PKGS+=("$WORK/$SND_DEB")
+  fi
+fi
+
 log "backing up $DATA_DIR"
 install -d -m 0700 "$BACKUP_DIR"
 systemctl stop kiestoon.service || true

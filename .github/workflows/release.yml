@@ -42,8 +42,28 @@ jobs:
           path: dist-asterisk/*.deb
           retention-days: 3
 
+  sounds:
+    name: Dutch voice prompts
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache the package
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: dist-sounds
+          key: sounds-nl-${{ hashFiles('packaging/sounds-nl/**') }}
+      - name: Speak the prompts in Debian 13
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: docker run --rm -v "$PWD:/src" -w /src debian:trixie packaging/sounds-nl/build.sh dist-sounds
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sounds-nl
+          path: dist-sounds/*.deb
+          retention-days: 3
+
   release:
-    needs: asterisk
+    needs: [asterisk, sounds]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -96,6 +116,13 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Dutch voice prompts
+        if: env.SKIP != '1'
+        uses: actions/download-artifact@v5
+        with:
+          name: sounds-nl
+          path: dist
+
       - name: Build Proxmox LXC template (amd64)
         if: env.SKIP != '1'
         env:
@@ -103,7 +130,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq debootstrap
-          sudo ./lxc/build-lxc.sh "dist/kiestoon_${VERSION#v}_amd64.deb" dist/ dist/kiestoon-asterisk_*_amd64.deb
+          sudo ./lxc/build-lxc.sh "dist/kiestoon_${VERSION#v}_amd64.deb" dist/ dist/kiestoon-asterisk_*_amd64.deb dist/kiestoon-sounds-nl_*_all.deb
           sudo chown -R "$(id -u):$(id -g)" dist
 
       - name: Checksums

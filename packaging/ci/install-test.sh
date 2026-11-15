@@ -5,6 +5,7 @@
 set -euo pipefail
 KT_DEB="$1"
 AST_DEB="$2"
+SND_DEB="${3:-}"
 NAME=kt-install-test
 
 # DOCKER_RUN_ARGS: extra options for docker run, for example --network host behind a proxy.
@@ -20,7 +21,12 @@ ct() { docker exec "$NAME" bash -c "$*"; }
 for _ in $(seq 1 30); do ct 'systemctl is-system-running 2>/dev/null | grep -qE "running|degraded"' && break; sleep 1; done
 docker cp "$KT_DEB" "$NAME:/root/kiestoon.deb"
 docker cp "$AST_DEB" "$NAME:/root/kiestoon-asterisk.deb"
-ct 'apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq /root/kiestoon-asterisk.deb /root/kiestoon.deb >/dev/null'
+EXTRA=""
+if [ -n "$SND_DEB" ]; then
+  docker cp "$SND_DEB" "$NAME:/root/kiestoon-sounds-nl.deb"
+  EXTRA=/root/kiestoon-sounds-nl.deb
+fi
+ct "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq /root/kiestoon-asterisk.deb /root/kiestoon.deb $EXTRA >/dev/null"
 
 fail() {
   echo "FAIL: $*"
@@ -38,6 +44,9 @@ for unit in kiestoon kiestoon-helper asterisk fail2ban; do
 done
 ct 'systemctl is-enabled -q kiestoon-updater.path' || fail "updater path"
 ct 'test -S /run/kiestoon-helper/helper.sock' || fail "helper socket"
+if [ -n "$SND_DEB" ]; then
+  ct 'test -s /var/lib/asterisk/sounds/nl/vm-intro.wav && test -s /var/lib/asterisk/sounds/nl/digits/7.alaw' || fail "Dutch prompts"
+fi
 
 # The portal writes the Asterisk configuration and connects over AMI.
 for _ in $(seq 1 30); do ct 'asterisk -rx "manager show connected" | grep -q kiestoon' && break; sleep 1; done

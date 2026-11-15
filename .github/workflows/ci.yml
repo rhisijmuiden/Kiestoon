@@ -37,6 +37,31 @@ jobs:
           path: dist-asterisk/*.deb
           retention-days: 3
 
+  sounds:
+    name: Dutch voice prompts
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache the package
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: dist-sounds
+          key: sounds-nl-${{ hashFiles('packaging/sounds-nl/**') }}
+      - name: Speak the prompts in Debian 13
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: docker run --rm -v "$PWD:/src" -w /src debian:trixie packaging/sounds-nl/build.sh dist-sounds
+      - name: Show package
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" dist-sounds
+          dpkg-deb -I dist-sounds/*.deb
+          dpkg-deb -c dist-sounds/*.deb | grep -c '\.wav$'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sounds-nl
+          path: dist-sounds/*.deb
+          retention-days: 3
+
   test:
     name: Test and build
     runs-on: ubuntu-24.04
@@ -67,7 +92,7 @@ jobs:
       - name: Shell scripts
         run: |
           shellcheck -S warning install.sh lxc/build-lxc.sh packaging/kiestoon-updater packaging/fix-permissions \
-            packaging/scripts/*.sh packaging/asterisk/*.sh packaging/ci/*.sh
+            packaging/scripts/*.sh packaging/asterisk/*.sh packaging/ci/*.sh packaging/sounds-nl/*.sh
 
       - name: Debian package
         run: |
@@ -84,7 +109,7 @@ jobs:
 
   install:
     name: Install test (Debian 13)
-    needs: [asterisk, test]
+    needs: [asterisk, sounds, test]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -93,4 +118,4 @@ jobs:
           path: dist
           merge-multiple: true
       - name: Install both packages and check the services
-        run: packaging/ci/install-test.sh dist/kiestoon_*_amd64.deb dist/kiestoon-asterisk_*_amd64.deb
+        run: packaging/ci/install-test.sh dist/kiestoon_*_amd64.deb dist/kiestoon-asterisk_*_amd64.deb dist/kiestoon-sounds-nl_*_all.deb

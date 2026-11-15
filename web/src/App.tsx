@@ -1,24 +1,57 @@
+import type { ReactElement } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Loader2 } from 'lucide-react'
+import { Loader2, PhoneOff } from 'lucide-react'
 import { Layout } from './components/Layout'
-import { allItems } from './components/nav'
+import { Empty } from './components/kit'
+import { allItems, visible } from './components/nav'
+import { Card } from './components/ui'
 import { Account } from './pages/Account'
 import { Audit } from './pages/Audit'
 import { Backups } from './pages/Backups'
+import { Conferences } from './pages/Conferences'
+import { Dashboard } from './pages/Dashboard'
 import { Extensions } from './pages/Extensions'
+import { Features } from './pages/Features'
 import { Firewall } from './pages/Firewall'
 import { History } from './pages/History'
-import { Mail } from './pages/Mail'
-import { Phones } from './pages/Phones'
-import { Settings } from './pages/Settings'
-import { Trunks } from './pages/Trunks'
-import { ComingSoon } from './pages/ComingSoon'
-import { Dashboard } from './pages/Dashboard'
+import { IVRs } from './pages/IVR'
 import { Login } from './pages/Login'
+import { Mail } from './pages/Mail'
 import { MfaEnroll } from './pages/MfaEnroll'
+import { Phones } from './pages/Phones'
+import { Prompts } from './pages/Prompts'
+import { Queues } from './pages/Queues'
+import { Reception } from './pages/Reception'
+import { Recordings } from './pages/Recordings'
+import { RingGroups } from './pages/RingGroups'
+import { Settings } from './pages/Settings'
 import { Setup } from './pages/Setup'
+import { Sso } from './pages/Sso'
+import { TimeConditions } from './pages/TimeConditions'
+import { Trunks } from './pages/Trunks'
+import { Users } from './pages/Users'
+import { Colleagues } from './pages/portal/Colleagues'
+import { MyCalls } from './pages/portal/MyCalls'
+import { MyDevices } from './pages/portal/MyDevices'
+import { MyPhone } from './pages/portal/MyPhone'
+import { MyQueues } from './pages/portal/MyQueues'
+import { Voicemail } from './pages/portal/Voicemail'
+import { roleRank } from './lib/api'
 import { useSession } from './lib/session'
+
+const pages: Record<string, ReactElement> = {
+  dashboard: <Dashboard />, myPhone: <MyPhone />, voicemail: <Voicemail />, myQueues: <MyQueues />, colleagues: <Colleagues />,
+  myCalls: <MyCalls />, devices: <MyDevices />, switchboard: <Reception />, history: <History />, recordings: <Recordings />,
+  extensions: <Extensions />, ringGroups: <RingGroups />, queues: <Queues />, ivr: <IVRs />, timeConditions: <TimeConditions />,
+  conferences: <Conferences />, prompts: <Prompts />, trunks: <Trunks />, phones: <Phones />, users: <Users />, sso: <Sso />,
+  features: <Features />, firewall: <Firewall />, backups: <Backups />, mail: <Mail />, audit: <Audit />, settings: <Settings />,
+}
+
+function NoExtension() {
+  const { t } = useTranslation()
+  return <Card><Empty icon={<PhoneOff className="size-7" />} title={t('portal.noExtensionTitle')} text={t('portal.noExtensionText')} /></Card>
+}
 
 export function App() {
   const { t } = useTranslation()
@@ -42,25 +75,17 @@ export function App() {
       return <MfaEnroll />
   }
 
+  const role = state.me.user.role
+  const hasExt = !!state.me.extension
+  const items = allItems.filter((i) => i.path !== '/' && visible(i, role, hasExt) && pages[i.key])
+  const home = roleRank(role) >= roleRank('reception') ? <Dashboard /> : hasExt ? <MyPhone /> : <NoExtension />
+
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Dashboard />} />
+        <Route index element={home} />
         <Route path="account" element={<Account />} />
-        <Route path="audit" element={<Audit />} />
-        <Route path="backups" element={<Backups />} />
-        <Route path="extensions" element={<Extensions />} />
-        <Route path="firewall" element={<Firewall />} />
-        <Route path="history" element={<History />} />
-        <Route path="mail" element={<Mail />} />
-        <Route path="phones" element={<Phones />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="trunks" element={<Trunks />} />
-        {allItems
-          .filter((i) => i.phase)
-          .map((i) => (
-            <Route key={i.key} path={i.path.slice(1)} element={<ComingSoon item={i} />} />
-          ))}
+        {items.map((i) => <Route key={i.key} path={i.path.slice(1)} element={pages[i.key]} />)}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

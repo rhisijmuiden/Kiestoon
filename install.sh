@@ -9,6 +9,7 @@
 #   --version vX.Y.Z               Install this exact release instead of the newest one
 #   --deb /path/to/kiestoon.deb    Install a local package (for development)
 #   --asterisk-deb /path/to.deb    Local kiestoon-asterisk package to install with --deb
+#   --sounds-deb /path/to.deb      Local kiestoon-sounds-nl package (Dutch prompts) to install with --deb
 set -euo pipefail
 
 REPO="${KIESTOON_REPO:-rhisijmuiden/kiestoon}"
@@ -16,6 +17,7 @@ CHANNEL="production"
 VERSION=""
 LOCAL_DEB=""
 AST_PATH=""
+SND_PATH=""
 
 cyan() { printf '\033[1;36m%s\033[0m\n' "$*"; }
 die() { printf '\033[1;31mError:\033[0m %s\n' "$*" >&2; exit 1; }
@@ -26,6 +28,7 @@ while [ $# -gt 0 ]; do
     --version) VERSION="${2:-}"; shift 2 ;;
     --deb) LOCAL_DEB="${2:-}"; shift 2 ;;
     --asterisk-deb) AST_PATH="$(readlink -f "${2:-}")"; shift 2 ;;
+    --sounds-deb) SND_PATH="$(readlink -f "${2:-}")"; shift 2 ;;
     -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
     *) die "unknown option: $1" ;;
   esac
@@ -73,6 +76,13 @@ else
     (cd "$WORK" && grep -E " [* ]?${AST_DEB}\$" SHA256SUMS | sha256sum -c --status -) || die "checksum does not match for $AST_DEB"
     AST_PATH="$WORK/$AST_DEB"
   fi
+  SND_DEB="$(grep -oE "kiestoon-sounds-nl_[0-9A-Za-z.+~-]+_all\.deb" "$WORK/SHA256SUMS" | head -n1 || true)"
+  if [ -n "$SND_DEB" ]; then
+    echo "Downloading Dutch voice prompts ($SND_DEB)…"
+    curl -fsSL -o "$WORK/$SND_DEB" "https://github.com/$REPO/releases/download/$VERSION/$SND_DEB" || die "download failed: $SND_DEB"
+    (cd "$WORK" && grep -E " [* ]?${SND_DEB}\$" SHA256SUMS | sha256sum -c --status -) || die "checksum does not match for $SND_DEB"
+    SND_PATH="$WORK/$SND_DEB"
+  fi
 fi
 
 # Remember the channel before the service starts for the first time.
@@ -84,6 +94,7 @@ fi
 echo "Installing…"
 PKGS=("$DEB_PATH")
 [ -n "$AST_PATH" ] && PKGS+=("$AST_PATH")
+[ -n "$SND_PATH" ] && PKGS+=("$SND_PATH")
 apt-get install -y -qq --allow-downgrades "${PKGS[@]}" >/dev/null
 sed -i "s/^KIESTOON_CHANNEL=.*/KIESTOON_CHANNEL=$CHANNEL/" /etc/kiestoon/kiestoon.env
 systemctl restart kiestoon.service

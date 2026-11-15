@@ -170,28 +170,36 @@ function PhoneForm({ value, models, exts, onClose, onSaved }: { value: Phone; mo
         ) : (
           <>
             <p className="mb-3 text-xs text-subtle">{t('phones.keysHint')}</p>
-            <div className="grid gap-2 rounded-2xl border border-line bg-[#070C18] p-3 sm:grid-cols-2">
-              {keys.map((k, i) => (
-                <div key={i} className={`grid grid-cols-[28px_96px_1fr_1fr] items-center gap-2 rounded-xl border px-2 py-1.5 ${k.type === 'blf' ? 'border-ok/30 bg-ok/5' : k.type === 'line' ? 'border-accent/30 bg-accent/5' : k.type === 'speed' ? 'border-accent-2/30 bg-accent-2/5' : 'border-line'}`}>
-                  <span className="text-center font-mono text-xs text-subtle">{i + 1}</span>
-                  <select aria-label={t('phones.keyType')} value={k.type} onChange={(e) => setKey(i, { type: e.target.value as PhoneKey['type'], value: e.target.value === 'line' || e.target.value === 'none' ? '' : k.value })} className="min-h-9 rounded-lg border border-line bg-[#0A1224] px-2 text-xs">
-                    {(['none', 'line', 'blf', 'speed'] as const).map((ty) => <option key={ty} value={ty}>{t(`phones.keyTypes.${ty}`)}</option>)}
-                  </select>
-                  {k.type === 'blf' ? (
-                    <select aria-label={t('phones.keyValue')} value={k.value} onChange={(e) => { const ext = exts.find((q) => q.number === e.target.value); setKey(i, { value: e.target.value, label: k.label || ext?.name || '' }) }} className="min-h-9 rounded-lg border border-line bg-[#0A1224] px-2 text-xs">
-                      <option value="">–</option>
-                      {exts.map((e) => <option key={e.id} value={e.number}>{e.number} {e.name}</option>)}
-                    </select>
-                  ) : (
-                    <input aria-label={t('phones.keyValue')} disabled={k.type !== 'speed'} value={k.value} onChange={(e) => setKey(i, { value: e.target.value })} className="min-h-9 rounded-lg border border-line bg-[#0A1224] px-2 font-mono text-xs disabled:opacity-40" />
-                  )}
-                  <input aria-label={t('phones.keyLabel')} disabled={k.type === 'none'} value={k.label} placeholder={t('phones.keyLabel')} onChange={(e) => setKey(i, { label: e.target.value })} className="min-h-9 rounded-lg border border-line bg-[#0A1224] px-2 text-xs disabled:opacity-40" />
-                </div>
-              ))}
-            </div>
+            <KeyEditor keys={keys} setKey={setKey} exts={exts} />
           </>
         )}
       </div>
     </Modal>
+  )
+}
+
+/** The programmable keys of a phone. Shared by the admin page and the user portal. */
+export function KeyEditor({ keys, setKey, exts }: { keys: PhoneKey[]; setKey: (i: number, k: Partial<PhoneKey>) => void; exts: { number: string; name: string }[] }) {
+  const { t } = useTranslation()
+  return (
+    <div className="grid gap-2 rounded-2xl border border-line bg-[#070C18] p-3 sm:grid-cols-2">
+      {keys.map((k, i) => (
+        <div key={i} className={`grid grid-cols-[28px_96px_1fr_1fr] items-center gap-2 rounded-xl border px-2 py-1.5 ${k.type === 'blf' ? 'border-ok/30 bg-ok/5' : k.type === 'line' ? 'border-accent/30 bg-accent/5' : k.type === 'speed' ? 'border-accent-2/30 bg-accent-2/5' : 'border-line'}`}>
+          <span className="text-center font-mono text-xs text-subtle">{i + 1}</span>
+          <select aria-label={t('phones.keyType')} value={k.type} onChange={(e) => setKey(i, { type: e.target.value as PhoneKey['type'], value: e.target.value === 'line' || e.target.value === 'none' ? '' : k.value })} className="min-h-9 rounded-lg border border-line bg-[#0A1224] px-2 text-xs">
+            {(['none', 'line', 'blf', 'speed'] as const).map((ty) => <option key={ty} value={ty}>{t(`phones.keyTypes.${ty}`)}</option>)}
+          </select>
+          {k.type === 'blf' ? (
+            <select aria-label={t('phones.keyValue')} value={k.value} onChange={(e) => { const ext = exts.find((q) => q.number === e.target.value); setKey(i, { value: e.target.value, label: k.label || ext?.name || '' }) }} className="min-h-9 rounded-lg border border-line bg-[#0A1224] px-2 text-xs">
+              <option value="">–</option>
+              {exts.map((e) => <option key={e.number} value={e.number}>{e.number} {e.name}</option>)}
+            </select>
+          ) : (
+            <input aria-label={t('phones.keyValue')} disabled={k.type !== 'speed'} value={k.value} onChange={(e) => setKey(i, { value: e.target.value })} className="min-h-9 rounded-lg border border-line bg-[#0A1224] px-2 font-mono text-xs disabled:opacity-40" />
+          )}
+          <input aria-label={t('phones.keyLabel')} disabled={k.type === 'none'} value={k.label} placeholder={t('phones.keyLabel')} onChange={(e) => setKey(i, { label: e.target.value })} className="min-h-9 rounded-lg border border-line bg-[#0A1224] px-2 text-xs disabled:opacity-40" />
+        </div>
+      ))}
+    </div>
   )
 }

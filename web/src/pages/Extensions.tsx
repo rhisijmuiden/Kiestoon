@@ -4,11 +4,12 @@ import { KeyRound, Pencil, Plus, Trash2, User } from 'lucide-react'
 import { Badge, CopyField, Empty, Modal, Select, Table, Toggle, td, useApi } from '../components/kit'
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
-import type { Extension, Live } from '../lib/types'
+import { blankFeatures, type Extension, type Live } from '../lib/types'
 
 const blank: Extension = {
   id: 0, number: '', name: '', email: '', transport: 'udp', srtp: false, maxContacts: 3, outboundCallerId: '',
   ringSeconds: 25, voicemail: true, voicemailEmail: true, voicemailDelete: false, enabled: true,
+  features: blankFeatures, recordMode: 'ondemand', pickupGroup: '1', outboundClass: 'national', allowPremium: false, webrtc: true,
 }
 
 export function Extensions() {
@@ -137,6 +138,17 @@ function ExtensionForm({ value, onClose, onSaved }: { value: Extension; onClose:
           <Toggle label={t('extensions.vmDelete')} hint={t('extensions.vmDeleteHint')} checked={e.voicemailDelete} disabled={!e.voicemailEmail} onChange={(v) => set('voicemailDelete', v)} />
         </div>
       )}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Select label={t('extensions.outboundClass')} value={e.outboundClass} onChange={(x) => set('outboundClass', x.target.value as Extension['outboundClass'])} hint={t('extensions.outboundClassHint')}>
+          {(['internal', 'national', 'international'] as const).map((c) => <option key={c} value={c}>{t(`extensions.classes.${c}`)}</option>)}
+        </Select>
+        <Select label={t('extensions.recordMode')} value={e.recordMode} onChange={(x) => set('recordMode', x.target.value as Extension['recordMode'])} hint={t('extensions.recordModeHint')}>
+          {(['never', 'ondemand', 'always'] as const).map((c) => <option key={c} value={c}>{t(`extensions.recordModes.${c}`)}</option>)}
+        </Select>
+        <Input label={t('extensions.pickupGroup')} value={e.pickupGroup} onChange={(x) => set('pickupGroup', x.target.value.replace(/[^0-9,]/g, ''))} className="font-mono" hint={t('extensions.pickupGroupHint')} />
+      </div>
+      <Toggle label={t('extensions.allowPremium')} hint={t('extensions.allowPremiumHint')} checked={e.allowPremium} onChange={(v) => set('allowPremium', v)} />
+      <Toggle label={t('extensions.webrtc')} hint={t('extensions.webrtcHint')} checked={e.webrtc} onChange={(v) => set('webrtc', v)} />
       <Toggle label={t('common.enabled')} checked={e.enabled} onChange={(v) => set('enabled', v)} />
     </Modal>
   )

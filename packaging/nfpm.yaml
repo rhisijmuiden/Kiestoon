@@ -27,6 +27,9 @@ depends:
   - restic
   - rclone
 
+recommends:
+  - kiestoon-sounds-nl
+
 contents:
   - src: ./build/kiestoon
     dst: /usr/bin/kiestoon

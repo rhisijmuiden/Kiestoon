@@ -7,6 +7,8 @@
 set -euo pipefail
 TAG="${1:?tag}"
 OUT="${2:?out dir}"
+mkdir -p "$OUT"
+OUT="$(cd "$OUT" && pwd)"
 cd "$(dirname "$0")"
 
 core="${TAG#v}"
@@ -30,7 +32,6 @@ conf+="}"
 npm ci --no-audit --no-fund
 KIESTOON_VERSION="$TAG" npx tauri build --bundles msi --config "$conf"
 
-mkdir -p "$OUT"
 msi=$(ls src-tauri/target/release/bundle/msi/*.msi | head -n1)
 cp "$msi" "$OUT/Kiestoon-Softphone_${TAG}_x64.msi"
 ls -l "$OUT"

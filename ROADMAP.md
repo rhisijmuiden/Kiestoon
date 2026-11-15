@@ -234,7 +234,7 @@ Notes on phase 5:
   phone button on Extensions. After a change Kiestoon sends the vendor's SIP NOTIFY (check-sync, resync for Cisco)
   through the account the phone is registered with, so it fetches the new configuration right away; a phone that is
   not registered yet picks it up at its next provisioning check or after a reboot.
-- [ ] Windows softphone (`v0.6.0-rc.9`, Kiestoon Softphone, `desktop/`): a Tauri app around new compact
+- [ ] Windows softphone (`v0.6.0-rc.11`, Kiestoon Softphone, `desktop/`): a Tauri app around new compact
   `/desktop` pages of the portal. Colleagues with live presence, phone book and favourites, call history, keypad,
   voicemail, queue sign-in/out and pause, transfer by dragging the call onto a colleague (direct or ask first),
   incoming-call popup, tray icon with presence and queues, notifications, USB headset buttons and lights (HID

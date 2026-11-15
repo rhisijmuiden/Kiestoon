@@ -1,11 +1,11 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Headset, Pause, Play, LogIn, LogOut } from 'lucide-react'
-import { Badge, Empty, SectionTitle, formatDuration, useApi } from '../components/kit'
+import { Ear, Headset, Pause, Play, LogIn, LogOut, PhoneCall, RotateCcw, Speech, Users, X } from 'lucide-react'
+import { Badge, Empty, SectionTitle, Select, Table, formatDuration, td, useApi } from '../components/kit'
 import { IconButton, stateTone } from '../components/pbx'
-import { Card, ErrorMessage, PageHeader } from '../components/ui'
+import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
-import type { BlfEntry, Live, QueueView, TimeCondition } from '../lib/types'
+import type { BlfEntry, CallbackStatus, Live, QueueCallback, QueueView, TimeCondition } from '../lib/types'
 import { ActiveCalls, SwitchboardCalls, TransferNotice, TransferTargets } from '../components/Transfer'
 import { useSession } from '../lib/session'
 import { TransferProvider } from '../lib/transfer'
@@ -22,10 +22,20 @@ export function Reception() {
   const tcs = useApi<TimeCondition[]>('/pbx/timeconditions', 15000)
   const queues = useApi<QueueView[]>('/reception/queues', 3000)
   const live = useApi<Live>('/live', 2000)
+  const [spyError, setSpyError] = useState<unknown>(null)
   async function agent(q: number, ext: number, action: string) {
     await api('POST', `/reception/queues/${q}/agents/${ext}`, { action })
     queues.reload()
   }
+  async function spy(agentNumber: string, mode: SpyMode) {
+    setSpyError(null)
+    try {
+      await api('POST', '/reception/supervise', { agent: agentNumber, mode })
+    } catch (e) {
+      setSpyError(e)
+    }
+  }
+  const myNumber = state.kind === 'ready' ? state.me.extension?.number : undefined
   return (
     <>
       <PageHeader title={t('reception.title')} subtitle={t('reception.subtitle')} />
@@ -49,13 +59,23 @@ export function Reception() {
         <SwitchboardCalls calls={live.data?.calls ?? []} />
         <TransferTargets path="/reception/targets" />
       </TransferProvider>
-      <QueueBoard queues={queues.data ?? []} onAgent={agent} />
+      <ErrorMessage error={spyError} />
+      <QueueBoard queues={queues.data ?? []} onAgent={agent} onSpy={hasExt ? spy : undefined} self={myNumber} />
+      <Callbacks queues={queues.data ?? []} />
     </>
   )
 }
 
-/** Live queues with their callers and agents. onAgent is set when the viewer may steer agents. */
-export function QueueBoard({ queues, onAgent, myExtensionId }: { queues: QueueView[]; onAgent?: (q: number, ext: number, action: string) => void; myExtensionId?: number }) {
+export type SpyMode = 'listen' | 'whisper' | 'barge'
+
+/**
+ * Live queues with their callers and agents. onAgent is set when the viewer may steer agents,
+ * onSpy when they may listen, whisper or barge in (queues with supervision on; self is skipped).
+ */
+export function QueueBoard({ queues, onAgent, myExtensionId, onSpy, self }: {
+  queues: QueueView[]; onAgent?: (q: number, ext: number, action: string) => void; myExtensionId?: number
+  onSpy?: (agent: string, mode: SpyMode) => void; self?: string
+}) {
   const { t } = useTranslation()
   if (!queues.length) return <Card><Empty icon={<Headset className="size-7" />} title={t('reception.noQueues')} /></Card>
   return (
@@ -104,6 +124,13 @@ export function QueueBoard({ queues, onAgent, myExtensionId }: { queues: QueueVi
                         : a?.inCall ? <Badge tone="danger" dot>{t('reception.onCall')}</Badge>
                           : <Badge tone={stateTone(a?.status ?? 'unknown')} dot>{t(`states.${a?.status ?? 'unknown'}`, { defaultValue: a?.status })}</Badge>}
                     {a && <span className="hidden font-mono text-xs text-subtle sm:inline" title={t('reception.callsTaken')}>{a.callsTaken}</span>}
+                    {onSpy && q.options?.supervision && a?.inCall && m.number !== self && (
+                      <span className="flex border-l border-line pl-1">
+                        <IconButton label={t('reception.spyListen', { name: m.name })} onClick={() => onSpy(m.number, 'listen')}><Ear className="size-4" aria-hidden /></IconButton>
+                        <IconButton label={t('reception.spyWhisper', { name: m.name })} onClick={() => onSpy(m.number, 'whisper')}><Speech className="size-4" aria-hidden /></IconButton>
+                        <IconButton label={t('reception.spyBarge', { name: m.name })} onClick={() => onSpy(m.number, 'barge')}><Users className="size-4" aria-hidden /></IconButton>
+                      </span>
+                    )}
                     {steer && (
                       <span className="flex">
                         {m.dynamic && (signedIn
@@ -122,6 +149,77 @@ export function QueueBoard({ queues, onAgent, myExtensionId }: { queues: QueueVi
         )
       })}
     </div>
+  )
+}
+
+const cbTone: Record<CallbackStatus, 'ok' | 'warn' | 'danger' | 'accent' | 'muted'> = {
+  scheduled: 'warn', waiting: 'warn', calling: 'accent', done: 'ok', failed: 'danger', cancelled: 'muted',
+}
+
+/** The queue callback list: callers who asked to be called back, and adding one by hand. */
+function Callbacks({ queues }: { queues: QueueView[] }) {
+  const { t, i18n } = useTranslation()
+  const list = useApi<QueueCallback[]>('/reception/callbacks', 5000)
+  const withCb = queues.filter((q) => q.options?.callback?.enabled)
+  const [queueId, setQueueId] = useState(0)
+  const [number, setNumber] = useState('')
+  const [name, setName] = useState('')
+  const [error, setError] = useState<unknown>(null)
+  const [busy, setBusy] = useState(false)
+  if (!withCb.length && !list.data?.length) return null
+  const qName = (id: number) => queues.find((q) => q.id === id)?.name ?? `#${id}`
+  const time = (iso: string) => new Date(iso).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })
+  async function act(c: QueueCallback, action: 'cancel' | 'retry') {
+    setError(null)
+    try { await api('POST', `/reception/callbacks/${c.id}/${action}`, {}) } catch (e) { setError(e) }
+    list.reload()
+  }
+  async function add() {
+    setError(null)
+    setBusy(true)
+    try {
+      await api('POST', '/reception/callbacks', { queueId: queueId || withCb[0]?.id, number, name })
+      setNumber('')
+      setName('')
+      list.reload()
+    } catch (e) { setError(e) } finally { setBusy(false) }
+  }
+  return (
+    <Card>
+      <SectionTitle>{t('reception.callbacks')}</SectionTitle>
+      <p className="-mt-2 mb-4 text-sm text-muted">{t('reception.callbacksHint')}</p>
+      <ErrorMessage error={error || list.error} />
+      <Table head={[t('reception.cbCaller'), t('reception.cbQueue'), t('reception.cbStatus'), t('reception.cbAttempts'), t('reception.cbAsked'), '']}
+        empty={list.data?.length === 0 && <Empty icon={<PhoneCall className="size-7" />} title={t('reception.callbacksEmpty')} />}>
+        {list.data?.map((c) => (
+          <tr key={c.id}>
+            <td className={td}><span className="font-mono text-ink">{c.number}</span> <span className="text-xs text-subtle">{c.name}</span></td>
+            <td className={td}>{qName(c.queueId)}</td>
+            <td className={td}>
+              <Badge tone={cbTone[c.status]} dot>{t(`reception.cb.${c.status}`)}</Badge>
+              {c.status === 'calling' && c.agent && <span className="ml-2 text-xs text-subtle">{c.agent}</span>}
+              {c.note && c.status !== 'calling' && c.status !== 'done' && <span className="ml-2 text-xs text-subtle">{t(`reception.cbNote.${c.note}`, { defaultValue: c.note })}</span>}
+            </td>
+            <td className={`${td} font-mono`}>{c.attempts}</td>
+            <td className={`${td} font-mono text-xs`}>{time(c.createdAt)}</td>
+            <td className={`${td} whitespace-nowrap text-right`}>
+              {(c.status === 'scheduled' || c.status === 'waiting') && <IconButton danger label={t('reception.cbCancel')} onClick={() => act(c, 'cancel')}><X className="size-4" aria-hidden /></IconButton>}
+              {(c.status === 'failed' || c.status === 'cancelled') && <IconButton label={t('reception.cbRetry')} onClick={() => act(c, 'retry')}><RotateCcw className="size-4" aria-hidden /></IconButton>}
+            </td>
+          </tr>
+        ))}
+      </Table>
+      {withCb.length > 0 && (
+        <div className="mt-4 grid items-end gap-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
+          <Select label={t('reception.cbQueue')} value={queueId || withCb[0].id} onChange={(e) => setQueueId(Number(e.target.value))}>
+            {withCb.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
+          </Select>
+          <Input label={t('reception.cbNumber')} value={number} onChange={(e) => setNumber(e.target.value.replace(/[^0-9+]/g, ''))} inputMode="tel" className="font-mono" />
+          <Input label={t('reception.cbName')} value={name} onChange={(e) => setName(e.target.value)} />
+          <Button busy={busy} disabled={number.length < 6} onClick={add}><PhoneCall className="size-4" aria-hidden />{t('reception.cbAdd')}</Button>
+        </div>
+      )}
+    </Card>
   )
 }
 

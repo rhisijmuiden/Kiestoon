@@ -26,6 +26,17 @@ Drag any live caller onto a colleague, ring group or queue to transfer the call 
 No mouse? Press the **Transfer** button on a call and pick the target; <kbd>Esc</kbd> cancels. This also works on
 touch screens.
 
+### Supervision
+
+Next to an agent in a queue call of a queue with [supervision](queues.md#supervision-listen-whisper-barge-in) on, the
+buttons **Listen**, **Whisper** and **Barge in** appear. Your own phone rings; answer to join the call.
+
+### Callbacks
+
+The **Callbacks** list shows the callers who asked a queue to call them back, with their status: *Scheduled*,
+*Waiting in queue*, *Calling back* (with the agent), *Called back*, *Not reached* or *Cancelled*. Cancel an open
+callback, try a failed one again, or add a callback by hand. See [callback from the queue](queues.md#callback-from-the-queue).
+
 ## Wallboard
 
 ![The queue wallboard](shot:wallboard)

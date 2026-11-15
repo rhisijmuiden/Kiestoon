@@ -78,7 +78,7 @@ func TestBusinessObjectsAndPortal(t *testing.T) {
 		}
 	}
 	dp := read("extensions.conf")
-	for _, want := range []string{"[kiestoon-rg-1]", "GLOBAL(KT_RG_1)", "Queue(kiestoon-q-1,tT,,,)", "[kiestoon-ivr-1]",
+	for _, want := range []string{"[kiestoon-rg-1]", "GLOBAL(KT_RG_1)", "(join),Queue(kiestoon-q-1,tT,,,,,,,${KT_QPOS})", "[kiestoon-ivr-1]",
 		"include => kiestoon-direct", "GotoIfTime(08:30-17:00,mon-fri,*,*,Europe/Amsterdam?open)", "GotoIfTime(*,*,25,dec,Europe/Amsterdam?holiday)",
 		"ConfBridge(kiestoon-1,kiestoon_bridge_1", "Goto(kiestoon-in-1,s,1)", "Goto(kiestoon-ivr-1,s,1)", "[kiestoon-allowed]", "Local/0612345678@kiestoon-followme/n"} {
 		if !strings.Contains(dp, want) {

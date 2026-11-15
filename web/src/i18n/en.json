@@ -1275,7 +1275,19 @@
       "wrandom": "Random, with a higher penalty giving a lower chance."
     },
     "remoteAgents": "Agents on linked systems",
-    "remoteAgentsHint": "Their phones ring for this queue through the tunnel. Their busy lamp tells the queue when they are in a call."
+    "remoteAgentsHint": "Their phones ring for this queue through the tunnel. Their busy lamp tells the queue when they are in a call.",
+    "callback": "Queue callback",
+    "callbackHint": "Waiting callers hear that they can press 1 to be called back. They keep their place in the queue; when an agent is free, the agent is connected first and then the caller is called back.",
+    "callbackOfferEvery": "Offer every",
+    "callbackRetries": "Extra attempts",
+    "callbackRetriesHint": "When the caller does not answer",
+    "callbackRetryDelay": "Time between attempts",
+    "callbackExpire": "Give up after",
+    "callbackExpireHint": "Minutes after the request",
+    "callbackCallerId": "Caller ID for callbacks",
+    "callbackCallerIdHint": "Empty: the number of the outbound route",
+    "supervision": "Supervision",
+    "supervisionHint": "Reception and admins with an extension can listen, whisper to the agent or barge in on calls of this queue (switchboard or *33, *34, *35 + extension). Tell your employees: listening in is privacy sensitive. Every use is in the audit log."
   },
   "ivr": {
     "title": "IVR builder",
@@ -1679,7 +1691,42 @@
     "signIn": "Sign in",
     "signOut": "Sign out",
     "pause": "Pause",
-    "resume": "Resume"
+    "resume": "Resume",
+    "spyListen": "Listen to {{name}}",
+    "spyWhisper": "Whisper to {{name}} (only the agent hears you)",
+    "spyBarge": "Barge in on the call of {{name}}",
+    "callbacks": "Callbacks",
+    "callbacksHint": "Callers who asked to be called back. They keep their place in the queue and are called as soon as an agent is free.",
+    "callbacksEmpty": "No callbacks today",
+    "cbCaller": "Caller",
+    "cbQueue": "Queue",
+    "cbStatus": "Status",
+    "cbAttempts": "Attempts",
+    "cbAsked": "Asked at",
+    "cbCancel": "Cancel callback",
+    "cbRetry": "Try again",
+    "cbNumber": "Phone number",
+    "cbName": "Name (optional)",
+    "cbAdd": "Add callback",
+    "cb": {
+      "scheduled": "Scheduled",
+      "waiting": "Waiting in queue",
+      "calling": "Calling back",
+      "done": "Called back",
+      "failed": "Not reached",
+      "cancelled": "Cancelled"
+    },
+    "cbNote": {
+      "restarted": "back in the queue after a restart",
+      "interrupted": "interrupted by a restart",
+      "cancelled": "cancelled",
+      "answered": "answered",
+      "queue_left": "left the queue without an agent",
+      "no_answer": "no answer",
+      "queue_gone": "queue not available",
+      "redirect_failed": "could not connect the agent",
+      "start_failed": "could not join the queue"
+    }
   },
   "softphone": {
     "title": "Softphone",
@@ -2806,7 +2853,8 @@
       "leaveempty": "Nobody signed in anymore",
       "joinunavail": "Nobody available",
       "leaveunavail": "Nobody available anymore",
-      "continue": "Continued"
+      "continue": "Continued",
+      "callback": "Asked to be called back"
     },
     "extResult": {
       "answered": "Answered",

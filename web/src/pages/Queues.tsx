@@ -13,6 +13,7 @@ const blank: Queue = {
   id: 0, number: '', name: '', strategy: 'rrmemory', music: 'default', announcePosition: true, announceFrequency: 60, agentTimeout: 15,
   retry: 5, wrapup: 10, maxWait: 300, maxCallers: 0, joinEmpty: true, record: false, cidPrefix: '', greetingPrompt: 0,
   overflow: { type: 'hangup', target: '' }, enabled: true, members: [],
+  options: { supervision: false, callback: { enabled: false, offerEvery: 60, retries: 2, retryDelay: 120, expire: 240, callerId: '' } },
 }
 
 export function Queues() {
@@ -74,6 +75,9 @@ function QueueForm({ value, onClose, onSaved }: { value: Queue; onClose: () => v
   const prompts = useApi<Prompt[]>('/pbx/prompts')
   const { busy, error, save } = useSaver<Queue>('/pbx/queues', onSaved)
   const set = <K extends keyof Queue>(k: K, v: Queue[K]) => setQ((x) => ({ ...x, [k]: v }))
+  const opts = q.options ?? blank.options
+  const cb = opts.callback
+  const setCb = (patch: Partial<Queue['options']['callback']>) => set('options', { ...opts, callback: { ...cb, ...patch } })
   const member = (id: number) => q.members.find((m) => m.extensionId === id)
   const setMember = (id: number, patch: Partial<QueueMember> | null) => {
     const others = q.members.filter((m) => m.extensionId !== id)
@@ -146,6 +150,19 @@ function QueueForm({ value, onClose, onSaved }: { value: Queue; onClose: () => v
       {q.announcePosition && <Input label={t('queues.announceFrequency')} type="number" min={15} max={600} value={q.announceFrequency} onChange={(e) => set('announceFrequency', Number(e.target.value))} hint={t('common.seconds')} />}
       <Toggle label={t('queues.joinEmpty')} hint={t('queues.joinEmptyHint')} checked={q.joinEmpty} onChange={(v) => set('joinEmpty', v)} />
       <Toggle label={t('queues.record')} hint={t('queues.recordHint')} checked={q.record} onChange={(v) => set('record', v)} />
+      <div className="flex flex-col gap-3 rounded-xl border border-line p-4">
+        <Toggle label={t('queues.callback')} hint={t('queues.callbackHint')} checked={cb.enabled} onChange={(v) => setCb({ enabled: v })} />
+        {cb.enabled && (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Input label={t('queues.callbackOfferEvery')} type="number" min={15} max={600} value={cb.offerEvery} onChange={(e) => setCb({ offerEvery: Number(e.target.value) })} hint={t('common.seconds')} />
+            <Input label={t('queues.callbackRetries')} type="number" min={0} max={5} value={cb.retries} onChange={(e) => setCb({ retries: Number(e.target.value) })} hint={t('queues.callbackRetriesHint')} />
+            <Input label={t('queues.callbackRetryDelay')} type="number" min={30} max={3600} value={cb.retryDelay} onChange={(e) => setCb({ retryDelay: Number(e.target.value) })} hint={t('common.seconds')} />
+            <Input label={t('queues.callbackExpire')} type="number" min={10} max={1440} value={cb.expire} onChange={(e) => setCb({ expire: Number(e.target.value) })} hint={t('queues.callbackExpireHint')} />
+            <Input label={t('queues.callbackCallerId')} value={cb.callerId} onChange={(e) => setCb({ callerId: e.target.value.replace(/[^0-9+]/g, '') })} hint={t('queues.callbackCallerIdHint')} className="font-mono" />
+          </div>
+        )}
+      </div>
+      <Toggle label={t('queues.supervision')} hint={t('queues.supervisionHint')} checked={opts.supervision} onChange={(v) => set('options', { ...opts, supervision: v })} />
       <DestinationPicker label={t('queues.overflow')} value={q.overflow} onChange={(d) => set('overflow', d)} exclude={{ type: 'queue', target: String(q.id) }} />
       <Toggle label={t('common.enabled')} checked={q.enabled} onChange={(v) => set('enabled', v)} />
     </Modal>

@@ -29,6 +29,9 @@ type Snapshot struct {
 	Hub       HubSettings
 	Peers     []FedPeer
 	SunRoutes []SunRoute
+	// Supervisors are the extension numbers of enabled users with the role reception or higher:
+	// they may listen, whisper and barge on calls of queues with supervision on.
+	Supervisors []string
 	// FraudLocked blocks international and premium calls after a fraud alert.
 	FraudLocked bool
 	// Now decides which year's holidays go into the dialplan (it is regenerated every night).
@@ -96,6 +99,20 @@ func (r *Repo) Snapshot(ctx context.Context) (*Snapshot, error) {
 	if s.SunRoutes, err = r.SunRoutes(ctx); err != nil {
 		return nil, err
 	}
+	rows, err := r.DB.QueryContext(ctx, `SELECT DISTINCT e.number FROM users u JOIN extensions e ON e.id = u.extension_id
+		WHERE u.enabled = 1 AND u.role IN ('reception','admin','superadmin') ORDER BY e.number`)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var n string
+		if err := rows.Scan(&n); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		s.Supervisors = append(s.Supervisors, n)
+	}
+	rows.Close()
 	locked, _ := store.GetSetting(ctx, r.DB, FraudLockKey, "")
 	s.FraudLocked = locked != ""
 	if loc, err := time.LoadLocation(s.Settings.Timezone); err == nil {

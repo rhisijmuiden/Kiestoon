@@ -452,6 +452,8 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 	genExtensionsBusiness(&x, s)
 	genRingGroups(&x, s)
 	genQueues(&x, s, o)
+	genSupervision(&x, s)
+	genCallbacks(&x, s)
 	genIVRs(&x, s, o)
 	genTimeConditions(&x, s)
 	genConferences(&x, s)

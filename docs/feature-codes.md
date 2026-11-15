@@ -18,6 +18,9 @@ right away (for example the do-not-disturb state). The list is also on the **Cal
 | `70` | Park the current call (transfer it to 70); you hear the parking slot |
 | `71` … `79` | Pick up a parked call from that slot |
 | `*80<extension>` | Intercom: the other phone answers on the speaker |
+| `*33<extension>` | Supervisors: listen to the queue call of that extension |
+| `*34<extension>` | Supervisors: whisper to the agent (only the agent hears you) |
+| `*35<extension>` | Supervisors: barge in on the queue call |
 | `*1` | Start or stop recording during a call (when recording is "on request") |
 | `*28<id>` | Switch a time condition between day and night (the id is shown on the time condition) |
 | `*2` | Attended transfer during a call |

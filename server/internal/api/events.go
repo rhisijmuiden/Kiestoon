@@ -39,7 +39,11 @@ func (s *Server) onAMIEvent(m asterisk.Message) {
 			go s.onFax(m)
 		case "KiestoonFaxOut":
 			go s.onFaxOut(m)
+		case "KiestoonCallback":
+			go s.onCallbackEvent(m)
 		}
+	case "AgentConnect":
+		go s.onCallbackConnect(m)
 	case "OriginateResponse":
 		go s.onOriginateResponse(m)
 	case "DialBegin", "DialEnd", "MessageWaiting", "QueueCallerAbandon":
@@ -138,6 +142,7 @@ func (s *Server) checkFraud(rec cdr.Record) {
 // RunMaintenance regenerates the dialplan after midnight (holidays move every year), removes old
 // recordings and keeps the day/night BLF lamps right.
 func (s *Server) RunMaintenance(ctx context.Context) {
+	go s.runCallbacks(ctx)
 	day := ""
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()

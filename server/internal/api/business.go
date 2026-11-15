@@ -369,7 +369,8 @@ func (s *Server) featureSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) saveFeatureSettings(w http.ResponseWriter, r *http.Request) {
-	var f pbx.FeatureSettings
+	// Fields the request leaves out keep their current value (journeyDays came later).
+	f, _ := pbx.LoadFeatureSettings(r.Context(), s.DB)
 	if err := decode(r, &f); err != nil {
 		writeErr(w, http.StatusBadRequest, "bad_request")
 		return
@@ -382,6 +383,7 @@ func (s *Server) saveFeatureSettings(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "internal")
 		return
 	}
+	s.refreshJourneySetting(r.Context())
 	s.saved(w, r, "features", "", f)
 }
 

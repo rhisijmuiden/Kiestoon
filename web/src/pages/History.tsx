@@ -1,11 +1,37 @@
-import { useState } from 'react'
+import { Suspense, lazy, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Download, PhoneIncoming, PhoneOutgoing, Repeat } from 'lucide-react'
+import { ChevronRight, Download, Loader2, PhoneIncoming, PhoneOutgoing, Repeat } from 'lucide-react'
 import { Badge, Select, Table, formatDate, formatDuration, td, useApi } from '../components/kit'
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import type { Cdr } from '../lib/types'
 
 const PAGE = 50
+
+const CallJourney = lazy(() => import('./history/CallJourney').then((m) => ({ default: m.CallJourney })))
+
+export function JourneyFallback() {
+  return <div className="flex justify-center py-16 text-muted" role="status"><Loader2 className="size-5 animate-spin text-accent" aria-hidden /></div>
+}
+
+/** The call to show the journey of (?call=<linked id>), and how to open and close it. */
+export function useCallParam() {
+  const [params, setParams] = useSearchParams()
+  const call = params.get('call')
+  const open = (id: string) => setParams((p) => { p.set('call', id); return p })
+  const close = () => setParams((p) => { p.delete('call'); return p })
+  return { call, open, close }
+}
+
+/** Opens a row's journey with a click or Enter. */
+export function rowOpen(open: () => void, label: string) {
+  return {
+    onClick: (e: { target: EventTarget }) => { if (!(e.target as HTMLElement).closest('a,button,audio')) open() },
+    onKeyDown: (e: { key: string; preventDefault: () => void }) => { if (e.key === 'Enter') { e.preventDefault(); open() } },
+    tabIndex: 0, role: 'link', 'aria-label': label,
+    className: 'cursor-pointer transition-colors hover:bg-tint/[0.04] focus-visible:bg-tint/[0.06] focus-visible:outline-none',
+  }
+}
 
 export function History() {
   const { t, i18n } = useTranslation()
@@ -17,6 +43,10 @@ export function History() {
   const set = (k: keyof typeof f, v: string) => { setOffset(0); setF({ ...f, [k]: v }) }
   const dispTone = (d: string) => (d === 'ANSWERED' ? 'ok' : d === 'NO ANSWER' || d === 'BUSY' ? 'warn' : 'danger') as 'ok' | 'warn' | 'danger'
   const total = list.data?.total ?? 0
+  const { call, open, close } = useCallParam()
+  if (call) {
+    return <Suspense fallback={<JourneyFallback />}><CallJourney id={call} base="/cdr/journey" recordingBase="/recordings" onBack={close} /></Suspense>
+  }
   return (
     <>
       <PageHeader title={t('history.title')} subtitle={t('history.subtitle')}>
@@ -43,10 +73,10 @@ export function History() {
       </Card>
       <ErrorMessage error={list.error} />
       <Card>
-        <Table head={[t('history.time'), '', t('history.caller'), t('history.called'), t('history.duration'), t('history.result'), t('history.trunk')]}
+        <Table head={[t('history.time'), '', t('history.caller'), t('history.called'), t('history.duration'), t('history.result'), t('history.trunk'), '']}
           empty={list.data?.records.length === 0 && <p className="py-10 text-center text-sm text-muted">{t('history.empty')}</p>}>
           {list.data?.records.map((r) => (
-            <tr key={r.id}>
+            <tr key={r.id} {...rowOpen(() => open(r.linkedId || r.uniqueId), t('journey.open', { time: formatDate(r.start, i18n.language) }))}>
               <td className={`${td} whitespace-nowrap font-mono text-xs`}>{formatDate(r.start, i18n.language)}</td>
               <td className={td} title={t(`history.dir.${r.direction}`)}>
                 {r.direction === 'inbound' ? <PhoneIncoming className="size-4 text-accent" aria-label={t('history.dir.inbound')} /> : r.direction === 'outbound' ? <PhoneOutgoing className="size-4 text-accent-2" aria-label={t('history.dir.outbound')} /> : <Repeat className="size-4 text-subtle" aria-label={t('history.dir.internal')} />}
@@ -56,6 +86,7 @@ export function History() {
               <td className={`${td} font-mono`}>{formatDuration(r.billsec)}</td>
               <td className={td}><Badge tone={dispTone(r.disposition)}>{t(`history.disp.${r.disposition.replace(' ', '_')}`, { defaultValue: r.disposition })}</Badge></td>
               <td className={td}>{r.trunk || '–'}</td>
+              <td className={`${td} text-right`}><ChevronRight className="inline size-4 text-subtle" aria-hidden /></td>
             </tr>
           ))}
         </Table>

@@ -101,6 +101,7 @@ plugins:
             Voicemail: Voicemail
             Fax: Fax
             Call history and recordings: Gespreksgeschiedenis en opnames
+            Call journey: Gespreksverloop
             Feature codes: Sneltoetscodes
             Reception and users: Receptie en gebruikers
             Switchboard and wallboard: Schakelbord en wallboard
@@ -148,6 +149,7 @@ nav:
       - Voicemail: voicemail.md
       - Fax: fax.md
       - Call history and recordings: history.md
+      - Call journey: call-journey.md
       - Feature codes: feature-codes.md
   - Reception and users:
       - Switchboard and wallboard: switchboard.md

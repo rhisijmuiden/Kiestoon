@@ -263,7 +263,13 @@ Notes on phase 5:
   build from a demo office (`tools/docs/`). Every portal page has a Help button that opens the matching page and
   section of the manual in the user's language. The README (also in Dutch, `README.nl.md`) shows the highlights. A
   backup location can now be added with an existing encryption key, to restore backups on a new server.
-- [x] Trusted networks (`v0.6.0-rc.16`): on the Firewall page, IP ranges (IPv4/IPv6 CIDR with a description) from
+- [x] Call journey (`v0.6.0-rc.16`): click a call in the call history (or under My calls in the portal) to see
+  every step as a flow in the style of the IVR builder: trunk and number called, time condition, IVR keys and
+  timeouts, queue position and wait, every phone that rang and who missed it, who answered and the talk time,
+  transfers (also drag and drop), voicemail, recordings and who hung up. Built from Asterisk CEL over AMI, dial and
+  queue events and dialplan markers, stored per linkedid; retention setting under Call features (default 90 days,
+  0 = off). Older calls get a short version from the call record.
+- [x] Trusted networks (`v0.6.0-rc.17`): on the Firewall page, IP ranges (IPv4/IPv6 CIDR with a description) from
   which password sign-ins skip the MFA step, per role (super admins off by default). Off by default, every skip in
   the audit log, the session loses the skip when it is used from outside the network, X-Forwarded-For only from
   trusted proxies, ranges wider than /8 refused and a warning for public ranges. SSO and API tokens are not affected.

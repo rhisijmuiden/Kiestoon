@@ -1219,17 +1219,19 @@ type FraudSettings struct {
 
 // FeatureSettings are system-wide options for parking, recording and fraud protection.
 type FeatureSettings struct {
-	ParkingSlots   int           `json:"parkingSlots"`
-	ParkingTimeout int           `json:"parkingTimeout"`
-	RecordingDays  int           `json:"recordingDays"`
-	RecordingBeep  bool          `json:"recordingBeep"`
-	Fraud          FraudSettings `json:"fraud"`
+	ParkingSlots   int  `json:"parkingSlots"`
+	ParkingTimeout int  `json:"parkingTimeout"`
+	RecordingDays  int  `json:"recordingDays"`
+	RecordingBeep  bool `json:"recordingBeep"`
+	// JourneyDays is how long the call journey (the steps of each call) is kept; 0 records none.
+	JourneyDays int           `json:"journeyDays"`
+	Fraud       FraudSettings `json:"fraud"`
 }
 
 // DefaultFeatureSettings are used on a fresh install. The premium list fits the Netherlands.
 func DefaultFeatureSettings() FeatureSettings {
 	return FeatureSettings{
-		ParkingSlots: 8, ParkingTimeout: 120, RecordingDays: 90,
+		ParkingSlots: 8, ParkingTimeout: 120, RecordingDays: 90, JourneyDays: 90,
 		Fraud: FraudSettings{
 			PremiumPrefixes:      []string{"0900", "0906", "0909", "084", "087", "18"},
 			BlockedCountries:     []string{},
@@ -1263,6 +1265,9 @@ func (f *FeatureSettings) Validate() error {
 	}
 	if f.RecordingDays < 1 || f.RecordingDays > 3650 {
 		return invalid("invalid", "recordingDays")
+	}
+	if f.JourneyDays < 0 || f.JourneyDays > 3650 {
+		return invalid("invalid", "journeyDays")
 	}
 	clean := func(list []string, max int, field string) ([]string, error) {
 		out := []string{}

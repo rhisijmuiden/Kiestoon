@@ -82,7 +82,14 @@ func b2i(b bool) int {
 
 // forwardTo sends the call to a forward number: an internal number stays inside, anything else
 // goes out through the outbound routes (with the forwarding extension's rights).
+// mark writes a call-journey marker: a CEL user event the portal stores with the call, so the
+// call history can show which steps a call went through. kv are key=value pairs.
+func mark(x *w, name string, kv ...string) {
+	x.f(" same => n,CELGenUserEvent(kt_%s,%s)", name, strings.Join(kv, "&"))
+}
+
 func forwardTo(x *w, num string) {
+	mark(x, "fwd", "num="+num)
 	x.f(" same => n,Set(KT_HOPS=$[${KT_HOPS} + 1])")
 	x.f(` same => n,GotoIf($[${KT_HOPS} > 5]?loop)`)
 	x.f(" same => n,Goto(kiestoon-forward,%s,1)", num)
@@ -122,6 +129,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 	// Voicemail as a destination.
 	x.f("[kiestoon-vm]")
 	x.f("exten => _X.,1,Answer()")
+	mark(x, "vm", "box=${EXTEN}")
 	x.f(" same => n,Wait(0.5)")
 	x.f(" same => n,VoiceMail(${EXTEN}@default,u)")
 	x.f(" same => n,Hangup()")
@@ -134,10 +142,12 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		f := e.Features
 		x.f("[kiestoon-ext-%s]", e.Number)
 		x.f("exten => s,1,NoOp(Call for %s)", e.Number)
+		mark(x, "ext", "num="+e.Number)
 		if e.RecordMode == "always" {
 			x.f(" same => n,Gosub(kiestoon-record,s,1(%s))", e.Number)
 		}
 		if f.DND {
+			mark(x, "dnd", "num="+e.Number)
 			x.f(" same => n,Goto(busy)")
 		}
 		if f.ForwardAlways != "" {
@@ -176,13 +186,15 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		} else {
 			x.f(" same => n,Dial(${KT_DIAL},%d,tT%s)", e.RingSeconds, recOpt)
 		}
-		x.f(` same => n(result),GotoIf($["${DIALSTATUS}" = "BUSY"]?busy)`)
+		x.f(" same => n(result),CELGenUserEvent(kt_extend,num=%s&status=${DIALSTATUS})", e.Number)
+		x.f(` same => n,GotoIf($["${DIALSTATUS}" = "BUSY"]?busy)`)
 		x.f(` same => n,GotoIf($["${DIALSTATUS}" = "ANSWER"]?done)`)
 		// Not answered or not reachable.
 		if f.ForwardNoAnswer != "" {
 			classVars(x, e)
 			forwardTo(x, f.ForwardNoAnswer)
 		} else if e.Voicemail {
+			mark(x, "vm", "box="+e.Number, "reason=noanswer")
 			x.f(" same => n,VoiceMail(%s@default,u)", e.Number)
 		} else {
 			x.f(" same => n,Playback(vm-nobodyavail)")
@@ -193,6 +205,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 			classVars(x, e)
 			forwardTo(x, f.ForwardBusy)
 		} else if e.Voicemail {
+			mark(x, "vm", "box="+e.Number, "reason=busy")
 			x.f(" same => n,VoiceMail(%s@default,b)", e.Number)
 		} else {
 			x.f(" same => n,Busy(10)")
@@ -200,6 +213,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		x.f(" same => n,Hangup()")
 		if f.ScheduleID != 0 && f.ClosedForward != "" && tcs[f.ScheduleID] {
 			x.f(" same => n(closed),NoOp(Outside schedule)")
+			mark(x, "closed", "num="+e.Number)
 			classVars(x, e)
 			forwardTo(x, f.ClosedForward)
 		}
@@ -290,7 +304,8 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 	x.nl()
 	// External numbers as a destination (set by an administrator, so full outbound rights).
 	x.f("[kiestoon-external]")
-	x.f("exten => _[0-9+].,1,Set(__KT_CLASS=international)")
+	x.f("exten => _[0-9+].,1,CELGenUserEvent(kt_external,num=${EXTEN})")
+	x.f(" same => n,Set(__KT_CLASS=international)")
 	x.f(" same => n,Set(__KT_PREMIUM=1)")
 	x.f(" same => n,Goto(kiestoon-outbound,${EXTEN},1)")
 	x.nl()
@@ -344,6 +359,7 @@ func genRingGroups(x *w, s *pbx.Snapshot) {
 		}
 		x.f("[kiestoon-rg-%d]", g.ID)
 		x.f("exten => s,1,NoOp(Ring group %s %s)", g.Number, esc(g.Name))
+		mark(x, "rg", fmt.Sprintf("id=%d", g.ID))
 		if g.CIDPrefix != "" {
 			x.f(` same => n,ExecIf($["${KT_RGPFX}" = ""]?Set(CALLERID(name)=%s${CALLERID(name)}))`, esc(g.CIDPrefix))
 			x.f(" same => n,Set(KT_RGPFX=1)")
@@ -402,6 +418,7 @@ func genRingGroups(x *w, s *pbx.Snapshot) {
 			x.f(` same => n,GotoIf($["${DIALSTATUS}" = "ANSWER"]?done:next)`)
 		}
 		x.f(" same => n(fail),NoOp(Nobody answered)")
+		mark(x, "rgend", fmt.Sprintf("id=%d", g.ID))
 		x.f(" same => n,%s", destGoto(g.Failover))
 		x.f(" same => n(done),Hangup()")
 		x.nl()
@@ -421,6 +438,7 @@ func genQueues(x *w, s *pbx.Snapshot, o Options) {
 		}
 		x.f("[kiestoon-queue-%d]", q.ID)
 		x.f("exten => s,1,NoOp(Queue %s %s)", q.Number, esc(q.Name))
+		mark(x, "queue", fmt.Sprintf("id=%d", q.ID))
 		if q.CIDPrefix != "" {
 			x.f(" same => n,Set(CALLERID(name)=%s${CALLERID(name)})", esc(q.CIDPrefix))
 		}
@@ -437,6 +455,7 @@ func genQueues(x *w, s *pbx.Snapshot, o Options) {
 		}
 		x.f(" same => n,Queue(kiestoon-q-%d,tT,,,%s)", q.ID, maxWait)
 		x.f(" same => n,NoOp(Queue result ${QUEUESTATUS})")
+		mark(x, "queueend", fmt.Sprintf("id=%d", q.ID), "status=${QUEUESTATUS}")
 		x.f(" same => n,%s", destGoto(q.Overflow))
 		x.f(" same => n,Hangup()")
 		x.nl()
@@ -521,6 +540,7 @@ func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 		}
 		x.f("exten => s,1,NoOp(IVR %s)", esc(v.Name))
 		x.f(" same => n,Answer()")
+		mark(x, "ivr", fmt.Sprintf("id=%d", v.ID))
 		x.f(" same => n,Set(KT_TRIES=0)")
 		x.f(" same => n(start),Set(TIMEOUT(digit)=3)")
 		x.f(" same => n,Set(TIMEOUT(response)=%d)", v.Timeout)
@@ -535,11 +555,13 @@ func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 		}
 		x.f(" same => n,WaitExten(%d)", v.Timeout)
 		for _, k := range keys {
-			x.f("exten => %s,1,%s", k.Digit, gotoNode(f.Next(k.ID, "out")))
+			x.f("exten => %s,1,CELGenUserEvent(kt_ivrkey,id=%d&key=${EXTEN})", k.Digit, v.ID)
+			x.f(" same => n,%s", gotoNode(f.Next(k.ID, "out")))
 		}
 		timeout := f.TimeoutNode()
 		for _, ev := range []string{"t", "i"} {
 			x.f("exten => %s,1,Set(KT_TRIES=$[${KT_TRIES} + 1])", ev)
+			mark(x, map[string]string{"t": "ivrtimeout", "i": "ivrinvalid"}[ev], fmt.Sprintf("id=%d", v.ID), "try=${KT_TRIES}")
 			if ev == "i" {
 				x.f(" same => n,Playback(option-is-invalid)")
 			}
@@ -581,10 +603,12 @@ func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 					continue
 				}
 				x.f(" same => n,Gosub(kiestoon-tcstate-%s,s,1)", n.Destination.Target)
+				mark(x, "tc", "id="+n.Destination.Target, "state=${GOSUB_RETVAL}")
 				x.f(` same => n,GotoIf($["${GOSUB_RETVAL}" = "open"]?open)`)
 				x.f(" same => n,%s", gotoNode(f.Next(n.ID, "closed")))
 				x.f(" same => n(open),%s", gotoNode(f.Next(n.ID, "open")))
 			case pbx.NodeRepeat:
+				mark(x, "ivrrepeat", fmt.Sprintf("id=%d", v.ID))
 				x.f(" same => n,Set(KT_TRIES=0)")
 				x.f(" same => n,Goto(kiestoon-ivr-%d,s,start)", v.ID)
 			}
@@ -660,6 +684,7 @@ func genTimeConditions(x *w, s *pbx.Snapshot) {
 		x.nl()
 		x.f("[kiestoon-tc-%d]", t.ID)
 		x.f("exten => s,1,Gosub(kiestoon-tcstate-%d,s,1)", t.ID)
+		mark(x, "tc", fmt.Sprintf("id=%d", t.ID), "state=${GOSUB_RETVAL}")
 		x.f(` same => n,GotoIf($["${GOSUB_RETVAL}" = "open"]?open)`)
 		if t.Holiday.Type != "" {
 			x.f(` same => n,GotoIf($["${GOSUB_RETVAL}" = "holiday"]?holiday)`)
@@ -680,6 +705,7 @@ func genConferences(x *w, s *pbx.Snapshot) {
 		}
 		x.f("[kiestoon-conf-%d]", c.ID)
 		x.f("exten => s,1,NoOp(Conference %s %s)", c.Number, esc(c.Name))
+		mark(x, "conf", fmt.Sprintf("id=%d", c.ID))
 		x.f(" same => n,Answer()")
 		x.f(" same => n,Set(KT_PROFILE=kiestoon_user)")
 		if c.WaitAdmin {

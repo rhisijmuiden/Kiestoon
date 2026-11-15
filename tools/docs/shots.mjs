@@ -32,6 +32,8 @@ export const shots = [
   { name: 'wallboard', path: '/wallboard', wait: 1200 },
   { name: 'fax', path: '/fax' },
   { name: 'history', path: '/history' },
+  { name: 'call-journey', path: '/history?call=1731644.1', wait: 1200, full: true },
+  { name: 'call-journey-voicemail', path: '/history?call=1731640.1', wait: 1200 },
   { name: 'recordings', path: '/recordings' },
   { name: 'phonebook', path: '/phonebook', full: true },
   { name: 'my-phone', path: '/me', full: true },

@@ -1,6 +1,7 @@
 package asterisk
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/rhisijmuiden/kiestoon/server/internal/pbx"
@@ -54,6 +55,7 @@ func genFax(x *w, s *pbx.Snapshot, o Options) {
 	for _, f := range s.FaxBoxes {
 		x.f("[kiestoon-fax-%d]", f.ID)
 		x.f("exten => s,1,NoOp(Fax box %s)", esc(safeName(f.Name)))
+		mark(x, "fax", "id="+strconv.FormatInt(f.ID, 10))
 		if !f.Enabled || o.FaxDir == "" {
 			x.f(" same => n,Hangup()")
 			x.nl()

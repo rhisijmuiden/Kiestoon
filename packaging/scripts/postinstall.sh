@@ -42,6 +42,8 @@ if [ -d /run/systemd/system ]; then
     :
   elif systemctl is-active --quiet asterisk.service; then
     systemctl reload asterisk.service || true
+    # Modules that an update newly enables (core reload does not load them): call journeys need CEL over AMI.
+    asterisk -rx "module load cel_manager.so" >/dev/null 2>&1 || true
   else
     systemctl start asterisk.service || true
   fi

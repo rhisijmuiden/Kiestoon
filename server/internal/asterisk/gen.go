@@ -491,6 +491,7 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 		x.nl()
 		x.f("[kiestoon-route-%d]", r.ID)
 		x.f("exten => s,1,NoOp(Outbound route %d to ${KT_NUM})", r.ID)
+		mark(&x, "out", fmt.Sprintf("route=%d", r.ID), "num=${KT_NUM}")
 		x.f(" same => n,Gosub(kiestoon-allowed,s,1(${KT_NUM}))")
 		x.f(` same => n,GotoIf($["${GOSUB_RETVAL}" != "ok"]?denied)`)
 		x.f(` same => n,ExecIf($["${KT_RECALWAYS}" = "1"]?Gosub(kiestoon-record,s,1(${KT_NUM})))`)
@@ -517,6 +518,7 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 				x.f(" same => n,Set(GROUP(kt_trunks)=%s)", t.Endpoint())
 			}
 			x.f(" same => n,Set(CDR(kt_trunk)=%s)", esc(t.Name))
+			mark(&x, "trunk", fmt.Sprintf("id=%d", t.ID))
 			x.f(" same => n,Dial(PJSIP/${KT_NUM}@%s,,T${KT_RECOPT})", t.Endpoint())
 			x.f(` same => n,GotoIf($["${DIALSTATUS}" = "BUSY" | "${DIALSTATUS}" = "NOANSWER" | "${DIALSTATUS}" = "ANSWER" | "${DIALSTATUS}" = "CANCEL"]?done)`)
 			x.f(" same => n(%s),NoOp(Trying the next trunk)", label)
@@ -573,6 +575,7 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 			x.f("exten => %s,1,Goto(kiestoon-in-%d,s,1)", p, catchAll.ID)
 		} else {
 			x.f("exten => %s,1,NoOp(No inbound route for ${EXTEN})", p)
+			mark(&x, "noroute", "did=${EXTEN}")
 			x.f(" same => n,Playback(ss-noservice)")
 			x.f(" same => n,Hangup()")
 		}
@@ -585,6 +588,7 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 		}
 		x.f("[kiestoon-in-%d]", r.ID)
 		x.f("exten => s,1,NoOp(Inbound route %s)", esc(r.Name))
+		mark(&x, "in", fmt.Sprintf("route=%d", r.ID), "did=${KT_DID}")
 		if r.CIDPrefix != "" {
 			x.f(" same => n,Set(CALLERID(name)=%s${CALLERID(name)})", esc(r.CIDPrefix))
 		}

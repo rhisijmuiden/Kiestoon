@@ -30,7 +30,7 @@ test:
 
 # Needs nfpm: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 deb: build
-	mkdir -p dist
+	mkdir -p dist build/softphone
 	cp build/kiestoon-linux-$(GOARCH) build/kiestoon
 	VERSION=$(DEB_VERSION) ARCH=$(GOARCH) nfpm package --config packaging/nfpm.yaml --packager deb --target dist/kiestoon_$(DEB_VERSION)_$(GOARCH).deb
 

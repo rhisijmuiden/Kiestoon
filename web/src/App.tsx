@@ -1,5 +1,5 @@
-import type { ReactElement } from 'react'
-import { Navigate, Route, Routes } from 'react-router'
+import { useEffect, type ReactElement } from 'react'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Loader2, PhoneOff } from 'lucide-react'
 import { Layout } from './components/Layout'
@@ -51,6 +51,9 @@ import { MyQueues } from './pages/portal/MyQueues'
 import { Voicemail } from './pages/portal/Voicemail'
 import { roleRank } from './lib/api'
 import { useSession } from './lib/session'
+import { DesktopApp } from './desktop/DesktopApp'
+import { inShell } from './desktop/bridge'
+import { DesktopLink } from './components/WindowsSoftphone'
 
 const pages: Record<string, ReactElement> = {
   dashboard: <Dashboard />, myPhone: <MyPhone />, voicemail: <Voicemail />, myQueues: <MyQueues />, colleagues: <Colleagues />,
@@ -67,12 +70,31 @@ function NoExtension() {
   return <Card><Empty icon={<PhoneOff className="size-7" />} title={t('portal.noExtensionTitle')} text={t('portal.noExtensionText')} /></Card>
 }
 
+const AFTER_KEY = 'kiestoon.after'
+
 export function App() {
   const { t } = useTranslation()
   const { state } = useSession()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+
+  // "Sign in with browser" from the Windows softphone: remember where to go back to after an SSO round trip.
+  useEffect(() => {
+    try {
+      if (pathname === '/desktop-link' && state.kind !== 'ready') sessionStorage.setItem(AFTER_KEY, pathname)
+      if (state.kind === 'ready' && pathname === '/' && sessionStorage.getItem(AFTER_KEY)) {
+        sessionStorage.removeItem(AFTER_KEY)
+        navigate('/desktop-link', { replace: true })
+      }
+    } catch {
+      /* storage blocked */
+    }
+  }, [pathname, state.kind, navigate])
 
   // The link of the welcome e-mail works whether or not someone is signed in on this browser.
-  if (window.location.pathname === '/set-password') return <SetPassword />
+  if (pathname === '/set-password') return <SetPassword />
+  // The Windows softphone shows the compact /desktop pages, also after an SSO sign-in that ends on /.
+  if (pathname === '/desktop' || pathname.startsWith('/desktop/') || inShell()) return <DesktopApp />
 
   switch (state.kind) {
     case 'loading':
@@ -93,6 +115,8 @@ export function App() {
     case 'enroll':
       return <MfaEnroll />
   }
+
+  if (pathname === '/desktop-link') return <DesktopLink />
 
   const role = state.me.user.role
   const hasExt = !!state.me.extension

@@ -28,6 +28,8 @@ type Config struct {
 	HelperSocket string
 	// AsteriskHTTP is Asterisk's local HTTP server, which carries the WebSocket of the browser softphone.
 	AsteriskHTTP string
+	// SoftphoneDir holds the Windows softphone installer (MSI) that the portal offers for download.
+	SoftphoneDir string
 }
 
 // Load reads the configuration from environment variables, falling back to defaults.
@@ -42,6 +44,7 @@ func Load() Config {
 		AMIAddr:        env("KIESTOON_AMI_ADDR", "127.0.0.1:5038"),
 		HelperSocket:   env("KIESTOON_HELPER_SOCKET", "/run/kiestoon-helper/helper.sock"),
 		AsteriskHTTP:   env("KIESTOON_ASTERISK_HTTP", "127.0.0.1:8088"),
+		SoftphoneDir:   env("KIESTOON_SOFTPHONE_DIR", "/usr/share/kiestoon/softphone"),
 	}
 }
 

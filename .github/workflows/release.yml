@@ -125,8 +125,40 @@ jobs:
           path: dist-pi/*.img.xz
           retention-days: 3
 
+  softphone:
+    name: Windows softphone (MSI)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+      - name: Build the MSI
+        shell: bash
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SIGNING_ENDPOINT: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          AZURE_SIGNING_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          AZURE_SIGNING_PROFILE: ${{ secrets.AZURE_SIGNING_PROFILE }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then TAG="$GITHUB_REF_NAME"; else TAG="$(tr -d '[:space:]' < VERSION)"; fi
+          desktop/build-msi.sh "$TAG" dist-softphone
+      - uses: actions/upload-artifact@v4
+        with:
+          name: softphone
+          path: dist-softphone/*.msi
+          retention-days: 3
+
   release:
-    needs: [asterisk, sounds, speech, edge-pi]
+    needs: [asterisk, sounds, speech, edge-pi, softphone]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -159,6 +191,13 @@ jobs:
           if [[ "$TAG" != *-* && "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_TYPE" != "tag" ]]; then
             echo "stable releases (without -rc) are made from main"; exit 1
           fi
+
+      - name: Windows softphone
+        if: env.SKIP != '1'
+        uses: actions/download-artifact@v5
+        with:
+          name: softphone
+          path: build/softphone
 
       - name: Build packages (amd64, arm64)
         if: env.SKIP != '1'
@@ -219,7 +258,8 @@ jobs:
         if: env.SKIP != '1'
         run: |
           cd dist
-          sha256sum -- *.deb *.tar.zst *.img.xz > SHA256SUMS
+          cp ../build/softphone/*.msi .
+          sha256sum -- *.deb *.tar.zst *.img.xz *.msi > SHA256SUMS
           cat SHA256SUMS
 
       - name: Publish GitHub release
@@ -229,5 +269,5 @@ jobs:
         run: |
           flags=()
           if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); else flags+=(--latest); fi
-          gh release create "$TAG" dist/*.deb dist/*.tar.zst dist/*.img.xz dist/SHA256SUMS \
+          gh release create "$TAG" dist/*.deb dist/*.tar.zst dist/*.img.xz dist/*.msi dist/SHA256SUMS \
             --target "$GITHUB_SHA" --title "Kiestoon $TAG" --generate-notes "${flags[@]}"

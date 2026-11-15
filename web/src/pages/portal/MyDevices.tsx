@@ -8,6 +8,7 @@ import { api } from '../../lib/api'
 import type { BlfEntry, Phone, PhoneKey, PortalMe } from '../../lib/types'
 import { useSoftphone } from '../../lib/softphone'
 import { KeyEditor } from '../Phones'
+import { WindowsSoftphoneCard } from '../../components/WindowsSoftphone'
 
 type Sip = { server: string; port: number; transport: string; username: string; password: string; srtp: boolean }
 
@@ -47,6 +48,7 @@ export function MyDevices() {
             </div>
           )}
         </Card>
+        <WindowsSoftphoneCard />
         <Card className="flex flex-col gap-3">
           <SectionTitle><span className="inline-flex items-center gap-2"><Smartphone className="size-5 text-accent" aria-hidden />{t('portal.sipApp')}</span></SectionTitle>
           <p className="text-sm text-muted">{t('portal.sipAppText')}</p>

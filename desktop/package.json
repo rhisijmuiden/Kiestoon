@@ -1,0 +1,14 @@
+{
+  "name": "kiestoon-softphone",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Kiestoon Softphone for Windows (Tauri shell)",
+  "scripts": {
+    "tauri": "tauri",
+    "build": "tauri build --bundles msi",
+    "dev": "tauri dev"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.0"
+  }
+}

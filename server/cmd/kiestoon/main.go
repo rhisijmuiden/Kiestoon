@@ -4,9 +4,11 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -16,7 +18,11 @@ import (
 	"time"
 
 	"github.com/rhisijmuiden/kiestoon/server/internal/api"
+	"github.com/rhisijmuiden/kiestoon/server/internal/backup"
+	"github.com/rhisijmuiden/kiestoon/server/internal/certs"
 	"github.com/rhisijmuiden/kiestoon/server/internal/config"
+	"github.com/rhisijmuiden/kiestoon/server/internal/helper"
+	"github.com/rhisijmuiden/kiestoon/server/internal/mail"
 	"github.com/rhisijmuiden/kiestoon/server/internal/store"
 	"github.com/rhisijmuiden/kiestoon/server/internal/version"
 	"github.com/rhisijmuiden/kiestoon/server/internal/web"
@@ -36,8 +42,12 @@ func main() {
 		fmt.Printf("kiestoon %s (commit %s, built %s)\n", version.Version, version.Commit, version.BuildDate)
 	case "setup-token":
 		err = printSetupToken()
+	case "helper":
+		err = runHelper(log)
+	case "sendmail":
+		err = sendmail()
 	default:
-		fmt.Fprintf(os.Stderr, "usage: kiestoon [serve|version|setup-token]\n")
+		fmt.Fprintf(os.Stderr, "usage: kiestoon [serve|version|setup-token|helper|sendmail]\n")
 		os.Exit(2)
 	}
 	if err != nil {
@@ -92,6 +102,11 @@ func serve(log *slog.Logger) error {
 	srv := api.New(cfg, db, log)
 	ensureSetupToken(ctx, cfg, srv, log)
 
+	go srv.AMI.Run(ctx)
+	go srv.Ast.Run(ctx)
+	go srv.Mail.Run(ctx)
+	go srv.RunScheduler(ctx)
+	go srv.ApplySecurityOnStart(ctx)
 	go func() {
 		t := time.NewTicker(time.Hour)
 		defer t.Stop()
@@ -107,21 +122,40 @@ func serve(log *slog.Logger) error {
 
 	mux := http.NewServeMux()
 	mux.Handle("/api/", srv.Routes())
+	mux.Handle("/prov/", srv.ProvisioningHandler())
 	mux.Handle("/", web.Handler())
 
-	hs := &http.Server{
-		Addr:              cfg.Listen,
-		Handler:           api.SecurityHeaders(mux),
-		ReadHeaderTimeout: 10 * time.Second,
-		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      60 * time.Second,
-		IdleTimeout:       120 * time.Second,
+	newServer := func(addr string) *http.Server {
+		return &http.Server{
+			Addr:              addr,
+			Handler:           api.SecurityHeaders(mux),
+			ReadHeaderTimeout: 10 * time.Second,
+			ReadTimeout:       30 * time.Second,
+			WriteTimeout:      120 * time.Second,
+			IdleTimeout:       120 * time.Second,
+		}
 	}
-	errc := make(chan error, 1)
+	hs := newServer(cfg.Listen)
+	errc := make(chan error, 2)
 	go func() {
 		log.Info("kiestoon listening", "addr", cfg.Listen, "version", version.Version)
 		errc <- hs.ListenAndServe()
 	}()
+	var tlsSrv *http.Server
+	if cfg.TLSListen != "" && cfg.TLSListen != "off" {
+		if cert, key, err := certs.Ensure(cfg.PBXDir()); err != nil {
+			log.Warn("no TLS certificate, HTTPS disabled", "err", err)
+		} else {
+			tlsSrv = newServer(cfg.TLSListen)
+			tlsSrv.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+			go func() {
+				log.Info("kiestoon listening (HTTPS)", "addr", cfg.TLSListen)
+				if err := tlsSrv.ListenAndServeTLS(cert, key); err != nil && !errors.Is(err, http.ErrServerClosed) {
+					log.Warn("HTTPS listener stopped", "err", err)
+				}
+			}()
+		}
+	}
 	select {
 	case err := <-errc:
 		if !errors.Is(err, http.ErrServerClosed) {
@@ -131,5 +165,35 @@ func serve(log *slog.Logger) error {
 	}
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	if tlsSrv != nil {
+		_ = tlsSrv.Shutdown(shutdownCtx)
+	}
 	return hs.Shutdown(shutdownCtx)
+}
+
+// runHelper starts the root helper service (kiestoon-helper.service).
+func runHelper(log *slog.Logger) error {
+	if os.Geteuid() != 0 {
+		return errors.New("the helper must run as root")
+	}
+	cfg := config.Load()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	state := "/var/lib/kiestoon-helper"
+	if err := os.MkdirAll(state, 0o700); err != nil {
+		return err
+	}
+	h := &helper.Server{Log: log, StateDir: state, DataDir: cfg.DataDir, Runner: backup.NewRunner()}
+	return h.Serve(ctx, cfg.HelperSocket)
+}
+
+// sendmail is called by Asterisk (app_voicemail mailcmd) with a complete message on stdin. It
+// queues the message; the portal sends it through the configured SMTP server.
+func sendmail() error {
+	cfg := config.Load()
+	msg, err := io.ReadAll(io.LimitReader(os.Stdin, 50<<20))
+	if err != nil {
+		return err
+	}
+	return mail.Enqueue(mail.QueueDir(cfg.DataDir), msg)
 }

@@ -1,0 +1,31 @@
+[Unit]
+Description=Asterisk PBX (Kiestoon)
+Documentation=https://github.com/rhisijmuiden/kiestoon
+After=network-online.target kiestoon.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=asterisk
+Group=asterisk
+# -f: stay in the foreground, -n: no colours in the log, -q: quiet console.
+ExecStart=/usr/sbin/asterisk -f -n -q -C /etc/asterisk/asterisk.conf
+ExecReload=/usr/sbin/asterisk -rx "core reload"
+ExecStop=/usr/sbin/asterisk -rx "core stop gracefully"
+Restart=always
+RestartSec=3
+RuntimeDirectory=asterisk
+RuntimeDirectoryMode=0750
+LimitNOFILE=65536
+# Lets Asterisk mark voice packets with DSCP EF for QoS.
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+
+[Install]
+WantedBy=multi-user.target

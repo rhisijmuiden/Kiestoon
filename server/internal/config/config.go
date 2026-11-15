@@ -20,6 +20,12 @@ type Config struct {
 	SecureCookies bool
 	// DefaultChannel is the update channel used until an admin picks one in the UI ("production" or "testing").
 	DefaultChannel string
+	// TLSListen is the HTTPS address (self-signed certificate) for the portal and phone provisioning. "off" disables it.
+	TLSListen string
+	// AMIAddr is the Asterisk Manager Interface address.
+	AMIAddr string
+	// HelperSocket is the Unix socket of the root helper service.
+	HelperSocket string
 }
 
 // Load reads the configuration from environment variables, falling back to defaults.
@@ -30,6 +36,9 @@ func Load() Config {
 		Repo:           env("KIESTOON_REPO", "rhisijmuiden/kiestoon"),
 		SecureCookies:  os.Getenv("KIESTOON_SECURE_COOKIES") == "true",
 		DefaultChannel: env("KIESTOON_CHANNEL", "production"),
+		TLSListen:      env("KIESTOON_TLS_LISTEN", ":8443"),
+		AMIAddr:        env("KIESTOON_AMI_ADDR", "127.0.0.1:5038"),
+		HelperSocket:   env("KIESTOON_HELPER_SOCKET", "/run/kiestoon-helper/helper.sock"),
 	}
 }
 
@@ -42,3 +51,6 @@ func env(key, fallback string) string {
 	}
 	return fallback
 }
+
+// PBXDir holds the generated Asterisk configuration and the TLS certificate.
+func (c Config) PBXDir() string { return filepath.Join(c.DataDir, "pbx") }

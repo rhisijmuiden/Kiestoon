@@ -15,7 +15,35 @@ permissions:
   contents: write
 
 jobs:
+  asterisk:
+    name: Asterisk package (${{ matrix.arch }})
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache the package
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: dist-asterisk
+          key: asterisk-${{ matrix.arch }}-${{ hashFiles('packaging/asterisk/**') }}
+      - name: Build Asterisk in Debian 13
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: docker run --rm -v "$PWD:/src" -w /src debian:trixie packaging/asterisk/build.sh dist-asterisk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asterisk-${{ matrix.arch }}
+          path: dist-asterisk/*.deb
+          retention-days: 3
+
   release:
+    needs: asterisk
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -60,6 +88,14 @@ jobs:
           make deb VERSION="$VERSION" GOARCH=amd64
           make deb VERSION="$VERSION" GOARCH=arm64
 
+      - name: Asterisk packages
+        if: env.SKIP != '1'
+        uses: actions/download-artifact@v5
+        with:
+          pattern: asterisk-*
+          path: dist
+          merge-multiple: true
+
       - name: Build Proxmox LXC template (amd64)
         if: env.SKIP != '1'
         env:
@@ -67,7 +103,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq debootstrap
-          sudo ./lxc/build-lxc.sh "dist/kiestoon_${VERSION#v}_amd64.deb" dist/
+          sudo ./lxc/build-lxc.sh "dist/kiestoon_${VERSION#v}_amd64.deb" dist/ dist/kiestoon-asterisk_*_amd64.deb
           sudo chown -R "$(id -u):$(id -g)" dist
 
       - name: Checksums

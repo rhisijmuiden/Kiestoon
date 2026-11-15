@@ -13,6 +13,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  asterisk:
+    name: Asterisk package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache the package
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: dist-asterisk
+          key: asterisk-amd64-${{ hashFiles('packaging/asterisk/**') }}
+      - name: Build Asterisk in Debian 13
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: docker run --rm -v "$PWD:/src" -w /src debian:trixie packaging/asterisk/build.sh dist-asterisk
+      - name: Show package
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" dist-asterisk
+          dpkg-deb -I dist-asterisk/*.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asterisk-amd64
+          path: dist-asterisk/*.deb
+          retention-days: 3
+
   test:
     name: Test and build
     runs-on: ubuntu-24.04
@@ -41,7 +65,9 @@ jobs:
           go test -race ./...
 
       - name: Shell scripts
-        run: shellcheck -S warning install.sh lxc/build-lxc.sh packaging/kiestoon-updater packaging/scripts/*.sh
+        run: |
+          shellcheck -S warning install.sh lxc/build-lxc.sh packaging/kiestoon-updater packaging/fix-permissions \
+            packaging/scripts/*.sh packaging/asterisk/*.sh packaging/ci/*.sh
 
       - name: Debian package
         run: |
@@ -50,12 +76,21 @@ jobs:
           dpkg-deb -I dist/*.deb
           dpkg-deb -c dist/*.deb
 
-      - name: Install test
-        run: |
-          sudo apt-get install -y ./dist/*.deb
-          sudo systemctl start kiestoon
-          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/api/health && break; sleep 1; done
-          curl -fsS http://127.0.0.1:8080/api/setup/status | grep -q '"setupRequired":true'
-          sudo kiestoon setup-token
-          curl -fsS http://127.0.0.1:8080/ | grep -q '<div id="root">'
-          systemctl is-enabled kiestoon-updater.path
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kiestoon-amd64
+          path: dist/*.deb
+          retention-days: 3
+
+  install:
+    name: Install test (Debian 13)
+    needs: [asterisk, test]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Install both packages and check the services
+        run: packaging/ci/install-test.sh dist/kiestoon_*_amd64.deb dist/kiestoon-asterisk_*_amd64.deb

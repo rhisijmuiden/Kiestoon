@@ -12,25 +12,25 @@ export const nav: NavGroup[] = [
   {
     key: 'telephony',
     items: [
-      { key: 'extensions', path: '/extensions', icon: User, phase: 1 },
+      { key: 'extensions', path: '/extensions', icon: User },
       { key: 'ringGroups', path: '/ring-groups', icon: UsersRound, phase: 2 },
       { key: 'queues', path: '/queues', icon: ListOrdered, phase: 2 },
       { key: 'ivr', path: '/ivr', icon: GitBranch, phase: 2 },
       { key: 'timeConditions', path: '/time-conditions', icon: Clock, phase: 2 },
-      { key: 'trunks', path: '/trunks', icon: Waypoints, phase: 1 },
-      { key: 'phones', path: '/phones', icon: Smartphone, phase: 1 },
-      { key: 'history', path: '/history', icon: Activity, phase: 1 },
+      { key: 'trunks', path: '/trunks', icon: Waypoints },
+      { key: 'phones', path: '/phones', icon: Smartphone },
+      { key: 'history', path: '/history', icon: Activity },
     ],
   },
   {
     key: 'system',
     items: [
-      { key: 'firewall', path: '/firewall', icon: Shield, phase: 1, adminOnly: true },
-      { key: 'backups', path: '/backups', icon: Archive, phase: 1, adminOnly: true },
-      { key: 'mail', path: '/mail', icon: Mail, phase: 1, adminOnly: true },
+      { key: 'firewall', path: '/firewall', icon: Shield, adminOnly: true },
+      { key: 'backups', path: '/backups', icon: Archive, adminOnly: true },
+      { key: 'mail', path: '/mail', icon: Mail, adminOnly: true },
       { key: 'sso', path: '/sso', icon: KeyRound, phase: 2, adminOnly: true },
       { key: 'audit', path: '/audit', icon: ScrollText, adminOnly: true },
-      { key: 'settings', path: '/settings', icon: Settings, phase: 1, adminOnly: true },
+      { key: 'settings', path: '/settings', icon: Settings, adminOnly: true },
     ],
   },
 ]

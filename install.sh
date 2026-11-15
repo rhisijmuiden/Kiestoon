@@ -8,12 +8,14 @@
 #   --channel production|testing   Update channel to follow (default: production)
 #   --version vX.Y.Z               Install this exact release instead of the newest one
 #   --deb /path/to/kiestoon.deb    Install a local package (for development)
+#   --asterisk-deb /path/to.deb    Local kiestoon-asterisk package to install with --deb
 set -euo pipefail
 
 REPO="${KIESTOON_REPO:-rhisijmuiden/kiestoon}"
 CHANNEL="production"
 VERSION=""
 LOCAL_DEB=""
+AST_PATH=""
 
 cyan() { printf '\033[1;36m%s\033[0m\n' "$*"; }
 die() { printf '\033[1;31mError:\033[0m %s\n' "$*" >&2; exit 1; }
@@ -23,7 +25,8 @@ while [ $# -gt 0 ]; do
     --channel) CHANNEL="${2:-}"; shift 2 ;;
     --version) VERSION="${2:-}"; shift 2 ;;
     --deb) LOCAL_DEB="${2:-}"; shift 2 ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    --asterisk-deb) AST_PATH="$(readlink -f "${2:-}")"; shift 2 ;;
+    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
     *) die "unknown option: $1" ;;
   esac
 done
@@ -63,6 +66,13 @@ else
   curl -fsSL -o "$WORK/SHA256SUMS" "https://github.com/$REPO/releases/download/$VERSION/SHA256SUMS" || die "download failed: SHA256SUMS"
   (cd "$WORK" && grep -E " [* ]?${DEB}\$" SHA256SUMS | sha256sum -c --status -) || die "checksum does not match for $DEB"
   DEB_PATH="$WORK/$DEB"
+  AST_DEB="$(grep -oE "kiestoon-asterisk_[0-9A-Za-z.+~-]+_${ARCH}\.deb" "$WORK/SHA256SUMS" | head -n1 || true)"
+  if [ -n "$AST_DEB" ]; then
+    echo "Downloading Asterisk ($AST_DEB)…"
+    curl -fsSL -o "$WORK/$AST_DEB" "https://github.com/$REPO/releases/download/$VERSION/$AST_DEB" || die "download failed: $AST_DEB"
+    (cd "$WORK" && grep -E " [* ]?${AST_DEB}\$" SHA256SUMS | sha256sum -c --status -) || die "checksum does not match for $AST_DEB"
+    AST_PATH="$WORK/$AST_DEB"
+  fi
 fi
 
 # Remember the channel before the service starts for the first time.
@@ -72,7 +82,9 @@ if [ -f /etc/kiestoon/kiestoon.env ]; then
 fi
 
 echo "Installing…"
-apt-get install -y -qq --allow-downgrades "$DEB_PATH" >/dev/null
+PKGS=("$DEB_PATH")
+[ -n "$AST_PATH" ] && PKGS+=("$AST_PATH")
+apt-get install -y -qq --allow-downgrades "${PKGS[@]}" >/dev/null
 sed -i "s/^KIESTOON_CHANNEL=.*/KIESTOON_CHANNEL=$CHANNEL/" /etc/kiestoon/kiestoon.env
 systemctl restart kiestoon.service
 

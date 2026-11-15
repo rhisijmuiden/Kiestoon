@@ -81,7 +81,14 @@ export function ErrorMessage({ error }: { error: unknown }) {
   const { t } = useTranslation()
   if (!error) return null
   const code = error instanceof ApiError ? error.code : 'internal'
-  return <Alert>{t(`errors.${code}`, { defaultValue: t('errors.internal') })}</Alert>
+  const field = error instanceof ApiError && error.field ? t(`fields.${error.field}`, { defaultValue: error.field }) : ''
+  const detail = error instanceof ApiError ? error.detail : ''
+  return (
+    <Alert>
+      {t(`errors.${code}`, { defaultValue: t('errors.internal'), field })}
+      {detail && <span className="mt-1 block font-mono text-xs opacity-80">{detail}</span>}
+    </Alert>
+  )
 }
 
 export function PageHeader({ title, subtitle, children }: { title: string; subtitle?: string; children?: ReactNode }) {

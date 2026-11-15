@@ -1,4 +1,5 @@
 import {
+  Sparkles,
   Activity, Archive, Building2, Network, ServerCog, Sun, AudioLines, AudioWaveform, BookUser, Globe, MonitorPlay, Plug, Printer, Clock, Disc3, GitBranch, Headset, History, KeyRound, LayoutGrid, ListOrdered, Mail, MonitorSmartphone,
   Phone, Presentation, ScrollText, Settings, Shield, ShieldAlert, Smartphone, User, UserCog, UsersRound, Voicemail, Waypoints,
   type LucideIcon,
@@ -66,6 +67,7 @@ export const nav: NavGroup[] = [
       { key: 'internet', path: '/internet', icon: Globe },
       { key: 'integrations', path: '/integrations', icon: Plug },
       { key: 'speech', path: '/speech', icon: AudioWaveform },
+      { key: 'ai', path: '/ai', icon: Sparkles },
       { key: 'backups', path: '/backups', icon: Archive },
       { key: 'mail', path: '/mail', icon: Mail },
       { key: 'audit', path: '/audit', icon: ScrollText },

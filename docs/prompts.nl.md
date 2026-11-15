@@ -37,3 +37,5 @@ De pagina **Spraak** (menu Systeem) voegt lokale spraaktechniek toe. **Geen audi
 Stemmen en modellen download je vanuit het portaal, met vastgelegde SHA-256-controlesommen. Grotere
 Whisper-modellen zijn nauwkeuriger maar trager; *small* is een goede keuze vanaf 2 CPU-kernen. Spraak vereist het
 pakket `kiestoon-speech` (`apt install kiestoon-speech`, ongeveer 66 MB).
+
+Samenvattingen van gesprekken en voicemail met een lokaal model of Claude staan op de pagina [AI-samenvattingen](ai.md).

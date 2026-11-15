@@ -469,7 +469,7 @@ func (s *Server) recordings(w http.ResponseWriter, r *http.Request) {
 	if len(recs) > 500 {
 		recs = recs[:500]
 	}
-	writeJSON(w, http.StatusOK, recs)
+	writeJSON(w, http.StatusOK, s.withAI(recs))
 }
 
 func (s *Server) recordingAudio(w http.ResponseWriter, r *http.Request) {

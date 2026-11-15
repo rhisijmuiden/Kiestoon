@@ -83,4 +83,5 @@ func (s *Server) housekeepingGuarded(ctx context.Context) {
 	tctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
 	s.transcribeSpool(tctx)
+	s.runAI(tctx)
 }

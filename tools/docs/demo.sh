@@ -13,7 +13,7 @@ echo $! > "$WORK/pids"
 node "$HERE/fake-helper.mjs" "$WORK/helper.sock" "$WORK/wg-keys.json" > "$WORK/helper.log" 2>&1 &
 echo $! >> "$WORK/pids"
 start() {
-KIESTOON_DATA_DIR="$WORK/data" KIESTOON_LISTEN="127.0.0.1:$PORT" KIESTOON_TLS_LISTEN=off KIESTOON_CHANNEL=testing \
+KIESTOON_DATA_DIR="$WORK/data" KIESTOON_LISTEN="127.0.0.1:$PORT" KIESTOON_TLS_LISTEN=off KIESTOON_CHANNEL=testing KIESTOON_AI_BASE_URL=http://127.0.0.1:9 \
   KIESTOON_AMI_ADDR="127.0.0.1:$AMI_PORT" KIESTOON_HELPER_SOCKET="$WORK/helper.sock" TZ=Europe/Amsterdam \
   "$BIN" >> "$WORK/server.log" 2>&1 &
 echo $! > "$WORK/server.pid"

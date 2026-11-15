@@ -7,6 +7,7 @@ import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../../comp
 import { api } from '../../lib/api'
 import type { Wav } from '../../lib/audio'
 import type { PortalMe, VoicemailMessage } from '../../lib/types'
+import { SummaryView } from '../ai/Summary'
 
 const KINDS = ['unavail', 'busy', 'greet', 'temp'] as const
 
@@ -39,6 +40,7 @@ export function Voicemail() {
               <td className={td}>{m.folder === 'INBOX' ? <Badge tone="accent" dot>{t('voicemail.new')}</Badge> : <Badge>{t('voicemail.heard')}</Badge>}</td>
               <td className={`${td} text-ink`}>
                 {m.callerId.replace(/"/g, '') || t('reception.unknownCaller')}
+                {m.summary && <div className="mt-2 max-w-md font-normal"><SummaryView summary={m.summary} compact /></div>}
                 {m.transcript && <p className="mt-1 max-w-md text-xs font-normal italic text-muted" title={t('voicemail.transcript')}>“{m.transcript}”</p>}
               </td>
               <td className={`${td} whitespace-nowrap font-mono text-xs`}>{formatDate(m.date, i18n.language)}</td>

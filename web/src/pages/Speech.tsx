@@ -108,7 +108,7 @@ export function Speech() {
   )
 }
 
-function Items({ items, onDownload, onRemove }: { items: SpeechItem[]; onDownload: (id: string) => void; onRemove: (i: SpeechItem) => void }) {
+export function Items({ items, onDownload, onRemove }: { items: SpeechItem[]; onDownload: (id: string) => void; onRemove: (i: SpeechItem) => void }) {
   const { t } = useTranslation()
   return (
     <Table head={[t('common.name'), t('speech.size'), t('speech.licence'), '']}>

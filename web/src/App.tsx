@@ -27,6 +27,7 @@ import { MfaEnroll } from './pages/MfaEnroll'
 import { Phones } from './pages/Phones'
 import { Prompts } from './pages/Prompts'
 import { Speech } from './pages/Speech'
+import { AI } from './pages/AI'
 import { Standby } from './pages/Standby'
 import { Sites } from './pages/Sites'
 import { Federation } from './pages/Federation'
@@ -61,7 +62,7 @@ const pages: Record<string, ReactElement> = {
   extensions: <Extensions />, ringGroups: <RingGroups />, queues: <Queues />, ivr: <IVRs />, timeConditions: <TimeConditions />,
   conferences: <Conferences />, prompts: <Prompts />, trunks: <Trunks />, phones: <Phones />, users: <Users />, sso: <Sso />,
   features: <Features />, firewall: <Firewall />, backups: <Backups />, mail: <Mail />, audit: <Audit />, settings: <Settings />,
-  phonebook: <Phonebook />, wallboard: <Wallboard />, fax: <Fax />, internet: <Internet />, integrations: <Integrations />, speech: <Speech />,
+  phonebook: <Phonebook />, wallboard: <Wallboard />, fax: <Fax />, internet: <Internet />, integrations: <Integrations />, speech: <Speech />, ai: <AI />,
   sites: <Sites />, federation: <Federation />, sunRoutes: <SunRoutes />, cluster: <Cluster />,
 }
 

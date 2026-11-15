@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/rhisijmuiden/kiestoon/server/internal/ai"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -142,16 +143,28 @@ func (s *Server) portalMessages(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "internal")
 		return
 	}
-	if st := s.speechSettings(r.Context()); st.STT.Enabled && st.STT.Voicemail {
-		for i := range msgs {
-			if p, err := s.Spool.MessageAudio(e.Number, msgs[i].Folder, msgs[i].ID); err == nil {
-				if b, err := os.ReadFile(p); err == nil {
-					msgs[i].Transcript = s.transcript(b)
+	type view struct {
+		media.Message
+		Summary *ai.Summary `json:"summary,omitempty"`
+	}
+	out := make([]view, len(msgs))
+	st := s.speechSettings(r.Context())
+	sum := s.aiSettings(r.Context()).Voicemail
+	for i := range msgs {
+		out[i].Message = msgs[i]
+		if !st.STT.Enabled || !st.STT.Voicemail {
+			continue
+		}
+		if p, err := s.Spool.MessageAudio(e.Number, msgs[i].Folder, msgs[i].ID); err == nil {
+			if b, err := os.ReadFile(p); err == nil {
+				out[i].Transcript = s.transcript(b)
+				if sum {
+					out[i].Summary = s.voicemailSummaryCached(b)
 				}
 			}
 		}
 	}
-	writeJSON(w, http.StatusOK, msgs)
+	writeJSON(w, http.StatusOK, out)
 }
 
 func msgID(r *http.Request) (string, int, bool) {
@@ -474,7 +487,7 @@ func (s *Server) portalRecordings(w http.ResponseWriter, r *http.Request) {
 	if e == nil {
 		return
 	}
-	writeJSON(w, http.StatusOK, s.Spool.Recordings(s.loc(r.Context()), s.mine(e)))
+	writeJSON(w, http.StatusOK, s.withAI(s.Spool.Recordings(s.loc(r.Context()), s.mine(e))))
 }
 
 func (s *Server) portalRecordingAudio(w http.ResponseWriter, r *http.Request) {

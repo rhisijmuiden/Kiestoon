@@ -220,6 +220,8 @@ func (e *Engine) Start(id string) error {
 		files = v.Files
 	} else if m := FindModel(id); m != nil {
 		files = []File{m.File}
+	} else if l := FindLLM(id); l != nil {
+		files = []File{l.File}
 	} else {
 		return errors.New("unknown")
 	}
@@ -319,6 +321,8 @@ func (e *Engine) Remove(id string) {
 		files = v.Files
 	} else if m := FindModel(id); m != nil {
 		files = []File{m.File}
+	} else if l := FindLLM(id); l != nil {
+		files = []File{l.File}
 	}
 	for _, f := range files {
 		_ = os.Remove(filepath.Join(e.Dir, f.Name))

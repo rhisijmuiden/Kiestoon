@@ -141,7 +141,11 @@
     "no_email": "Deze extensie heeft geen e-mailadres.",
     "user_disabled": "Dit account is uitgeschakeld.",
     "network_too_broad": "Dat IP-bereik is te groot. Gebruik /8 of kleiner.",
-    "on_portal_host": "Je werkt nu op het adres van het medewerkersportaal. Open het centrale-adres om dit aan te zetten, anders sluit je jezelf buiten."
+    "on_portal_host": "Je werkt nu op het adres van het medewerkersportaal. Open het centrale-adres om dit aan te zetten, anders sluit je jezelf buiten.",
+    "ai_no_key": "Voeg eerst een Claude API-sleutel toe, of kies het lokale model.",
+    "ai_not_ready": "Het lokale AI-model is nog niet gedownload, of het spraakpakket is niet geïnstalleerd.",
+    "ai_failed": "De samenvatting is mislukt.",
+    "ai_busy": "Er loopt al een transcriptie. Probeer het over een minuut opnieuw."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -247,7 +251,8 @@
     "sunRoutes": "Follow the sun",
     "cluster": "Hoge beschikbaarheid",
     "help": "Help",
-    "helpTitle": "Handleiding voor deze pagina openen"
+    "helpTitle": "Handleiding voor deze pagina openen",
+    "ai": "AI"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -397,7 +402,7 @@
     "emergencyCallerId": "Nummer voor alarmoproepen",
     "externalAddress": "Publiek adres",
     "localNets": "Lokale netwerken",
-    "language": "Taal",
+    "language": "taal",
     "timezone": "Tijdzone",
     "mac": "MAC-adres",
     "vendor": "Merk",
@@ -458,7 +463,7 @@
     "displayName": "volledige naam",
     "audio": "audio",
     "emails": "E-mailadressen",
-    "keepDays": "Bewaren",
+    "keepDays": "bewaartermijn",
     "work": "Werknummer",
     "mobile": "Mobiel nummer",
     "other": "Ander nummer",
@@ -513,7 +518,11 @@
     "description": "Omschrijving",
     "roles": "Rollen",
     "portalUrl": "Adres medewerkersportaal",
-    "portalDomain": "Hostnaam medewerkersportaal"
+    "portalDomain": "Hostnaam medewerkersportaal",
+    "key": "API-sleutel",
+    "engine": "engine",
+    "llm": "lokaal model",
+    "cloudModel": "Claude-model"
   },
   "extensions": {
     "title": "Toestellen",
@@ -2879,6 +2888,73 @@
       "remote": "Opgehangen door de andere partij",
       "ext": "Opgehangen door {{name}}",
       "system": "Beëindigd door de telefooncentrale"
+    }
+  },
+  "ai": {
+    "title": "AI-samenvattingen",
+    "subtitle": "Transcripties en samenvattingen van opgenomen gesprekken en voicemail",
+    "saved": "AI-instellingen opgeslagen.",
+    "needsStt": "Zet eerst spraak-naar-tekst aan onder Spraak: AI werkt op de transcripties die daarmee gemaakt worden.",
+    "what": "Wat samenvatten",
+    "intro": "Transcripties worden altijd op deze server gemaakt door Whisper. De samenvatting komt van een lokaal model (er verlaat niets de server) of van Claude in de cloud (alleen de tekst wordt verstuurd).",
+    "calls": "Opgenomen gesprekken",
+    "callsHint": "Alleen gesprekken die toch al worden opgenomen. Nieuwe opnames worden op de achtergrond verwerkt, nieuwste eerst.",
+    "voicemail": "Voicemail",
+    "voicemailHint": "Voegt een samenvatting en actiepunten toe in het portaal, de softphone en de voicemailmail.",
+    "language": "Taal van de samenvattingen",
+    "languageAuto": "Zelfde als het gesprek",
+    "keepDays": "Samenvattingen van gesprekken bewaren (dagen)",
+    "keepDaysHint": "0 bewaart ze zolang de opname bestaat.",
+    "engine": "Engine",
+    "engines": {
+      "local": "Lokaal model",
+      "localHint": "Draait op deze server met llama.cpp. Gratis en privé, maar trager.",
+      "cloud": "Claude (cloud)",
+      "cloudHint": "Sneller en beter, met uw eigen Anthropic API-sleutel. Alleen de tekst van de transcriptie wordt verstuurd."
+    },
+    "notInstalled": "De lokale AI is niet geïnstalleerd. Installeer of update het pakket kiestoon-speech.",
+    "llm": "Lokaal model",
+    "ram": "Heeft ongeveer {{gb}} GB vrij geheugen nodig zolang het draait.",
+    "localHint": "Het model start zodra er werk is en stopt weer na 5 minuten zonder werk.",
+    "cloudModel": "Claude-model",
+    "key": "Anthropic API-sleutel",
+    "keySet": "Er is een sleutel opgeslagen ({{hint}}). Die wordt nooit meer getoond.",
+    "keyNone": "Nog geen sleutel opgeslagen. Maak er een aan op console.anthropic.com.",
+    "keyNew": "Nieuwe sleutel",
+    "keySave": "Sleutel opslaan",
+    "keyRemove": "Sleutel verwijderen",
+    "cloudHint": "Het gebruik rekent Anthropic af met uw eigen account. Audio verlaat de server nooit.",
+    "test": "Uitproberen",
+    "testIntro": "Vat een voorbeeldvoicemail samen met deze instellingen.",
+    "testDone": "Gemaakt door {{engine}} in {{seconds}} s.",
+    "models": {
+      "claude-opus-5-5": "Claude Opus 5.5",
+      "claude-sonnet-5-5": "Claude Sonnet 5.5",
+      "claude-haiku-5-5": "Claude Haiku 5.5",
+      "qwen3-4b-instruct": "Qwen3 4B Instruct",
+      "qwen3-1.7b": "Qwen3 1.7B"
+    },
+    "sentiment": {
+      "positive": "Positief",
+      "neutral": "Neutraal",
+      "negative": "Negatief"
+    },
+    "actions": "Actiepunten",
+    "show": "AI-samenvatting",
+    "noResult": "Nog geen transcriptie of samenvatting.",
+    "run": "Uitschrijven en samenvatten",
+    "rerun": "Opnieuw maken",
+    "running": "Met het lokale model kan dit een paar minuten duren.",
+    "transcript": "Transcriptie",
+    "madeBy": "Gemaakt door {{engine}}",
+    "errors": {
+      "failed": "De samenvatting is mislukt.",
+      "speech_not_ready": "Spraak-naar-tekst is niet klaar: download een Whisper-model onder Spraak.",
+      "ai_no_key": "De transcriptie is klaar, maar er is geen Claude API-sleutel opgeslagen.",
+      "ai_not_ready": "De transcriptie is klaar, maar het lokale model is niet gedownload.",
+      "no_speech": "Er is geen spraak herkend in deze opname.",
+      "transcription": "De transcriptie is mislukt.",
+      "summary": "De transcriptie is klaar, maar de samenvatting is mislukt."
     }
   }
 }

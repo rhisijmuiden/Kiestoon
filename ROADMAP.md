@@ -291,8 +291,9 @@ the testing channel.
   wallboard and sent by e-mail (and later push), with a quiet period
 - [ ] Scheduled reports by e-mail: daily, weekly or monthly per queue and agent (answered, abandoned, waiting time,
   service level, talk time), as HTML mail with CSV
-- [ ] AI: transcription of recorded calls (whisper.cpp, local), summaries and action points of calls and voicemail,
-  searchable in the call history and the user portal
+- [x] AI (`v0.7.0-rc.2`): transcription of recorded calls (whisper.cpp, local), summaries, topic, mood and
+  follow-ups of calls and voicemail, by a local model (llama.cpp with Qwen3, default) or Claude with the
+  installation's own API key; shown with recordings, in the portal, the softphone and the voicemail mail
 - [ ] Speech IVR: "say what you are calling about": a new IVR step that listens, recognises the spoken intent from
   phrases per line (local Whisper) and falls back to keys
 - [ ] Mobile app (iOS and Android), the counterpart of the Windows softphone: calls with push notifications when

@@ -1,6 +1,7 @@
 // Adds what the API cannot create on a machine without Asterisk and real sites: paired branch offices,
 // an active linked system, voicemail, recordings, received faxes and a backup history.
 // Usage: node dress.mjs <base-url> <data-dir> <wireguard-keys-file>
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -66,6 +67,39 @@ for (const [i, [from, to, secs]] of [['0612345678', '201', 312], ['201', '020555
 
 // The recording of call 44 (see the call journeys in fake-ami.mjs).
 fs.writeFileSync(path.join(mon, `kt-${stamp(new Date(Date.now() - 30 * 60000))}-1731644.1-0687654321-q700.wav`), Buffer.from(wav(30, 17), 'base64'))
+
+// AI: transcripts and summaries of voicemail and recorded calls (as if Whisper and the model ran).
+const setting = (key, value) => db.prepare('INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, value)
+setting('speech', JSON.stringify({ tts: { enabled: false, voiceEn: 'en_GB-cori-medium', voiceNl: 'nl_NL-pim-medium' }, stt: { enabled: true, model: 'small-q5_1', language: 'auto', voicemail: true } }))
+setting('ai', JSON.stringify({ calls: true, voicemail: true, engine: 'cloud', llm: 'qwen3-4b-instruct', cloudModel: 'claude-opus-5-5', language: 'auto', keepDays: 90 }))
+setting('ai_api_key', 'sk-ant-demo-not-a-real-key-7f3a')
+const aiDir = path.join(dataDir, 'speech', 'ai')
+const trDir = path.join(dataDir, 'speech', 'transcripts')
+fs.mkdirSync(aiDir, { recursive: true })
+fs.mkdirSync(trDir, { recursive: true })
+const sha = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+const at = new Date().toISOString()
+const vmAI = [
+  ['Goedemiddag, met Peter van Jansen Bouw. Ik bel over de offerte voor de nieuwe kantoorvleugel. Kunt u mij voor vrijdag terugbellen? Mijn nummer is 06 12 34 56 78.',
+    { summary: 'Peter van Jansen Bouw belt over de offerte voor de nieuwe kantoorvleugel en vraagt om voor vrijdag teruggebeld te worden.', actions: ['Peter voor vrijdag terugbellen op 06 12 34 56 78'], topic: 'Offerte kantoorvleugel', sentiment: 'neutral' }],
+  ['Goedendag, Gemeente Utrecht, afdeling vergunningen. Uw aanvraag is compleet en wordt deze week behandeld. U hoeft verder niets te doen.',
+    { summary: 'De gemeente Utrecht meldt dat de vergunningsaanvraag compleet is en deze week wordt behandeld.', actions: [], topic: 'Vergunningsaanvraag', sentiment: 'positive' }],
+]
+fs.readdirSync(path.join(spool, 'voicemail', 'default', '204', 'INBOX')).filter((f) => f.endsWith('.wav')).sort().slice(0, 2).forEach((f, i) => {
+  const h = sha(path.join(spool, 'voicemail', 'default', '204', 'INBOX', f))
+  fs.writeFileSync(path.join(trDir, h + '.txt'), vmAI[i][0])
+  fs.writeFileSync(path.join(aiDir, `vm-${h}.json`), JSON.stringify({ status: 'done', summary: vmAI[i][1], engine: 'claude-opus-5-5', at }))
+})
+const recAI = {
+  '-0612345678-201.wav': ['Goedemorgen, met Peter Jansen. Ik bel over de levering van de kozijnen. Die zou vandaag komen, maar ik heb nog niets gezien. ... Ik zoek het voor u uit en bel u voor twaalf uur terug. ... Prima, dank u wel.',
+    { summary: 'Peter Jansen mist de levering van de kozijnen die vandaag zou komen. De medewerker zoekt het uit en belt voor twaalf uur terug.', actions: ['Levering kozijnen nagaan bij de vervoerder', 'Peter Jansen voor 12:00 terugbellen'], topic: 'Levering kozijnen', sentiment: 'negative' }],
+  '-0104567890-202.wav': ['Hallo, De Groot Transport. We willen de rit van donderdag een uur vervroegen, kan dat? ... Ja, dat lukt, ik zet het om naar acht uur. ... Top, bedankt.',
+    { summary: 'De Groot Transport vraagt de rit van donderdag een uur te vervroegen; de medewerker zet hem om naar 8:00.', actions: ['Planning donderdag aanpassen naar 8:00'], topic: 'Rit vervroegen', sentiment: 'positive' }],
+}
+for (const f of fs.readdirSync(mon)) {
+  const k = Object.keys(recAI).find((s) => f.endsWith(s))
+  if (k) fs.writeFileSync(path.join(aiDir, `rec-${f}.json`), JSON.stringify({ status: 'done', transcript: recAI[k][0], summary: recAI[k][1], engine: 'claude-opus-5-5', at }))
+}
 
 // Received faxes.
 const box = db.prepare('SELECT id FROM fax_boxes ORDER BY id LIMIT 1').get()

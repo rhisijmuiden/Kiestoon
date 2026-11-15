@@ -58,7 +58,9 @@ func TestIVRFlow(t *testing.T) {
 		}
 		return m
 	}
-	edge := func(from, port, to string) map[string]string { return map[string]string{"from": from, "port": port, "to": to} }
+	edge := func(from, port, to string) map[string]string {
+		return map[string]string{"from": from, "port": port, "to": to}
+	}
 	body := map[string]any{"name": "Main", "timeout": 5, "retries": 1, "flow": map[string]any{
 		"nodes": []any{
 			node("e", "entry", map[string]any{"promptId": prompts[0]}),

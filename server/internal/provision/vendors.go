@@ -48,6 +48,13 @@ func Fanvil(in Input) string {
 	} else {
 		w("SIP1 Enable Reg", 0)
 	}
+	// Intercom: the phone answers on the speaker when the INVITE carries Call-Info answer-after.
+	ic := in.Phone.Options.Intercom
+	b.WriteString("\n<PHONE FEATURE MODULE>\n")
+	w("Enable Intercom", b2i(ic.Allow))
+	w("Enable Intercom Mute", b2i(ic.Mute))
+	w("Enable Intercom Tone", b2i(ic.Tone))
+	w("Enable Intercom Barge", b2i(ic.Barge))
 	b.WriteString("\n<MMI CONFIG MODULE>\n")
 	b.WriteString("--MMI Account--    :\n")
 	w("Account1 Name", "admin")
@@ -188,6 +195,19 @@ func Poly(in Input) string {
 		})
 		attrs("msg", [][2]string{{"msg.mwi.1.subscribe", in.Ext.Number}, {"msg.mwi.1.callBackMode", "contact"}, {"msg.mwi.1.callBack", "*97"}})
 	}
+	// Intercom: Poly does not read Call-Info, it matches the Alert-Info header that Kiestoon sends
+	// (info=alert-autoanswer) to the autoAnswer ring class. Without intercom the rules fall back to
+	// the normal ring.
+	class := "default"
+	if in.Phone.Options.Intercom.Allow {
+		class = "autoAnswer"
+	}
+	attrs("voIpProt", [][2]string{
+		{"voIpProt.SIP.alertInfo.1.value", "info=alert-autoanswer"}, {"voIpProt.SIP.alertInfo.1.class", class},
+		{"voIpProt.SIP.alertInfo.2.value", "alert-autoanswer"}, {"voIpProt.SIP.alertInfo.2.class", class},
+	})
+	attrs("se", [][2]string{{"se.rt.autoAnswer.timeout", "0"}})
+	attrs("call", [][2]string{{"call.autoAnswer.micMute", fmt.Sprint(b2i(in.Phone.Options.Intercom.Mute))}})
 	kv := [][2]string{}
 	n := 0
 	for _, k := range simpleKeys(in.Phone.Keys) {

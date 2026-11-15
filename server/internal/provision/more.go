@@ -34,6 +34,7 @@ func Htek(in Input) string {
 		p(3, in.Ext.Name)
 		p(33, "*97")
 		p(130, gt)
+		p(298, b2i(in.Phone.Options.Intercom.Allow)) // intercom: auto-answer on Call-Info
 		if in.Ext.SRTP {
 			p(183, 2)
 		} else {
@@ -87,6 +88,8 @@ func Akuvox(in Input) string {
 		if in.Ext.SRTP {
 			w("Config.Account1.ENCRYPTION.Enable", 1)
 		}
+		// Intercom: a door or loading bay station answers every call on its speaker.
+		w("Config.Account1.AUTO_ANSWER.Enable", b2i(in.Phone.Options.Intercom.Allow))
 	} else {
 		w("Config.Account1.GENERAL.Enable", 0)
 	}
@@ -149,6 +152,8 @@ func Cisco(in Input) string {
 			w(fmt.Sprintf("Extended_Function_%d_", n), fmt.Sprintf("fnc=sd;ext=%s@%s;nme=%s", k.Value, in.Server, clean(k.Label)))
 		}
 	}
+	// Intercom: answer pages and intercom calls (Call-Info answer-after) on the speaker.
+	w("Auto_Answer_Page", yesNo(in.Phone.Options.Intercom.Allow))
 	if in.PhonebookURL != "" {
 		w("XML_Directory_Service_Name", clean(in.Org))
 		w("XML_Directory_Service_URL", in.PhonebookURL)
@@ -159,6 +164,13 @@ func Cisco(in Input) string {
 	}
 	b.WriteString("</flat-profile>\n")
 	return b.String()
+}
+
+func yesNo(v bool) string {
+	if v {
+		return "Yes"
+	}
+	return "No"
 }
 
 // CiscoCommon answers the first request of a factory-new Cisco MPP phone (<model>.xml, from DHCP

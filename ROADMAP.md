@@ -252,6 +252,10 @@ Notes on phase 5:
   (check-sync). Intercom (*80 or a key) now only reaches known extensions that are free and not on DND, on all their
   devices including the browser, and each phone has intercom options (auto-answer, warning tone, mute, during a call).
   Employees edit the keys of their own phone and modules in the portal.
+- [x] Intercom auto-answer on every brand (`v0.6.0-rc.13`): the phone that is called with *80 or an intercom key
+  answers on its speaker by itself, pushed through provisioning and switched per phone. Yealink, Snom and Fanvil
+  (warning tone, muted microphone, also during a call), Poly (muted microphone), Grandstream, Htek, Cisco MPP and
+  Akuvox door and loading bay stations (on or off). Snom now gets the correct answer_after_policy values.
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

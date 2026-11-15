@@ -203,3 +203,38 @@ func TestKeysLinesAndModules(t *testing.T) {
 		t.Errorf("limits: %+v", lim)
 	}
 }
+
+// Intercom auto-answer is pushed to every brand that supports it, and switched off per phone.
+func TestIntercomAutoAnswerPerVendor(t *testing.T) {
+	ext := &pbx.Extension{Number: "301", Name: "Loading bay", SIPSecret: "s1", Transport: "udp"}
+	in := Input{Settings: Settings{AdminPassword: "adminpw12", NTPServer: "pool.ntp.org", Language: "en"},
+		PBX: pbx.Settings{SIPPort: 5060}, Ext: ext, Server: "pbx.local"}
+	cases := []struct {
+		vendor, model string
+		render        func(Input) string
+		on, off       []string
+	}{
+		{"snom", "D785", Snom, []string{`<answer_after_policy perm="R">always</answer_after_policy>`}, []string{`<answer_after_policy perm="R">off</answer_after_policy>`}},
+		{"fanvil", "X6U", Fanvil, []string{"Enable Intercom    :1", "Enable Intercom Barge:1"}, []string{"Enable Intercom    :0"}},
+		{"poly", "VVX450", Poly, []string{`voIpProt.SIP.alertInfo.1.value="info=alert-autoanswer"`, `voIpProt.SIP.alertInfo.1.class="autoAnswer"`}, []string{`voIpProt.SIP.alertInfo.1.class="default"`}},
+		{"cisco", "8851", Cisco, []string{`<Auto_Answer_Page ua="na">Yes</Auto_Answer_Page>`}, []string{`<Auto_Answer_Page ua="na">No</Auto_Answer_Page>`}},
+		{"htek", "UC926", Htek, []string{"<P298>1</P298>"}, []string{"<P298>0</P298>"}},
+		{"akuvox", "R20A", Akuvox, []string{"Config.Account1.AUTO_ANSWER.Enable = 1"}, []string{"Config.Account1.AUTO_ANSWER.Enable = 0"}},
+	}
+	for _, c := range cases {
+		in.Phone = pbx.Phone{Vendor: c.vendor, Model: c.model, Options: pbx.PhoneOptions{Intercom: pbx.IntercomOptions{Allow: true, Barge: true}}}
+		on := c.render(in)
+		in.Phone.Options.Intercom.Allow = false
+		off := c.render(in)
+		for _, want := range c.on {
+			if !strings.Contains(on, want) {
+				t.Errorf("%s on: missing %q", c.vendor, want)
+			}
+		}
+		for _, want := range c.off {
+			if !strings.Contains(off, want) {
+				t.Errorf("%s off: missing %q", c.vendor, want)
+			}
+		}
+	}
+}

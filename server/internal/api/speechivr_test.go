@@ -22,8 +22,12 @@ func TestSpeechIVR(t *testing.T) {
 		}
 		return m
 	}
-	edge := func(from, port, to string) map[string]string { return map[string]string{"from": from, "port": port, "to": to} }
-	dest := func(n string) map[string]any { return map[string]any{"destination": map[string]string{"type": "extension", "target": n}} }
+	edge := func(from, port, to string) map[string]string {
+		return map[string]string{"from": from, "port": port, "to": to}
+	}
+	dest := func(n string) map[string]any {
+		return map[string]any{"destination": map[string]string{"type": "extension", "target": n}}
+	}
 	flow := map[string]any{
 		"nodes": []any{
 			node("e", "entry", nil), node("to", "timeout", nil),

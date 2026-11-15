@@ -151,17 +151,14 @@ func (s *Server) resetUserMFA(w http.ResponseWriter, r *http.Request) {
 
 // ---- identity providers -----------------------------------------------------
 
-// publicBase is the address people reach the portal on: the public URL when one is set (internet
-// mode sets it), otherwise the address of this request.
+// publicBase is the address people reach the portal on for this request: the employee portal address
+// on the portal host name, otherwise the PBX address (internet mode or the proxy sets it), otherwise
+// the address of this request. Single sign-on must come back to the host name it started on.
 func (s *Server) publicBase(r *http.Request) string {
-	if base, _ := store.GetSetting(r.Context(), s.DB, "public_url", ""); base != "" {
-		return strings.TrimRight(base, "/")
+	if onPortalHost(r) {
+		return s.portalBase(r)
 	}
-	scheme := "http"
-	if s.secure(r) {
-		scheme = "https"
-	}
-	return scheme + "://" + r.Host
+	return s.pbxBase(r)
 }
 
 // redirectURI is the callback address to register at the identity provider.
@@ -178,7 +175,7 @@ func (s *Server) listProviders(w http.ResponseWriter, r *http.Request) {
 	for i := range ps {
 		ps[i].ClientSecret = ""
 	}
-	ep := sso.Endpoints(s.publicBase(r))
+	ep := sso.Endpoints(s.pbxBase(r))
 	writeJSON(w, http.StatusOK, map[string]any{"providers": ps, "redirectUri": s.redirectURI(r), "kinds": sso.Kinds,
 		"samlEntityId": ep.EntityID, "samlAcs": ep.ACS})
 }
@@ -270,7 +267,7 @@ func (s *Server) ssoStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if p.IsSAML() {
-		sp, err := sso.ServiceProvider(r.Context(), s.DB, sso.Endpoints(s.publicBase(r)), p)
+		sp, err := sso.ServiceProvider(r.Context(), s.DB, sso.Endpoints(s.pbxBase(r)), p)
 		if err != nil {
 			s.Log.Warn("saml start", "provider", p.Name, "err", err)
 			ssoFail(w, r, "sso_unreachable")
@@ -333,7 +330,7 @@ func (s *Server) ssoCallback(w http.ResponseWriter, r *http.Request) {
 
 // samlMetadata serves Kiestoon's service provider metadata, to import at the identity provider.
 func (s *Server) samlMetadata(w http.ResponseWriter, r *http.Request) {
-	sp, err := sso.ServiceProvider(r.Context(), s.DB, sso.Endpoints(s.publicBase(r)), nil)
+	sp, err := sso.ServiceProvider(r.Context(), s.DB, sso.Endpoints(s.pbxBase(r)), nil)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -367,7 +364,7 @@ func (s *Server) samlACS(w http.ResponseWriter, r *http.Request) {
 		ssoFail(w, r, "sso_unknown")
 		return
 	}
-	sp, err := sso.ServiceProvider(r.Context(), s.DB, sso.Endpoints(s.publicBase(r)), p)
+	sp, err := sso.ServiceProvider(r.Context(), s.DB, sso.Endpoints(s.pbxBase(r)), p)
 	if err != nil {
 		ssoFail(w, r, "sso_failed")
 		return

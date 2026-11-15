@@ -101,7 +101,7 @@ func (s *Server) phonebookSettingsGet(w http.ResponseWriter, r *http.Request) {
 		host = h
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"settings": st, "baseDn": phonebook.BaseDN, "bindDn": "cn=" + prov.Username + "," + phonebook.BaseDN,
-		"server": host, "ldapRunning": s.ldapRunning(), "xmlBase": s.publicBase(r) + "/prov/phonebook/"})
+		"server": host, "ldapRunning": s.ldapRunning(), "xmlBase": s.pbxBase(r) + "/prov/phonebook/"})
 }
 
 func (s *Server) phonebookSettingsSave(w http.ResponseWriter, r *http.Request) {

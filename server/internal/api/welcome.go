@@ -90,10 +90,17 @@ func (s *Server) portalLinks(r *http.Request, lang string) (primary string, link
 		}
 		return en
 	}
-	pub, _ := store.GetSetting(r.Context(), s.DB, "public_url", "")
+	pub, _ := store.GetSetting(r.Context(), s.DB, portalURLKey, "")
+	if pub == "" {
+		pub, _ = store.GetSetting(r.Context(), s.DB, "public_url", "")
+	}
 	if pub = strings.TrimRight(pub, "/"); pub != "" {
-		if u, err := url.Parse(pub); err == nil {
-			host = u.Hostname()
+		// Phones register with the PBX host name, employees open the portal host name.
+		host = s.sipHost(r)
+		if host == "" {
+			if u, err := url.Parse(pub); err == nil {
+				host = u.Hostname()
+			}
 		}
 		return pub, []welcome.Link{{Label: label("Web portal", "Webportal"), URL: pub}}, host
 	}

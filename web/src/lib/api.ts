@@ -53,6 +53,8 @@ export type Me = {
   organization: string
   extension: { number: string; name: string } | null
   signInMethod: string
+  /** Set on the employee portal host name when administration is blocked there: where to manage the system. */
+  adminUrl?: string
 }
 
 export type SystemInfo = {

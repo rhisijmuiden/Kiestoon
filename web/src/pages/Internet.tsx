@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Activity, Globe, Lock, Network, RefreshCw, ShieldCheck } from 'lucide-react'
+import { Activity, Globe, Lock, Network, RefreshCw, ShieldCheck, Signpost } from 'lucide-react'
 import { Badge, CopyField, SectionTitle, Textarea, Toggle, formatDate, useApi } from '../components/kit'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
-import type { InternetData, InternetSettings, MetricsSettings, ProxyData, ProxySettings } from '../lib/types'
+import type { HostnamesData, InternetData, InternetSettings, MetricsSettings, ProxyData, ProxySettings } from '../lib/types'
 
 /** Direct internet access: Caddy with a Let's Encrypt certificate in front of the portal. */
 export function Internet() {
@@ -14,7 +14,8 @@ export function Internet() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const [saved, setSaved] = useState(false)
-  useEffect(() => { if (data.data && !s) setS(data.data.settings) }, [data.data, s])
+  const [rev, setRev] = useState(0)
+  useEffect(() => { if (data.data && !s) setS({ ...data.data.settings, portalDomain: data.data.settings.portalDomain ?? '' }) }, [data.data, s])
   if (!s || !data.data) return <><PageHeader title={t('internet.title')} /><ErrorMessage error={data.error} /></>
   const set = <K extends keyof InternetSettings>(k: K, v: InternetSettings[K]) => { setSaved(false); setS({ ...s, [k]: v }) }
   const st = data.data.status
@@ -26,6 +27,7 @@ export function Internet() {
     try {
       await api('PUT', '/internet', s)
       setSaved(true)
+      setRev((r) => r + 1)
       data.reload()
     } catch (e) {
       setError(e)
@@ -53,9 +55,11 @@ export function Internet() {
               <Input label={t('internet.domain')} value={s.domain} onChange={(e) => set('domain', e.target.value.trim().toLowerCase())} placeholder="pbx.example.com" className="font-mono" hint={t('internet.domainHint')} />
               <Input label={t('internet.email')} type="email" value={s.email} onChange={(e) => set('email', e.target.value.trim())} placeholder="it@example.com" hint={t('internet.emailHint')} />
             </div>
+            <Input label={t('internet.portalDomain')} value={s.portalDomain} onChange={(e) => set('portalDomain', e.target.value.trim().toLowerCase())} placeholder="voipcentrale.example.com" className="font-mono" hint={t('internet.portalDomainHint')} />
             <Toggle label={t('internet.useForSip')} hint={t('internet.useForSipHint')} checked={s.useForSip} onChange={(v) => set('useForSip', v)} />
             <Toggle label={t('internet.staging')} hint={t('internet.stagingHint')} checked={s.staging} onChange={(v) => set('staging', v)} />
             {s.enabled && data.data.dns && data.data.dns.length === 0 && s.domain && <Alert tone="warn">{t('internet.noDns', { domain: s.domain })}</Alert>}
+            {s.enabled && data.data.portalDns && data.data.portalDns.length === 0 && s.portalDomain && <Alert tone="warn">{t('internet.noDns', { domain: s.portalDomain })}</Alert>}
             <div className="flex justify-end">
               <Button busy={busy} disabled={!data.data.helperAvailable} onClick={save}>{t('common.save')}</Button>
             </div>
@@ -73,6 +77,14 @@ export function Internet() {
             ) : (
               <p className="text-sm text-muted">{s.enabled ? t('internet.certPending') : t('internet.certNone')}</p>
             )}
+            {s.enabled && s.portalDomain && (
+              st.portalCertificate ? (
+                <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 border-t border-line pt-4 text-sm">
+                  <dt className="text-muted">{t('internet.certFor')}</dt><dd className="font-mono text-ink">{st.portalCertificate.dnsNames?.join(', ') || st.portalCertificate.subject}</dd>
+                  <dt className="text-muted">{t('internet.certValid')}</dt><dd className="text-ink-2">{formatDate(st.portalCertificate.notAfter, i18n.language)}</dd>
+                </dl>
+              ) : <p className="mt-3 text-sm text-muted">{t('internet.portalCertPending', { domain: s.portalDomain })}</p>
+            )}
           </Card>
           <Card>
             <SectionTitle><span className="inline-flex items-center gap-2"><ShieldCheck className="size-5 text-accent" aria-hidden />{t('internet.checklist')}</span></SectionTitle>
@@ -83,11 +95,13 @@ export function Internet() {
             </ol>
             {data.data.dns && data.data.dns.length > 0 && <div className="mt-4"><CopyField label={t('internet.dnsNow', { domain: s.domain })} value={data.data.dns.join(', ')} /></div>}
             {s.enabled && s.domain && <div className="mt-3"><CopyField label={t('internet.address')} value={`https://${s.domain}`} /></div>}
+            {s.enabled && s.portalDomain && <div className="mt-3"><CopyField label={t('internet.portalAddress')} value={`https://${s.portalDomain}`} /></div>}
           </Card>
         </div>
       </div>
+      <HostnamesCard rev={rev} />
       <div className="grid gap-4 xl:grid-cols-2">
-        <ReverseProxy />
+        <ReverseProxy onSaved={() => setRev((r) => r + 1)} />
         <Metrics />
       </div>
     </>
@@ -97,7 +111,7 @@ export function Internet() {
 const lines = (v: string) => v.split(/[\s,]+/).map((x) => x.trim()).filter(Boolean)
 
 /** Running behind your own reverse proxy (nginx, Traefik, HAProxy …): which addresses may set X-Forwarded-For. */
-function ReverseProxy() {
+function ReverseProxy({ onSaved }: { onSaved: () => void }) {
   const { t } = useTranslation()
   const d = useApi<ProxyData>('/system/proxy')
   const [p, setP] = useState<ProxySettings | null>(null)
@@ -106,7 +120,7 @@ function ReverseProxy() {
   const [error, setError] = useState<unknown>(null)
   const [saved, setSaved] = useState(false)
   useEffect(() => {
-    if (d.data && !p) { setP(d.data.settings); setList(d.data.settings.trustedProxies.join('\n')) }
+    if (d.data && !p) { setP({ ...d.data.settings, portalUrl: d.data.settings.portalUrl ?? '' }); setList(d.data.settings.trustedProxies.join('\n')) }
   }, [d.data, p])
   if (!p || !d.data) return <ErrorMessage error={d.error} />
   async function save() {
@@ -116,6 +130,7 @@ function ReverseProxy() {
     try {
       await api('PUT', '/system/proxy', { ...p, trustedProxies: lines(list) })
       setSaved(true)
+      onSaved()
       d.reload()
     } catch (e) {
       setError(e)
@@ -132,6 +147,7 @@ function ReverseProxy() {
         <Toggle label={t('proxy.enable')} hint={t('proxy.enableHint')} checked={p.enabled} onChange={(v) => { setSaved(false); setP({ ...p, enabled: v }) }} />
         <Textarea label={t('proxy.trusted')} value={list} onChange={(e) => { setSaved(false); setList(e.target.value) }} placeholder={'10.0.0.5\n192.168.10.0/24'} hint={t('proxy.trustedHint')} />
         <Input label={t('proxy.publicUrl')} value={p.publicUrl} onChange={(e) => { setSaved(false); setP({ ...p, publicUrl: e.target.value.trim() }) }} placeholder="https://pbx.example.com" className="font-mono" hint={t('proxy.publicUrlHint')} />
+        <Input label={t('proxy.portalUrl')} value={p.portalUrl} onChange={(e) => { setSaved(false); setP({ ...p, portalUrl: e.target.value.trim() }) }} placeholder="https://voipcentrale.example.com" className="font-mono" hint={t('proxy.portalUrlHint')} />
         <div className="rounded-xl border border-line bg-surface-2/60 p-4">
           <div className="mb-2 flex items-center justify-between gap-2">
             <h3 className="text-sm font-medium text-ink">{t('proxy.check')}</h3>
@@ -150,6 +166,64 @@ function ReverseProxy() {
         {saved && <Alert tone="ok">{t('proxy.saved')}</Alert>}
         <ErrorMessage error={error} />
         <div className="flex justify-end"><Button busy={busy} onClick={save}>{t('common.save')}</Button></div>
+      </div>
+    </Card>
+  )
+}
+
+/** The two host names in effect (PBX and employee portal) and whether administration is closed on the portal one. */
+function HostnamesCard({ rev }: { rev: number }) {
+  const { t } = useTranslation()
+  const d = useApi<HostnamesData>('/system/hostnames')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<unknown>(null)
+  const [saved, setSaved] = useState(false)
+  const reload = d.reload
+  useEffect(() => { if (rev) reload() }, [rev, reload])
+  if (!d.data) return <ErrorMessage error={d.error} />
+  const h = d.data.hostnames
+  async function toggle(v: boolean) {
+    setBusy(true)
+    setError(null)
+    setSaved(false)
+    try {
+      await api('PUT', '/system/hostnames', { blockAdmin: v })
+      setSaved(true)
+      reload()
+    } catch (e) {
+      setError(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const row = (label: string, value: string, hint: string) => (
+    <div className="rounded-xl border border-line bg-surface-2/60 p-4">
+      <div className="text-xs uppercase tracking-[0.12em] text-subtle">{label}</div>
+      <div className="mt-1 break-all font-mono text-sm text-ink">{value || '–'}</div>
+      <p className="mt-1.5 text-xs text-muted">{hint}</p>
+    </div>
+  )
+  return (
+    <Card>
+      <SectionTitle><span className="inline-flex items-center gap-2"><Signpost className="size-5 text-accent" aria-hidden />{t('hostnames.title')}</span></SectionTitle>
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-muted">{t('hostnames.intro')}</p>
+        <div className="grid gap-3 md:grid-cols-2">
+          {row(t('hostnames.pbx'), h.pbxUrl, t('hostnames.pbxHint'))}
+          {row(t('hostnames.portal'), h.portalUrl || h.pbxUrl, h.portalUrl ? t('hostnames.portalHint') : t('hostnames.portalSame'))}
+        </div>
+        <Toggle label={t('hostnames.blockAdmin')} hint={t('hostnames.blockAdminHint', { host: h.portalHost || 'voipcentrale.example.com' })} checked={h.blockAdmin}
+          disabled={busy || (!h.separate && !h.blockAdmin)} onChange={toggle} />
+        {h.onPortal && <Alert tone="warn">{t('hostnames.onPortal', { url: h.pbxUrl })}</Alert>}
+        {h.blockAdmin && h.separate && <p className="text-xs text-subtle">{t('hostnames.blockNote')}</p>}
+        {d.data.ssoCallbacks.length > 1 && (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-ink-2">{t('hostnames.sso')}</p>
+            {d.data.ssoCallbacks.map((u) => <CopyField key={u} label={t('hostnames.ssoCallback')} value={u} />)}
+          </div>
+        )}
+        {saved && <Alert tone="ok">{t('hostnames.saved')}</Alert>}
+        <ErrorMessage error={error} />
       </div>
     </Card>
   )

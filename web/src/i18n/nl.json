@@ -140,7 +140,8 @@
     "password_mismatch": "De wachtwoorden komen niet overeen.",
     "no_email": "Deze extensie heeft geen e-mailadres.",
     "user_disabled": "Dit account is uitgeschakeld.",
-    "network_too_broad": "Dat IP-bereik is te groot. Gebruik /8 of kleiner."
+    "network_too_broad": "Dat IP-bereik is te groot. Gebruik /8 of kleiner.",
+    "on_portal_host": "Je werkt nu op het adres van het medewerkersportaal. Open het centrale-adres om dit aan te zetten, anders sluit je jezelf buiten."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -510,7 +511,9 @@
     "flow": "Menu",
     "networks": "Netwerken",
     "description": "Omschrijving",
-    "roles": "Rollen"
+    "roles": "Rollen",
+    "portalUrl": "Adres medewerkersportaal",
+    "portalDomain": "Hostnaam medewerkersportaal"
   },
   "extensions": {
     "title": "Toestellen",
@@ -1839,7 +1842,11 @@
     "step3": "Zet directe internettoegang aan en sla op.",
     "dnsNow": "{{domain}} wijst naar",
     "address": "Adres van het portaal",
-    "noHelper": "De systeemdienst van Kiestoon draait niet, dus internettoegang kan niet worden gewijzigd."
+    "noHelper": "De systeemdienst van Kiestoon draait niet, dus internettoegang kan niet worden gewijzigd.",
+    "portalDomain": "Hostnaam medewerkersportaal (optioneel)",
+    "portalDomainHint": "Een tweede naam voor medewerkers, bijvoorbeeld voipcentrale.example.com. Caddy haalt hier ook een certificaat voor; het DNS-record moet ook naar deze server wijzen.",
+    "portalCertPending": "Nog geen certificaat voor {{domain}}. Caddy probeert het om de paar minuten opnieuw.",
+    "portalAddress": "Adres medewerkersportaal"
   },
   "fax": {
     "title": "Fax",
@@ -2169,7 +2176,9 @@
     "secure": "Verbinding",
     "notTrusted": "Er kwam een proxy-header binnen, maar deze proxy wordt niet vertrouwd. Voeg het adres hierboven toe.",
     "docs": "Voorbeeldconfiguraties staan in de handleiding onder Eigen reverse proxy. Stuur WebSockets door voor de browsertelefoon.",
-    "saved": "Proxy-instellingen opgeslagen."
+    "saved": "Proxy-instellingen opgeslagen.",
+    "portalUrl": "Adres medewerkersportaal (optioneel)",
+    "portalUrlHint": "Een tweede adres voor medewerkers, bijvoorbeeld https://voipcentrale.example.com. Laat het in je proxy naar dezelfde Kiestoon wijzen."
   },
   "metrics": {
     "title": "Prometheus-metrics",
@@ -2682,5 +2691,23 @@
     "applyHint": "Telefoons die online zijn halen hun nieuwe toetsen meteen op.",
     "applied": "Sjabloon toegepast op {{count}} telefoons; {{notified}} hebben hun nieuwe toetsen meteen opgehaald. De rest neemt ze over bij de volgende provisioning-controle.",
     "appliedNoResync": "Sjabloon toegepast op {{count}} telefoons. Ze nemen de toetsen over bij de volgende provisioning-controle."
+  },
+  "hostnames": {
+    "title": "Hostnamen",
+    "intro": "Kiestoon kan één adres gebruiken voor beheer, toestellen en SIP, en een tweede adres voor het medewerkersportaal. De adressen komen uit Directe internettoegang of Eigen reverse proxy hieronder.",
+    "pbx": "Adres centrale",
+    "pbxHint": "Beheer, provisioning van toestellen en SIP-registratie. Toestellen en softphones registreren op deze hostnaam.",
+    "portal": "Adres medewerkersportaal",
+    "portalHint": "Welkomstmails, links om een wachtwoord in te stellen en de Windows-softphone sturen medewerkers hierheen.",
+    "portalSame": "Geen apart adres: medewerkers gebruiken het adres van de centrale.",
+    "blockAdmin": "Beheer blokkeren op het adres van het medewerkersportaal",
+    "blockAdminHint": "Op {{host}} krijgen beheerders alleen het gebruikersportaal (en het schakelbord). Beheer gaat via het adres van de centrale.",
+    "onPortal": "Je hebt deze pagina geopend op het adres van het medewerkersportaal. Gebruik {{url}} om deze instelling te wijzigen.",
+    "blockNote": "Kiestoon herkent de adressen aan de hostnaam. Wil je beheer helemaal van internet houden, publiceer dan alleen het portaaladres in je proxy of DNS en bereik het centrale-adres via je eigen netwerk of een VPN.",
+    "sso": "Single sign-on: registreer beide terugkeeradressen bij je identity provider (OpenID Connect). SAML gebruikt altijd het adres van de centrale.",
+    "ssoCallback": "Terugkeeradres",
+    "saved": "Hostnamen opgeslagen.",
+    "adminElsewhere": "Beheer is op dit adres gesloten.",
+    "toAdmin": "Naar beheer"
   }
 }

@@ -51,6 +51,15 @@ func (s *Server) internetGet(w http.ResponseWriter, r *http.Request) {
 		}
 		resp["dns"] = ips
 	}
+	if set.PortalDomain != "" {
+		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+		ips, _ := net.DefaultResolver.LookupHost(ctx, set.PortalDomain)
+		cancel()
+		if ips == nil {
+			ips = []string{}
+		}
+		resp["portalDns"] = ips
+	}
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -87,6 +96,14 @@ func (s *Server) internetSave(w http.ResponseWriter, r *http.Request) {
 		_ = store.SetSetting(r.Context(), s.DB, "public_url", set.PublicURL())
 	case !set.Enabled && old.Domain != "" && pub == old.PublicURL():
 		_ = store.SetSetting(r.Context(), s.DB, "public_url", "")
+	}
+	switch {
+	case set.Enabled && set.PortalURL() != "":
+		s.setPortalURL(r.Context(), set.PortalURL(), old.PortalURL())
+	case old.PortalURL() != "":
+		s.setPortalURL(r.Context(), "", old.PortalURL())
+	default:
+		s.loadHostnames(r.Context())
 	}
 	s.audit(r, "internet.saved", strings.TrimSpace(set.Domain+" enabled="+boolString(set.Enabled)))
 	s.firewallChanged(r.Context())

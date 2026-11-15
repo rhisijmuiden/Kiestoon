@@ -64,7 +64,7 @@ func (s *Server) metricsGet(w http.ResponseWriter, r *http.Request) {
 	if m.Token == "" {
 		m.Token = "kt_metrics_" + pbx.GenerateSecret(32)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"settings": m, "url": s.publicBase(r) + "/metrics"})
+	writeJSON(w, http.StatusOK, map[string]any{"settings": m, "url": s.pbxBase(r) + "/metrics"})
 }
 
 func (s *Server) metricsSave(w http.ResponseWriter, r *http.Request) {

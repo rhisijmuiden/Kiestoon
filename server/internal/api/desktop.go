@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/rhisijmuiden/kiestoon/server/internal/auth"
+	"github.com/rhisijmuiden/kiestoon/server/internal/store"
 	"github.com/rhisijmuiden/kiestoon/server/internal/version"
 )
 
@@ -172,7 +173,7 @@ func (s *Server) desktopInfo(w http.ResponseWriter, r *http.Request) {
 	if p, st := s.installer(); p != "" {
 		out["installer"] = installerInfo{Name: filepath.Base(p), Size: st.Size(), SHA256: fileSHA256(p, st), URL: "/download/kiestoon-softphone.msi"}
 	}
-	if base, fp, err := s.portalURL(r, ""); err == nil && !strings.HasSuffix(base, ":0") {
+	if base, fp, err := s.desktopURL(r); err == nil && !strings.HasSuffix(base, ":0") {
 		out["server"] = base
 		out["fingerprint"] = fp
 	}
@@ -213,10 +214,10 @@ func (s *Server) desktopPair(w http.ResponseWriter, r *http.Request) {
 	code := newPairCode()
 	exp := time.Now().Add(pairTTL)
 	s.pairs.add(code, pairCode{userID: u.ID, expires: exp})
-	base, fp, err := s.portalURL(r, "")
+	base, fp, err := s.desktopURL(r)
 	if err != nil || strings.HasSuffix(base, ":0") {
 		// No HTTPS port of its own (switched off): use the address this page was opened on.
-		base, fp = s.publicBase(r), ""
+		base, fp = s.portalBase(r), ""
 	}
 	q := url.Values{"server": {base}, "code": {code}}
 	if fp != "" {
@@ -321,4 +322,13 @@ func (s *Server) ensureWebRTC(w http.ResponseWriter, r *http.Request, u *auth.Us
 	s.Ast.Changed()
 	s.audit(r, "desktop.webrtc_enabled", e.Number)
 	return true
+}
+
+// desktopURL is the address the softphone links to: the employee portal address when it is HTTPS,
+// otherwise the address other systems pair with.
+func (s *Server) desktopURL(r *http.Request) (string, string, error) {
+	if p, _ := store.GetSetting(r.Context(), s.DB, portalURLKey, ""); strings.HasPrefix(p, "https://") {
+		return strings.TrimRight(p, "/"), "", nil
+	}
+	return s.portalURL(r, "")
 }

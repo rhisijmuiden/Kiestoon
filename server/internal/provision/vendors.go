@@ -55,7 +55,7 @@ func Fanvil(in Input) string {
 	w("Account1 Level", 10)
 	if len(in.Phone.Keys) > 0 {
 		b.WriteString("\n<DSS CONFIG MODULE>\n")
-		for i, k := range in.Phone.Keys {
+		for i, k := range simpleKeys(in.Phone.Keys) {
 			n := i + 1
 			typ, val := 0, ""
 			switch k.Type {
@@ -190,7 +190,7 @@ func Poly(in Input) string {
 	}
 	kv := [][2]string{}
 	n := 0
-	for _, k := range in.Phone.Keys {
+	for _, k := range simpleKeys(in.Phone.Keys) {
 		typ := ""
 		switch k.Type {
 		case "blf":

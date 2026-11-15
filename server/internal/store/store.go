@@ -617,6 +617,18 @@ var migrations = []string{
 		first_seen TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
 		last_seen  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
 	);`,
+	// Expansion modules and intercom options per phone, and key layouts to reuse per model.
+	`ALTER TABLE phones ADD COLUMN modules TEXT NOT NULL DEFAULT '[]';
+	ALTER TABLE phones ADD COLUMN options TEXT NOT NULL DEFAULT '{}';
+	CREATE TABLE key_templates (
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		name       TEXT NOT NULL,
+		vendor     TEXT NOT NULL,
+		model      TEXT NOT NULL,
+		keys       TEXT NOT NULL DEFAULT '[]',
+		modules    TEXT NOT NULL DEFAULT '[]',
+		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

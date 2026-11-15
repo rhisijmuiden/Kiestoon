@@ -244,6 +244,14 @@ Notes on phase 5:
   by certificate fingerprint. The MSI is built by CI, attached to the release and served by the portal at
   `/download/kiestoon-softphone.msi`. Signing needs Azure Trusted Signing secrets. Not yet tested on Windows
   hardware with real headsets.
+- [x] Phone keys, expansion modules and intercom (`v0.6.0-rc.12`): a visual key editor per model (keys left and
+  right of the display, pages, drag a key onto another to swap) with line keys per account, BLF, speed dial, park,
+  parking slot, intercom, do not disturb and voicemail keys. Desk phones carry extra lines (Yealink, Snom,
+  Grandstream accounts 2 and up). Expansion modules: Yealink EXP40/EXP43/EXP50, Snom D7 and Grandstream GBX20, with
+  their own keys. Key templates per model are applied to many phones at once; phones fetch new keys right away
+  (check-sync). Intercom (*80 or a key) now only reaches known extensions that are free and not on DND, on all their
+  devices including the browser, and each phone has intercom options (auto-answer, warning tone, mute, during a call).
+  Employees edit the keys of their own phone and modules in the portal.
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

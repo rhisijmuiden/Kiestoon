@@ -58,8 +58,8 @@ func (s *Server) phoneAdopt(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "bad_request")
 		return
 	}
-	m := provision.FindModel(req.Vendor, req.Model)
-	if m == nil {
+	lim, ok := provision.Limits(req.Vendor, req.Model)
+	if !ok {
 		fieldErr(w, "model")
 		return
 	}
@@ -69,11 +69,11 @@ func (s *Server) phoneAdopt(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	p := pbx.Phone{MAC: d.MAC, Vendor: req.Vendor, Model: req.Model, ExtensionID: req.ExtensionID, Label: req.Label}
-	if m.Keys > 0 {
+	p := pbx.Phone{MAC: d.MAC, Vendor: req.Vendor, Model: req.Model, ExtensionID: req.ExtensionID, Label: req.Label, Options: pbx.DefaultPhoneOptions()}
+	if lim.Keys > 0 {
 		p.Keys = []pbx.Key{{Type: "line"}}
 	}
-	if err := s.PBX.SavePhone(r.Context(), &p, m.Keys, m.MaxLines()); err != nil {
+	if err := s.PBX.SavePhone(r.Context(), &p, lim); err != nil {
 		s.saveErr(w, err)
 		return
 	}

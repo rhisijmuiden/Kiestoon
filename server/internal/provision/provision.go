@@ -85,7 +85,8 @@ type Model struct {
 	Name   string `json:"name"`
 	// Keys is the number of programmable keys the layout editor shows. 0: no key layout support.
 	Keys int `json:"keys"`
-	// Lines is the number of extensions the device can carry (DECT handsets). 0 means one.
+	// Lines is the number of extensions the device can carry: DECT handsets (Gigaset) or SIP
+	// accounts (desk phones). 0 means one.
 	Lines int `json:"lines,omitempty"`
 }
 
@@ -99,23 +100,23 @@ func (m Model) MaxLines() int {
 
 // Models are the phones Kiestoon can provision.
 var Models = []Model{
-	{"yealink", "T31P", "Yealink T31P", 2, 0},
-	{"yealink", "T33G", "Yealink T33G", 4, 0},
-	{"yealink", "T43U", "Yealink T43U", 12, 0},
-	{"yealink", "T46U", "Yealink T46U", 16, 0},
-	{"yealink", "T48U", "Yealink T48U", 29, 0},
-	{"yealink", "T53W", "Yealink T53W", 12, 0},
-	{"yealink", "T54W", "Yealink T54W", 16, 0},
-	{"yealink", "T57W", "Yealink T57W", 29, 0},
-	{"snom", "D713", "Snom D713", 4, 0},
-	{"snom", "D717", "Snom D717", 6, 0},
-	{"snom", "D735", "Snom D735", 8, 0},
-	{"snom", "D785", "Snom D785", 24, 0},
-	{"snom", "D865", "Snom D865", 12, 0},
-	{"grandstream", "GRP2612", "Grandstream GRP2612", 7, 0},
-	{"grandstream", "GRP2614", "Grandstream GRP2614", 7, 0},
-	{"grandstream", "GRP2616", "Grandstream GRP2616", 7, 0},
-	{"grandstream", "GXP2170", "Grandstream GXP2170", 7, 0},
+	{"yealink", "T31P", "Yealink T31P", 2, 2},
+	{"yealink", "T33G", "Yealink T33G", 4, 4},
+	{"yealink", "T43U", "Yealink T43U", 12, 12},
+	{"yealink", "T46U", "Yealink T46U", 16, 16},
+	{"yealink", "T48U", "Yealink T48U", 29, 16},
+	{"yealink", "T53W", "Yealink T53W", 12, 12},
+	{"yealink", "T54W", "Yealink T54W", 16, 16},
+	{"yealink", "T57W", "Yealink T57W", 29, 16},
+	{"snom", "D713", "Snom D713", 4, 4},
+	{"snom", "D717", "Snom D717", 6, 6},
+	{"snom", "D735", "Snom D735", 8, 12},
+	{"snom", "D785", "Snom D785", 24, 12},
+	{"snom", "D865", "Snom D865", 12, 12},
+	{"grandstream", "GRP2612", "Grandstream GRP2612", 7, 2},
+	{"grandstream", "GRP2614", "Grandstream GRP2614", 7, 4},
+	{"grandstream", "GRP2616", "Grandstream GRP2616", 7, 6},
+	{"grandstream", "GXP2170", "Grandstream GXP2170", 7, 6},
 	{"fanvil", "X3U", "Fanvil X3U", 6, 0},
 	{"fanvil", "X4U", "Fanvil X4U", 12, 0},
 	{"fanvil", "X5U", "Fanvil X5U", 16, 0},
@@ -147,6 +148,41 @@ var Models = []Model{
 	{"cisco", "8851", "Cisco IP Phone 8851 (MPP)", 4, 0},
 	{"cisco", "8861", "Cisco IP Phone 8861 (MPP)", 4, 0},
 	{"cisco", "8865", "Cisco IP Phone 8865 (MPP)", 4, 0},
+}
+
+// ModuleType is an expansion module (sidecar) with extra programmable keys.
+type ModuleType struct {
+	Vendor  string   `json:"vendor"`
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Keys    int      `json:"keys"`    // keys per module, all pages together
+	PerPage int      `json:"perPage"` // keys visible at once
+	Max     int      `json:"max"`     // modules per phone
+	Models  []string `json:"models"`  // phone models it fits
+}
+
+// ModuleTypes are the expansion modules Kiestoon configures.
+var ModuleTypes = []ModuleType{
+	{"yealink", "EXP40", "Yealink EXP40", 40, 20, 6, []string{"T46U", "T48U"}},
+	{"yealink", "EXP43", "Yealink EXP43", 60, 20, 3, []string{"T43U", "T46U", "T48U"}},
+	{"yealink", "EXP50", "Yealink EXP50", 60, 20, 3, []string{"T53W", "T54W", "T57W"}},
+	{"snom", "D7", "Snom D7", 18, 18, 3, []string{"D717", "D735", "D785"}},
+	{"grandstream", "GBX20", "Grandstream GBX20", 40, 20, 4, []string{"GXP2170", "GRP2616"}},
+}
+
+// Limits are what a phone model supports, for checking a key layout.
+func Limits(vendor, model string) (pbx.PhoneLimits, bool) {
+	m := FindModel(vendor, model)
+	if m == nil {
+		return pbx.PhoneLimits{}, false
+	}
+	lim := pbx.PhoneLimits{Keys: m.Keys, Lines: m.MaxLines(), Modules: map[string]pbx.ModuleLimit{}}
+	for _, t := range ModuleTypes {
+		if t.Vendor == vendor && slices.Contains(t.Models, model) {
+			lim.Modules[t.ID] = pbx.ModuleLimit{Keys: t.Keys, Max: t.Max}
+		}
+	}
+	return lim, true
 }
 
 // FirmwareVendors are the vendors whose configuration can point the phone to a firmware file.
@@ -229,33 +265,42 @@ func Yealink(in Input) string {
 	}
 	w("phone_setting.called_party_info_display.enable", 1)
 	w("features.dnd.feature_key_sync.enable", 0)
-	if in.Ext != nil {
-		yt, _, _ := transportCode(in.Ext.Transport)
-		w("account.1.enable", 1)
-		w("account.1.label", clean(in.Ext.Number+" "+in.Ext.Name))
-		w("account.1.display_name", clean(in.Ext.Name))
-		w("account.1.auth_name", in.Ext.Number)
-		w("account.1.user_name", in.Ext.Number)
-		w("account.1.password", clean(in.Ext.SIPSecret))
-		w("account.1.sip_server.1.address", in.Server)
-		w("account.1.sip_server.1.port", in.port())
-		w("account.1.sip_server.1.transport_type", yt)
-		w("account.1.sip_server.1.expires", 300)
-		w("account.1.subscribe_mwi", 1)
-		w("account.1.subscribe_mwi_to_vm", 1)
-		w("voice_mail.number.1", "*97")
-		if in.Ext.SRTP {
-			w("account.1.srtp_encryption", 2)
+	accts := in.accounts()
+	for i, e := range accts {
+		n := i + 1
+		yt, _, _ := transportCode(e.Transport)
+		w(fmt.Sprintf("account.%d.enable", n), 1)
+		w(fmt.Sprintf("account.%d.label", n), clean(e.Number+" "+e.Name))
+		w(fmt.Sprintf("account.%d.display_name", n), clean(e.Name))
+		w(fmt.Sprintf("account.%d.auth_name", n), e.Number)
+		w(fmt.Sprintf("account.%d.user_name", n), e.Number)
+		w(fmt.Sprintf("account.%d.password", n), clean(e.SIPSecret))
+		w(fmt.Sprintf("account.%d.sip_server.1.address", n), in.Server)
+		w(fmt.Sprintf("account.%d.sip_server.1.port", n), in.portFor(e))
+		w(fmt.Sprintf("account.%d.sip_server.1.transport_type", n), yt)
+		w(fmt.Sprintf("account.%d.sip_server.1.expires", n), 300)
+		w(fmt.Sprintf("account.%d.subscribe_mwi", n), 1)
+		w(fmt.Sprintf("account.%d.subscribe_mwi_to_vm", n), 1)
+		w(fmt.Sprintf("voice_mail.number.%d", n), "*97")
+		if e.SRTP {
+			w(fmt.Sprintf("account.%d.srtp_encryption", n), 2)
 		} else {
-			w("account.1.srtp_encryption", 0)
+			w(fmt.Sprintf("account.%d.srtp_encryption", n), 0)
 		}
-		w("account.1.codec.g722.enable", 1)
-		w("account.1.codec.pcma.enable", 1)
-		w("account.1.codec.pcmu.enable", 1)
-		w("account.1.dtmf.type", 1)
-	} else {
+		w(fmt.Sprintf("account.%d.codec.g722.enable", n), 1)
+		w(fmt.Sprintf("account.%d.codec.pcma.enable", n), 1)
+		w(fmt.Sprintf("account.%d.codec.pcmu.enable", n), 1)
+		w(fmt.Sprintf("account.%d.dtmf.type", n), 1)
+	}
+	if len(accts) == 0 {
 		w("account.1.enable", 0)
 	}
+	// Intercom: answer calls with the auto-answer header (Call-Info answer-after=0) by themselves.
+	ic := in.Phone.Options.Intercom
+	w("features.intercom.allow", b2i(ic.Allow))
+	w("features.intercom.mute", b2i(ic.Mute))
+	w("features.intercom.tone", b2i(ic.Tone))
+	w("features.intercom.barge", b2i(ic.Barge))
 	if in.Firmware != "" {
 		w("static.firmware.url", in.Firmware)
 	}
@@ -267,27 +312,45 @@ func Yealink(in Input) string {
 		w("directory.incoming_call_match_enable", 1)
 	}
 	for i, k := range in.Phone.Keys {
-		n := i + 1
-		switch k.Type {
-		case "line":
-			w(fmt.Sprintf("linekey.%d.type", n), 15)
-			w(fmt.Sprintf("linekey.%d.line", n), 1)
-			w(fmt.Sprintf("linekey.%d.value", n), "")
-		case "blf":
-			w(fmt.Sprintf("linekey.%d.type", n), 16)
-			w(fmt.Sprintf("linekey.%d.line", n), 1)
-			w(fmt.Sprintf("linekey.%d.value", n), k.Value)
-			w(fmt.Sprintf("linekey.%d.extension", n), "**")
-		case "speed":
-			w(fmt.Sprintf("linekey.%d.type", n), 13)
-			w(fmt.Sprintf("linekey.%d.line", n), 1)
-			w(fmt.Sprintf("linekey.%d.value", n), k.Value)
-		default:
-			w(fmt.Sprintf("linekey.%d.type", n), 0)
+		yealinkKey(w, fmt.Sprintf("linekey.%d.", i+1), k)
+	}
+	for m, mod := range in.Phone.Modules {
+		for i, k := range mod.Keys {
+			yealinkKey(w, fmt.Sprintf("expansion_module.%d.key.%d.", m+1, i+1), k)
 		}
-		w(fmt.Sprintf("linekey.%d.label", n), clean(k.Label))
 	}
 	return b.String()
+}
+
+// yealinkKey writes one line key or expansion module key (prefix ends in ".").
+func yealinkKey(w func(string, any), prefix string, k pbx.Key) {
+	r := resolveKey(k)
+	switch r.Kind {
+	case "line":
+		w(prefix+"type", 15)
+		w(prefix+"line", r.Account)
+		w(prefix+"value", "")
+	case "blf":
+		w(prefix+"type", 16)
+		w(prefix+"line", 1)
+		w(prefix+"value", r.Value)
+		if r.Pickup {
+			w(prefix+"extension", "**")
+		} else {
+			w(prefix+"extension", "")
+		}
+	case "speed":
+		w(prefix+"type", 13)
+		w(prefix+"line", 1)
+		w(prefix+"value", r.Value)
+	case "park":
+		w(prefix+"type", 10)
+		w(prefix+"line", 1)
+		w(prefix+"value", r.Value)
+	default:
+		w(prefix+"type", 0)
+	}
+	w(prefix+"label", r.Label)
 }
 
 // YealinkCommon builds y000000000000.cfg, which every Yealink fetches first.
@@ -305,7 +368,6 @@ func x(s string) string {
 func Snom(in Input) string {
 	var b strings.Builder
 	w := func(tag, val string) { fmt.Fprintf(&b, "    <%s perm=\"R\">%s</%s>\n", tag, x(val), tag) }
-	wi := func(tag, val string) { fmt.Fprintf(&b, "    <%s idx=\"1\" perm=\"R\">%s</%s>\n", tag, x(val), tag) }
 	b.WriteString("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by Kiestoon -->\n<settings>\n  <phone-settings e=\"2\">\n")
 	w("admin_mode_password", in.Settings.AdminPassword)
 	w("http_user", "admin")
@@ -321,24 +383,40 @@ func Snom(in Input) string {
 	}
 	w("tone_scheme", "NLD")
 	w("dtmf_payload_type", "101")
-	if in.Ext != nil {
-		_, _, st := transportCode(in.Ext.Transport)
+	for i, e := range in.accounts() {
+		idx := i + 1
+		wi := func(tag, val string) {
+			fmt.Fprintf(&b, "    <%s idx=\"%d\" perm=\"R\">%s</%s>\n", tag, idx, x(val), tag)
+		}
+		_, _, st := transportCode(e.Transport)
 		wi("user_active", "on")
-		wi("user_realname", in.Ext.Name)
-		wi("user_name", in.Ext.Number)
-		wi("user_pname", in.Ext.Number)
-		wi("user_pass", in.Ext.SIPSecret)
-		wi("user_host", fmt.Sprintf("%s:%d;transport=%s", in.Server, in.port(), st))
-		wi("user_outbound", fmt.Sprintf("%s:%d;transport=%s", in.Server, in.port(), st))
+		wi("user_realname", e.Name)
+		wi("user_name", e.Number)
+		wi("user_pname", e.Number)
+		wi("user_pass", e.SIPSecret)
+		wi("user_host", fmt.Sprintf("%s:%d;transport=%s", in.Server, in.portFor(e), st))
+		wi("user_outbound", fmt.Sprintf("%s:%d;transport=%s", in.Server, in.portFor(e), st))
 		wi("user_mailbox", "*97")
 		wi("user_expiry", "300")
-		if in.Ext.SRTP {
+		if e.SRTP {
 			wi("user_srtp", "on")
 		} else {
 			wi("user_srtp", "off")
 		}
 		wi("codec_priority_list", "g722,pcma,pcmu,telephone-event")
 	}
+	// Intercom: auto-answer on the Call-Info answer-after header.
+	ic := in.Phone.Options.Intercom
+	switch {
+	case !ic.Allow:
+		w("answer_after_policy", "none")
+	case ic.Barge:
+		w("answer_after_policy", "all")
+	default:
+		w("answer_after_policy", "idle")
+	}
+	w("auto_connect_indication", onOff(ic.Tone))
+	w("intercom_mute", onOff(ic.Mute))
 	if in.PhonebookURL != "" {
 		w("dkey_directory", "url "+in.PhonebookURL)
 	}
@@ -347,22 +425,59 @@ func Snom(in Input) string {
 		w("firmware_status", in.Base+"snom/firmware-"+strings.ToLower(in.Phone.Model)+".xml")
 	}
 	b.WriteString("  </phone-settings>\n  <functionKeys e=\"2\">\n")
+	// Expansion module keys follow the keys of the phone itself.
 	for i, k := range in.Phone.Keys {
-		val := ""
-		switch k.Type {
-		case "line":
-			val = "line"
-		case "blf":
-			val = fmt.Sprintf("blf <sip:%s@%s>|**", k.Value, in.Server)
-		case "speed":
-			val = "speed " + k.Value
-		default:
-			val = "none"
+		snomKey(&b, i, k, in.Server)
+	}
+	base := len(in.Phone.Keys)
+	if m := FindModel(in.Phone.Vendor, in.Phone.Model); m != nil {
+		base = m.Keys
+	}
+	for _, mod := range in.Phone.Modules {
+		for i, k := range mod.Keys {
+			snomKey(&b, base+i, k, in.Server)
 		}
-		fmt.Fprintf(&b, "    <fkey idx=\"%d\" context=\"1\" label=\"%s\" perm=\"R\">%s</fkey>\n", i, x(k.Label), x(val))
+		base += moduleKeys(in.Phone.Vendor, mod.Type)
 	}
 	b.WriteString("  </functionKeys>\n</settings>\n")
 	return b.String()
+}
+
+func snomKey(b *strings.Builder, idx int, k pbx.Key, server string) {
+	r := resolveKey(k)
+	val := "none"
+	switch r.Kind {
+	case "line":
+		val = "line"
+	case "blf":
+		if r.Pickup {
+			val = fmt.Sprintf("blf <sip:%s@%s>|**", r.Value, server)
+		} else {
+			val = fmt.Sprintf("blf <sip:%s@%s>", r.Value, server)
+		}
+	case "speed":
+		val = "speed " + r.Value
+	case "park":
+		val = "transfer " + r.Value
+	}
+	fmt.Fprintf(b, "    <fkey idx=\"%d\" context=\"%d\" label=\"%s\" perm=\"R\">%s</fkey>\n", idx, r.Account, x(r.Label), x(val))
+}
+
+func onOff(v bool) string {
+	if v {
+		return "on"
+	}
+	return "off"
+}
+
+// moduleKeys is the number of keys of an expansion module type.
+func moduleKeys(vendor, id string) int {
+	for _, t := range ModuleTypes {
+		if t.Vendor == vendor && t.ID == id {
+			return t.Keys
+		}
+	}
+	return 0
 }
 
 // SnomIndex is what a Snom fetches first (snom<model>.htm): it points to the per-phone file.
@@ -383,18 +498,20 @@ func Grandstream(in Input) string {
 	} else {
 		p(1362, "en")
 	}
-	if in.Ext != nil {
-		_, gt, _ := transportCode(in.Ext.Transport)
+	accts := in.accounts()
+	if len(accts) > 0 {
+		e := accts[0]
+		_, gt, _ := transportCode(e.Transport)
 		p(271, 1) // account active
-		p(270, in.Ext.Number+" "+in.Ext.Name)
-		p(47, fmt.Sprintf("%s:%d", in.Server, in.port()))
-		p(35, in.Ext.Number)
-		p(36, in.Ext.Number)
-		p(34, in.Ext.SIPSecret)
-		p(3, in.Ext.Name)
+		p(270, e.Number+" "+e.Name)
+		p(47, fmt.Sprintf("%s:%d", in.Server, in.portFor(e)))
+		p(35, e.Number)
+		p(36, e.Number)
+		p(34, e.SIPSecret)
+		p(3, e.Name)
 		p(33, "*97")
 		p(130, gt)
-		if in.Ext.SRTP {
+		if e.SRTP {
 			p(183, 2)
 		} else {
 			p(183, 0)
@@ -405,6 +522,25 @@ func Grandstream(in Input) string {
 	} else {
 		p(271, 0)
 	}
+	// Accounts 2 and up use the same P-values in blocks: account 2 at 400, 3 at 500, 4 at 600,
+	// 5 at 1700 and 6 at 1800 (active +1, server +2, user ID +4, auth ID +5, password +6,
+	// name +7, account name +17, voicemail +26). They use the transport of the phone (UDP).
+	for i, e := range accts {
+		if i == 0 || i > 5 {
+			continue
+		}
+		base := []int{0, 400, 500, 600, 1700, 1800}[i]
+		p(base+1, 1)
+		p(base+2, fmt.Sprintf("%s:%d", in.Server, in.portFor(e)))
+		p(base+4, e.Number)
+		p(base+5, e.Number)
+		p(base+6, e.SIPSecret)
+		p(base+7, e.Name)
+		p(base+17, e.Number+" "+e.Name)
+		p(base+26, "*97")
+	}
+	// Intercom: auto-answer on Call-Info (account 1).
+	p(298, b2i(in.Phone.Options.Intercom.Allow))
 	if in.PhonebookURL != "" {
 		// Phone book XML download: P330 protocol (1 HTTP, 3 HTTPS), P331 the path (the phone adds
 		// phonebook.xml), P332 the interval in minutes.
@@ -422,20 +558,45 @@ func Grandstream(in Input) string {
 		if i >= 7 {
 			break
 		}
-		mode, value := 0, ""
-		switch k.Type {
-		case "blf":
-			mode, value = 1, k.Value
-		case "speed":
-			mode, value = 0, k.Value
-		}
+		mode, account, value := gsKey(k)
 		p(323+i, mode)
-		p(301+3*i, 0)
+		p(301+3*i, account)
 		p(302+3*i, clean(k.Label))
 		p(303+3*i, value)
 	}
+	// GBX20 expansion modules, all keys in a row: mode P6001+n, account P6201+n, name P6401+n,
+	// value P6601+n.
+	n := 0
+	for _, mod := range in.Phone.Modules {
+		for _, k := range mod.Keys {
+			mode, account, value := gsKey(k)
+			p(6001+n, mode)
+			p(6201+n, account)
+			p(6401+n, clean(k.Label))
+			p(6601+n, value)
+			n++
+		}
+		n += moduleKeys(in.Phone.Vendor, mod.Type) - len(mod.Keys)
+	}
 	b.WriteString("  </config>\n</gs_provision>\n")
 	return b.String()
+}
+
+// gsKey is the Grandstream key mode, account (0-based) and value of a key.
+func gsKey(k pbx.Key) (mode, account int, value string) {
+	r := resolveKey(k)
+	switch r.Kind {
+	case "blf":
+		return 1, 0, r.Value
+	case "speed":
+		return 0, 0, r.Value
+	case "park":
+		return 9, 0, r.Value
+	case "line":
+		// A line key is a speed dial without a number on the chosen account: it opens that line.
+		return 0, r.Account - 1, ""
+	}
+	return 0, 0, ""
 }
 
 // Request is a parsed provisioning file name.

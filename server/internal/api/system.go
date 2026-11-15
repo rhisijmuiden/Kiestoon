@@ -57,12 +57,14 @@ func (s *Server) systemRoutes(mux *http.ServeMux, admin func(http.HandlerFunc) h
 	mux.Handle("GET /api/provisioning/settings", admin(s.provSettings))
 	mux.Handle("PUT /api/provisioning/settings", admin(s.provSaveSettings))
 	mux.Handle("GET /api/provisioning/models", admin(func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, provision.Models) }))
+	mux.Handle("GET /api/provisioning/modules", admin(func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, provision.ModuleTypes) }))
 	mux.Handle("GET /api/phones", admin(s.phones))
 	mux.Handle("POST /api/phones", admin(s.savePhone))
 	mux.Handle("PUT /api/phones/{id}", admin(s.savePhone))
 	mux.Handle("DELETE /api/phones/{id}", admin(s.deletePhone))
 	mux.Handle("GET /api/phones/{id}/preview", admin(s.previewPhone))
 	s.phoneAssignRoutes(mux, admin)
+	s.keyTemplateRoutes(mux, admin)
 
 	mux.Handle("GET /api/system/helper", admin(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]bool{"available": s.Helper.Available(r.Context())})
@@ -819,14 +821,14 @@ func (s *Server) phones(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) savePhone(w http.ResponseWriter, r *http.Request) {
-	var p pbx.Phone
+	p := pbx.Phone{Options: pbx.DefaultPhoneOptions()}
 	if err := decode(r, &p); err != nil {
 		writeErr(w, http.StatusBadRequest, "bad_request")
 		return
 	}
 	p.ID = pathID(r)
-	m := provision.FindModel(p.Vendor, p.Model)
-	if m == nil {
+	lim, ok := provision.Limits(p.Vendor, p.Model)
+	if !ok {
 		fieldErr(w, "model")
 		return
 	}
@@ -846,14 +848,22 @@ func (s *Server) savePhone(w http.ResponseWriter, r *http.Request) {
 	if p.ID != 0 {
 		old, _ = s.PBX.Phone(r.Context(), p.ID)
 	}
-	if err := s.PBX.SavePhone(r.Context(), &p, m.Keys, m.MaxLines()); err != nil {
+	if err := s.PBX.SavePhone(r.Context(), &p, lim); err != nil {
 		s.saveErr(w, err)
 		return
 	}
 	s.audit(r, "phone.saved", p.MAC)
 	_ = s.PBX.ForgetDiscovery(r.Context(), p.MAC)
 	s.ztpAfterSave(r, &p, old)
-	writeJSON(w, http.StatusOK, p)
+	// A changed phone fetches its new keys and lines right away, through the account it uses now.
+	state := ""
+	if old != nil {
+		state, _ = s.notifyPhone(r.Context(), &p, s.registeredAs(r.Context(), old))
+	}
+	writeJSON(w, http.StatusOK, struct {
+		pbx.Phone
+		Resync string `json:"resync,omitempty"`
+	}{p, state})
 }
 
 func (s *Server) deletePhone(w http.ResponseWriter, r *http.Request) {

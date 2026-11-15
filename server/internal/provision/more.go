@@ -136,7 +136,7 @@ func Cisco(in Input) string {
 		w("Line_Enable_1_", "No")
 	}
 	// Keys 2 and up: BLF with pickup, or speed dial, on the first line.
-	for i, k := range in.Phone.Keys {
+	for i, k := range simpleKeys(in.Phone.Keys) {
 		n := i + 2
 		switch k.Type {
 		case "blf":

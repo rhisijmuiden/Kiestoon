@@ -40,8 +40,8 @@ type User struct {
 	TOTPEnabled bool   `json:"mfaEnabled"`
 	Language    string `json:"language"`
 	// Theme is the UI theme: "system" (follow the device), "dark" or "light".
-	Theme       string `json:"theme"`
-	Email       string `json:"email"`
+	Theme string `json:"theme"`
+	Email string `json:"email"`
 	// ExtensionID links the account to its phone (for the user portal).
 	ExtensionID *int64 `json:"extensionId"`
 	// SSOProvider is the identity provider the account signs in with (0: local password).

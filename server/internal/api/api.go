@@ -68,14 +68,16 @@ type Server struct {
 	ldapOn    bool
 	hooks     *webhookQueue
 	passkeys  passkeyStore
-	Firmware  *firmware.Store
-	speech    speechState
-	faxMu     sync.Mutex
-	siteMu    sync.Mutex
-	fed       fedState
-	ha        haState
-	extBusy   sync.Mutex
-	sttBusy   sync.Mutex
+	// xfers are the attended transfers started from the portal, by transferer channel.
+	xfers    transfers
+	Firmware *firmware.Store
+	speech   speechState
+	faxMu    sync.Mutex
+	siteMu   sync.Mutex
+	fed      fedState
+	ha       haState
+	extBusy  sync.Mutex
+	sttBusy  sync.Mutex
 }
 
 // New wires up a server.
@@ -161,6 +163,7 @@ func (s *Server) Routes() http.Handler {
 	s.businessRoutes(mux, admin, recep)
 	s.userRoutes(mux, admin)
 	s.portalRoutes(mux, full)
+	s.transferRoutes(mux, full, recep)
 	s.internetRoutes(mux, admin)
 	s.faxRoutes(mux, admin, recep)
 	s.phonebookRoutes(mux, admin, recep, full)

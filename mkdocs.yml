@@ -117,6 +117,7 @@ plugins:
             Firewall and fraud protection: Firewall en fraudebescherming
             Internet access and SSL: Internettoegang en SSL
             Own reverse proxy: Eigen reverse proxy
+            Separate host names: Eigen hostnamen
             System: Systeem
             Backups and restore: Back-ups en herstellen
             Mail server: Mailserver
@@ -164,6 +165,7 @@ nav:
       - Firewall and fraud protection: firewall.md
       - Internet access and SSL: internet.md
       - Own reverse proxy: reverse-proxy.md
+      - Separate host names: hostnames.md
   - System:
       - Backups and restore: backups.md
       - Mail server: mail.md

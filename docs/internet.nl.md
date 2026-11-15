@@ -42,3 +42,7 @@ De firewall zet poort 80 en 443 automatisch open.
     Internettoegang is voor het webportaal en de softphones. Bureautoestellen en SIP-apps buiten kantoor hebben nog
     steeds SIP nodig in de [firewall](firewall.md). Gebruik voor vestigingen een [Edge](edge.md): die verbindt via
     een versleutelde tunnel, zonder SIP open te zetten naar internet.
+
+!!! tip "Een apart adres voor medewerkers"
+    Vul **Hostnaam medewerkersportaal** in om medewerkers een eigen adres met eigen certificaat te geven, zie
+    [Eigen hostnamen](hostnames.md).

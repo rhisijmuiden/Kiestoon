@@ -139,7 +139,8 @@
     "link_invalid": "This link is invalid or has expired.",
     "password_mismatch": "The passwords do not match.",
     "no_email": "This extension has no e-mail address.",
-    "user_disabled": "This account is disabled."
+    "user_disabled": "This account is disabled.",
+    "on_portal_host": "You are working on the employee portal address. Open the PBX address to switch this on, otherwise you lock yourself out."
   },
   "setup": {
     "title": "Welcome to Kiestoon",
@@ -506,7 +507,9 @@
     "prefix": "Site prefix",
     "rules": "Rules",
     "fallback": "Fallback",
-    "flow": "Menu"
+    "flow": "Menu",
+    "portalUrl": "Employee portal address",
+    "portalDomain": "Employee portal host name"
   },
   "extensions": {
     "title": "Extensions",
@@ -1815,7 +1818,11 @@
     "step3": "Switch on direct internet access and save.",
     "dnsNow": "{{domain}} points to",
     "address": "Portal address",
-    "noHelper": "The Kiestoon system service is not running, so internet access cannot be changed."
+    "noHelper": "The Kiestoon system service is not running, so internet access cannot be changed.",
+    "portalDomain": "Employee portal host name (optional)",
+    "portalDomainHint": "A second name for employees, for example voipcentrale.example.com. Caddy gets a certificate for it too; its DNS record must point here as well.",
+    "portalCertPending": "No certificate for {{domain}} yet. Caddy tries again every few minutes.",
+    "portalAddress": "Employee portal address"
   },
   "fax": {
     "title": "Fax",
@@ -2145,7 +2152,9 @@
     "secure": "Connection",
     "notTrusted": "A proxy header arrived, but this proxy is not trusted. Add its address above.",
     "docs": "Example configurations are in the manual under Own reverse proxy. Forward WebSockets for the browser softphone.",
-    "saved": "Proxy settings saved."
+    "saved": "Proxy settings saved.",
+    "portalUrl": "Employee portal address (optional)",
+    "portalUrlHint": "A second address for employees, for example https://voipcentrale.example.com. Point it at the same Kiestoon in your proxy."
   },
   "metrics": {
     "title": "Prometheus metrics",
@@ -2658,6 +2667,24 @@
     "applyHint": "Phones that are online fetch their new keys right away.",
     "applied": "Template applied to {{count}} phones; {{notified}} fetched their new keys right away. The others pick them up at their next provisioning check.",
     "appliedNoResync": "Template applied to {{count}} phones. They pick up the keys at their next provisioning check."
+  },
+  "hostnames": {
+    "title": "Host names",
+    "intro": "Kiestoon can use one address for administration, phones and SIP, and a second address for the employee portal. The addresses come from Direct internet access or Own reverse proxy below.",
+    "pbx": "PBX address",
+    "pbxHint": "Administration, phone provisioning and SIP registration. Phones and softphones register with this host name.",
+    "portal": "Employee portal address",
+    "portalHint": "Welcome e-mails, set-password links and the Windows softphone send employees here.",
+    "portalSame": "No separate address: employees use the PBX address.",
+    "blockAdmin": "Block administration on the employee portal address",
+    "blockAdminHint": "On {{host}} administrators only get the user portal (and the switchboard). Manage the system through the PBX address.",
+    "onPortal": "You opened this page on the employee portal address. Use {{url}} to change this setting.",
+    "blockNote": "Kiestoon tells the addresses apart by host name. To keep administration off the internet completely, only publish the employee portal address in your proxy or DNS, and reach the PBX address from your own network or a VPN.",
+    "sso": "Single sign-on: register both callback addresses at your identity provider (OpenID Connect). SAML always uses the PBX address.",
+    "ssoCallback": "Callback address",
+    "saved": "Host name settings saved.",
+    "adminElsewhere": "Administration is closed on this address.",
+    "toAdmin": "Open administration"
   },
   "journey": {
     "title": "Call journey",

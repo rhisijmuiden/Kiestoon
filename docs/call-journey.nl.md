@@ -36,7 +36,7 @@ gesprek te klikken. Ze zien alleen gesprekken waaraan ze deelnamen, en alleen hu
 
 ## Oudere gesprekken
 
-Kiestoon registreert het verloop vanaf versie 0.6.0-rc.15. Voor oudere gesprekken, en voor gesprekken waarvan het
+Kiestoon registreert het verloop vanaf versie 0.6.0-rc.16. Voor oudere gesprekken, en voor gesprekken waarvan het
 verloop na de bewaartermijn is verwijderd, toont de pagina een korte versie op basis van het gespreksrecord: wie
 belde, welke toestellen overgingen en wie opnam.
 

@@ -27,6 +27,8 @@ type InternetStatus struct {
 	Installed   bool        `json:"installed"`
 	Active      bool        `json:"active"`
 	Certificate *certs.Info `json:"certificate"`
+	// PortalCertificate is the certificate of the employee portal host name, when there is one.
+	PortalCertificate *certs.Info `json:"portalCertificate"`
 	// CopiedForSIP: the certificate was copied to SIP over TLS and port 8443 (changed this call).
 	Copied bool `json:"copied"`
 }
@@ -119,6 +121,14 @@ func (s *Server) internetStatus(ctx context.Context, set internet.Settings) (Int
 				s.Log.Warn("copy certificate", "err", err)
 			}
 			st.Copied = changed
+		}
+	}
+	if set.PortalDomain != "" {
+		if cp, _ := caddyCert(set.PortalDomain); cp != "" {
+			if c, err := certs.Read(cp); err == nil {
+				info := certs.Describe(c)
+				st.PortalCertificate = &info
+			}
 		}
 	}
 	if set.Enabled && !set.UseForSIP {

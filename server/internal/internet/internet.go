@@ -19,6 +19,9 @@ type Settings struct {
 	Enabled bool `json:"enabled"`
 	// Domain is the public host name, for example pbx.example.com. Its DNS A/AAAA record must point here.
 	Domain string `json:"domain"`
+	// PortalDomain is an optional second host name for the employee portal, for example
+	// voipcentrale.example.com. Caddy gets a certificate for it too.
+	PortalDomain string `json:"portalDomain"`
 	// Email gets the Let's Encrypt expiry warnings.
 	Email string `json:"email"`
 	// Staging uses the Let's Encrypt staging environment (for tests: no rate limits, untrusted certificate).
@@ -35,9 +38,16 @@ var (
 // Validate cleans up and checks the settings.
 func (s *Settings) Validate() error {
 	s.Domain = strings.ToLower(strings.TrimSuffix(strings.TrimSpace(s.Domain), "."))
+	s.PortalDomain = strings.ToLower(strings.TrimSuffix(strings.TrimSpace(s.PortalDomain), "."))
 	s.Email = strings.ToLower(strings.TrimSpace(s.Email))
-	if s.Domain != "" && (!reDomain.MatchString(s.Domain) || len(s.Domain) > 253 || net.ParseIP(s.Domain) != nil) {
+	if s.Domain != "" && !validDomain(s.Domain) {
 		return errors.New("domain")
+	}
+	if s.PortalDomain == s.Domain {
+		s.PortalDomain = ""
+	}
+	if s.PortalDomain != "" && !validDomain(s.PortalDomain) {
+		return errors.New("portalDomain")
 	}
 	if s.Email != "" && !reEmail.MatchString(s.Email) {
 		return errors.New("email")
@@ -48,8 +58,20 @@ func (s *Settings) Validate() error {
 	return nil
 }
 
-// PublicURL is the address of the portal in internet mode.
+func validDomain(d string) bool {
+	return reDomain.MatchString(d) && len(d) <= 253 && net.ParseIP(d) == nil
+}
+
+// PublicURL is the address of the PBX (administration, phones) in internet mode.
 func (s Settings) PublicURL() string { return "https://" + s.Domain }
+
+// PortalURL is the address of the employee portal in internet mode, empty without a second host name.
+func (s Settings) PortalURL() string {
+	if s.PortalDomain == "" {
+		return ""
+	}
+	return "https://" + s.PortalDomain
+}
 
 // Caddyfile builds /etc/caddy/Caddyfile. upstream is the portal address (127.0.0.1:8080).
 // With internet mode off, Caddy is stopped and the file only says so.
@@ -75,7 +97,13 @@ func Caddyfile(s Settings, upstream string) (string, error) {
 		b.WriteString("\tacme_ca https://acme-staging-v02.api.letsencrypt.org/directory\n")
 	}
 	b.WriteString("\tservers {\n\t\tprotocols h1 h2\n\t}\n}\n\n")
-	fmt.Fprintf(&b, "%s {\n", cs.Domain)
+	// One site for both host names: Caddy gets a certificate per name, Kiestoon tells them apart by
+	// the Host header.
+	site := cs.Domain
+	if cs.PortalDomain != "" {
+		site += ", " + cs.PortalDomain
+	}
+	fmt.Fprintf(&b, "%s {\n", site)
 	b.WriteString("\tencode zstd gzip\n")
 	b.WriteString("\theader Strict-Transport-Security \"max-age=31536000\"\n")
 	fmt.Fprintf(&b, "\treverse_proxy %s {\n", upstream)

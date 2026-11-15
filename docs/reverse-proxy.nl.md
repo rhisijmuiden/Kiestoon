@@ -135,3 +135,7 @@ Stuur die op je router of firewall door naar Kiestoon, of houd telefoons op het 
 `/metrics` gaat via de proxy zoals elk ander pad. Gebruik het bearer-token, of zet het adres van de
 Prometheus-server bij "Toegestaan zonder token". Die lijst wordt vergeleken met het clientadres dat Kiestoon afleidt
 via de vertrouwde proxy, niet met de proxy zelf.
+
+!!! tip "Twee hostnamen"
+    Wil je een apart adres voor het medewerkersportaal, zoals `voipcentrale.mijndomein.nl` naast
+    `sip.mijndomein.nl`? Vul dan ook **Adres medewerkersportaal** in, zie [Eigen hostnamen](hostnames.md).

@@ -298,10 +298,7 @@ func (s *Server) portalSIP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	st, _ := pbx.LoadSettings(r.Context(), s.DB)
-	host := r.Host
-	if h, _, err := splitHost(host); err == nil {
-		host = h
-	}
+	host := s.sipHost(r)
 	port := st.SIPPort
 	if e.Transport == "tls" {
 		port = st.TLSPort

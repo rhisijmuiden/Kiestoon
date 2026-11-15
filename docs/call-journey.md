@@ -36,7 +36,7 @@ calls they took part in, and only their own recordings.
 
 ## Older calls
 
-Kiestoon records journeys from version 0.6.0-rc.15 on. For older calls, and for calls whose journey was removed after
+Kiestoon records journeys from version 0.6.0-rc.16 on. For older calls, and for calls whose journey was removed after
 the retention period, the page shows a short version built from the call record: who called, which phones rang and
 who answered.
 

@@ -116,6 +116,7 @@ func New(cfg config.Config, db *sql.DB, log *slog.Logger) *Server {
 	s.Live = &asterisk.LiveCache{AMI: s.AMI}
 	s.States = &asterisk.StateCache{AMI: s.AMI}
 	s.Ast = &asterisk.Manager{Dir: cfg.PBXDir(), Repo: s.PBX, AMI: s.AMI, Log: log, Options: s.asteriskOptions}
+	s.loadHostnames(context.Background())
 	s.startJourneys()
 	return s
 }
@@ -166,6 +167,8 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("GET /api/system/audit", admin(s.auditLog))
 	mux.Handle("GET /api/system/proxy", admin(s.proxyGet))
 	mux.Handle("PUT /api/system/proxy", admin(s.proxySave))
+	mux.Handle("GET /api/system/hostnames", admin(s.hostnamesGet))
+	mux.Handle("PUT /api/system/hostnames", admin(s.hostnamesSave))
 
 	s.pbxRoutes(mux, admin, recep)
 	s.systemRoutes(mux, admin)
@@ -244,6 +247,7 @@ func (s *Server) signedIn(next http.Handler, needMFA bool) http.Handler {
 				writeErr(w, http.StatusForbidden, "token_not_allowed")
 				return
 			}
+			tsess = capSession(r, tsess)
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, tsess)))
 			return
 		}
@@ -271,6 +275,7 @@ func (s *Server) signedIn(next http.Handler, needMFA bool) http.Handler {
 				s.setCookieTTL(w, r, c.Value, auth.DesktopTTL)
 			}
 		}
+		sess = capSession(r, sess)
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, sess)))
 	})
 }
@@ -450,7 +455,7 @@ func (s *Server) setup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.setCookie(w, r, token)
-	writeJSON(w, http.StatusCreated, s.meBody(r.Context(), u, true))
+	writeJSON(w, http.StatusCreated, s.meBody(r, u, true))
 }
 
 // ---- auth -------------------------------------------------------------------
@@ -518,7 +523,7 @@ func (s *Server) verifyMFA(w http.ResponseWriter, r *http.Request) {
 	}
 	s.loginLimit.Reset(ip)
 	store.Audit(r.Context(), s.DB, sess.User.ID, "login.success", "mfa", ip)
-	writeJSON(w, http.StatusOK, s.meBody(r.Context(), sess.User, true))
+	writeJSON(w, http.StatusOK, s.meBody(r, sess.User, true))
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
@@ -527,11 +532,21 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-func (s *Server) meBody(ctx context.Context, u *auth.User, mfaPassed bool) map[string]any {
-	return s.meBodyMethod(ctx, u, mfaPassed, "password")
+func (s *Server) meBody(r *http.Request, u *auth.User, mfaPassed bool) map[string]any {
+	return s.meBodyMethod(r, u, mfaPassed, "password")
 }
 
-func (s *Server) meBodyMethod(ctx context.Context, u *auth.User, mfaPassed bool, method string) map[string]any {
+func (s *Server) meBodyMethod(r *http.Request, u *auth.User, mfaPassed bool, method string) map[string]any {
+	ctx := r.Context()
+	// On the employee portal host name with administration blocked, administrators see the portal.
+	adminElsewhere := ""
+	if adminBlockedHere(r) {
+		// The session may already carry the reduced role; the stored account tells whether this is an administrator.
+		if real, err := s.Auth.UserByID(ctx, u.ID); err == nil && real.IsAdmin() {
+			adminElsewhere = s.pbxBase(r)
+		}
+		u = hostUser(r, u)
+	}
 	org, _ := store.GetSetting(ctx, s.DB, "organization", "Kiestoon")
 	var ext map[string]string
 	if u.ExtensionID != nil {
@@ -546,12 +561,13 @@ func (s *Server) meBodyMethod(ctx context.Context, u *auth.User, mfaPassed bool,
 		"organization":          org,
 		"extension":             ext,
 		"signInMethod":          method,
+		"adminUrl":              adminElsewhere,
 	}
 }
 
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 	sess := sessionFrom(r)
-	writeJSON(w, http.StatusOK, s.meBodyMethod(r.Context(), sess.User, sess.MFAPassed, sess.Method))
+	writeJSON(w, http.StatusOK, s.meBodyMethod(r, sess.User, sess.MFAPassed, sess.Method))
 }
 
 func (s *Server) mfaEnroll(w http.ResponseWriter, r *http.Request) {
@@ -759,6 +775,7 @@ func (s *Server) auditLog(w http.ResponseWriter, r *http.Request) {
 // SecurityHeaders adds strict browser security headers to every response.
 func SecurityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		forwardedHost(r)
 		h := w.Header()
 		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
 		h.Set("X-Frame-Options", "DENY")

@@ -134,3 +134,7 @@ Forward those on your router or firewall to Kiestoon, or keep phones on the loca
 `/metrics` goes through the proxy like every other path. Use the bearer token, or add the address of the
 Prometheus server to "allowed without a token". That list is checked against the client address Kiestoon
 derives from the trusted proxy, not against the proxy itself.
+
+!!! tip "Two host names"
+    Want a separate address for the employee portal, such as `voipcentrale.example.com` next to
+    `sip.example.com`? Fill in **Employee portal address** too, see [Separate host names](hostnames.md).

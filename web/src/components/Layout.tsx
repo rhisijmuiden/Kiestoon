@@ -118,7 +118,7 @@ export function Layout() {
       </aside>
 
       <div className="min-w-0 flex-1">
-        <div className="hidden items-center justify-end gap-2.5 px-8 pt-6 lg:flex">
+        <div className="hidden items-center justify-end gap-2.5 px-8 pt-6 lg:flex 2xl:px-10">
           <ThemeSwitch persist />
           <LanguageSwitch persist />
           <NavLink
@@ -143,7 +143,7 @@ export function Layout() {
             <LogOut className="size-[18px]" aria-hidden />
           </button>
         </div>
-        <main className="mx-auto flex max-w-[1400px] flex-col gap-6 px-4 pb-28 pt-4 sm:px-8 lg:pt-2">
+        <main className="flex w-full min-w-0 flex-col gap-6 px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pt-2 2xl:px-10">
           <Outlet context={{ info, openInfo: () => setInfoOpen(true) }} />
           <PoweredBy className="flex self-end sm:hidden" />
         </main>

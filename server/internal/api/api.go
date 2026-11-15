@@ -67,6 +67,7 @@ type Server struct {
 	ldap      *phonebook.Directory
 	ldapOn    bool
 	hooks     *webhookQueue
+	passkeys  passkeyStore
 }
 
 // New wires up a server.
@@ -151,6 +152,7 @@ func (s *Server) Routes() http.Handler {
 	s.faxRoutes(mux, admin, recep)
 	s.phonebookRoutes(mux, admin, recep, full)
 	s.integrationRoutes(mux, admin, recep)
+	s.passkeyRoutes(mux, full)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)
@@ -227,7 +229,7 @@ func (s *Server) mfaEnrolled(next http.Handler) http.Handler {
 		u := sess.User
 		// The identity provider already asked for a second factor.
 		// API tokens are created by a signed-in (and so enrolled) user.
-		if u.IsAdmin() && !u.TOTPEnabled && sess.Method != "sso-mfa" && !strings.HasPrefix(sess.Method, "token") {
+		if u.IsAdmin() && !u.TOTPEnabled && sess.Method != "sso-mfa" && !strings.HasPrefix(sess.Method, "token") && sess.Method != "passkey" {
 			writeErr(w, http.StatusForbidden, "mfa_enrollment_required")
 			return
 		}
@@ -488,7 +490,7 @@ func (s *Server) meBodyMethod(ctx context.Context, u *auth.User, mfaPassed bool,
 	return map[string]any{
 		"user":                  u,
 		"mfaPassed":             mfaPassed,
-		"mfaEnrollmentRequired": u.IsAdmin() && !u.TOTPEnabled && method != "sso-mfa",
+		"mfaEnrollmentRequired": u.IsAdmin() && !u.TOTPEnabled && method != "sso-mfa" && method != "passkey",
 		"organization":          org,
 		"extension":             ext,
 		"signInMethod":          method,

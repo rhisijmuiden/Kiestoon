@@ -95,6 +95,15 @@ ExecStart=/usr/bin/ssh-keygen -A
 WantedBy=multi-user.target
 UNIT
 chroot "$ROOT" systemctl enable kiestoon-firstboot.service >/dev/null
+
+# The network is set up by ifupdown from /etc/network/interfaces. systemd-networkd manages no link,
+# so its wait-online unit would hold network-online.target (and Kiestoon, Asterisk, Caddy) for 2 minutes.
+chroot "$ROOT" systemctl mask systemd-networkd-wait-online.service >/dev/null
+
+# A release candidate template follows the testing channel, like install.sh --channel testing.
+if [[ "$VERSION" == *-rc* ]] && [ -f "$ROOT/etc/kiestoon/kiestoon.env" ]; then
+  sed -i 's/^KIESTOON_CHANNEL=.*/KIESTOON_CHANNEL=testing/' "$ROOT/etc/kiestoon/kiestoon.env"
+fi
 : >"$ROOT/etc/machine-id"
 rm -f "$ROOT/var/lib/dbus/machine-id"
 

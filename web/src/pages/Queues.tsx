@@ -108,14 +108,14 @@ function QueueForm({ value, onClose, onSaved }: { value: Queue; onClose: () => v
                 {m && (
                   <>
                     <select aria-label={t('queues.memberType')} value={m.dynamic ? 'dynamic' : 'static'} onChange={(x) => setMember(e.id, { dynamic: x.target.value === 'dynamic' })}
-                      className="min-h-9 rounded-lg border border-line bg-[#0A1224] px-2 text-sm text-ink">
+                      className="min-h-9 rounded-lg border border-line bg-field px-2 text-sm text-ink">
                       <option value="dynamic">{t('queues.dynamic')}</option>
                       <option value="static">{t('queues.static')}</option>
                     </select>
                     <label className="flex items-center gap-2 text-xs text-muted">
                       {t('queues.penalty')}
                       <input type="number" min={0} max={10} value={m.penalty} onChange={(x) => setMember(e.id, { penalty: Number(x.target.value) })}
-                        className="min-h-9 w-16 rounded-lg border border-line bg-[#0A1224] px-2 font-mono text-sm text-ink" />
+                        className="min-h-9 w-16 rounded-lg border border-line bg-field px-2 font-mono text-sm text-ink" />
                     </label>
                   </>
                 )}
@@ -181,7 +181,7 @@ function RemoteAgents({ value, onChange }: { value: RemoteMember[]; onChange: (v
                   <label className="flex items-center gap-2 text-xs text-muted">
                     {t('queues.penalty')}
                     <input type="number" min={0} max={10} value={m.penalty} onChange={(x) => setPenalty(m, Number(x.target.value))}
-                      className="min-h-9 w-16 rounded-lg border border-line bg-[#0A1224] px-2 font-mono text-sm text-ink" />
+                      className="min-h-9 w-16 rounded-lg border border-line bg-field px-2 font-mono text-sm text-ink" />
                   </label>
                 )}
               </div>

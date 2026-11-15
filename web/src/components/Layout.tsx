@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { LogOut, Menu, X } from 'lucide-react'
-import { Brand, LanguageSwitch, PoweredBy } from './brand'
+import { Brand, LanguageSwitch, PoweredBy, ThemeSwitch } from './brand'
 import { InfoDialog, useSystemInfo } from './InfoDialog'
 import { nav, visible } from './nav'
 import { SoftphoneDock } from './SoftphoneDock'
@@ -78,7 +78,7 @@ export function Layout() {
                     end={item.path === '/' || item.path === '/me'}
                     className={({ isActive }) =>
                       `group flex min-h-9 items-center gap-3 rounded-[10px] px-3 text-sm transition ${
-                        isActive ? 'bg-accent/12 text-ink shadow-[inset_0_0_0_1px_rgb(34_211_238_/_0.35)]' : 'text-[#A8B3C7] hover:bg-white/5 hover:text-ink'
+                        isActive ? 'bg-accent/12 text-ink shadow-[inset_0_0_0_1px_rgb(34_211_238_/_0.35)]' : 'text-nav hover:bg-tint/5 hover:text-ink'
                       }`
                     }
                   >
@@ -109,7 +109,7 @@ export function Layout() {
             <button
               type="button"
               onClick={() => setInfoOpen(true)}
-              className="mt-3 min-h-10 w-full rounded-[10px] border border-accent/45 bg-accent/10 text-[13px] font-medium text-[#A5F3FC] transition hover:bg-accent/15"
+              className="mt-3 min-h-10 w-full rounded-[10px] border border-accent/45 bg-accent/10 text-[13px] font-medium text-accent-ink transition hover:bg-accent/15"
             >
               {t('info.button')}
             </button>
@@ -119,6 +119,7 @@ export function Layout() {
 
       <div className="min-w-0 flex-1">
         <div className="hidden items-center justify-end gap-2.5 px-8 pt-6 lg:flex">
+          <ThemeSwitch persist />
           <LanguageSwitch persist />
           <NavLink
             to="/account"
@@ -132,7 +133,8 @@ export function Layout() {
             <LogOut className="size-[18px]" aria-hidden />
           </button>
         </div>
-        <div className="flex items-center justify-end gap-2 px-4 pt-4 lg:hidden">
+        <div className="flex flex-wrap items-center justify-end gap-2 px-4 pt-4 lg:hidden">
+          <ThemeSwitch persist />
           <LanguageSwitch persist />
           <NavLink to="/account" className="inline-flex min-h-11 items-center rounded-xl border border-line px-3 text-sm text-ink-2">
             {t('nav.account')}

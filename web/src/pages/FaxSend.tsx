@@ -81,7 +81,7 @@ export function SendFax({ admin }: { admin: boolean }) {
               <Input label={t('fax.send.to')} value={number} onChange={(e) => setNumber(e.target.value)} placeholder="+31201234567" className="font-mono" inputMode="tel" />
               <div className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium text-ink-2">{t('fax.send.document')}</span>
-                <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[10px] border border-dashed border-line bg-[#0A1224] px-3.5 text-sm text-muted hover:border-accent/50 focus-within:ring-2 focus-within:ring-accent/30">
+                <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[10px] border border-dashed border-line bg-field px-3.5 text-sm text-muted hover:border-accent/50 focus-within:ring-2 focus-within:ring-accent/30">
                   <FileText className="size-4 text-accent" aria-hidden />
                   <span className="truncate">{file ? file.name : t('fax.send.choosePdf')}</span>
                   <input type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
@@ -120,7 +120,7 @@ export function SendFax({ admin }: { admin: boolean }) {
               </td>
               <td className={`${td} whitespace-nowrap text-right`}>
                 <a href={`/api/fax/jobs/${j.id}/pdf`} title={t('fax.download')} aria-label={t('fax.download')}
-                  className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-white/5 hover:text-accent"><Download className="size-4" aria-hidden /></a>
+                  className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent"><Download className="size-4" aria-hidden /></a>
                 {j.status === 'failed' && <IconButton label={t('fax.send.retry')} onClick={() => act(j, 'retry')}><RotateCcw className="size-4" aria-hidden /></IconButton>}
                 {admin && j.status !== 'sending' && <IconButton label={t('common.delete')} danger onClick={() => act(j, 'delete')}><Trash2 className="size-4" aria-hidden /></IconButton>}
               </td>

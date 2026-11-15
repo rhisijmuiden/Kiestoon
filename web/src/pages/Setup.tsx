@@ -66,7 +66,7 @@ export function Setup() {
           <li key={s} className="flex flex-1 items-center gap-2" aria-current={i === step ? 'step' : undefined}>
             <span
               className={`inline-flex size-7 flex-none items-center justify-center rounded-full border font-mono text-xs ${
-                i < step ? 'border-accent bg-accent text-[#06121F]' : i === step ? 'border-accent text-accent' : 'border-line text-subtle'
+                i < step ? 'border-accent bg-accent text-on-accent' : i === step ? 'border-accent text-accent' : 'border-line text-subtle'
               }`}
             >
               {i < step ? <Check className="size-3.5" aria-hidden /> : i + 1}
@@ -87,8 +87,8 @@ export function Setup() {
             <legend className="mb-2 text-sm font-medium text-ink-2">{t('common.language')}</legend>
             <div className="grid grid-cols-2 gap-2">
               {languages.map((l) => (
-                <label key={l.code} className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 ${i18n.language === l.code ? 'border-accent/50 bg-accent/10' : 'border-line hover:bg-white/5'}`}>
-                  <input type="radio" name="lang" checked={i18n.language === l.code} onChange={() => i18n.changeLanguage(l.code)} className="accent-[#22D3EE]" />
+                <label key={l.code} className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 ${i18n.language === l.code ? 'border-accent/50 bg-accent/10' : 'border-line hover:bg-tint/5'}`}>
+                  <input type="radio" name="lang" checked={i18n.language === l.code} onChange={() => i18n.changeLanguage(l.code)} className="accent-accent" />
                   <span>{l.label}</span>
                 </label>
               ))}

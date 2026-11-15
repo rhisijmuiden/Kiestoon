@@ -15,7 +15,7 @@ export function Audit() {
   }, [])
 
   const th = 'pb-2.5 pr-4 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-subtle'
-  const td = 'border-t border-white/[0.06] py-2.5 pr-4 text-[13.5px] text-ink-2 whitespace-nowrap'
+  const td = 'border-t border-tint/[0.06] py-2.5 pr-4 text-[13.5px] text-ink-2 whitespace-nowrap'
   return (
     <>
       <PageHeader title={t('audit.title')} subtitle={t('audit.subtitle')} />

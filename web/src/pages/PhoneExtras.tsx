@@ -68,7 +68,7 @@ export function FirmwarePanel({ models }: { models: PhoneModel[] }) {
           </Select>
           <Input label={t('firmware.url')} value={url} onChange={(e) => setUrl(e.target.value.trim())} placeholder="https://…/T54W-96.86.0.70.rom" className="font-mono" />
           <Button variant="secondary" busy={busy === 'fetch'} disabled={!url || !!busy} onClick={fetchUrl}><CloudDownload className="size-4" aria-hidden />{t('firmware.fetch')}</Button>
-          <label className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-gradient-to-br from-accent to-accent-2 px-4 text-sm font-semibold text-[#06121F] shadow-[0_8px_30px_-10px_rgb(34_211_238_/_0.6)] hover:brightness-110 focus-within:ring-2 focus-within:ring-accent/40 ${busy ? 'pointer-events-none opacity-60' : ''}`}>
+          <label className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-gradient-to-br from-accent to-accent-2 px-4 text-sm font-semibold text-on-accent shadow-[0_8px_30px_-10px_rgb(34_211_238_/_0.6)] hover:brightness-110 focus-within:ring-2 focus-within:ring-accent/40 ${busy ? 'pointer-events-none opacity-60' : ''}`}>
             <Upload className="size-4" aria-hidden />{busy === 'upload' ? t('firmware.uploading') : t('firmware.upload')}
             <input type="file" className="sr-only" accept=".rom,.bin,.zip,.loads,.ld,.img,.fw,.z" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f) }} />
           </label>
@@ -191,7 +191,7 @@ export function ZtpPanel() {
               </td>
               <td className={`${td} max-w-[420px]`}><code className="break-all font-mono text-xs text-ink-2">{z.effectiveUrl}{g.path}</code></td>
               <td className={`${td} whitespace-nowrap text-right`}>
-                <a href={`/api/provisioning/ztp/export?vendor=${g.vendor}`} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3 text-sm text-muted hover:bg-white/5 hover:text-accent">
+                <a href={`/api/provisioning/ztp/export?vendor=${g.vendor}`} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3 text-sm text-muted hover:bg-tint/5 hover:text-accent">
                   <Download className="size-4" aria-hidden />{t('ztp.exportCsv')}
                 </a>
               </td>

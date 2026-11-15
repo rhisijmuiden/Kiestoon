@@ -25,7 +25,7 @@ export function Dashboard() {
     <>
       <PageHeader title={t('dashboard.title')} subtitle={me?.organization ? `${me.organization} · ${t('dashboard.subtitle')}` : t('dashboard.subtitle')}>
         {st && (
-          <span className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-3.5 text-[13px] ${healthy ? 'border-ok/35 bg-ok/10 text-[#A7F3D0]' : 'border-warn/35 bg-warn/10 text-[#FDE68A]'}`}>
+          <span className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-3.5 text-[13px] ${healthy ? 'border-ok/35 bg-ok/10 text-ok-ink' : 'border-warn/35 bg-warn/10 text-warn-ink'}`}>
             <span className={`size-2 rounded-full ${healthy ? 'bg-ok glow-ok' : 'bg-warn'}`} aria-hidden />
             {!st.connected ? t('dashboard.pbxDown') : trunksDown ? t('dashboard.trunksDown', { count: trunksDown }) : t('dashboard.status')}
           </span>

@@ -56,7 +56,7 @@ export function Phonebook() {
       <PageHeader title={t('phonebook.title')} subtitle={t('phonebook.subtitle')}>
         {admin && <Button variant="ghost" onClick={() => setSettings(true)}><Settings2 className="size-4" aria-hidden />{t('phonebook.settings')}</Button>}
         {admin && <Button variant="ghost" onClick={() => setImporting(true)}><Upload className="size-4" aria-hidden />{t('phonebook.import')}</Button>}
-        {admin && <a href="/api/phonebook/export" className="inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-line px-4 text-sm font-medium text-ink-2 hover:bg-white/5"><Download className="size-4" aria-hidden />{t('phonebook.export')}</a>}
+        {admin && <a href="/api/phonebook/export" className="inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-line px-4 text-sm font-medium text-ink-2 hover:bg-tint/5"><Download className="size-4" aria-hidden />{t('phonebook.export')}</a>}
         {me && me.user.role !== 'user' && <Button onClick={() => setEdit(blank)}><Plus className="size-4" aria-hidden />{t('phonebook.add')}</Button>}
       </PageHeader>
       {msg && <Alert tone="ok">{msg}</Alert>}
@@ -66,7 +66,7 @@ export function Phonebook() {
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle" aria-hidden />
             <input aria-label={t('phonebook.search')} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('phonebook.search')}
-              className="min-h-11 w-full rounded-[10px] border border-line bg-[#0A1224] pl-9 pr-3 text-[15px] text-ink placeholder:text-subtle outline-none focus:border-accent/60" />
+              className="min-h-11 w-full rounded-[10px] border border-line bg-field pl-9 pr-3 text-[15px] text-ink placeholder:text-subtle outline-none focus:border-accent/60" />
           </div>
         </div>
         <Table head={[t('common.name'), t('phonebook.company'), t('phonebook.work'), t('phonebook.mobile'), t('phonebook.other'), '']}
@@ -146,7 +146,7 @@ function ImportForm({ onClose, onDone }: { onClose: () => void; onDone: (msg: st
       <p className="text-sm text-muted">{t('phonebook.importHint')}</p>
       <input type="file" accept=".csv,text/csv" aria-label={t('phonebook.chooseFile')}
         onChange={async (e) => { const f = e.target.files?.[0]; if (f) setCsv(await f.text()) }}
-        className="text-sm text-ink-2 file:mr-3 file:min-h-10 file:rounded-lg file:border file:border-accent/45 file:bg-accent/10 file:px-3 file:text-[#A5F3FC]" />
+        className="text-sm text-ink-2 file:mr-3 file:min-h-10 file:rounded-lg file:border file:border-accent/45 file:bg-accent/10 file:px-3 file:text-accent-ink" />
       <Textarea label="CSV" value={csv} onChange={(e) => setCsv(e.target.value)} rows={8} placeholder={'name;company;work;mobile\nJan Jansen;Bakkerij;020 123 4567;06 12345678'} />
       <Toggle label={t('phonebook.replace')} hint={t('phonebook.replaceHint')} checked={replace} onChange={setReplace} />
     </Modal>

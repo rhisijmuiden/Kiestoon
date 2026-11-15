@@ -105,7 +105,7 @@ function RingGroupForm({ value, onClose, onSaved }: { value: RingGroup; onClose:
         {g.members.length > 0 && (
           <ol className="flex flex-col gap-1.5 rounded-xl border border-line p-2">
             {g.members.map((m, i) => (
-              <li key={m} className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-1.5 text-sm">
+              <li key={m} className="flex items-center gap-3 rounded-lg bg-tint/[0.03] px-3 py-1.5 text-sm">
                 <span className="w-5 font-mono text-xs text-subtle">{i + 1}</span>
                 <span className="font-mono text-ink">{m}</span>
                 <span className="flex-1 truncate text-muted">{names.get(m) ?? t('ringGroups.externalNumber')}</span>

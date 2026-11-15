@@ -120,9 +120,9 @@ function TimeConditionForm({ value, onClose, onSaved }: { value: TimeCondition; 
                 </button>
               ))}
             </div>
-            <input type="time" aria-label={t('timeConditions.from')} value={s.from} onChange={(e) => setRange(i, { from: e.target.value })} className="min-h-10 rounded-lg border border-line bg-[#0A1224] px-2 font-mono text-sm text-ink" />
+            <input type="time" aria-label={t('timeConditions.from')} value={s.from} onChange={(e) => setRange(i, { from: e.target.value })} className="min-h-10 rounded-lg border border-line bg-field px-2 font-mono text-sm text-ink" />
             <span className="text-subtle">–</span>
-            <input type="time" aria-label={t('timeConditions.to')} value={s.to === '24:00' ? '23:59' : s.to} onChange={(e) => setRange(i, { to: e.target.value })} className="min-h-10 rounded-lg border border-line bg-[#0A1224] px-2 font-mono text-sm text-ink" />
+            <input type="time" aria-label={t('timeConditions.to')} value={s.to === '24:00' ? '23:59' : s.to} onChange={(e) => setRange(i, { to: e.target.value })} className="min-h-10 rounded-lg border border-line bg-field px-2 font-mono text-sm text-ink" />
             <IconButton label={t('common.remove')} danger onClick={() => set('schedule', tc.schedule.filter((_, j) => j !== i))}><X className="size-4" aria-hidden /></IconButton>
           </div>
         ))}
@@ -181,7 +181,7 @@ function Holidays() {
           <p className="mb-4 text-sm text-muted">{t('timeConditions.dutchHolidaysHint')}</p>
           <div className="flex flex-col gap-1.5">
             {view.data.presets.map((k) => (
-              <label key={k} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-line px-3 text-sm hover:bg-white/[0.03]">
+              <label key={k} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-line px-3 text-sm hover:bg-tint/[0.03]">
                 <input type="checkbox" disabled={!admin} checked={cal.preset.includes(k)} onChange={() => togglePreset(k)} className="size-4 accent-[var(--color-accent)]" />
                 <span className="flex-1 text-ink">{t(`holidays.${k}`)}</span>
                 <span className="font-mono text-xs text-subtle">{dateOf(k) ? day(dateOf(k)!) : ''}</span>

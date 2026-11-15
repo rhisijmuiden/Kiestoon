@@ -1,31 +1,83 @@
 @import "tailwindcss";
 
-/* Colours and type come from branding/tokens.json. Keep the two in sync. */
+/* Colours and type come from branding/tokens.json. Keep the two in sync.
+   The values below are the dark theme (the default). The light theme overrides the same
+   variables further down, so every utility (bg-surface, text-ink, ...) follows the theme. */
 @theme {
   --color-bg: #070B14;
   --color-surface: #0F172A;
   --color-surface-2: #0B1120;
+  --color-field: #0A1224;
+  --color-inset: #070C18;
   --color-line: rgb(148 163 184 / 0.14);
   --color-ink: #E2E8F0;
   --color-ink-2: #CBD5E1;
+  --color-nav: #A8B3C7;
   --color-muted: #94A3B8;
   --color-subtle: #7C8AA3;
+  --color-tint: #FFFFFF;
+  --color-grid-dot: rgb(255 255 255 / 0.05);
   --color-accent: #22D3EE;
   --color-accent-2: #818CF8;
+  --color-accent-ink: #A5F3FC;
+  --color-on-accent: #06121F;
   --color-ok: #34D399;
+  --color-ok-ink: #A7F3D0;
   --color-warn: #FBBF24;
+  --color-warn-ink: #FDE68A;
   --color-danger: #F87171;
+  --color-danger-ink: #FECACA;
   --font-sans: "Inter", system-ui, sans-serif;
   --font-display: "Space Grotesk", "Inter", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-html { color-scheme: dark; }
+:root {
+  color-scheme: dark;
+  --card-top: rgb(15 23 42 / 0.92);
+  --card-bottom: rgb(11 17 32 / 0.92);
+  --card-shadow: none;
+  --page-glow: rgb(34 211 238 / 0.10);
+}
+
+/* Light theme: same house style, daylight palette. Darker cyan and indigo keep the accent
+   readable on white (WCAG AA for text). Set by data-theme="light" on <html>. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: #F4F7FB;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #FFFFFF;
+  --color-field: #FFFFFF;
+  --color-inset: #EEF2F7;
+  --color-line: rgb(15 23 42 / 0.12);
+  --color-ink: #0F172A;
+  --color-ink-2: #334155;
+  --color-nav: #475569;
+  --color-muted: #526072;
+  --color-subtle: #64748B;
+  --color-tint: #0F172A;
+  --color-grid-dot: rgb(15 23 42 / 0.08);
+  --color-accent: #0891B2;
+  --color-accent-2: #6366F1;
+  --color-accent-ink: #0E7490;
+  --color-on-accent: #FFFFFF;
+  --color-ok: #059669;
+  --color-ok-ink: #047857;
+  --color-warn: #D97706;
+  --color-warn-ink: #92400E;
+  --color-danger: #DC2626;
+  --color-danger-ink: #B91C1C;
+  --card-top: #FFFFFF;
+  --card-bottom: #FBFCFE;
+  --card-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.12);
+  --page-glow: rgb(8 145 178 / 0.08);
+}
+
 html, body, #root { min-height: 100%; }
-select option { background: #0F172A; }
+select option { background: var(--color-surface); color: var(--color-ink); }
 body {
   margin: 0;
-  background: radial-gradient(1200px 500px at 70% -10%, rgb(34 211 238 / 0.10), transparent 60%), var(--color-bg);
+  background: radial-gradient(1200px 500px at 70% -10%, var(--page-glow), transparent 60%), var(--color-bg);
   background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
@@ -35,9 +87,18 @@ body {
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
 @utility card {
-  background: linear-gradient(180deg, rgb(15 23 42 / 0.92), rgb(11 17 32 / 0.92));
+  background: linear-gradient(180deg, var(--card-top), var(--card-bottom));
   border: 1px solid var(--color-line);
   border-radius: 16px;
+  box-shadow: var(--card-shadow);
 }
 
 @utility glow-ok { box-shadow: 0 0 10px var(--color-ok); }
+
+/* "Powered by RHIS" keeps a dark badge in both themes: the RHIS logo is white and must not be
+   recoloured (RHIS house style). */
+@utility rhis-badge {
+  background: rgb(11 17 32 / 0.92);
+  border: 1px solid rgb(148 163 184 / 0.22);
+  color: #CBD5E1;
+}

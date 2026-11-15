@@ -50,7 +50,7 @@ export function Modal({ title, subtitle, onClose, children, footer, wide }: {
           <h2 id={id} className="font-display text-xl font-semibold">{title}</h2>
           {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
         </div>
-        <button type="button" onClick={() => ref.current?.close()} aria-label={t('common.close')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-white/5 hover:text-ink">
+        <button type="button" onClick={() => ref.current?.close()} aria-label={t('common.close')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-ink">
           <X className="size-5" aria-hidden />
         </button>
       </div>
@@ -61,7 +61,7 @@ export function Modal({ title, subtitle, onClose, children, footer, wide }: {
 }
 
 const fieldCls =
-  'min-h-11 w-full rounded-[10px] border border-line bg-[#0A1224] px-3.5 text-[15px] text-ink placeholder:text-subtle outline-none transition focus:border-accent/60 focus:ring-2 focus:ring-accent/20'
+  'min-h-11 w-full rounded-[10px] border border-line bg-field px-3.5 text-[15px] text-ink placeholder:text-subtle outline-none transition focus:border-accent/60 focus:ring-2 focus:ring-accent/20'
 
 export function Select({ label, hint, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & { label: string; hint?: ReactNode }) {
   const id = useId()
@@ -105,7 +105,7 @@ export function Toggle({ label, hint, checked, onChange, disabled }: {
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={`relative mt-0.5 inline-flex h-6 w-11 flex-none items-center rounded-full border transition disabled:opacity-50 ${
-          checked ? 'border-accent/60 bg-accent/30' : 'border-line bg-white/5'
+          checked ? 'border-accent/60 bg-accent/30' : 'border-line bg-tint/5'
         }`}
       >
         <span className={`inline-block size-4 rounded-full transition ${checked ? 'translate-x-6 bg-accent shadow-[0_0_10px_var(--color-accent)]' : 'translate-x-1 bg-muted'}`} />
@@ -135,11 +135,11 @@ export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { key:
 
 type Tone = 'ok' | 'warn' | 'danger' | 'muted' | 'accent'
 const tones: Record<Tone, string> = {
-  ok: 'border-ok/35 bg-ok/10 text-[#A7F3D0]',
-  warn: 'border-warn/35 bg-warn/10 text-[#FDE68A]',
-  danger: 'border-danger/40 bg-danger/10 text-[#FECACA]',
-  muted: 'border-line bg-white/5 text-muted',
-  accent: 'border-accent/40 bg-accent/10 text-[#A5F3FC]',
+  ok: 'border-ok/35 bg-ok/10 text-ok-ink',
+  warn: 'border-warn/35 bg-warn/10 text-warn-ink',
+  danger: 'border-danger/40 bg-danger/10 text-danger-ink',
+  muted: 'border-line bg-tint/5 text-muted',
+  accent: 'border-accent/40 bg-accent/10 text-accent-ink',
 }
 const dots: Record<Tone, string> = { ok: 'bg-ok', warn: 'bg-warn', danger: 'bg-danger', muted: 'bg-subtle', accent: 'bg-accent' }
 
@@ -153,7 +153,7 @@ export function Badge({ tone = 'muted', dot, children }: { tone?: Tone; dot?: bo
 }
 
 export const th = 'pb-2.5 pr-4 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-subtle whitespace-nowrap'
-export const td = 'border-t border-white/[0.06] py-2.5 pr-4 text-[13.5px] text-ink-2 align-middle'
+export const td = 'border-t border-tint/[0.06] py-2.5 pr-4 text-[13.5px] text-ink-2 align-middle'
 
 export function Table({ head, children, empty }: { head: ReactNode[]; children: ReactNode; empty?: ReactNode }) {
   return (
@@ -187,7 +187,7 @@ export function CopyField({ label, value, secret }: { label: string; value: stri
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs text-muted">{label}</span>
-      <div className="flex min-h-10 items-center gap-1 rounded-[10px] border border-line bg-[#0A1224] pl-3">
+      <div className="flex min-h-10 items-center gap-1 rounded-[10px] border border-line bg-field pl-3">
         <code className="flex-1 truncate font-mono text-[13px] text-ink">{shown ? value : '••••••••••••'}</code>
         {secret && (
           <button type="button" onClick={() => setShown(!shown)} aria-label={shown ? t('common.hide') : t('common.show')} className="inline-flex size-9 items-center justify-center text-muted hover:text-ink">

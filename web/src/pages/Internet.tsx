@@ -135,7 +135,7 @@ function ReverseProxy() {
         <div className="rounded-xl border border-line bg-surface-2/60 p-4">
           <div className="mb-2 flex items-center justify-between gap-2">
             <h3 className="text-sm font-medium text-ink">{t('proxy.check')}</h3>
-            <button type="button" onClick={d.reload} aria-label={t('proxy.recheck')} title={t('proxy.recheck')} className="inline-flex size-9 items-center justify-center rounded-lg text-muted hover:bg-white/5 hover:text-accent"><RefreshCw className="size-4" aria-hidden /></button>
+            <button type="button" onClick={d.reload} aria-label={t('proxy.recheck')} title={t('proxy.recheck')} className="inline-flex size-9 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent"><RefreshCw className="size-4" aria-hidden /></button>
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
             <dt className="text-muted">{t('proxy.remoteAddr')}</dt><dd className="font-mono text-ink-2">{x.remoteAddr}</dd>
@@ -203,7 +203,7 @@ function Metrics() {
             <Button variant="ghost" onClick={() => { setSaved(false); setM({ ...m, token: randomToken() }) }}><RefreshCw className="size-4" aria-hidden />{t('metrics.newToken')}</Button>
           </div>
           <Textarea label={t('metrics.allowFrom')} value={allow} onChange={(e) => { setSaved(false); setAllow(e.target.value) }} placeholder="10.0.0.20/32" hint={t('metrics.allowFromHint')} />
-          <pre className="overflow-x-auto rounded-xl border border-line bg-[#0A1224] p-3 font-mono text-xs text-ink-2">{`- job_name: kiestoon
+          <pre className="overflow-x-auto rounded-xl border border-line bg-field p-3 font-mono text-xs text-ink-2">{`- job_name: kiestoon
   scheme: ${d.data.url.startsWith('https') ? 'https' : 'http'}
   authorization:
     credentials: <token>

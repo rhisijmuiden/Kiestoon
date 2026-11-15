@@ -65,10 +65,10 @@ export function Extensions() {
                 {e.srtp && <Badge tone="ok">SRTP</Badge>}
               </td>
               <td className={`${td} text-right whitespace-nowrap`}>
-                <button type="button" onClick={() => openDetails(e.id)} title={t('extensions.sipDetails')} aria-label={t('extensions.sipDetails')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-white/5 hover:text-accent">
+                <button type="button" onClick={() => openDetails(e.id)} title={t('extensions.sipDetails')} aria-label={t('extensions.sipDetails')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent">
                   <KeyRound className="size-4" aria-hidden />
                 </button>
-                <button type="button" onClick={() => openEdit(e.id)} title={t('common.edit')} aria-label={t('common.edit')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-white/5 hover:text-ink">
+                <button type="button" onClick={() => openEdit(e.id)} title={t('common.edit')} aria-label={t('common.edit')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-ink">
                   <Pencil className="size-4" aria-hidden />
                 </button>
                 <button type="button" onClick={() => remove(e)} title={t('common.delete')} aria-label={t('common.delete')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-danger/10 hover:text-danger">

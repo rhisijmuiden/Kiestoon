@@ -121,8 +121,23 @@ func TestSetupLoginAndMandatoryMFA(t *testing.T) {
 	if code, _ := c.do("POST", "/api/auth/mfa", map[string]string{"code": recovery}); code != 200 {
 		t.Fatal("recovery code rejected")
 	}
-	if code, body := c.do("GET", "/api/me", nil); code != 200 || body["mfaEnrollmentRequired"] != false {
-		t.Fatalf("me after MFA: %d %v", code, body)
+	code, me := c.do("GET", "/api/me", nil)
+	if code != 200 || me["mfaEnrollmentRequired"] != false {
+		t.Fatalf("me after MFA: %d %v", code, me)
+	}
+
+	// The UI theme defaults to following the device and is saved per user.
+	if th := me["user"].(map[string]any)["theme"]; th != "system" {
+		t.Fatalf("default theme: %v", th)
+	}
+	if code, _ := c.do("PUT", "/api/account/theme", map[string]string{"theme": "purple"}); code != 400 {
+		t.Fatalf("invalid theme accepted: %d", code)
+	}
+	if code, _ := c.do("PUT", "/api/account/theme", map[string]string{"theme": "light"}); code != 200 {
+		t.Fatalf("set theme: %d", code)
+	}
+	if _, me := c.do("GET", "/api/me", nil); me["user"].(map[string]any)["theme"] != "light" {
+		t.Fatalf("theme not stored: %v", me["user"])
 	}
 }
 

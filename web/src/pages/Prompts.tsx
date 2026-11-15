@@ -108,7 +108,7 @@ function SpeakText({ onAudio }: { onAudio: (w: Wav) => void }) {
     <div className="flex flex-col gap-3 rounded-xl border border-accent/25 bg-accent/5 p-4">
       <Textarea label={t('prompts.ttsLabel')} value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} placeholder={t('prompts.ttsPlaceholder')} />
       <div className="flex flex-wrap items-center gap-3">
-        <select aria-label={t('common.language')} value={lang} onChange={(e) => setLang(e.target.value)} className="min-h-10 rounded-lg border border-line bg-[#0A1224] px-2 text-sm">
+        <select aria-label={t('common.language')} value={lang} onChange={(e) => setLang(e.target.value)} className="min-h-10 rounded-lg border border-line bg-field px-2 text-sm">
           <option value="nl">Nederlands</option><option value="en">English</option>
         </select>
         <Button variant="secondary" busy={busy} disabled={!text.trim()} onClick={generate}><Sparkles className="size-4" aria-hidden />{t('prompts.ttsGenerate')}</Button>

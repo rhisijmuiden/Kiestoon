@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import i18n from '../i18n'
 import { api, ApiError, type Me } from './api'
+import { getThemePref, isThemePref, setThemePref } from './theme'
 
 export type SessionState =
   | { kind: 'loading' }
@@ -24,6 +25,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (setup.setupRequired) return setState({ kind: 'setup' })
       const me = await api<Me>('GET', '/me')
       if (me.user.language && me.user.language !== i18n.language) i18n.changeLanguage(me.user.language)
+      if (isThemePref(me.user.theme) && me.user.theme !== getThemePref()) setThemePref(me.user.theme)
       setState(me.mfaEnrollmentRequired ? { kind: 'enroll', me } : { kind: 'ready', me })
     } catch (e) {
       if (e instanceof ApiError && e.code === 'mfa_required') return setState({ kind: 'mfa' })

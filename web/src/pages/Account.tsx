@@ -6,7 +6,7 @@ import { IconButton } from '../components/pbx'
 import { createPasskey, passkeysSupported } from '../lib/passkey'
 import type { Passkey } from '../lib/types'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
-import { LanguageSwitch } from '../components/brand'
+import { LanguageSwitch, ThemeSwitch } from '../components/brand'
 import { api } from '../lib/api'
 import { useSession } from '../lib/session'
 
@@ -45,6 +45,9 @@ export function Account() {
         <Card>
           <h2 className="font-display text-lg font-semibold">{t('account.languageTitle')}</h2>
           <div className="mt-4"><LanguageSwitch persist /></div>
+          <h2 className="mt-6 font-display text-lg font-semibold">{t('theme.title')}</h2>
+          <p className="mt-1 text-sm text-muted">{t('theme.hint')}</p>
+          <div className="mt-4"><ThemeSwitch persist labels /></div>
         </Card>
         <Card>
           <h2 className="font-display text-lg font-semibold">{t('account.passwordTitle')}</h2>

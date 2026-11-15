@@ -3,9 +3,13 @@ name: Release
 # Push a tag to publish a release:
 #   vX.Y.Z-rc.N  -> pre-release, offered on the testing channel
 #   vX.Y.Z       -> release, offered on the production channel
+# Or change the VERSION file in a pull request into testing (rc versions) or main (stable versions):
+# after the merge this workflow creates the tag and the release on that commit.
 on:
   push:
     tags: ['v*']
+    branches: [testing, main]
+    paths: [VERSION]
 
 permissions:
   contents: write
@@ -27,9 +31,28 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - name: Build packages (amd64, arm64)
+      - name: Determine version
         env:
-          VERSION: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then TAG="$GITHUB_REF_NAME"; else TAG="$(tr -d '[:space:]' < VERSION)"; fi
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          if [[ "$GITHUB_REF_TYPE" != "tag" ]] && gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists, nothing to do."; echo "SKIP=1" >> "$GITHUB_ENV"
+          fi
+
+      - name: Check version
+        if: env.SKIP != '1'
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "invalid tag: $TAG"; exit 1; }
+          if [[ "$TAG" != *-* && "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_TYPE" != "tag" ]]; then
+            echo "stable releases (without -rc) are made from main"; exit 1
+          fi
+
+      - name: Build packages (amd64, arm64)
+        if: env.SKIP != '1'
+        env:
+          VERSION: ${{ env.TAG }}
         run: |
           GOTOOLCHAIN=auto go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
           make web
@@ -38,8 +61,9 @@ jobs:
           make deb VERSION="$VERSION" GOARCH=arm64
 
       - name: Build Proxmox LXC template (amd64)
+        if: env.SKIP != '1'
         env:
-          VERSION: ${{ github.ref_name }}
+          VERSION: ${{ env.TAG }}
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq debootstrap
@@ -47,17 +71,18 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" dist
 
       - name: Checksums
+        if: env.SKIP != '1'
         run: |
           cd dist
           sha256sum -- *.deb *.tar.zst > SHA256SUMS
           cat SHA256SUMS
 
       - name: Publish GitHub release
+        if: env.SKIP != '1'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
         run: |
           flags=()
           if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); else flags+=(--latest); fi
           gh release create "$TAG" dist/*.deb dist/*.tar.zst dist/SHA256SUMS \
-            --title "Kiestoon $TAG" --generate-notes "${flags[@]}"
+            --target "$GITHUB_SHA" --title "Kiestoon $TAG" --generate-notes "${flags[@]}"

@@ -79,7 +79,7 @@ const qBase = { music: 'default', announcePosition: true, announceFrequency: 60,
 const support = await c.post('/api/pbx/queues', {
   ...qBase, number: '700', name: 'Support', strategy: 'rrmemory', cidPrefix: 'Support: ', greetingPrompt: prompts.queue,
   overflow: { type: 'voicemail', target: '201' }, record: true,
-  members: ['201', '202', '205', '209'].map((n) => ({ extensionId: ext[n], penalty: 0, dynamic: n !== '201' })),
+  members: ['201', '202', '204', '205', '209'].map((n) => ({ extensionId: ext[n], penalty: 0, dynamic: n !== '201' })),
 })
 await c.post('/api/pbx/queues', {
   ...qBase, number: '701', name: 'Planning', strategy: 'leastrecent', cidPrefix: 'Planning: ', greetingPrompt: 0,

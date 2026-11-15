@@ -74,7 +74,13 @@ storen staan. Alle apparaten gaan over, ook de browsersoftphone. Per telefoon ki
 | **Beginnen met de microfoon uit** | De gebelde is pas te horen na het uitzetten van mute |
 | **Ook tijdens een ander gesprek** | Het intercomgesprek wordt aangenomen terwijl de gebruiker aan het bellen is |
 
-Grandstream-telefoons ondersteunen alleen de eerste optie.
+Het formulier van de telefoon toont alleen de opties die het merk ondersteunt:
+
+| Merk | Opties |
+| --- | --- |
+| Yealink, Snom, Fanvil | Alle vier |
+| Poly | Automatisch aannemen en gedempte microfoon |
+| Grandstream, Htek, Cisco MPP, Akuvox-deurstations | Automatisch aannemen aan of uit |
 
 ## Wanneer krijgen telefoons hun toetsen?
 

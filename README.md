@@ -61,7 +61,7 @@ directly or after asking first. Reception has a full switchboard and a wallboard
 <td valign="top">
 
 ### ☎️ Phones that set themselves up
-Yealink, Snom, Fanvil, Grandstream, Gigaset and Cisco phones are provisioned automatically: plug in, link to an
+Yealink, Snom, Fanvil, Grandstream, Gigaset, Poly, Htek, Akuvox and Cisco phones are provisioned automatically: plug in, link to an
 extension, done. A visual key editor with expansion modules, key templates and intercom.
 [Read more](https://rhisijmuiden.github.io/Kiestoon/phones/)
 

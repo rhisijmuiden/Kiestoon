@@ -62,7 +62,7 @@ wachtrij te slepen: direct of na eerst overleggen. De receptie heeft een complee
 <td valign="top">
 
 ### ☎️ Telefoons die zichzelf instellen
-Yealink-, Snom-, Fanvil-, Grandstream-, Gigaset- en Cisco-telefoons worden automatisch ingesteld: aansluiten,
+Yealink-, Snom-, Fanvil-, Grandstream-, Gigaset-, Poly-, Htek-, Akuvox- en Cisco-telefoons worden automatisch ingesteld: aansluiten,
 koppelen aan een toestel, klaar. Met een visuele toetseneditor met uitbreidingsmodules, toetssjablonen en intercom.
 [Lees meer](https://rhisijmuiden.github.io/Kiestoon/nl/phones/)
 

@@ -55,9 +55,14 @@ function contacts() {
   })
 }
 
+// Call records are made relative to this moment, so every reconnect sends the same records.
+const STARTED = Date.now()
+let cdrsSent = false
+
 const queueMembers = [
   { ext: '201', name: 'Sanne Bakker', status: 2, inCall: 1, taken: 14, paused: 0 },
   { ext: '202', name: 'Thomas Jansen', status: 1, inCall: 0, taken: 11, paused: 0 },
+  { ext: '204', name: 'Emma de Boer', status: 6, inCall: 0, taken: 5, paused: 0 },
   { ext: '205', name: 'Noor Hendriks', status: 1, inCall: 0, taken: 9, paused: 1 },
   { ext: '209', name: 'Milan Vos', status: 1, inCall: 0, taken: 7, paused: 0 },
 ]
@@ -78,14 +83,18 @@ function queueEvents() {
 
 function cdrs() {
   const out = []
-  const people = [['201', 'Sanne Bakker'], ['202', 'Thomas Jansen'], ['203', 'Daan Visser'], ['205', 'Noor Hendriks'], ['207', 'Lotte Smit'], ['209', 'Milan Vos']]
+  const people = [['201', 'Sanne Bakker'], ['202', 'Thomas Jansen'], ['203', 'Daan Visser'], ['204', 'Emma de Boer'], ['205', 'Noor Hendriks'], ['207', 'Lotte Smit'], ['209', 'Milan Vos']]
   const outside = [['0612345678', 'Jansen Bouw'], ['0205551234', ''], ['0301234567', 'Gemeente Utrecht'], ['0104567890', 'De Groot Transport'], ['0687654321', ''], ['0402233445', 'Van Dijk Installatie']]
-  const day = new Date(); day.setHours(8, 2, 0, 0)
+  // 46 calls of today, ending a few minutes ago; spaced closer together when the build runs early in the day.
+  const now = STARTED, midnight = new Date(STARTED); midnight.setHours(0, 5, 0, 0)
+  const begin = Math.max(midnight.getTime(), now - 46 * 11 * 60000 - 300000)
+  const step = (now - 300000 - begin) / 46
+  const day = new Date(begin)
   const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${d.toTimeString().slice(0, 8)}`
   for (let i = 0; i < 46; i++) {
-    const start = new Date(day.getTime() + i * 11 * 60000 + (i * 37 % 300) * 1000)
+    const start = new Date(day.getTime() + i * step + (i * 37 % 60) * 1000 * (step / 660000))
     if (start > new Date()) break
-    const p = people[i % people.length], o = outside[(i * 5) % outside.length]
+    const p = people[(i * 3 + Math.floor(i / 7)) % people.length], o = outside[(i * 5) % outside.length]
     const kind = i % 7 === 3 ? 'internal' : i % 3 === 0 ? 'outbound' : 'inbound'
     const missed = kind === 'inbound' && i % 9 === 4
     const bill = missed ? 0 : 35 + ((i * 53) % 420)
@@ -130,7 +139,8 @@ net.createServer((sock) => {
       switch (action) {
         case 'login':
           write(sock, { Response: 'Success', ActionID: id, Message: 'Authentication accepted' })
-          setTimeout(() => cdrs().forEach((e) => write(sock, e)), 500)
+          // Asterisk sends a call record once; the portal stores it, also across a restart of the portal.
+          if (!cdrsSent) { cdrsSent = true; setTimeout(() => cdrs().forEach((e) => write(sock, e)), 500) }
           break
         case 'coreshowchannels': list(sock, id, channels().map((c) => ({ Event: 'CoreShowChannel', ...c, Duration: new Date(c.Duration * 1000).toISOString().slice(11, 19) })), 'CoreShowChannelsComplete'); break
         case 'pjsipshowcontacts': list(sock, id, contacts().map((c) => ({ Event: 'ContactList', ...c })), 'ContactListComplete'); break

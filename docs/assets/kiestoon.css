@@ -106,4 +106,5 @@
 kbd, .md-typeset kbd { font-family: "JetBrains Mono", monospace; }
 
 /* Phone-sized screenshots of the Windows softphone */
-.md-typeset img.kt-phone { max-width: 300px; margin-inline: auto; display: block; }
+.md-typeset img.kt-phone { max-width: 300px; }
+.md-typeset .grid > p:has(img.kt-phone) { text-align: center; }

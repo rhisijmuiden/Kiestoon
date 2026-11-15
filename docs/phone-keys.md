@@ -72,7 +72,13 @@ disturb. It rings all their devices, including the browser softphone. Per phone 
 | **Start with the microphone muted** | The callee is only heard after pressing mute |
 | **Also during another call** | The intercom call is answered while the user is on the phone |
 
-Grandstream phones only support the first option.
+The phone form only shows the options the brand supports:
+
+| Brand | Options |
+| --- | --- |
+| Yealink, Snom, Fanvil | All four |
+| Poly | Automatic answer and muted microphone |
+| Grandstream, Htek, Cisco MPP, Akuvox door stations | Automatic answer on or off |
 
 ## When do phones get their keys?
 

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Globe2, RefreshCw, ShieldAlert, ShieldCheck, Unlock, X } from 'lucide-react'
+import { Globe2, KeyRound, Plus, RefreshCw, ShieldAlert, ShieldCheck, Trash2, Unlock, X } from 'lucide-react'
 import { Badge, SectionTitle, Table, Textarea, Toggle, formatDate, td, useApi } from '../components/kit'
 import { Segmented } from '../components/pbx'
 import { countryCodes, countryName, europe } from '../lib/countries'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
-import { api } from '../lib/api'
-import type { Ban, FirewallConfig, FirewallStatus, GeoStatus } from '../lib/types'
+import { api, roles as allRoles, type Role } from '../lib/api'
+import type { Ban, FirewallConfig, FirewallStatus, GeoStatus, TrustedNetworks, TrustedNetworksData } from '../lib/types'
 
 type FwData = { config: FirewallConfig; status: FirewallStatus; helperAvailable: boolean; trunkIps: string[]; clientIp: string; ports: { Portal: number[]; SIP: number; SIPTLS: number; RTPStart: number; RTPEnd: number } }
 
@@ -118,6 +118,7 @@ export function Firewall() {
         <span className="flex items-center gap-1.5 text-xs text-subtle"><ShieldAlert className="size-4" />{t('firewall.safeMode')}</span>
         <Button busy={busy} disabled={!fw.data.helperAvailable} onClick={save}>{t('firewall.apply')}</Button>
       </div>
+      <TrustedCard />
       {st.ruleset && (
         <Card>
           <details>
@@ -200,6 +201,83 @@ function GeoCard({ c, set }: { c: FirewallConfig; set: <K extends keyof Firewall
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="text-xs text-subtle">{geo.data?.attribution}</span>
           <Button variant="ghost" busy={busy} onClick={update}><RefreshCw className="size-4" aria-hidden />{t('firewall.geo.update')}</Button>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+// Trusted networks: password sign-ins from these ranges skip the MFA step. Saved on its own, it does
+// not touch the nftables rules.
+function TrustedCard() {
+  const { t } = useTranslation()
+  const tn = useApi<TrustedNetworksData>('/firewall/trusted')
+  const [c, setC] = useState<TrustedNetworks | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<unknown>(null)
+  useEffect(() => { if (tn.data && !c) setC(tn.data.settings) }, [tn.data, c])
+  if (!c || !tn.data) return null
+  const d = tn.data
+  const set = (v: Partial<TrustedNetworks>) => { setSaved(false); setC({ ...c, ...v }) }
+  const setNet = (i: number, k: 'cidr' | 'description', v: string) => set({ networks: c.networks.map((n, j) => (j === i ? { ...n, [k]: v } : n)) })
+  const toggleRole = (r: Role, on: boolean) => set({ roles: on ? [...new Set([...c.roles, r])] : c.roles.filter((x) => x !== r) })
+  const broad = c.networks.some((n) => /\/([0-7])$/.test(n.cidr.trim()) || n.cidr.trim() === '::/0')
+  async function save() {
+    setBusy(true)
+    setError(null)
+    try {
+      const r = await api<TrustedNetworksData>('PUT', '/firewall/trusted', c)
+      tn.setData(r)
+      setC(r.settings)
+      setSaved(true)
+    } catch (e) {
+      setError(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Card>
+      <SectionTitle action={c.enabled ? <Badge tone="warn" dot>{t('firewall.trusted.on')}</Badge> : <Badge dot>{t('firewall.trusted.off')}</Badge>}>
+        <span className="inline-flex items-center gap-2"><KeyRound className="size-5 text-accent" aria-hidden />{t('firewall.trusted.title')}</span>
+      </SectionTitle>
+      <p className="mb-4 max-w-3xl text-sm text-muted">{t('firewall.trusted.intro')}</p>
+      <ErrorMessage error={error} />
+      <div className="flex flex-col gap-4">
+        <Toggle label={t('firewall.trusted.enable')} hint={t('firewall.trusted.enableHint')} checked={c.enabled} onChange={(v) => set({ enabled: v })} />
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-ink-2">{t('firewall.trusted.networks')}</span>
+          {c.networks.length === 0 && <p className="text-sm text-subtle">{t('firewall.trusted.none')}</p>}
+          {c.networks.map((n, i) => (
+            <div key={i} className="grid items-end gap-2 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_auto]">
+              <Input label={t('firewall.trusted.cidr')} className="font-mono" placeholder="192.168.1.0/24" value={n.cidr} onChange={(e) => setNet(i, 'cidr', e.target.value)} />
+              <Input label={t('firewall.trusted.description')} placeholder={t('firewall.trusted.descriptionPlaceholder')} maxLength={80} value={n.description} onChange={(e) => setNet(i, 'description', e.target.value)} />
+              <Button variant="ghost" aria-label={t('common.remove')} onClick={() => set({ networks: c.networks.filter((_, j) => j !== i) })}><Trash2 className="size-4" aria-hidden /></Button>
+            </div>
+          ))}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" onClick={() => set({ networks: [...c.networks, { cidr: '', description: '' }] })}><Plus className="size-4" aria-hidden />{t('firewall.trusted.add')}</Button>
+            {!d.clientNetwork && !c.networks.some((n) => n.cidr === d.clientIp || n.cidr === `${d.clientIp}/32` || n.cidr === `${d.clientIp}/128`) && (
+              <Button variant="ghost" onClick={() => set({ networks: [...c.networks, { cidr: d.clientIp, description: '' }] })}><Plus className="size-4" aria-hidden />{t('firewall.trusted.addMine', { ip: d.clientIp })}</Button>
+            )}
+          </div>
+          <p className="text-xs text-subtle">{d.clientNetwork ? t('firewall.trusted.youInside', { ip: d.clientIp, net: d.clientNetwork }) : t('firewall.trusted.youOutside', { ip: d.clientIp })}</p>
+        </div>
+        {broad && <Alert>{t('firewall.trusted.tooBroad')}</Alert>}
+        {d.public.length > 0 && <Alert tone="warn">{t('firewall.trusted.publicWarn', { nets: d.public.join(', ') })}</Alert>}
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-ink-2">{t('firewall.trusted.roles')}</span>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {allRoles.map((r) => (
+              <Toggle key={r} label={t(`roles.${r}`)} hint={r === 'superadmin' ? t('firewall.trusted.superadminHint') : undefined} checked={c.roles.includes(r)} onChange={(v) => toggleRole(r, v)} />
+            ))}
+          </div>
+        </div>
+        <p className="text-xs text-subtle">{t('firewall.trusted.notes')}</p>
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          {saved && <span className="text-sm text-ok">{t('firewall.trusted.saved')}</span>}
+          <Button busy={busy} onClick={save}>{t('common.save')}</Button>
         </div>
       </div>
     </Card>

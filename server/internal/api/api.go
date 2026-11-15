@@ -165,6 +165,8 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("POST /api/system/updates/apply", admin(s.applyUpdate))
 	mux.Handle("GET /api/system/updates/status", admin(s.updateStatus))
 	mux.Handle("GET /api/system/audit", admin(s.auditLog))
+	mux.Handle("GET /api/firewall/trusted", admin(s.trustedGet))
+	mux.Handle("PUT /api/firewall/trusted", admin(s.trustedSave))
 	mux.Handle("GET /api/system/proxy", admin(s.proxyGet))
 	mux.Handle("PUT /api/system/proxy", admin(s.proxySave))
 	mux.Handle("GET /api/system/hostnames", admin(s.hostnamesGet))
@@ -261,6 +263,17 @@ func (s *Server) signedIn(next http.Handler, needMFA bool) http.Handler {
 			s.clearCookie(w, r)
 			writeErr(w, http.StatusUnauthorized, "not_signed_in")
 			return
+		}
+		// A session that skipped MFA on a trusted network keeps that only while it stays there (and
+		// while the setting allows it): elsewhere it has to enter its code first.
+		if sess.Method == auth.MethodTrusted && sess.MFAPassed {
+			if _, ok := trustedNetworkFor(clientIP(r), sess.User.Role); !ok {
+				if err := s.Auth.RequireMFA(r.Context(), sess); err != nil {
+					writeErr(w, http.StatusInternalServerError, "internal")
+					return
+				}
+				store.Audit(r.Context(), s.DB, sess.User.ID, "session.mfa_required", "left trusted network", clientIP(r))
+			}
 		}
 		if needMFA && !sess.MFAPassed {
 			writeErr(w, http.StatusUnauthorized, "mfa_required")
@@ -483,14 +496,30 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	mfaRequired := u.TOTPEnabled
-	token, err := s.Auth.CreateSession(r.Context(), u, !mfaRequired)
+	method := "password"
+	// From a trusted network (office LAN, VPN) the second factor may be skipped for some roles.
+	tnet, trustedNet := TrustedNetwork{}, false
+	if mfaRequired {
+		if tnet, trustedNet = trustedNetworkFor(ip, u.Role); trustedNet {
+			mfaRequired, method = false, auth.MethodTrusted
+		}
+	}
+	token, err := s.Auth.CreateSessionMethod(r.Context(), u, !mfaRequired, method)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "internal")
 		return
 	}
 	if !mfaRequired {
 		s.loginLimit.Reset(ip)
-		store.Audit(r.Context(), s.DB, u.ID, "login.success", "", ip)
+		if trustedNet {
+			detail := "mfa skipped: trusted network " + tnet.CIDR
+			if tnet.Description != "" {
+				detail += " (" + tnet.Description + ")"
+			}
+			store.Audit(r.Context(), s.DB, u.ID, "login.mfa_skipped", detail, ip)
+		} else {
+			store.Audit(r.Context(), s.DB, u.ID, "login.success", "", ip)
+		}
 	}
 	s.setCookie(w, r, token)
 	writeJSON(w, http.StatusOK, map[string]any{"mfaRequired": mfaRequired})

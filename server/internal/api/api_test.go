@@ -22,6 +22,7 @@ type client struct {
 	t   *testing.T
 	url string
 	hc  *http.Client
+	hdr map[string]string
 }
 
 func (c *client) do(method, path string, body any) (int, map[string]any) {
@@ -34,6 +35,9 @@ func (c *client) do(method, path string, body any) (int, map[string]any) {
 	req, _ := http.NewRequest(method, c.url+path, rd)
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
+	}
+	for k, v := range c.hdr {
+		req.Header.Set(k, v)
 	}
 	resp, err := c.hc.Do(req)
 	if err != nil {

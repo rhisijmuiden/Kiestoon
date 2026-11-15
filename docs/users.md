@@ -39,6 +39,8 @@ manager.
 
 A passkey, or single sign-on with **Trust the provider's MFA**, counts as the second factor as well.
 
+From a [trusted network](firewall.md#trusted-networks-skip-mfa), such as the office LAN, the MFA step can be skipped for the roles you choose.
+
 ## Passkeys
 
 Under **My account › Passkeys** everybody can add a passkey: sign in with a fingerprint, face or device PIN

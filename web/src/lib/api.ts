@@ -19,6 +19,8 @@ export async function api<T = unknown>(method: string, path: string, body?: unkn
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
     const d = data as { error?: string; field?: string; message?: string }
+    // A session that skipped MFA on a trusted network and is now used elsewhere must enter its code.
+    if (res.status === 401 && d.error === 'mfa_required' && typeof window !== 'undefined') window.dispatchEvent(new Event('kiestoon:mfa-required'))
     throw new ApiError(res.status, d.error ?? 'internal', d.field, d.message)
   }
   return data as T

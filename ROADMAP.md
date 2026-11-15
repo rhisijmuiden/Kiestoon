@@ -269,6 +269,10 @@ Notes on phase 5:
   transfers (also drag and drop), voicemail, recordings and who hung up. Built from Asterisk CEL over AMI, dial and
   queue events and dialplan markers, stored per linkedid; retention setting under Call features (default 90 days,
   0 = off). Older calls get a short version from the call record.
+- [x] Trusted networks (`v0.6.0-rc.17`): on the Firewall page, IP ranges (IPv4/IPv6 CIDR with a description) from
+  which password sign-ins skip the MFA step, per role (super admins off by default). Off by default, every skip in
+  the audit log, the session loses the skip when it is used from outside the network, X-Forwarded-For only from
+  trusted proxies, ranges wider than /8 refused and a warning for public ranges. SSO and API tokens are not affected.
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

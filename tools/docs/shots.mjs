@@ -50,6 +50,7 @@ export const shots = [
   { name: 'sso', path: '/sso', full: true },
   { name: 'features', path: '/features', full: true },
   { name: 'firewall', path: '/firewall', full: true },
+  { name: 'trusted-networks', path: '/firewall', selector: 'section.card:has(h2:has-text("Trusted networks")), section.card:has(h2:has-text("Vertrouwde netwerken"))' },
   { name: 'internet', path: '/internet', full: true },
   { name: 'integrations', path: '/integrations', full: true },
   { name: 'speech', path: '/speech', full: true },

@@ -28,6 +28,10 @@ const DesktopTTL = 30 * 24 * time.Hour
 // MethodDesktop marks a session of the Windows softphone. It may only use the user portal API.
 const MethodDesktop = "desktop"
 
+// MethodTrusted marks a password session that skipped the second factor because it signed in from a
+// trusted network. It loses that status as soon as it is used from elsewhere.
+const MethodTrusted = "trusted-network"
+
 // Issuer is the name shown in authenticator apps.
 const Issuer = "Kiestoon"
 
@@ -288,6 +292,14 @@ func (s *Service) SessionFromToken(ctx context.Context, token string) (*Session,
 func (s *Service) MarkMFAPassed(ctx context.Context, sess *Session) error {
 	_, err := s.DB.ExecContext(ctx, `UPDATE sessions SET mfa_passed = 1 WHERE token_hash = ?`, sess.tokenHash)
 	sess.MFAPassed = true
+	return err
+}
+
+// RequireMFA takes a skipped second factor back: the session must pass MFA before it continues.
+func (s *Service) RequireMFA(ctx context.Context, sess *Session) error {
+	_, err := s.DB.ExecContext(ctx, `UPDATE sessions SET mfa_passed = 0, method = 'password' WHERE token_hash = ?`, sess.tokenHash)
+	sess.MFAPassed = false
+	sess.Method = "password"
 	return err
 }
 

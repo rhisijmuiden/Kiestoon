@@ -1,3 +1,5 @@
+import type { Role } from './api'
+
 export type Extension = {
   id: number
   number: string
@@ -104,6 +106,10 @@ export type MailSettings = {
   refreshToken?: string; refreshTokenSet: boolean; skipVerify: boolean; notifyAddress: string
 }
 export type MailLog = { id: number; at: string; recipient: string; subject: string; kind: string; ok: boolean; error: string }
+
+export type TrustedNetwork = { cidr: string; description: string }
+export type TrustedNetworks = { enabled: boolean; networks: TrustedNetwork[]; roles: Role[] }
+export type TrustedNetworksData = { settings: TrustedNetworks; clientIp: string; public: string[]; clientNetwork: string }
 
 export type FirewallConfig = {
   enabled: boolean; sipWhitelist: string[]; allowPrivateSip: boolean; sipOpen: boolean; adminNetworks: string[]

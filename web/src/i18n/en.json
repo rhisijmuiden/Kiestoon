@@ -140,6 +140,7 @@
     "password_mismatch": "The passwords do not match.",
     "no_email": "This extension has no e-mail address.",
     "user_disabled": "This account is disabled.",
+    "network_too_broad": "That IP range is too broad. Use /8 or smaller.",
     "on_portal_host": "You are working on the employee portal address. Open the PBX address to switch this on, otherwise you lock yourself out."
   },
   "setup": {
@@ -508,6 +509,9 @@
     "rules": "Rules",
     "fallback": "Fallback",
     "flow": "Menu",
+    "networks": "Networks",
+    "description": "Description",
+    "roles": "Roles",
     "portalUrl": "Employee portal address",
     "portalDomain": "Employee portal host name"
   },
@@ -654,7 +658,7 @@
           "Save. Within a minute the status changes to Registered.",
           "Inbound routes: add a route for each Voys number. Voys sends the number as +31201234567; Kiestoon also recognises 0201234567.",
           "Outbound routes: add a route with the Dutch numbers preset and pick the Voys trunk.",
-          "Is Kiestoon behind NAT? Fill in the public address under Settings → Network and NAT and forward the SIP port and RTP ports to the server. The Voys IP ranges are allowed in the firewall automatically."
+          "Is Kiestoon behind NAT? Fill in the public address on the Internet access page (reverse proxy) → Network and NAT and forward the SIP port and RTP ports to the server. The Voys IP ranges are allowed in the firewall automatically."
         ],
         "troubleshootTitle": "If it does not work",
         "troubleshoot": [
@@ -853,6 +857,29 @@
       "dataFrom": "Country data of {{date}}",
       "noData": "No country data yet",
       "update": "Update country data"
+    },
+    "trusted": {
+      "title": "Trusted networks",
+      "on": "On",
+      "off": "Off",
+      "intro": "People who sign in with their password from one of these networks (for example the office LAN or the company VPN) skip the MFA step. Outside these networks the code is asked as usual, and a session that leaves the network has to enter its code before it can continue. Single sign-on and API tokens are not affected.",
+      "enable": "Skip MFA on trusted networks",
+      "enableHint": "Off by default. Every skipped MFA step is written to the audit log.",
+      "networks": "Networks",
+      "none": "No networks yet.",
+      "cidr": "IP range (CIDR)",
+      "description": "Description",
+      "descriptionPlaceholder": "Office LAN, VPN…",
+      "add": "Add network",
+      "addMine": "Add my address ({{ip}})",
+      "youInside": "Your address {{ip}} is inside the trusted network {{net}}.",
+      "youOutside": "Your address is {{ip}}; it is not in a trusted network.",
+      "tooBroad": "Ranges wider than /8 (such as 0.0.0.0/0 or ::/0) are refused: that would switch MFA off for the whole internet.",
+      "publicWarn": "{{nets}} contains internet (public) addresses. Only add a public range when it is the fixed address of your own office, never a range of a provider or a cloud.",
+      "roles": "Roles that may skip MFA",
+      "superadminHint": "Recommended: leave off, so super admins always use MFA.",
+      "notes": "The address is the one the portal sees. Behind a reverse proxy, X-Forwarded-For is only believed from Caddy on this machine or from the trusted proxies on the Internet access page (reverse proxy).",
+      "saved": "Saved"
     }
   },
   "mail": {
@@ -1025,7 +1052,7 @@
         "sharepoint-ntlm": "SharePoint (NTLM)",
         "other": "Other WebDAV server"
       },
-      "hint": "For Nextcloud, create an app password under Settings > Security and use it here.",
+      "hint": "For Nextcloud, create an app password on the Internet access page (reverse proxy) > Security and use it here.",
       "pathHint": "The path after the host, such as remote.php/dav/files/USER/kiestoon for Nextcloud."
     },
     "smb": {

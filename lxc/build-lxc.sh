@@ -1,7 +1,7 @@
 #!/bin/bash
 # Builds a Proxmox LXC template (Debian 13 + Kiestoon) from a Kiestoon .deb.
 #
-#   sudo ./lxc/build-lxc.sh dist/kiestoon_0.1.0_amd64.deb dist/
+#   sudo ./lxc/build-lxc.sh dist/kiestoon_0.1.0_amd64.deb dist/ [dist/kiestoon-asterisk_22.x_amd64.deb]
 #
 # Result: dist/kiestoon-<version>-debian-13-<arch>.tar.zst
 # Upload it to Proxmox (Datacenter > storage > CT Templates > Upload) and create a container from it.
@@ -10,6 +10,8 @@ set -euo pipefail
 
 DEB="$(readlink -f "${1:?usage: build-lxc.sh <kiestoon.deb> <output-dir>}")"
 OUT="$(readlink -f "${2:?usage: build-lxc.sh <kiestoon.deb> <output-dir>}")"
+AST_DEB="${3:-}"
+[ -n "$AST_DEB" ] && AST_DEB="$(readlink -f "$AST_DEB")"
 MIRROR="${MIRROR:-http://deb.debian.org/debian}"
 [ "$(id -u)" = "0" ] || { echo "run as root" >&2; exit 1; }
 command -v debootstrap >/dev/null || { echo "install debootstrap first" >&2; exit 1; }
@@ -55,8 +57,13 @@ echo Europe/Amsterdam >"$ROOT/etc/timezone"
 
 echo "==> installing Kiestoon $VERSION"
 cp "$DEB" "$ROOT/tmp/kiestoon.deb"
-chroot "$ROOT" env DEBIAN_FRONTEND=noninteractive apt-get install -y /tmp/kiestoon.deb
-rm -f "$ROOT/tmp/kiestoon.deb"
+PKGS=(/tmp/kiestoon.deb)
+if [ -n "$AST_DEB" ]; then
+  cp "$AST_DEB" "$ROOT/tmp/kiestoon-asterisk.deb"
+  PKGS+=(/tmp/kiestoon-asterisk.deb)
+fi
+chroot "$ROOT" env DEBIAN_FRONTEND=noninteractive apt-get install -y "${PKGS[@]}"
+rm -f "$ROOT"/tmp/kiestoon*.deb
 
 # Every container gets its own SSH host keys and machine id on first boot.
 rm -f "$ROOT"/etc/ssh/ssh_host_*

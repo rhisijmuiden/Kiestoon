@@ -20,6 +20,12 @@ depends:
   - curl
   - jq
   - zstd
+  - kiestoon-asterisk (>= 22)
+  - nftables
+  - fail2ban
+  - python3-systemd
+  - restic
+  - rclone
 
 contents:
   - src: ./build/kiestoon
@@ -30,6 +36,17 @@ contents:
     file_info: { mode: 0755 }
   - src: ./packaging/systemd/kiestoon.service
     dst: /usr/lib/systemd/system/kiestoon.service
+  - src: ./packaging/systemd/kiestoon-helper.service
+    dst: /usr/lib/systemd/system/kiestoon-helper.service
+  - src: ./packaging/fix-permissions
+    dst: /usr/lib/kiestoon/fix-permissions
+    file_info: { mode: 0755 }
+  - src: ./packaging/fail2ban/kiestoon-portal.conf
+    dst: /etc/fail2ban/filter.d/kiestoon-portal.conf
+  - src: ./packaging/logrotate-asterisk
+    dst: /etc/logrotate.d/kiestoon-asterisk
+  - src: ./packaging/asterisk-config/*.conf
+    dst: /etc/asterisk/
   - src: ./packaging/systemd/kiestoon-updater.path
     dst: /usr/lib/systemd/system/kiestoon-updater.path
   - src: ./packaging/systemd/kiestoon-updater.service

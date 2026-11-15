@@ -5,7 +5,8 @@
 Open source, lightweight single-tenant VoIP phone system (PBX) for Debian 13, with a modern web portal.
 English by default, fully translated into Dutch. Powered by RHIS.
 
-> Status: **phase 0, foundation** (v0.1). Calling arrives in phase 1. See the [roadmap](ROADMAP.md).
+> Status: **phase 1, core PBX** (v0.2, testing channel): extensions, trunks, routes, 112, voicemail to e-mail,
+> SMTP, call history, firewall, fail2ban, phone provisioning and backups. See the [roadmap](ROADMAP.md).
 
 ## Install
 
@@ -24,10 +25,21 @@ curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/kiestoon/main/install.
 curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/kiestoon/main/install.sh | sudo bash -s -- --channel testing
 ```
 
-Open `http://<server>:8080`, enter the setup token and create the first administrator.
+Open `http://<server>:8080` (or `https://<server>:8443` with a self-signed certificate), enter the setup token and create the first administrator.
 Administrators must set up two-factor authentication (TOTP) on first sign-in.
 
 Show the setup token again with `sudo kiestoon setup-token`.
+
+## Ports
+
+| Port | What |
+| --- | --- |
+| 8080/tcp, 8443/tcp | Portal (HTTP, HTTPS) and phone provisioning (`/prov/`) |
+| 5060/udp+tcp, 5061/tcp | SIP, SIP over TLS |
+| 10000-20000/udp | Audio (RTP) |
+
+The firewall page in the portal opens exactly these, with a SIP whitelist and a safe mode that undoes a change
+if you lose access.
 
 ## Updates and channels
 
@@ -47,7 +59,7 @@ check for updates and install one. The updater makes a backup of `/var/lib/kiest
 | `server/` | Go backend: API, auth, SQLite store, updater client. Single binary with the UI embedded |
 | `web/` | React + TypeScript + Tailwind portal, translations in `web/src/i18n/` |
 | `branding/` | House style: tokens, logos, usage rules |
-| `packaging/` | `.deb` (nfpm), systemd units, updater script |
+| `packaging/` | `.deb` (nfpm), systemd units, updater script, Asterisk build (`packaging/asterisk/`) |
 | `lxc/` | Proxmox LXC template build |
 | `install.sh` | Installer for Debian 13 |
 
@@ -56,7 +68,8 @@ On an installed system:
 | Path | What |
 | --- | --- |
 | `/etc/kiestoon/kiestoon.env` | Settings (port, data dir, default channel) |
-| `/var/lib/kiestoon/` | All state: database and files |
+| `/var/lib/kiestoon/` | All state: database, generated Asterisk config (`pbx/`), voicemail, mail queue |
+| `/etc/asterisk/` | Static Asterisk config that includes the generated files. Do not edit by hand |
 | `/var/lib/kiestoon-backups/` | Automatic pre-update backups |
 
 ## Development

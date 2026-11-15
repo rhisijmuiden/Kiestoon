@@ -14,10 +14,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/rhisijmuiden/kiestoon/server/internal/asterisk"
 	"github.com/rhisijmuiden/kiestoon/server/internal/auth"
+	"github.com/rhisijmuiden/kiestoon/server/internal/cdr"
 	"github.com/rhisijmuiden/kiestoon/server/internal/config"
+	"github.com/rhisijmuiden/kiestoon/server/internal/helper"
+	"github.com/rhisijmuiden/kiestoon/server/internal/mail"
+	"github.com/rhisijmuiden/kiestoon/server/internal/pbx"
 	"github.com/rhisijmuiden/kiestoon/server/internal/store"
 	"github.com/rhisijmuiden/kiestoon/server/internal/updates"
 	"github.com/rhisijmuiden/kiestoon/server/internal/version"
@@ -33,22 +39,46 @@ type Server struct {
 	Auth    *auth.Service
 	Updates *updates.Checker
 	Log     *slog.Logger
+	PBX     *pbx.Repo
+	Ast     *asterisk.Manager
+	AMI     *asterisk.AMI
+	Live    *asterisk.LiveCache
+	CDR     *cdr.Store
+	Mail    *mail.Service
+	Helper  *helper.Client
 	// loginLimit counts failed password and MFA attempts per IP.
 	loginLimit *auth.Limiter
-	started    time.Time
+	// provLimit counts failed provisioning requests per IP.
+	provLimit *auth.Limiter
+	started   time.Time
+	backupMu  sync.Mutex
 }
 
 // New wires up a server.
 func New(cfg config.Config, db *sql.DB, log *slog.Logger) *Server {
-	return &Server{
+	s := &Server{
 		Cfg:        cfg,
 		DB:         db,
 		Auth:       auth.New(db),
 		Updates:    updates.NewChecker(cfg.Repo, cfg.DataDir),
 		Log:        log,
+		PBX:        &pbx.Repo{DB: db},
+		CDR:        &cdr.Store{DB: db},
+		Mail:       &mail.Service{DB: db, QueueDir: mail.QueueDir(cfg.DataDir)},
+		Helper:     &helper.Client{Socket: cfg.HelperSocket},
 		loginLimit: auth.NewLimiter(5, 10*time.Minute),
+		provLimit:  auth.NewLimiter(20, 10*time.Minute),
 		started:    time.Now(),
 	}
+	secret, _ := store.GetSetting(context.Background(), db, "ami_secret", "")
+	if secret == "" {
+		secret = pbx.GenerateSecret(32)
+		_ = store.SetSetting(context.Background(), db, "ami_secret", secret)
+	}
+	s.AMI = &asterisk.AMI{Addr: cfg.AMIAddr, User: "kiestoon", Secret: secret, Log: log, OnEvent: s.onAMIEvent}
+	s.Live = &asterisk.LiveCache{AMI: s.AMI}
+	s.Ast = &asterisk.Manager{Dir: cfg.PBXDir(), Repo: s.PBX, AMI: s.AMI, Log: log, Options: s.asteriskOptions}
+	return s
 }
 
 type ctxKey struct{}
@@ -89,6 +119,9 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("POST /api/system/updates/apply", admin(s.applyUpdate))
 	mux.Handle("GET /api/system/updates/status", admin(s.updateStatus))
 	mux.Handle("GET /api/system/audit", admin(s.auditLog))
+
+	s.pbxRoutes(mux, admin)
+	s.systemRoutes(mux, admin)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)
@@ -300,6 +333,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	u, err := s.Auth.CheckPassword(r.Context(), req.Username, req.Password)
 	if err != nil {
 		s.loginLimit.Fail(ip)
+		s.Log.Warn("login failed", "ip", ip)
 		store.Audit(r.Context(), s.DB, 0, "login.failed", req.Username, ip)
 		writeErr(w, http.StatusUnauthorized, "invalid_credentials")
 		return
@@ -334,6 +368,7 @@ func (s *Server) verifyMFA(w http.ResponseWriter, r *http.Request) {
 	sess := sessionFrom(r)
 	if err := s.Auth.VerifySecondFactor(r.Context(), sess.User, req.Code); err != nil {
 		s.loginLimit.Fail(ip)
+		s.Log.Warn("mfa failed", "ip", ip)
 		store.Audit(r.Context(), s.DB, sess.User.ID, "mfa.failed", "", ip)
 		writeErr(w, http.StatusUnauthorized, "invalid_code")
 		return

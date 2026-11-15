@@ -4,6 +4,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -51,6 +52,138 @@ var migrations = []string{
 	);`,
 	// 2: remember the last accepted TOTP time step so a code cannot be used twice.
 	`ALTER TABLE users ADD COLUMN totp_last_step INTEGER NOT NULL DEFAULT 0;`,
+	// 3: phase 1, the phone system. Settings such as the number plan, mail, firewall and backup
+	// schedule are JSON documents in the settings table; everything with rows gets its own table.
+	`CREATE TABLE extensions (
+		id               INTEGER PRIMARY KEY AUTOINCREMENT,
+		number           TEXT NOT NULL UNIQUE,
+		name             TEXT NOT NULL,
+		email            TEXT NOT NULL DEFAULT '',
+		sip_secret       TEXT NOT NULL,
+		transport        TEXT NOT NULL DEFAULT 'udp' CHECK (transport IN ('udp','tcp','tls')),
+		srtp             INTEGER NOT NULL DEFAULT 0,
+		max_contacts     INTEGER NOT NULL DEFAULT 3,
+		outbound_cid     TEXT NOT NULL DEFAULT '',
+		ring_seconds     INTEGER NOT NULL DEFAULT 25,
+		voicemail        INTEGER NOT NULL DEFAULT 1,
+		voicemail_pin    TEXT NOT NULL DEFAULT '',
+		voicemail_email  INTEGER NOT NULL DEFAULT 1,
+		voicemail_delete INTEGER NOT NULL DEFAULT 0,
+		enabled          INTEGER NOT NULL DEFAULT 1,
+		created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+	CREATE TABLE trunks (
+		id            INTEGER PRIMARY KEY AUTOINCREMENT,
+		name          TEXT NOT NULL UNIQUE COLLATE NOCASE,
+		provider      TEXT NOT NULL DEFAULT 'generic',
+		auth_mode     TEXT NOT NULL DEFAULT 'register' CHECK (auth_mode IN ('register','ip')),
+		host          TEXT NOT NULL,
+		port          INTEGER NOT NULL DEFAULT 5060,
+		transport     TEXT NOT NULL DEFAULT 'udp' CHECK (transport IN ('udp','tcp','tls')),
+		username      TEXT NOT NULL DEFAULT '',
+		auth_username TEXT NOT NULL DEFAULT '',
+		secret        TEXT NOT NULL DEFAULT '',
+		from_domain   TEXT NOT NULL DEFAULT '',
+		from_user     TEXT NOT NULL DEFAULT '',
+		match_ips     TEXT NOT NULL DEFAULT '',
+		did_source    TEXT NOT NULL DEFAULT 'ruri' CHECK (did_source IN ('ruri','to')),
+		codecs        TEXT NOT NULL DEFAULT 'alaw,ulaw,g722',
+		max_channels  INTEGER NOT NULL DEFAULT 0,
+		caller_id     TEXT NOT NULL DEFAULT '',
+		srtp          INTEGER NOT NULL DEFAULT 0,
+		enabled       INTEGER NOT NULL DEFAULT 1,
+		created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+	CREATE TABLE inbound_routes (
+		id               INTEGER PRIMARY KEY AUTOINCREMENT,
+		name             TEXT NOT NULL,
+		did              TEXT NOT NULL UNIQUE,
+		destination_type TEXT NOT NULL CHECK (destination_type IN ('extension','voicemail','hangup')),
+		destination      TEXT NOT NULL DEFAULT '',
+		cid_prefix       TEXT NOT NULL DEFAULT '',
+		enabled          INTEGER NOT NULL DEFAULT 1
+	);
+	CREATE TABLE outbound_routes (
+		id        INTEGER PRIMARY KEY AUTOINCREMENT,
+		name      TEXT NOT NULL,
+		position  INTEGER NOT NULL DEFAULT 0,
+		patterns  TEXT NOT NULL DEFAULT '[]',
+		trunk_ids TEXT NOT NULL DEFAULT '[]',
+		caller_id TEXT NOT NULL DEFAULT '',
+		enabled   INTEGER NOT NULL DEFAULT 1
+	);
+	CREATE TABLE phones (
+		id           INTEGER PRIMARY KEY AUTOINCREMENT,
+		mac          TEXT NOT NULL UNIQUE,
+		vendor       TEXT NOT NULL CHECK (vendor IN ('yealink','snom','grandstream')),
+		model        TEXT NOT NULL,
+		extension_id INTEGER REFERENCES extensions(id) ON DELETE SET NULL,
+		label        TEXT NOT NULL DEFAULT '',
+		keys         TEXT NOT NULL DEFAULT '[]',
+		last_seen_at TEXT NOT NULL DEFAULT '',
+		last_ip      TEXT NOT NULL DEFAULT '',
+		user_agent   TEXT NOT NULL DEFAULT '',
+		created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+	CREATE TABLE cdr (
+		id           INTEGER PRIMARY KEY AUTOINCREMENT,
+		uniqueid     TEXT NOT NULL,
+		linkedid     TEXT NOT NULL DEFAULT '',
+		start_at     TEXT NOT NULL,
+		answer_at    TEXT NOT NULL DEFAULT '',
+		end_at       TEXT NOT NULL DEFAULT '',
+		duration     INTEGER NOT NULL DEFAULT 0,
+		billsec      INTEGER NOT NULL DEFAULT 0,
+		src          TEXT NOT NULL DEFAULT '',
+		dst          TEXT NOT NULL DEFAULT '',
+		clid         TEXT NOT NULL DEFAULT '',
+		src_channel  TEXT NOT NULL DEFAULT '',
+		dst_channel  TEXT NOT NULL DEFAULT '',
+		dcontext     TEXT NOT NULL DEFAULT '',
+		last_app     TEXT NOT NULL DEFAULT '',
+		disposition  TEXT NOT NULL DEFAULT '',
+		direction    TEXT NOT NULL DEFAULT 'internal',
+		trunk        TEXT NOT NULL DEFAULT ''
+	);
+	CREATE INDEX cdr_start ON cdr(start_at);
+	CREATE INDEX cdr_linked ON cdr(linkedid);
+	CREATE TABLE mail_log (
+		id        INTEGER PRIMARY KEY AUTOINCREMENT,
+		at        TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		recipient TEXT NOT NULL,
+		subject   TEXT NOT NULL DEFAULT '',
+		kind      TEXT NOT NULL DEFAULT '',
+		ok        INTEGER NOT NULL,
+		error     TEXT NOT NULL DEFAULT ''
+	);
+	CREATE TABLE backup_targets (
+		id            INTEGER PRIMARY KEY AUTOINCREMENT,
+		name          TEXT NOT NULL,
+		kind          TEXT NOT NULL CHECK (kind IN ('ftp','ftps','sftp','scp')),
+		host          TEXT NOT NULL,
+		port          INTEGER NOT NULL DEFAULT 0,
+		username      TEXT NOT NULL DEFAULT '',
+		password      TEXT NOT NULL DEFAULT '',
+		private_key   TEXT NOT NULL DEFAULT '',
+		path          TEXT NOT NULL DEFAULT '',
+		implicit_tls  INTEGER NOT NULL DEFAULT 0,
+		repo_password TEXT NOT NULL,
+		enabled       INTEGER NOT NULL DEFAULT 1,
+		created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+	CREATE TABLE backup_runs (
+		id          INTEGER PRIMARY KEY AUTOINCREMENT,
+		target_id   INTEGER REFERENCES backup_targets(id) ON DELETE CASCADE,
+		kind        TEXT NOT NULL,
+		trigger     TEXT NOT NULL DEFAULT 'manual',
+		started_at  TEXT NOT NULL,
+		finished_at TEXT NOT NULL DEFAULT '',
+		state       TEXT NOT NULL DEFAULT 'running',
+		message     TEXT NOT NULL DEFAULT '',
+		snapshot_id TEXT NOT NULL DEFAULT '',
+		bytes_added INTEGER NOT NULL DEFAULT 0,
+		files       INTEGER NOT NULL DEFAULT 0
+	);`,
 }
 
 // Open opens (and creates if needed) the database at path and migrates it to the latest schema.
@@ -122,4 +255,22 @@ func Audit(ctx context.Context, db *sql.DB, userID int64, action, detail, ip str
 		uid = userID
 	}
 	_, _ = db.ExecContext(ctx, `INSERT INTO audit_log(user_id, action, detail, ip) VALUES(?, ?, ?, ?)`, uid, action, detail, ip)
+}
+
+// GetJSON loads a JSON setting into v. A missing setting leaves v unchanged, so callers pass defaults.
+func GetJSON(ctx context.Context, db *sql.DB, key string, v any) error {
+	raw, err := GetSetting(ctx, db, key, "")
+	if err != nil || raw == "" {
+		return err
+	}
+	return json.Unmarshal([]byte(raw), v)
+}
+
+// SetJSON stores v as a JSON setting.
+func SetJSON(ctx context.Context, db *sql.DB, key string, v any) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	return SetSetting(ctx, db, key, string(b))
 }

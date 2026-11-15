@@ -5,6 +5,14 @@ import { Layout } from './components/Layout'
 import { allItems } from './components/nav'
 import { Account } from './pages/Account'
 import { Audit } from './pages/Audit'
+import { Backups } from './pages/Backups'
+import { Extensions } from './pages/Extensions'
+import { Firewall } from './pages/Firewall'
+import { History } from './pages/History'
+import { Mail } from './pages/Mail'
+import { Phones } from './pages/Phones'
+import { Settings } from './pages/Settings'
+import { Trunks } from './pages/Trunks'
 import { ComingSoon } from './pages/ComingSoon'
 import { Dashboard } from './pages/Dashboard'
 import { Login } from './pages/Login'
@@ -40,6 +48,14 @@ export function App() {
         <Route index element={<Dashboard />} />
         <Route path="account" element={<Account />} />
         <Route path="audit" element={<Audit />} />
+        <Route path="backups" element={<Backups />} />
+        <Route path="extensions" element={<Extensions />} />
+        <Route path="firewall" element={<Firewall />} />
+        <Route path="history" element={<History />} />
+        <Route path="mail" element={<Mail />} />
+        <Route path="phones" element={<Phones />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="trunks" element={<Trunks />} />
         {allItems
           .filter((i) => i.phase)
           .map((i) => (

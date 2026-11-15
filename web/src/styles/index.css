@@ -20,7 +20,9 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
+html { color-scheme: dark; }
 html, body, #root { min-height: 100%; }
+select option { background: #0F172A; }
 body {
   margin: 0;
   background: radial-gradient(1200px 500px at 70% -10%, rgb(34 211 238 / 0.10), transparent 60%), var(--color-bg);

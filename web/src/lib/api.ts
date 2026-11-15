@@ -1,5 +1,5 @@
 export class ApiError extends Error {
-  constructor(public status: number, public code: string) {
+  constructor(public status: number, public code: string, public field?: string, public detail?: string) {
     super(code)
   }
 }
@@ -17,7 +17,10 @@ export async function api<T = unknown>(method: string, path: string, body?: unkn
     throw new ApiError(0, 'network')
   }
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new ApiError(res.status, (data as { error?: string }).error ?? 'internal')
+  if (!res.ok) {
+    const d = data as { error?: string; field?: string; message?: string }
+    throw new ApiError(res.status, d.error ?? 'internal', d.field, d.message)
+  }
   return data as T
 }
 

@@ -56,6 +56,20 @@ log "downloading $DEB"
 curl -fsSL --retry 3 --max-time 600 -o "$WORK/$DEB" "$BASE/$DEB" || fail "download of $DEB failed"
 curl -fsSL --retry 3 --max-time 60 -o "$WORK/SHA256SUMS" "$BASE/SHA256SUMS" || fail "download of SHA256SUMS failed"
 (cd "$WORK" && grep -E " [* ]?${DEB}\$" SHA256SUMS | sha256sum -c --status -) || fail "checksum of $DEB does not match"
+PKGS=("$WORK/$DEB")
+
+# The release also carries our Asterisk build. Fetch it when it is newer than the installed one.
+AST_DEB="$(grep -oE "kiestoon-asterisk_[0-9A-Za-z.+~-]+_${ARCH}\.deb" "$WORK/SHA256SUMS" | head -n1 || true)"
+if [ -n "$AST_DEB" ]; then
+  AST_VER="$(echo "$AST_DEB" | sed -E 's/^kiestoon-asterisk_(.*)_[^_]+\.deb$/\1/')"
+  CUR_AST="$(dpkg-query -W -f '${Version}' kiestoon-asterisk 2>/dev/null || true)"
+  if [ "$CUR_AST" != "$AST_VER" ]; then
+    log "downloading $AST_DEB"
+    curl -fsSL --retry 3 --max-time 900 -o "$WORK/$AST_DEB" "$BASE/$AST_DEB" || fail "download of $AST_DEB failed"
+    (cd "$WORK" && grep -E " [* ]?${AST_DEB}\$" SHA256SUMS | sha256sum -c --status -) || fail "checksum of $AST_DEB does not match"
+    PKGS+=("$WORK/$AST_DEB")
+  fi
+fi
 
 log "backing up $DATA_DIR"
 install -d -m 0700 "$BACKUP_DIR"
@@ -68,7 +82,7 @@ ls -1t "$BACKUP_DIR"/pre-update-*.tar.zst 2>/dev/null | tail -n +$((KEEP_BACKUPS
 log "installing $DEB"
 export DEBIAN_FRONTEND=noninteractive
 # --allow-downgrades: switching from testing back to production can mean an older version.
-apt-get install -y --allow-downgrades -o Dpkg::Options::=--force-confold "$WORK/$DEB" || fail "package installation failed (backup: $BACKUP)"
+apt-get install -y --allow-downgrades -o Dpkg::Options::=--force-confold "${PKGS[@]}" || fail "package installation failed (backup: $BACKUP)"
 
 systemctl start kiestoon.service || true
 status success "$VERSION" ""

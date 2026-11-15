@@ -28,22 +28,33 @@ Goal: a clean install on Debian 13 works and the portal can be updated from the 
 
 ## Phase 1 · Core PBX
 
-Goal: the first real phone call.
+Goal: the first real phone call. Released as `v0.2.0-rc.1` on the testing channel.
 
-- [ ] Asterisk 22 LTS built as our own `.deb` in CI, configuration generated from the database
-- [ ] Number plan wizard: 3, 4 or 5 digits, with suggested ranges and a migration tool
-- [ ] Extensions / users, SIP credentials (strong, generated), per-device TLS + SRTP option
-- [ ] SIP trunks (registration and IP authentication) with presets for common Dutch providers
-- [ ] Inbound routes per DID, outbound routes with prefixes and failover
-- [ ] Emergency number 112 always allowed, with the right caller ID
-- [ ] Voicemail with voicemail-to-email (audio attachment)
-- [ ] Custom SMTP mail server: STARTTLS / TLS, username + password or OAuth2 (Microsoft 365, Google), test button
-- [ ] Call detail records (CDR): search, filters, CSV export
-- [ ] Firewall (nftables) managed from the UI: SIP IP whitelist (IPs and CIDR ranges), RTP range, safe mode with automatic rollback
-- [ ] fail2ban for SIP and portal logins, bans visible and removable in the UI
-- [ ] Phone provisioning: Yealink, Snom, Grandstream (HTTPS, DHCP option 66, per-MAC config, visual key layout)
-- [ ] Backups: full and incremental (restic), to FTP, FTPS, SFTP and SCP, with schedules, retention and restore from the remote location
-- [ ] Live dashboard via AMI/ARI: active calls, registered phones, trunk status
+- [x] Asterisk 22 LTS built as our own `.deb` in CI, configuration generated from the database
+- [x] Number plan wizard: 3, 4 or 5 digits, with suggested ranges and a migration tool
+- [x] Extensions / users, SIP credentials (strong, generated), per-device TLS + SRTP option
+- [x] SIP trunks (registration and IP authentication) with presets for common Dutch providers
+- [x] Inbound routes per DID, outbound routes with prefixes and failover
+- [x] Emergency number 112 always allowed, with the right caller ID
+- [x] Voicemail with voicemail-to-email (audio attachment)
+- [x] Custom SMTP mail server: STARTTLS / TLS, username + password or OAuth2 (Microsoft 365, Google), test button
+- [x] Call detail records (CDR): search, filters, CSV export
+- [x] Firewall (nftables) managed from the UI: SIP IP whitelist (IPs and CIDR ranges), RTP range, safe mode with automatic rollback
+- [x] fail2ban for SIP and portal logins, bans visible and removable in the UI
+- [x] Phone provisioning: Yealink, Snom, Grandstream (HTTPS, DHCP option 66, per-MAC config, visual key layout)
+- [x] Backups: full and incremental (restic), to FTP, FTPS, SFTP and SCP, with schedules, retention and restore from the remote location
+- [x] Live dashboard via AMI: active calls, registered phones, trunk status, calls today
+
+Notes on phase 1:
+
+- Asterisk 22.12 is built in CI for amd64 and arm64 as `kiestoon-asterisk` and published with every release.
+  The updater installs both packages.
+- SCP backups use the same SSH connection as SFTP (restic over rclone). Backups are always encrypted;
+  the key per location can be shown in the UI and is needed to restore on a new server.
+- Firewall, fail2ban, backups and restore run through a small root helper (`kiestoon-helper.service`);
+  the portal itself runs unprivileged.
+- Grandstream phones get their accounts now; the visual key layout for Grandstream follows later.
+- Voice prompts are English for now. Dutch prompts follow with the IVR builder in phase 2.
 
 ## Phase 2 · Business features
 

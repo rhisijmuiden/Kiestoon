@@ -1,0 +1,53 @@
+[package]
+name = "kiestoon-softphone"
+version = "0.0.0"
+description = "Kiestoon Softphone for Windows"
+authors = ["RHIS"]
+license = "GPL-3.0-or-later"
+repository = "https://github.com/rhisijmuiden/kiestoon"
+edition = "2021"
+rust-version = "1.80"
+
+[lib]
+name = "kiestoon_softphone_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
+tauri-plugin-deep-link = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-native-roots", "json", "stream"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
+tokio = { version = "1", features = ["net", "time", "fs", "io-util"] }
+futures-util = "0.3"
+sha2 = "0.10"
+hex = "0.4"
+base64 = "0.22"
+x509-parser = "0.16"
+semver = "1"
+url = "2"
+rustls-native-certs = "0.8"
+log = "0.4"
+
+[target.'cfg(windows)'.dependencies]
+hidapi = { version = "2", default-features = false, features = ["windows-native"] }
+# Same versions as Tauri's WebView2 binding (wry), so the COM types match.
+webview2-com = "0.39"
+windows = { version = "0.62", features = ["Win32_Foundation"] }
+windows-core = "0.62"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

@@ -135,6 +135,7 @@ func serve(log *slog.Logger) error {
 	mux := http.NewServeMux()
 	mux.Handle("/api/", srv.Routes())
 	mux.Handle("/prov/", srv.ProvisioningHandler())
+	mux.Handle("/download/", srv.SoftphoneDownload())
 	mux.Handle("GET /metrics", srv.MetricsHandler())
 	mux.Handle("/", web.Handler())
 

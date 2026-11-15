@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Kiestoon Softphone",
+  "mainBinaryName": "Kiestoon",
+  "version": "0.0.0",
+  "identifier": "nl.rhis.kiestoon.softphone",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": {
+      "csp": "default-src 'self' ipc: http://ipc.localhost; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["kiestoon", "tel", "sip", "callto"]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi"],
+    "publisher": "RHIS",
+    "homepage": "https://github.com/rhisijmuiden/kiestoon",
+    "copyright": "RHIS, GPL-3.0-or-later",
+    "category": "Business",
+    "shortDescription": "Kiestoon Softphone",
+    "longDescription": "Softphone for the Kiestoon phone system: call with your headset, see your colleagues, transfer by drag and drop and sign in to queues.",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
+    "windows": {
+      "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true },
+      "wix": {
+        "language": "en-US"
+      }
+    }
+  }
+}

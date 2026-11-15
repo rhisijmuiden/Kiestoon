@@ -37,6 +37,24 @@ type Ctx = {
 
 const SoftphoneContext = createContext<Ctx | null>(null)
 
+/** Audio devices picked in the Windows softphone (empty: the system default). */
+export const audioKeys = { mic: 'kiestoon.audio.mic', speaker: 'kiestoon.audio.speaker', ringer: 'kiestoon.audio.ringer' } as const
+
+export function audioPref(k: keyof typeof audioKeys): string {
+  try {
+    return localStorage.getItem(audioKeys[k]) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+function micConstraints(): MediaStreamConstraints {
+  const id = audioPref('mic')
+  return { audio: id ? { deviceId: { exact: id } } : true, video: false }
+}
+
+type SinkAudio = { setSinkId?: (id: string) => Promise<void> }
+
 function ringer() {
   let ctx: AudioContext | null = null
   let timer = 0
@@ -55,6 +73,8 @@ function ringer() {
     start() {
       try {
         ctx = new AudioContext()
+        const sink = audioPref('ringer')
+        if (sink) (ctx as unknown as SinkAudio).setSinkId?.(sink).catch(() => undefined)
         beep()
         timer = window.setInterval(beep, 3000)
       } catch {
@@ -69,7 +89,11 @@ function ringer() {
   }
 }
 
-export function SoftphoneProvider({ webrtc, children }: { webrtc: boolean; children: ReactNode }) {
+/**
+ * auto: register straight away (the Windows softphone) instead of after the user switched the
+ * browser softphone on. agent is the SIP User-Agent.
+ */
+export function SoftphoneProvider({ webrtc, children, auto, agent = 'Kiestoon Web' }: { webrtc: boolean; children: ReactNode; auto?: boolean; agent?: string }) {
   const [status, setStatus] = useState<PhoneStatus>('off')
   const [call, setCall] = useState<CallState | null>(null)
   const [open, setOpen] = useState(false)
@@ -83,6 +107,8 @@ export function SoftphoneProvider({ webrtc, children }: { webrtc: boolean; child
     const play = (pc: RTCPeerConnection) => {
       pc.addEventListener('track', (ev) => {
         if (audio.current && ev.streams[0]) {
+          const sink = audioPref('speaker')
+          if (sink) (audio.current as unknown as SinkAudio).setSinkId?.(sink).catch(() => undefined)
           audio.current.srcObject = ev.streams[0]
           audio.current.play().catch(() => undefined)
         }
@@ -116,7 +142,7 @@ export function SoftphoneProvider({ webrtc, children }: { webrtc: boolean; child
       const socket = new JsSIP.WebSocketInterface(url)
       const u = new JsSIP.UA({
         sockets: [socket], uri: `sip:${acc.username}@${acc.domain}`, password: acc.password, display_name: acc.name,
-        register: true, session_timers: false, user_agent: 'Kiestoon Web',
+        register: true, session_timers: false, user_agent: agent,
       })
       u.on('registered', () => setStatus('registered'))
       u.on('unregistered', () => setStatus('connecting'))
@@ -141,21 +167,21 @@ export function SoftphoneProvider({ webrtc, children }: { webrtc: boolean; child
     } catch {
       setStatus('failed')
     }
-  }, [attach])
+  }, [attach, agent])
 
   useEffect(() => {
-    let auto = false
+    let on = !!auto
     try {
-      auto = localStorage.getItem('kiestoon.softphone') === 'on'
+      on = on || localStorage.getItem('kiestoon.softphone') === 'on'
     } catch {
       /* ignore */
     }
-    if (webrtc && auto) enable()
+    if (webrtc && on) enable()
     return () => {
       ua.current?.stop()
       ua.current = null
     }
-  }, [webrtc, enable])
+  }, [webrtc, enable, auto])
 
   const remember = () => {
     try {
@@ -170,7 +196,7 @@ export function SoftphoneProvider({ webrtc, children }: { webrtc: boolean; child
     const acc = account.current
     if (!u || !acc || session.current || !n) return
     try {
-      const s = u.call(`sip:${n}@${acc.domain}`, { mediaConstraints: { audio: true, video: false }, pcConfig: { iceServers: [] }, rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false } })
+      const s = u.call(`sip:${n}@${acc.domain}`, { mediaConstraints: micConstraints(), pcConfig: { iceServers: [] }, rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false } })
       session.current = s
       attach(s)
       setCall({ direction: 'outgoing', remote: n, remoteName: '', state: 'calling', muted: false, held: false, startedAt: 0 })
@@ -190,7 +216,7 @@ export function SoftphoneProvider({ webrtc, children }: { webrtc: boolean; child
     dial,
     answer: () => {
       ring.current.stop()
-      session.current?.answer({ mediaConstraints: { audio: true, video: false }, pcConfig: { iceServers: [] } })
+      session.current?.answer({ mediaConstraints: micConstraints(), pcConfig: { iceServers: [] } })
     },
     hangup: () => {
       ring.current.stop()

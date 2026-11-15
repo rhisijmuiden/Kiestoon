@@ -86,6 +86,32 @@ jobs:
           path: dist-speech/*.deb
           retention-days: 3
 
+  softphone:
+    name: Windows softphone (MSI)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+      - name: Unit tests
+        shell: bash
+        run: cd desktop/src-tauri && cargo test --locked
+      - name: Build the MSI
+        shell: bash
+        run: desktop/build-msi.sh "v$(tr -d '[:space:]' < VERSION | sed 's/^v//')" dist-softphone
+      - uses: actions/upload-artifact@v4
+        with:
+          name: softphone-msi
+          path: dist-softphone/*.msi
+          retention-days: 3
+
   test:
     name: Test and build
     runs-on: ubuntu-24.04

@@ -78,6 +78,8 @@ type Server struct {
 	ha       haState
 	extBusy  sync.Mutex
 	sttBusy  sync.Mutex
+	// pairs are the one-time codes that link a Windows softphone.
+	pairs desktopPairs
 }
 
 // New wires up a server.
@@ -116,6 +118,10 @@ func New(cfg config.Config, db *sql.DB, log *slog.Logger) *Server {
 }
 
 type ctxKey struct{}
+
+func contextWithSession(r *http.Request, s *auth.Session) context.Context {
+	return context.WithValue(r.Context(), ctxKey{}, s)
+}
 
 func sessionFrom(r *http.Request) *auth.Session {
 	s, _ := r.Context().Value(ctxKey{}).(*auth.Session)
@@ -174,6 +180,7 @@ func (s *Server) Routes() http.Handler {
 	s.siteRoutes(mux, admin)
 	s.federationRoutes(mux, admin)
 	s.clusterRoutes(mux, admin)
+	s.desktopRoutes(mux, full)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)
@@ -251,6 +258,15 @@ func (s *Server) signedIn(next http.Handler, needMFA bool) http.Handler {
 		if needMFA && !sess.MFAPassed {
 			writeErr(w, http.StatusUnauthorized, "mfa_required")
 			return
+		}
+		if sess.Method == auth.MethodDesktop {
+			if !desktopAllowed(r) {
+				writeErr(w, http.StatusForbidden, "desktop_not_allowed")
+				return
+			}
+			if sess.Renewed {
+				s.setCookieTTL(w, r, c.Value, auth.DesktopTTL)
+			}
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, sess)))
 	})
@@ -336,9 +352,13 @@ func (s *Server) secure(r *http.Request) bool {
 }
 
 func (s *Server) setCookie(w http.ResponseWriter, r *http.Request, token string) {
+	s.setCookieTTL(w, r, token, auth.SessionTTL)
+}
+
+func (s *Server) setCookieTTL(w http.ResponseWriter, r *http.Request, token string, ttl time.Duration) {
 	http.SetCookie(w, &http.Cookie{
 		Name: CookieName, Value: token, Path: "/", HttpOnly: true, Secure: s.secure(r),
-		SameSite: http.SameSiteStrictMode, MaxAge: int(auth.SessionTTL.Seconds()),
+		SameSite: http.SameSiteStrictMode, MaxAge: int(ttl.Seconds()),
 	})
 }
 

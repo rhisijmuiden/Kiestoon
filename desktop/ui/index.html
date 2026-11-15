@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kiestoon</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="page">
+    <img src="mark.png" alt="" width="56" height="56" />
+    <h1 data-t="title"></h1>
+    <p class="muted" data-t="intro"></p>
+
+    <form id="form" autocomplete="off">
+      <label class="label" for="server" data-t="server"></label>
+      <input id="server" type="text" class="mono" placeholder="https://pbx.example.com" spellcheck="false" />
+      <label class="label" for="code" data-t="code"></label>
+      <input id="code" type="text" class="mono" placeholder="ABCD-EFGH" spellcheck="false" maxlength="12" />
+      <p class="subtle" data-t="codeHint" style="margin-top:4px"></p>
+      <div id="error" class="panel err hidden" role="alert"></div>
+      <div id="untrusted" class="panel warn hidden">
+        <b data-t="untrustedTitle"></b>
+        <p class="subtle" style="margin-top:4px" data-t="untrustedText"></p>
+        <div id="fp" class="fp mono"></div>
+        <label class="check"><input id="trust" type="checkbox" /> <span data-t="trust"></span></label>
+      </div>
+      <button id="connect" type="submit" class="btn primary" style="margin-top:16px"><span data-t="connect"></span></button>
+    </form>
+    <div class="or" data-t="or"></div>
+    <button id="browser" type="button" class="btn" data-t="browser"></button>
+    <div style="flex:1;min-height:20px"></div>
+    <footer class="foot">
+      <span id="version"></span>
+      <span class="rhis">Powered by <img src="rhis.svg" alt="RHIS" /></span>
+    </footer>
+  </main>
+  <script src="i18n.js"></script>
+  <script src="setup.js"></script>
+</body>
+</html>

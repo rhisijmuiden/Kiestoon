@@ -234,6 +234,16 @@ Notes on phase 5:
   phone button on Extensions. After a change Kiestoon sends the vendor's SIP NOTIFY (check-sync, resync for Cisco)
   through the account the phone is registered with, so it fetches the new configuration right away; a phone that is
   not registered yet picks it up at its next provisioning check or after a reboot.
+- [ ] Windows softphone (`v0.6.0-rc.9`, Kiestoon Softphone, `desktop/`): a Tauri app around new compact
+  `/desktop` pages of the portal. Colleagues with live presence, phone book and favourites, call history, keypad,
+  voicemail, queue sign-in/out and pause, transfer by dragging the call onto a colleague (direct or ask first),
+  incoming-call popup, tray icon with presence and queues, notifications, USB headset buttons and lights (HID
+  telephony), tel:/sip: links, start with Windows, Info with update check and install (Production/Testing).
+  Linking: "Link this computer" in the portal (pairing link or code), signing in inside the app, or in the browser
+  for SSO; a desktop session lasts 30 days and can only use the user portal API. Self-signed servers are pinned
+  by certificate fingerprint. The MSI is built by CI, attached to the release and served by the portal at
+  `/download/kiestoon-softphone.msi`. Signing needs Azure Trusted Signing secrets. Not yet tested on Windows
+  hardware with real headsets.
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

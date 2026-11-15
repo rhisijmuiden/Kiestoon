@@ -18,7 +18,8 @@ const topics: Record<string, Topic> = {
   '/me/devices': { page: 'portal', en: 'softphone-devices', nl: 'softphone-toestellen' },
   '/phonebook': { page: 'phonebook' },
   '/reception': { page: 'switchboard' },
-  '/wallboard': { page: 'switchboard', en: 'wallboard', nl: 'wallboard' },
+  '/wallboard': { page: 'wallboard' },
+  '/wallboard/settings': { page: 'wallboard', en: 'tv-links', nl: 'tv-links' },
   '/fax': { page: 'fax' },
   '/history': { page: 'history' },
   // A call journey (?call=...) opened from the call history or My calls.

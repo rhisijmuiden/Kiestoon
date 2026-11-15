@@ -181,7 +181,10 @@ export type Queue = {
   options: QueueOptions
 }
 export type CallbackOptions = { enabled: boolean; offerEvery: number; retries: number; retryDelay: number; expire: number; callerId: string }
-export type QueueOptions = { supervision: boolean; callback: CallbackOptions }
+export type SLAOptions = { target: number; norm: number; maxWaiting: number; maxWait: number; maxAbandoned: number }
+export type QueueOptions = { supervision: boolean; callback: CallbackOptions; sla?: SLAOptions }
+export type SLAKind = 'waiting' | 'wait' | 'level' | 'abandoned'
+export type SLAAlert = { queueId: number; queue: string; kind: SLAKind; value: number; limit: number; since: string }
 export type CallbackStatus = 'scheduled' | 'waiting' | 'calling' | 'done' | 'failed' | 'cancelled'
 export type QueueCallback = {
   id: number; queueId: number; number: string; name: string; position: number; status: CallbackStatus; attempts: number
@@ -195,6 +198,36 @@ export type QueueView = Queue & {
     calls: number; longestWait: number; holdtime: number; completed: number; abandoned: number; serviceLevel: number
     callers: QueueCallerLive[] | null; agents: QueueAgentLive[] | null
   }
+  alerts?: SLAAlert[]
+}
+
+export type WallTotals = {
+  offered: number; answered: number; abandoned: number; shortAbandoned: number; left: number; callbacks: number; inTarget: number
+  avgWait: number; avgTalk: number; longestWait: number; serviceLevel: number; abandonedPct: number
+}
+export type WallHour = { answered: number; abandoned: number }
+export type WallCaller = { position: number; number: string; name: string; wait: number; callback: boolean }
+export type WallQueue = {
+  id: number; name: string; number: string; sla: SLAOptions; supervision: boolean; live: boolean; waiting: number; callbacks: number
+  longestWait: number; callers: WallCaller[]; free: number; busy: number; paused: number; today: WallTotals; hours: WallHour[]
+}
+export type WallAgentState = 'free' | 'ringing' | 'call' | 'internal' | 'paused' | 'offline'
+export type WallAgent = {
+  number: string; name: string; state: WallAgentState; since: number; queues: number[]; queue?: number; caller?: string; callsToday: number
+}
+export type WallLayout = 'overview' | 'queue' | 'agents'
+export type WallData = {
+  now: string; live: boolean; queues: WallQueue[]; agents: WallAgent[]; alerts: SLAAlert[]
+  screen?: { name: string; layouts: WallLayout[]; rotate: number; theme: 'dark' | 'light' }
+}
+export type WallScreen = {
+  id: number; name: string; key: string; queues: number[]; layouts: WallLayout[]; rotate: number; theme: 'dark' | 'light'
+  hideNames: boolean; createdAt: string; lastSeen: string
+}
+export type AlertSettings = { screens: boolean; email: boolean; recipients: string[]; quiet: number; timeCondition: number; recovered: boolean }
+export type WallSettings = {
+  screens: WallScreen[]; alerts: AlertSettings; timeConditions: { id: number; name: string }[]
+  queues: { id: number; name: string; number: string; sla: SLAOptions; alerts: SLAKind[] }[]
 }
 
 export type IVROption = { digit: string; destination: Destination }

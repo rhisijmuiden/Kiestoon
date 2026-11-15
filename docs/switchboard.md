@@ -41,10 +41,6 @@ callback, try a failed one again, or add a callback by hand. See [callback from 
 
 ![The queue wallboard](shot:wallboard)
 
-The wallboard shows the queues at a glance for the whole team: waiting now, answered and hung up today, the longest
-wait, the service level, and every agent (free, in a call, paused). Click **Full screen** for a TV on the wall. It
-updates by itself every few seconds.
-
-!!! tip "A dedicated wallboard screen"
-    Make a user with the role *Reception* for the screen, sign in once on the TV browser and open the wallboard in
-    full screen.
+The wallboard shows the queues at a glance for the whole team: who is waiting, today's figures and service level,
+and every agent. Click **Full screen** for a screen on the wall. For a TV, make a TV link instead: it needs no
+sign-in. See [Wallboard and SLA alerts](wallboard.md).

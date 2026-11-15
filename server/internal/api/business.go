@@ -497,6 +497,8 @@ func (s *Server) deleteRecording(w http.ResponseWriter, r *http.Request) {
 type queueView struct {
 	pbx.Queue
 	Live *liveQueue `json:"live"`
+	// Alerts are the SLA thresholds the queue is over now.
+	Alerts []slaAlert `json:"alerts"`
 }
 
 type liveQueue struct {
@@ -519,12 +521,24 @@ func (s *Server) queueViews(ctx context.Context, keep func(pbx.Queue) bool) []qu
 				Abandoned: st.Abandoned, ServiceLvl: st.ServiceLvl, Callers: st.Callers, Agents: st.Members}
 		}
 	}
+	alerts := map[int64][]slaAlert{}
+	if pbx.LoadAlertSettings(ctx, s.DB).Screens {
+		s.wall.mu.Lock()
+		for _, a := range s.activeAlertsLocked() {
+			alerts[a.QueueID] = append(alerts[a.QueueID], a)
+		}
+		s.wall.mu.Unlock()
+	}
 	out := []queueView{}
 	for _, q := range qs {
 		if keep != nil && !keep(q) {
 			continue
 		}
-		out = append(out, queueView{Queue: q, Live: live[q.ID]})
+		v := queueView{Queue: q, Live: live[q.ID], Alerts: alerts[q.ID]}
+		if v.Alerts == nil {
+			v.Alerts = []slaAlert{}
+		}
+		out = append(out, v)
 	}
 	return out
 }

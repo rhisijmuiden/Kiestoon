@@ -547,6 +547,8 @@ type QueueOptions struct {
 	// Supervision lets supervisors (reception, admin) listen, whisper and barge on calls of this queue.
 	Supervision bool            `json:"supervision"`
 	Callback    CallbackOptions `json:"callback"`
+	// SLA are the service level thresholds for the wallboard and the SLA alerts.
+	SLA SLAOptions `json:"sla"`
 }
 
 // CallbackOptions configure the queue callback: a waiting caller presses 1, hangs up and keeps their
@@ -566,6 +568,9 @@ type CallbackOptions struct {
 }
 
 func (o *QueueOptions) normalize() error {
+	if err := o.SLA.normalize(); err != nil {
+		return err
+	}
 	c := &o.Callback
 	def := func(v *int, d, min, max int, field string) error {
 		if *v == 0 {

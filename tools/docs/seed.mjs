@@ -79,13 +79,15 @@ const qBase = { music: 'default', announcePosition: true, announceFrequency: 60,
 const support = await c.post('/api/pbx/queues', {
   ...qBase, number: '700', name: 'Support', strategy: 'rrmemory', cidPrefix: 'Support: ', greetingPrompt: prompts.queue,
   overflow: { type: 'voicemail', target: '201' }, record: true,
-  options: { supervision: true, callback: { enabled: true, offerEvery: 60, retries: 2, retryDelay: 120, expire: 240, callerId: '' } },
+  options: { supervision: true, callback: { enabled: true, offerEvery: 60, retries: 2, retryDelay: 120, expire: 240, callerId: '' },
+    sla: { target: 30, norm: 80, maxWaiting: 3, maxWait: 60, maxAbandoned: 10 } },
   members: ['201', '202', '204', '205', '209'].map((n) => ({ extensionId: ext[n], penalty: 0, dynamic: n !== '201' })),
 })
 await c.post('/api/pbx/queues', {
   ...qBase, number: '701', name: 'Planning', strategy: 'leastrecent', cidPrefix: 'Planning: ', greetingPrompt: 0,
   overflow: { type: 'ringgroup', target: String(sales.data.id) },
-  options: { supervision: true, callback: { enabled: false, offerEvery: 60, retries: 2, retryDelay: 120, expire: 240, callerId: '' } },
+  options: { supervision: true, callback: { enabled: false, offerEvery: 60, retries: 2, retryDelay: 120, expire: 240, callerId: '' },
+    sla: { target: 30, norm: 90, maxWaiting: 2, maxWait: 90, maxAbandoned: 0 } },
   members: ['203', '207'].map((n) => ({ extensionId: ext[n], penalty: 0, dynamic: false })),
 })
 await c.post('/api/reception/callbacks', { queueId: support.data.id, number: '0612345678', name: 'J. Jansen' })

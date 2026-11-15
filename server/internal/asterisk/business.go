@@ -491,6 +491,7 @@ func genQueuesConf(s *pbx.Snapshot) string {
 		x.f("ringinuse=no")
 		x.f("setinterfacevar=yes")
 		x.f("announce-holdtime=no")
+		x.f("servicelevel=%d", q.Options.SLA.Target)
 		if q.Options.Callback.Enabled {
 			x.f("context=kiestoon-qcb-%d", q.ID)
 			x.f("periodic-announce=kt-callback-offer")

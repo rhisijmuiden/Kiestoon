@@ -70,10 +70,11 @@ const queueMembers = [
 function queueEvents() {
   const t = up()
   const ev = [
-    { Event: 'QueueParams', Queue: 'kiestoon-q-1', Calls: '2', Holdtime: '38', TalkTime: '214', Completed: '41', Abandoned: '3', ServicelevelPerf: '92.7' },
+    { Event: 'QueueParams', Queue: 'kiestoon-q-1', Calls: '3', Holdtime: '38', TalkTime: '214', Completed: '41', Abandoned: '3', ServicelevelPerf: '92.7' },
     ...queueMembers.map((m) => ({ Event: 'QueueMember', Queue: 'kiestoon-q-1', Name: m.name, Location: `Local/${m.ext}@kiestoon-ring/n`, Status: String(m.status), Paused: String(m.paused), InCall: String(m.inCall), CallsTaken: String(m.taken), LastCall: String(Math.floor(Date.now() / 1000) - 240) })),
     { Event: 'QueueEntry', Queue: 'kiestoon-q-1', Position: '1', CallerIDNum: '0687654321', CallerIDName: '', Wait: String(74 + t) },
-    { Event: 'QueueEntry', Queue: 'kiestoon-q-1', Position: '2', CallerIDNum: '0104567890', CallerIDName: 'De Groot Transport', Wait: String(31 + t) },
+    { Event: 'QueueEntry', Queue: 'kiestoon-q-1', Position: '2', CallerIDNum: '0612345678', CallerIDName: 'J. Jansen', Wait: String(52 + t), Channel: 'Local/1@kiestoon-qcbwait-1-00a1;2' },
+    { Event: 'QueueEntry', Queue: 'kiestoon-q-1', Position: '3', CallerIDNum: '0104567890', CallerIDName: 'De Groot Transport', Wait: String(31 + t) },
     { Event: 'QueueParams', Queue: 'kiestoon-q-2', Calls: '0', Holdtime: '22', TalkTime: '180', Completed: '17', Abandoned: '1', ServicelevelPerf: '96.1' },
     { Event: 'QueueMember', Queue: 'kiestoon-q-2', Name: 'Daan Visser', Location: 'Local/203@kiestoon-ring/n', Status: '2', Paused: '0', InCall: '1', CallsTaken: '8', LastCall: '0' },
     { Event: 'QueueMember', Queue: 'kiestoon-q-2', Name: 'Lotte Smit', Location: 'Local/207@kiestoon-ring/n', Status: '2', Paused: '0', InCall: '1', CallsTaken: '6', LastCall: '0' },
@@ -202,6 +203,11 @@ net.createServer((sock) => {
         case 'login':
           write(sock, { Response: 'Success', ActionID: id, Message: 'Authentication accepted' })
           // Asterisk sends a call record once; the portal stores it, also across a restart of the portal.
+          // Agents already in a queue call when the portal connects.
+          setTimeout(() => [
+            { Event: 'AgentConnect', Queue: 'kiestoon-q-1', Uniqueid: 'demo.201', Interface: 'Local/201@kiestoon-ring/n', MemberName: 'Sanne Bakker', CallerIDNum: '0687123456', HoldTime: '14' },
+            { Event: 'AgentConnect', Queue: 'kiestoon-q-2', Uniqueid: 'demo.203', Interface: 'Local/203@kiestoon-ring/n', MemberName: 'Daan Visser', CallerIDNum: '0402233445', HoldTime: '9' },
+          ].forEach((e) => write(sock, e)), 300)
           if (!cdrsSent) { cdrsSent = true; setTimeout(() => [...cdrs(), ...journeys()].forEach((e) => write(sock, e)), 500) }
           break
         case 'coreshowchannels': list(sock, id, channels().map((c) => ({ Event: 'CoreShowChannel', ...c, Duration: new Date(c.Duration * 1000).toISOString().slice(11, 19) })), 'CoreShowChannelsComplete'); break

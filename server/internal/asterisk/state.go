@@ -90,6 +90,8 @@ type QueueCaller struct {
 	CallerID string `json:"callerId"`
 	Name     string `json:"name"`
 	Wait     int    `json:"wait"`
+	// Channel is the caller's channel (a Local/<id>@kiestoon-qcbwait-… placeholder for a callback).
+	Channel string `json:"-"`
 }
 
 // QueueState is the live status of a queue.
@@ -158,7 +160,7 @@ func (c *StateCache) Queues(ctx context.Context) []QueueState {
 			case "QueueEntry":
 				w := atoi(e.Get("Wait"))
 				q.Callers = append(q.Callers, QueueCaller{Position: atoi(e.Get("Position")), CallerID: e.Get("CallerIDNum"),
-					Name: e.Get("CallerIDName"), Wait: w})
+					Name: e.Get("CallerIDName"), Wait: w, Channel: e.Get("Channel")})
 				if w > q.LongestWait {
 					q.LongestWait = w
 				}

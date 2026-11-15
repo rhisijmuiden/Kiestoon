@@ -20,6 +20,10 @@ func (s *Server) onAMIEvent(m asterisk.Message) {
 		s.journeyEvent(m)
 	}
 	switch m.Get("Event") {
+	case "QueueCallerJoin", "AgentConnect", "AgentComplete", "QueueCallerAbandon", "QueueCallerLeave":
+		s.queueStatEvent(m)
+	}
+	switch m.Get("Event") {
 	case "Cdr":
 		rec := cdr.FromEvent(m.Get, time.Local)
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -144,6 +148,7 @@ func (s *Server) checkFraud(rec cdr.Record) {
 func (s *Server) RunMaintenance(ctx context.Context) {
 	go s.runCallbacks(ctx)
 	go s.runAGI(ctx)
+	go s.runSLA(ctx)
 	day := ""
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()
@@ -165,6 +170,7 @@ func (s *Server) RunMaintenance(ctx context.Context) {
 				s.Log.Info("old recordings removed", "count", n)
 			}
 			s.purgeJourneys(ctx)
+			s.purgeQueueStats(ctx)
 			day = today
 		}
 		s.syncDeviceStates(ctx)

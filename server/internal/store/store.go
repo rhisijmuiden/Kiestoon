@@ -660,6 +660,36 @@ var migrations = []string{
 		updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
 	);
 	CREATE INDEX queue_callbacks_status ON queue_callbacks(status, next_at);`,
+	// Phase 6: wallboard tv links and the statistics of queue calls (wallboard, reports).
+	`CREATE TABLE wallboard_screens (
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		name       TEXT NOT NULL UNIQUE,
+		key        TEXT NOT NULL UNIQUE,
+		queues     TEXT NOT NULL DEFAULT '[]',
+		layouts    TEXT NOT NULL DEFAULT '["overview"]',
+		rotate     INTEGER NOT NULL DEFAULT 30,
+		theme      TEXT NOT NULL DEFAULT 'dark',
+		hide_names INTEGER NOT NULL DEFAULT 0,
+		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		last_seen  TEXT NOT NULL DEFAULT ''
+	);
+	CREATE TABLE queue_calls (
+		id          INTEGER PRIMARY KEY AUTOINCREMENT,
+		queue_id    INTEGER NOT NULL,
+		uniqueid    TEXT NOT NULL,
+		linkedid    TEXT NOT NULL DEFAULT '',
+		caller      TEXT NOT NULL DEFAULT '',
+		callback    INTEGER NOT NULL DEFAULT 0,
+		joined_at   TEXT NOT NULL,
+		result      TEXT NOT NULL DEFAULT '',
+		hold        INTEGER NOT NULL DEFAULT 0,
+		talk        INTEGER NOT NULL DEFAULT 0,
+		agent       TEXT NOT NULL DEFAULT '',
+		agent_name  TEXT NOT NULL DEFAULT '',
+		ended_at    TEXT NOT NULL DEFAULT ''
+	);
+	CREATE INDEX queue_calls_joined ON queue_calls(joined_at);
+	CREATE INDEX queue_calls_open ON queue_calls(uniqueid, result);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

@@ -14,6 +14,12 @@ export type Extension = {
   voicemailEmail: boolean
   voicemailDelete: boolean
   enabled: boolean
+  features: Features
+  recordMode: 'never' | 'ondemand' | 'always'
+  pickupGroup: string
+  outboundClass: 'internal' | 'national' | 'international'
+  allowPremium: boolean
+  webrtc: boolean
 }
 
 export type Trunk = {
@@ -45,7 +51,7 @@ export type TrunkPreset = {
 }
 
 export type InboundRoute = {
-  id: number; name: string; did: string; destinationType: 'extension' | 'voicemail' | 'hangup'; destination: string; cidPrefix: string; enabled: boolean
+  id: number; name: string; did: string; destinationType: DestType; destination: string; cidPrefix: string; enabled: boolean
 }
 
 export type DialPattern = { prefix: string; match: string; prepend: string }
@@ -124,3 +130,84 @@ export type Phone = {
   id: number; mac: string; vendor: PhoneModel['vendor']; model: string; extensionId: number | null; label: string
   keys: PhoneKey[]; lastSeenAt: string; lastIp: string; userAgent: string
 }
+
+// ---- phase 2: business features ---------------------------------------------
+
+export type DestType = 'extension' | 'voicemail' | 'ringgroup' | 'queue' | 'ivr' | 'timecondition' | 'conference' | 'external' | 'hangup'
+export type Destination = { type: DestType | ''; target: string }
+export type DestOption = { type: DestType; target: string; label: string }
+export type Destinations = { types: DestType[]; options: DestOption[] }
+
+export type FollowMe = { enabled: boolean; numbers: string[]; delay: number; confirm: boolean }
+export type Features = {
+  dnd: boolean; forwardAlways: string; forwardBusy: string; forwardNoAnswer: string; followMe: FollowMe
+  scheduleId: number; closedForward: string
+}
+export const blankFeatures: Features = {
+  dnd: false, forwardAlways: '', forwardBusy: '', forwardNoAnswer: '', followMe: { enabled: false, numbers: [], delay: 0, confirm: false },
+  scheduleId: 0, closedForward: '',
+}
+
+export type RingGroup = {
+  id: number; number: string; name: string; strategy: 'simultaneous' | 'sequential' | 'rotating' | 'paging'; ringSeconds: number
+  members: string[]; cidPrefix: string; skipBusy: boolean; failover: Destination; enabled: boolean
+}
+export type QueueMember = { extensionId: number; number: string; name: string; penalty: number; dynamic: boolean; loggedIn: boolean; paused: boolean }
+export type Queue = {
+  id: number; number: string; name: string; strategy: string; music: string; announcePosition: boolean; announceFrequency: number
+  agentTimeout: number; retry: number; wrapup: number; maxWait: number; maxCallers: number; joinEmpty: boolean; record: boolean
+  cidPrefix: string; greetingPrompt: number; overflow: Destination; enabled: boolean; members: QueueMember[]
+}
+export type QueueAgentLive = { number: string; name: string; status: string; paused: boolean; inCall: boolean; callsTaken: number; lastCall: number }
+export type QueueCallerLive = { position: number; callerId: string; name: string; wait: number }
+export type QueueView = Queue & {
+  live: null | {
+    calls: number; longestWait: number; holdtime: number; completed: number; abandoned: number; serviceLevel: number
+    callers: QueueCallerLive[] | null; agents: QueueAgentLive[] | null
+  }
+}
+
+export type IVROption = { digit: string; destination: Destination }
+export type IVR = {
+  id: number; name: string; promptId: number; timeout: number; retries: number; directDial: boolean; options: IVROption[]
+  timeoutDestination: Destination; layout: unknown
+}
+
+export type TimeRange = { days: number[]; from: string; to: string }
+export type TimeCondition = {
+  id: number; name: string; schedule: TimeRange[]; useHolidays: boolean; mode: 'auto' | 'open' | 'closed'
+  open: Destination; closed: Destination; holiday: Destination
+}
+export type CustomHoliday = { date: string; name: string; annual: boolean }
+export type HolidayCalendar = { preset: string[]; custom: CustomHoliday[] }
+export type HolidaysView = { calendar: HolidayCalendar; year: number; days: { date: string; key?: string; name?: string }[]; presets: string[] }
+
+export type Conference = {
+  id: number; number: string; name: string; pin: string; adminPin: string; maxMembers: number; record: boolean; waitAdmin: boolean; enabled: boolean
+}
+export type Prompt = { id: number; name: string; durationMs: number; createdAt: string }
+
+export type FraudSettings = {
+  premiumPrefixes: string[]; blockedCountries: string[]; maxOutbound: number; alertEmail: string; alertOutboundPerHour: number
+  alertInternationalPerHour: number; blockOnAlert: boolean
+}
+export type FeatureSettings = { parkingSlots: number; parkingTimeout: number; recordingDays: number; recordingBeep: boolean; fraud: FraudSettings }
+export type FeatureCode = { code: string; key: string }
+
+export type Recording = { name: string; date: string; uniqueId: string; from: string; to: string; size: number; duration: number }
+export type BlfEntry = { number: string; name: string; state: string; dnd: boolean }
+
+export type RoleMapping = { group: string; role: string }
+export type SsoProvider = {
+  id: number; name: string; kind: 'entra' | 'google' | 'keycloak' | 'authentik' | 'generic'; issuer: string; clientId: string
+  clientSecret?: string; secretSet: boolean; scopes: string; groupsClaim: string; roleMap: RoleMapping[]; defaultRole: string
+  autoCreate: boolean; trustMfa: boolean; enabled: boolean
+}
+
+export type PortalMe = {
+  id: number; number: string; name: string; email: string; features: Features; voicemail: boolean; voicemailEmail: boolean
+  webrtc: boolean; recordMode: string; outboundClass: string; schedules: { id: number; name: string }[]; codes: FeatureCode[]
+}
+export type VoicemailMessage = { folder: string; id: number; callerId: string; date: string; duration: number }
+export type RingGroupStatus = { id: number; number: string; name: string; strategy: string; members: { number: string; name: string; state: string }[] }
+export type WebRTCAccount = { wsPath: string; username: string; password: string; number: string; name: string; domain: string; secureContext: boolean }

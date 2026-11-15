@@ -4,15 +4,22 @@ import { useTranslation } from 'react-i18next'
 import { LogOut, Menu, X } from 'lucide-react'
 import { Brand, LanguageSwitch, PoweredBy } from './brand'
 import { InfoDialog, useSystemInfo } from './InfoDialog'
-import { nav } from './nav'
+import { nav, visible } from './nav'
+import { SoftphoneDock } from './SoftphoneDock'
+import { useApi } from './kit'
 import { isAdmin } from '../lib/api'
 import { useSession } from '../lib/session'
+import { SoftphoneProvider } from '../lib/softphone'
+import type { PortalMe } from '../lib/types'
 
 export function Layout() {
   const { t } = useTranslation()
   const { state, signOut } = useSession()
   const me = state.kind === 'ready' ? state.me : null
   const admin = isAdmin(me?.user)
+  const hasExtension = !!me?.extension
+  const portal = useApi<PortalMe>(hasExtension ? '/portal/me' : null)
+  const sub = admin ? t('app.admin') : t('app.portal')
   const [open, setOpen] = useState(false)
   const [infoOpen, setInfoOpen] = useState(false)
   const { info, reload } = useSystemInfo()
@@ -28,10 +35,11 @@ export function Layout() {
     .toUpperCase()
 
   return (
+    <SoftphoneProvider webrtc={!!portal.data?.webrtc}>
     <div className="min-h-screen lg:flex">
       {/* Phone / tablet top bar */}
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-surface-2/90 px-4 py-3 backdrop-blur lg:hidden">
-        <Brand sub={t('app.admin')} />
+        <Brand sub={sub} />
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -51,14 +59,14 @@ export function Layout() {
         aria-label={t('nav.menu')}
       >
         <div className="flex items-center justify-between px-3 pb-4">
-          <Brand sub={t('app.admin')} />
+          <Brand sub={sub} />
           <button type="button" onClick={() => setOpen(false)} aria-label={t('nav.closeMenu')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted lg:hidden">
             <X className="size-5" aria-hidden />
           </button>
         </div>
         <nav className="flex flex-col gap-0.5">
           {nav.map((group, gi) => {
-            const items = group.items.filter((i) => !i.adminOnly || admin)
+            const items = group.items.filter((i) => visible(i, me?.user.role, hasExtension))
             if (!items.length) return null
             return (
               <div key={gi} className="flex flex-col gap-0.5">
@@ -67,7 +75,7 @@ export function Layout() {
                   <NavLink
                     key={item.key}
                     to={item.path}
-                    end={item.path === '/'}
+                    end={item.path === '/' || item.path === '/me'}
                     className={({ isActive }) =>
                       `group flex min-h-9 items-center gap-3 rounded-[10px] px-3 text-sm transition ${
                         isActive ? 'bg-accent/12 text-ink shadow-[inset_0_0_0_1px_rgb(34_211_238_/_0.35)]' : 'text-[#A8B3C7] hover:bg-white/5 hover:text-ink'
@@ -141,6 +149,8 @@ export function Layout() {
 
       <PoweredBy className="fixed bottom-4 right-6 z-20 hidden sm:flex" />
       {infoOpen && <InfoDialog admin={admin} onClose={() => { setInfoOpen(false); reload() }} />}
+      <SoftphoneDock />
     </div>
+    </SoftphoneProvider>
   )
 }

@@ -8,6 +8,8 @@ Wants=network-online.target
 Type=simple
 User=kiestoon
 Group=kiestoon
+# Reads and manages voicemail, recordings and greetings in the Asterisk spool.
+SupplementaryGroups=asterisk
 EnvironmentFile=/etc/kiestoon/kiestoon.env
 ExecStart=/usr/bin/kiestoon serve
 Restart=on-failure

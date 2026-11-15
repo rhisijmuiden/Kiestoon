@@ -107,6 +107,7 @@ func serve(log *slog.Logger) error {
 	go srv.Mail.Run(ctx)
 	go srv.RunScheduler(ctx)
 	go srv.ApplySecurityOnStart(ctx)
+	go srv.RunMaintenance(ctx)
 	go func() {
 		t := time.NewTicker(time.Hour)
 		defer t.Stop()

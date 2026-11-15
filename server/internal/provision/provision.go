@@ -101,10 +101,10 @@ var Models = []Model{
 	{"snom", "D735", "Snom D735", 8},
 	{"snom", "D785", "Snom D785", 24},
 	{"snom", "D865", "Snom D865", 12},
-	{"grandstream", "GRP2612", "Grandstream GRP2612", 0},
-	{"grandstream", "GRP2614", "Grandstream GRP2614", 0},
-	{"grandstream", "GRP2616", "Grandstream GRP2616", 0},
-	{"grandstream", "GXP2170", "Grandstream GXP2170", 0},
+	{"grandstream", "GRP2612", "Grandstream GRP2612", 7},
+	{"grandstream", "GRP2614", "Grandstream GRP2614", 7},
+	{"grandstream", "GRP2616", "Grandstream GRP2616", 7},
+	{"grandstream", "GXP2170", "Grandstream GXP2170", 7},
 }
 
 // FindModel returns the model, or nil.
@@ -332,6 +332,23 @@ func Grandstream(in Input) string {
 		p(59, 0) // then PCMU
 	} else {
 		p(271, 0)
+	}
+	// Multi-purpose keys 1-7: mode P323+i, account P301+3i, name P302+3i, value P303+3i.
+	for i, k := range in.Phone.Keys {
+		if i >= 7 {
+			break
+		}
+		mode, value := 0, ""
+		switch k.Type {
+		case "blf":
+			mode, value = 1, k.Value
+		case "speed":
+			mode, value = 0, k.Value
+		}
+		p(323+i, mode)
+		p(301+3*i, 0)
+		p(302+3*i, clean(k.Label))
+		p(303+3*i, value)
 	}
 	b.WriteString("  </config>\n</gs_provision>\n")
 	return b.String()

@@ -39,17 +39,49 @@ type User struct {
 	Role        string `json:"role"`
 	TOTPEnabled bool   `json:"mfaEnabled"`
 	Language    string `json:"language"`
+	Email       string `json:"email"`
+	// ExtensionID links the account to its phone (for the user portal).
+	ExtensionID *int64 `json:"extensionId"`
+	// SSOProvider is the identity provider the account signs in with (0: local password).
+	SSOProvider int64  `json:"ssoProvider"`
+	Enabled     bool   `json:"enabled"`
+	LastLoginAt string `json:"lastLoginAt"`
+	CreatedAt   string `json:"createdAt"`
 	totpSecret  string
 	hash        string
+}
+
+// Roles, from most to least rights.
+var Roles = []string{"superadmin", "admin", "reception", "user"}
+
+// RoleRank orders roles: a higher rank has more rights.
+func RoleRank(role string) int {
+	switch role {
+	case "superadmin":
+		return 4
+	case "admin":
+		return 3
+	case "reception":
+		return 2
+	case "user":
+		return 1
+	}
+	return 0
 }
 
 // IsAdmin reports whether the user may manage the system. Admins must use MFA.
 func (u *User) IsAdmin() bool { return u.Role == "admin" || u.Role == "superadmin" }
 
+// IsReception reports whether the user may see and steer live calls, queues and the day/night switch.
+func (u *User) IsReception() bool { return RoleRank(u.Role) >= 2 }
+
 // Session is a signed-in browser.
 type Session struct {
 	User      *User
 	MFAPassed bool
+	// Method is how the session signed in: password, or sso / sso-mfa (the identity provider
+	// already asked for a second factor, so Kiestoon does not).
+	Method    string
 	tokenHash string
 }
 
@@ -104,15 +136,21 @@ func (s *Service) CreateUser(ctx context.Context, username, displayName, passwor
 	return s.UserByID(ctx, id)
 }
 
-const userCols = `id, username, display_name, role, totp_enabled, language, totp_secret, password_hash`
+const userCols = `id, username, display_name, role, totp_enabled, language, totp_secret, password_hash, email, extension_id,
+	sso_provider, enabled, last_login_at, created_at`
 
 func scanUser(row interface{ Scan(...any) error }) (*User, error) {
 	u := &User{}
-	var enabled int
-	if err := row.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Role, &enabled, &u.Language, &u.totpSecret, &u.hash); err != nil {
+	var totp, enabled int
+	var ext sql.NullInt64
+	if err := row.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Role, &totp, &u.Language, &u.totpSecret, &u.hash, &u.Email, &ext,
+		&u.SSOProvider, &enabled, &u.LastLoginAt, &u.CreatedAt); err != nil {
 		return nil, err
 	}
-	u.TOTPEnabled = enabled == 1
+	u.TOTPEnabled, u.Enabled = totp == 1, enabled == 1
+	if ext.Valid {
+		u.ExtensionID = &ext.Int64
+	}
 	return u, nil
 }
 
@@ -134,7 +172,7 @@ func (s *Service) CheckPassword(ctx context.Context, username, password string) 
 	if err != nil {
 		return nil, err
 	}
-	if bcrypt.CompareHashAndPassword([]byte(u.hash), []byte(password)) != nil {
+	if bcrypt.CompareHashAndPassword([]byte(u.hash), []byte(password)) != nil || !u.Enabled {
 		return nil, ErrInvalidCredentials
 	}
 	return u, nil
@@ -165,11 +203,19 @@ func hashToken(t string) string {
 // CreateSession starts a session and returns the raw token for the cookie.
 // mfaPassed is true when the user has no MFA yet (they will be sent to enrollment).
 func (s *Service) CreateSession(ctx context.Context, u *User, mfaPassed bool) (string, error) {
+	return s.CreateSessionMethod(ctx, u, mfaPassed, "password")
+}
+
+// CreateSessionMethod starts a session and records how the user signed in.
+func (s *Service) CreateSessionMethod(ctx context.Context, u *User, mfaPassed bool, method string) (string, error) {
 	token := randomToken(32)
 	now := s.Now().UTC()
 	_, err := s.DB.ExecContext(ctx,
-		`INSERT INTO sessions(token_hash, user_id, mfa_passed, created_at, expires_at) VALUES(?, ?, ?, ?, ?)`,
-		hashToken(token), u.ID, boolInt(mfaPassed), now.Format(time.RFC3339), now.Add(SessionTTL).Format(time.RFC3339))
+		`INSERT INTO sessions(token_hash, user_id, mfa_passed, created_at, expires_at, method) VALUES(?, ?, ?, ?, ?, ?)`,
+		hashToken(token), u.ID, boolInt(mfaPassed), now.Format(time.RFC3339), now.Add(SessionTTL).Format(time.RFC3339), method)
+	if err == nil {
+		_, _ = s.DB.ExecContext(ctx, `UPDATE users SET last_login_at = ? WHERE id = ?`, now.Format(time.RFC3339), u.ID)
+	}
 	return token, err
 }
 
@@ -181,9 +227,9 @@ func (s *Service) SessionFromToken(ctx context.Context, token string) (*Session,
 	th := hashToken(token)
 	var uid int64
 	var mfa int
-	var expires string
-	err := s.DB.QueryRowContext(ctx, `SELECT user_id, mfa_passed, expires_at FROM sessions WHERE token_hash = ?`, th).
-		Scan(&uid, &mfa, &expires)
+	var expires, method string
+	err := s.DB.QueryRowContext(ctx, `SELECT user_id, mfa_passed, expires_at, method FROM sessions WHERE token_hash = ?`, th).
+		Scan(&uid, &mfa, &expires, &method)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNoSession
 	}
@@ -196,10 +242,10 @@ func (s *Service) SessionFromToken(ctx context.Context, token string) (*Session,
 		return nil, ErrNoSession
 	}
 	u, err := s.UserByID(ctx, uid)
-	if err != nil {
+	if err != nil || !u.Enabled {
 		return nil, ErrNoSession
 	}
-	return &Session{User: u, MFAPassed: mfa == 1, tokenHash: th}, nil
+	return &Session{User: u, MFAPassed: mfa == 1, Method: method, tokenHash: th}, nil
 }
 
 // MarkMFAPassed records that the session completed the second factor.

@@ -142,3 +142,5 @@ func TestLoginRateLimitAndJSONOnly(t *testing.T) {
 		t.Fatal("missing security headers")
 	}
 }
+
+func jsonDecode(resp *http.Response, v any) error { return json.NewDecoder(resp.Body).Decode(v) }

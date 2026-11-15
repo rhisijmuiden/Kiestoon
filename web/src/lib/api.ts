@@ -28,16 +28,28 @@ export type User = {
   id: number
   username: string
   displayName: string
-  role: 'superadmin' | 'admin' | 'user'
+  role: Role
   mfaEnabled: boolean
   language: 'en' | 'nl'
+  email: string
+  extensionId: number | null
+  ssoProvider: number
+  enabled: boolean
+  lastLoginAt: string
+  createdAt: string
 }
+
+export type Role = 'superadmin' | 'admin' | 'reception' | 'user'
+export const roles: Role[] = ['user', 'reception', 'admin', 'superadmin']
+export const roleRank = (r?: Role) => (r ? roles.indexOf(r) : -1)
 
 export type Me = {
   user: User
   mfaPassed: boolean
   mfaEnrollmentRequired: boolean
   organization: string
+  extension: { number: string; name: string } | null
+  signInMethod: string
 }
 
 export type SystemInfo = {
@@ -55,3 +67,4 @@ export type CheckResult = { channel: string; current: string; latest: Release | 
 export type UpdateStatus = { state: 'idle' | 'queued' | 'running' | 'success' | 'failed'; version?: string; message?: string }
 
 export const isAdmin = (u?: User) => u?.role === 'admin' || u?.role === 'superadmin'
+export const isReception = (u?: User) => roleRank(u?.role) >= 1

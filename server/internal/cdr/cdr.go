@@ -94,8 +94,10 @@ type Filter struct {
 	Query       string // number or name
 	Direction   string
 	Disposition string
-	Limit       int
-	Offset      int
+	// Ext limits the records to calls to or from one extension (user portal).
+	Ext    string
+	Limit  int
+	Offset int
 }
 
 func (f Filter) where() (string, []any) {
@@ -125,6 +127,11 @@ func (f Filter) where() (string, []any) {
 	if f.Disposition != "" {
 		conds = append(conds, "disposition = ?")
 		args = append(args, f.Disposition)
+	}
+	if f.Ext != "" {
+		conds = append(conds, "(src = ? OR dst = ? OR src_channel LIKE ? OR dst_channel LIKE ? OR src_channel LIKE ? OR dst_channel LIKE ?)")
+		ch, web := "PJSIP/"+f.Ext+"-%", "PJSIP/"+f.Ext+"-web-%"
+		args = append(args, f.Ext, f.Ext, ch, ch, web, web)
 	}
 	return strings.Join(conds, " AND "), args
 }

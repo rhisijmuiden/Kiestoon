@@ -4,7 +4,8 @@ import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, Waypoints, X } from 'lucide-r
 import { Badge, Empty, Modal, Select, Table, Tabs, Textarea, Toggle, td, useApi } from '../components/kit'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
-import type { DialPattern, Extension, InboundRoute, Live, OutboundRoute, Trunk, TrunkPreset } from '../lib/types'
+import type { DestType, DialPattern, Extension, InboundRoute, Live, OutboundRoute, Trunk, TrunkPreset } from '../lib/types'
+import { DestinationLabel, DestinationPicker } from '../components/pbx'
 
 type Tab = 'trunks' | 'inbound' | 'outbound'
 
@@ -171,7 +172,6 @@ function InboundList() {
   const list = useApi<InboundRoute[]>('/pbx/inbound')
   const exts = useApi<Extension[]>('/pbx/extensions')
   const [edit, setEdit] = useState<InboundRoute | null>(null)
-  const extName = (n: string) => exts.data?.find((e) => e.number === n)?.name ?? ''
   async function remove(x: InboundRoute) {
     if (!window.confirm(t('routes.confirmDelete', { name: x.name }))) return
     await api('DELETE', `/pbx/inbound/${x.id}`)
@@ -193,7 +193,7 @@ function InboundList() {
             <td className={`${td} text-ink`}>{x.name}</td>
             <td className={`${td} font-mono`}>{x.did || <Badge tone="accent">{t('routes.anyNumber')}</Badge>}</td>
             <td className={td}>
-              {t(`routes.dest.${x.destinationType}`)} {x.destination && <span className="font-mono text-ink">{x.destination}</span>} <span className="text-subtle">{extName(x.destination)}</span>
+              <DestinationLabel value={{ type: x.destinationType, target: x.destination }} />
             </td>
             <td className={`${td} whitespace-nowrap text-right`}>
               <IconBtn label={t('common.edit')} onClick={() => setEdit(x)}><Pencil className="size-4" /></IconBtn>
@@ -202,12 +202,12 @@ function InboundList() {
           </tr>
         ))}
       </Table>
-      {edit && <InboundForm value={edit} exts={exts.data ?? []} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); list.reload() }} />}
+      {edit && <InboundForm value={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); list.reload() }} />}
     </Card>
   )
 }
 
-function InboundForm({ value, exts, onClose, onSaved }: { value: InboundRoute; exts: Extension[]; onClose: () => void; onSaved: () => void }) {
+function InboundForm({ value, onClose, onSaved }: { value: InboundRoute; onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation()
   const [x, setX] = useState(value)
   const [busy, setBusy] = useState(false)
@@ -225,26 +225,14 @@ function InboundForm({ value, exts, onClose, onSaved }: { value: InboundRoute; e
       setBusy(false)
     }
   }
-  const options = x.destinationType === 'voicemail' ? exts.filter((e) => e.voicemail) : exts
   return (
     <Modal title={x.id ? t('routes.editInbound') : t('routes.addInbound')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
       <Input label={t('routes.name')} value={x.name} onChange={(e) => set('name', e.target.value)} />
       <Input label={t('routes.did')} value={x.did} onChange={(e) => set('did', e.target.value)} hint={t('routes.didHint')} className="font-mono" placeholder="020 123 4567" />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Select label={t('routes.destinationType')} value={x.destinationType} onChange={(e) => set('destinationType', e.target.value as InboundRoute['destinationType'])}>
-          <option value="extension">{t('routes.dest.extension')}</option>
-          <option value="voicemail">{t('routes.dest.voicemail')}</option>
-          <option value="hangup">{t('routes.dest.hangup')}</option>
-        </Select>
-        {x.destinationType !== 'hangup' && (
-          <Select label={t('routes.destination')} value={x.destination} onChange={(e) => set('destination', e.target.value)}>
-            <option value="">–</option>
-            {options.map((e) => <option key={e.id} value={e.number}>{e.number} · {e.name}</option>)}
-          </Select>
-        )}
-      </div>
+      <DestinationPicker label={t('routes.destination')} value={{ type: x.destinationType, target: x.destination }}
+        onChange={(d) => setX((o) => ({ ...o, destinationType: (d.type || 'hangup') as DestType, destination: d.target }))} />
       <Input label={t('routes.cidPrefix')} value={x.cidPrefix} onChange={(e) => set('cidPrefix', e.target.value)} hint={t('routes.cidPrefixHint')} />
       <Toggle label={t('common.enabled')} checked={x.enabled} onChange={(v) => set('enabled', v)} />
     </Modal>

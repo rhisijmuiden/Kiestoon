@@ -27,6 +27,9 @@ depends:
   - restic
   - rclone
 
+recommends:
+  - kiestoon-sounds-nl
+
 contents:
   - src: ./build/kiestoon
     dst: /usr/bin/kiestoon
@@ -47,6 +50,8 @@ contents:
     dst: /etc/logrotate.d/kiestoon-asterisk
   - src: ./packaging/asterisk-config/*.conf
     dst: /etc/asterisk/
+  - src: ./packaging/systemd/asterisk.service.d/kiestoon.conf
+    dst: /usr/lib/systemd/system/asterisk.service.d/kiestoon.conf
   - src: ./packaging/systemd/kiestoon-updater.path
     dst: /usr/lib/systemd/system/kiestoon-updater.path
   - src: ./packaging/systemd/kiestoon-updater.service

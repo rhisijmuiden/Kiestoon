@@ -1,14 +1,31 @@
 package pbx
 
-import "context"
+import (
+	"context"
+	"time"
+
+	"github.com/rhisijmuiden/kiestoon/server/internal/store"
+)
 
 // Snapshot is everything the Asterisk configuration is generated from.
 type Snapshot struct {
-	Settings   Settings
-	Extensions []Extension
-	Trunks     []Trunk
-	Inbound    []InboundRoute
-	Outbound   []OutboundRoute
+	Settings       Settings
+	Features       FeatureSettings
+	Holidays       Holidays
+	Extensions     []Extension
+	Trunks         []Trunk
+	Inbound        []InboundRoute
+	Outbound       []OutboundRoute
+	RingGroups     []RingGroup
+	Queues         []Queue
+	IVRs           []IVR
+	TimeConditions []TimeCondition
+	Conferences    []Conference
+	Prompts        []Prompt
+	// FraudLocked blocks international and premium calls after a fraud alert.
+	FraudLocked bool
+	// Now decides which year's holidays go into the dialplan (it is regenerated every night).
+	Now time.Time
 }
 
 // Snapshot reads the current phone system data.
@@ -29,6 +46,37 @@ func (r *Repo) Snapshot(ctx context.Context) (*Snapshot, error) {
 	}
 	if s.Outbound, err = r.OutboundRoutes(ctx); err != nil {
 		return nil, err
+	}
+	if s.Features, err = LoadFeatureSettings(ctx, r.DB); err != nil {
+		return nil, err
+	}
+	if s.Holidays, err = LoadHolidays(ctx, r.DB); err != nil {
+		return nil, err
+	}
+	if s.RingGroups, err = r.RingGroups(ctx); err != nil {
+		return nil, err
+	}
+	if s.Queues, err = r.Queues(ctx); err != nil {
+		return nil, err
+	}
+	if s.IVRs, err = r.IVRs(ctx); err != nil {
+		return nil, err
+	}
+	if s.TimeConditions, err = r.TimeConditions(ctx); err != nil {
+		return nil, err
+	}
+	if s.Conferences, err = r.Conferences(ctx); err != nil {
+		return nil, err
+	}
+	if s.Prompts, err = r.Prompts(ctx); err != nil {
+		return nil, err
+	}
+	locked, _ := store.GetSetting(ctx, r.DB, FraudLockKey, "")
+	s.FraudLocked = locked != ""
+	if loc, err := time.LoadLocation(s.Settings.Timezone); err == nil {
+		s.Now = time.Now().In(loc)
+	} else {
+		s.Now = time.Now()
 	}
 	return &s, nil
 }
@@ -56,3 +104,6 @@ var TrunkPresets = []TrunkPreset{
 	{ID: "telnyx", Name: "Telnyx", AuthMode: "register", Host: "sip.telnyx.com", Port: 5061, Transport: "tls", DIDSource: "to", Codecs: "alaw,ulaw,g722", Note: "telnyx"},
 	{ID: "twilio", Name: "Twilio Elastic SIP", AuthMode: "ip", Port: 5060, Transport: "udp", DIDSource: "ruri", Codecs: "ulaw,alaw", Note: "twilio"},
 }
+
+// FraudLockKey is set (to the time of the alert) while international calls are blocked.
+const FraudLockKey = "fraud_locked"

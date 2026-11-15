@@ -159,11 +159,14 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" pi-cache
       - name: Check the image
         run: |
+          set -x
           IMG="$(ls dist-pi/*.img)"
           LOOP="$(sudo losetup -P --show -f "$IMG")"
           sudo mkdir -p /mnt/pi && sudo mount -o ro "${LOOP}p2" /mnt/pi
           test -x /mnt/pi/usr/bin/kiestoon-edge
-          test -e /mnt/pi/etc/systemd/system/multi-user.target.wants/kiestoon-edge.service
+          # -L: the link target is absolute and only resolves inside the image.
+          test -L /mnt/pi/etc/systemd/system/multi-user.target.wants/kiestoon-edge.service
+          test ! -L /mnt/pi/etc/systemd/system/multi-user.target.wants/rtpengine-daemon.service
           test -x /mnt/pi/usr/sbin/kamailio && test -x /mnt/pi/usr/bin/rtpengine && test -x /mnt/pi/usr/bin/wg
           sudo chroot /mnt/pi /usr/bin/kiestoon-edge version
           sudo umount /mnt/pi && sudo losetup -d "$LOOP"

@@ -26,6 +26,10 @@ depends:
   - python3-systemd
   - restic
   - rclone
+  # Fax-to-mail: converts received faxes (TIFF) to PDF.
+  - libtiff-tools
+  # Direct internet access: Let's Encrypt certificates and HTTPS on 443 (off until switched on).
+  - caddy
 
 recommends:
   - kiestoon-sounds-nl

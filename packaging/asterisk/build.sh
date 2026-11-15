@@ -43,7 +43,7 @@ for opt in \
   "--disable BUILD_NATIVE" "--disable-category MENUSELECT_TESTS" \
   "--disable chan_iax2" "--disable chan_unistim" "--disable chan_motif" "--disable res_xmpp" \
   "--disable cdr_radius" "--disable cel_radius" "--disable cdr_tds" "--disable cel_tds" \
-  "--enable app_voicemail" "--enable cdr_manager" "--enable res_srtp" \
+  "--enable app_voicemail" "--enable cdr_manager" "--enable res_srtp" "--enable res_fax" "--enable res_fax_spandsp" \
   "--enable CORE-SOUNDS-EN-ALAW" "--enable CORE-SOUNDS-EN-ULAW" "--enable CORE-SOUNDS-EN-G722" \
   "--enable EXTRA-SOUNDS-EN-ALAW" "--enable EXTRA-SOUNDS-EN-ULAW" \
   "--enable MOH-OPSOUND-ALAW" "--enable MOH-OPSOUND-ULAW" "--enable MOH-OPSOUND-G722"; do
@@ -55,6 +55,11 @@ grep -E '^MENUSELECT_(CFLAGS|CORE_SOUNDS|MOH|EXTRA_SOUNDS)=' menuselect.makeopts
 
 make -j"$JOBS" ASTCFLAGS="-O2 -g0" NOISY_BUILD=no >/dev/null
 make install DESTDIR="$STAGE" NOISY_BUILD=no >/dev/null
+
+# Fax-to-mail needs SpanDSP (T.38 and G.711 fax).
+for mod in res_fax.so res_fax_spandsp.so; do
+  find "$STAGE" -name "$mod" | grep -q . || { echo "$mod was not built"; exit 1; }
+done
 
 # No sample configuration: the kiestoon package ships and generates the configuration.
 rm -rf "$STAGE/etc/asterisk" "$STAGE/usr/share/man"/*/astdb2* 2>/dev/null || true
@@ -96,7 +101,7 @@ Priority: optional
 Homepage: https://github.com/rhisijmuiden/kiestoon
 Description: Asterisk $AST_VERSION LTS for Kiestoon
  Asterisk telephony engine built for the Kiestoon phone system: PJSIP, voicemail,
- SRTP, CDR over AMI and English prompts in G.711 and G.722.
+ SRTP, fax (SpanDSP), CDR over AMI and English prompts in G.711 and G.722.
 CONTROL
 DEB="$OUT/kiestoon-asterisk_${AST_VERSION}-${PKG_REVISION}_${ARCH}.deb"
 dpkg-deb --root-owner-group -Zxz --build "$STAGE" "$DEB" >/dev/null

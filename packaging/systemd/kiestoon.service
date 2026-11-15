@@ -36,8 +36,9 @@ SystemCallArchitectures=native
 SystemCallFilter=@system-service
 SystemCallErrorNumber=EPERM
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
-CapabilityBoundingSet=
-AmbientCapabilities=
+# Only to listen on the standard LDAP ports (389/636) for the phone book.
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
 UMask=0027
 ReadWritePaths=/var/lib/kiestoon
 

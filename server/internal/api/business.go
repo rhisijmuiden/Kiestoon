@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rhisijmuiden/kiestoon/server/internal/media"
@@ -31,6 +32,7 @@ func (s *Server) businessRoutes(mux *http.ServeMux, admin, recep func(http.Handl
 	mux.Handle("POST /api/pbx/ivrs", admin(s.saveIVR))
 	mux.Handle("PUT /api/pbx/ivrs/{id}", admin(s.saveIVR))
 	mux.Handle("DELETE /api/pbx/ivrs/{id}", admin(s.deleter("ivr", s.PBX.DeleteIVR)))
+	mux.Handle("POST /api/pbx/ivrs/{id}/test", admin(s.testIVR))
 
 	mux.Handle("GET /api/pbx/timeconditions", recep(list(s, s.PBX.TimeConditions)))
 	mux.Handle("POST /api/pbx/timeconditions", admin(s.saveTimeCondition))
@@ -138,6 +140,36 @@ func (s *Server) saveIVR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.saved(w, r, "ivr", v.Name, v)
+}
+
+// testIVR rings an extension; when it is answered, the saved menu plays as if the person called in.
+func (s *Server) testIVR(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Extension string `json:"extension"`
+	}
+	if err := decode(r, &req); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request")
+		return
+	}
+	v, err := s.PBX.IVR(r.Context(), pathID(r))
+	if err != nil {
+		s.saveErr(w, err)
+		return
+	}
+	e, err := s.PBX.ExtensionByNumber(r.Context(), strings.TrimSpace(req.Extension))
+	if err != nil || !e.Enabled {
+		fieldErr(w, "extension")
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+	cid := `"` + strings.ReplaceAll(v.Name, `"`, "") + `" <` + e.Number + `>`
+	if err := s.AMI.OriginateApp(ctx, "Local/"+e.Number+"@kiestoon-ring/n", fmt.Sprintf("kiestoon-ivr-%d", v.ID), "s", cid, 30*time.Second); err != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "call_failed", "message": err.Error()})
+		return
+	}
+	s.audit(r, "ivr.test", e.Number+" -> "+v.Name)
+	writeJSON(w, http.StatusAccepted, map[string]bool{"ok": true})
 }
 
 func (s *Server) saveTimeCondition(w http.ResponseWriter, r *http.Request) {

@@ -209,6 +209,14 @@ Notes on phase 5:
 - Not yet tested on real hardware: the Raspberry Pi image on a Pi, audio through rtpengine with real phones, a VRRP
   failover between two Proxmox hosts, and federation between two systems on different networks.
 
+## Improvements after phase 5
+
+- [x] IVR flow canvas (`v0.6.0-rc.5`): steps are dragged onto a canvas and connected by drawing lines. Every step
+  has its own voice prompt with a waveform player: generated with the local text-to-speech, recorded, uploaded or
+  picked from the prompts. Steps: keypress, play audio, transfer (extension, ring group, queue, voicemail, submenu,
+  external number), time condition with open/closed lines, repeat menu, hang up and no input. Undo/redo, tidy up,
+  minimap and a test call that rings your own phone. Existing menus are converted automatically.
+
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.
 That keeps backups, restores and high availability simple.

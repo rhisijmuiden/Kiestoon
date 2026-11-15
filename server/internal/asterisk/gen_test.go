@@ -77,3 +77,20 @@ func TestChangedModules(t *testing.T) {
 		t.Fatalf("got %v", got)
 	}
 }
+
+// A trunk without a port (Voys: ha.voys.nl) leaves the port out, so PJSIP follows DNS SRV.
+func TestTrunkSRV(t *testing.T) {
+	s := sample()
+	s.Trunks = []pbx.Trunk{{ID: 7, Name: "Voys", Provider: "voys", AuthMode: "register", Host: "ha.voys.nl", Port: 0, Transport: "udp",
+		Username: "123456789", Secret: "VoysSecret123", DIDSource: "ruri", Codecs: "alaw,g722", MatchIPs: pbx.VoysNetworks, Enabled: true}}
+	pj := Generate(s, Options{})["pjsip.conf"]
+	for _, want := range []string{"server_uri=sip:ha.voys.nl\n", "client_uri=sip:123456789@ha.voys.nl\n", "contact=sip:ha.voys.nl\n",
+		"from_domain=ha.voys.nl\n", "from_user=123456789\n", "match=195.35.114.0/23\n", "match=185.103.76.0/22\n", "set_var=KT_DIDSRC=ruri"} {
+		if !strings.Contains(pj, want) {
+			t.Errorf("pjsip.conf misses %q", want)
+		}
+	}
+	if strings.Contains(pj, "ha.voys.nl:0") {
+		t.Error("port 0 written into a SIP URI")
+	}
+}

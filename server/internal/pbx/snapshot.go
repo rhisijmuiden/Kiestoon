@@ -117,18 +117,32 @@ type TrunkPreset struct {
 	Transport string `json:"transport"`
 	DIDSource string `json:"didSource"`
 	Codecs    string `json:"codecs"`
-	Note      string `json:"note"` // translation key with provider specific hints
+	// MatchIPs are the networks the provider sends calls from (comma separated).
+	MatchIPs string `json:"matchIps"`
+	Note     string `json:"note"` // translation key with provider specific hints
+	// Guide is the translation key of a step-by-step setup guide, "" when there is none.
+	Guide string `json:"guide"`
+	// DocsURL points to the provider page in the Kiestoon documentation.
+	DocsURL string `json:"docsUrl,omitempty"`
 }
 
 // TrunkPresets lists the provider templates offered in the UI.
 var TrunkPresets = []TrunkPreset{
 	{ID: "generic", Name: "Generic (registration)", AuthMode: "register", Port: 5060, Transport: "udp", DIDSource: "to", Codecs: "alaw,ulaw,g722", Note: "generic"},
 	{ID: "generic-ip", Name: "Generic (IP authentication)", AuthMode: "ip", Port: 5060, Transport: "udp", DIDSource: "ruri", Codecs: "alaw,ulaw", Note: "ip"},
-	{ID: "voipgrid", Name: "VoIPGRID platform (Voys, Spitsgroep, partners)", AuthMode: "register", Port: 5060, Transport: "udp", DIDSource: "to", Codecs: "alaw,g722", Note: "voipgrid"},
+	// Voys: ha.voys.nl has DNS SRV records (UDP 6060/5060 on the VoIPGRID SIP proxies), so the port
+	// is left at 0 to follow them. Calls come from 195.35.114.0/23 and 185.103.76.0/22.
+	// Source: https://help.voys.nl/voip-trunk-configuratie
+	{ID: "voys", Name: "Voys", AuthMode: "register", Host: "ha.voys.nl", Port: 0, Transport: "udp", DIDSource: "ruri", Codecs: "alaw,g722",
+		MatchIPs: VoysNetworks, Note: "voys", Guide: "voys", DocsURL: "https://github.com/rhisijmuiden/Kiestoon/blob/main/docs/providers/voys.md"},
+	{ID: "voipgrid", Name: "VoIPGRID platform (Spitsgroep, partners)", AuthMode: "register", Port: 5060, Transport: "udp", DIDSource: "to", Codecs: "alaw,g722", Note: "voipgrid"},
 	{ID: "kpn", Name: "KPN SIP trunk", AuthMode: "ip", Port: 5060, Transport: "udp", DIDSource: "ruri", Codecs: "alaw", Note: "kpn"},
 	{ID: "telnyx", Name: "Telnyx", AuthMode: "register", Host: "sip.telnyx.com", Port: 5061, Transport: "tls", DIDSource: "to", Codecs: "alaw,ulaw,g722", Note: "telnyx"},
 	{ID: "twilio", Name: "Twilio Elastic SIP", AuthMode: "ip", Port: 5060, Transport: "udp", DIDSource: "ruri", Codecs: "ulaw,alaw", Note: "twilio"},
 }
+
+// VoysNetworks are the address ranges Voys (VoIPGRID) sends SIP and media from.
+const VoysNetworks = "195.35.114.0/23,185.103.76.0/22"
 
 // FraudLockKey is set (to the time of the alert) while international calls are blocked.
 const FraudLockKey = "fraud_locked"

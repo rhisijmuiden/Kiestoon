@@ -53,3 +53,19 @@ func TestNormalizeMAC(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestValidateTrunkPort(t *testing.T) {
+	srv := Trunk{Name: "Voys", AuthMode: "register", Host: "ha.voys.nl", Username: "123456789", Secret: "VoysSecret123", MatchIPs: VoysNetworks}
+	if err := validateTrunk(&srv); err != nil || srv.Port != 0 {
+		t.Fatalf("host name without port: err %v, port %d (want SRV, port 0)", err, srv.Port)
+	}
+	ip := Trunk{Name: "IP", AuthMode: "ip", Host: "192.0.2.20", Transport: "tls"}
+	if err := validateTrunk(&ip); err != nil || ip.Port != 5061 {
+		t.Fatalf("IP without port: err %v, port %d (want 5061)", err, ip.Port)
+	}
+	for _, p := range TrunkPresets {
+		if p.ID == "voys" && (p.Host != "ha.voys.nl" || p.MatchIPs != VoysNetworks || p.Guide == "") {
+			t.Fatalf("voys preset incomplete: %+v", p)
+		}
+	}
+}

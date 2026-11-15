@@ -614,13 +614,54 @@
     "notes": {
       "generic": "Vul de gegevens van je provider in.",
       "ip": "Vraag je provider vanaf welke IP-adressen ze gesprekken sturen, en geef hen het publieke IP-adres van deze server.",
-      "voipgrid": "Maak een SIP-account aan in het VoIPGRID-portaal en gebruik het account-ID en wachtwoord.",
+      "voipgrid": "Voor andere aanbieders op het VoIPGRID-platform: maak een VoIP-trunk aan in hun portaal, gebruik het account-ID en wachtwoord en vul de server in die zij opgeven.",
       "kpn": "KPN verbindt op IP-adres. Vul de IP-adressen uit je KPN-opdracht in.",
       "telnyx": "Maak een credential connection in het Telnyx-portaal. TLS op poort 5061 wordt aangeraden.",
-      "twilio": "Maak een Elastic SIP-trunk, zet het publieke IP van deze server in de access control list en gebruik je termination-URI als host."
+      "twilio": "Maak een Elastic SIP-trunk, zet het publieke IP van deze server in de access control list en gebruik je termination-URI als host.",
+      "voys": "Maak een VoIP-trunk aan in Voys Freedom en gebruik het account-ID en wachtwoord daarvan. Server, codecs en de IP-ranges van Voys zijn al ingevuld."
     },
     "t38": "T.38-fax",
-    "t38Hint": "Ontvang faxen via T.38 als de provider dat aanbiedt; anders gaat de fax via G.711."
+    "t38Hint": "Ontvang faxen via T.38 als de provider dat aanbiedt; anders gaat de fax via G.711.",
+    "portSrv": "0 = volg de DNS SRV-records van de host (aangeraden voor Voys).",
+    "guideDocs": "Volledige handleiding in de documentatie",
+    "guides": {
+      "voys": {
+        "title": "Stap voor stap: Voys koppelen",
+        "intro": "Je hebt een Voys-account met minstens één telefoonnummer nodig. Het kost ongeveer tien minuten.",
+        "portalTitle": "1. In Voys Freedom",
+        "portal": [
+          "Log in op freedom.voys.nl en open Beheer → VoIP-trunks. Klik op Toevoegen.",
+          "Beschrijving: bijvoorbeeld \"Kiestoon\". Voys gebruikt dit ook als uitgaande naam.",
+          "Aantal lijnen: het maximale aantal gelijktijdige gesprekken. Intern nummer: een vrij nummer van drie cijfers, bijvoorbeeld 900.",
+          "Belbevoegdheden: sta alleen de bestemmingen toe die je echt nodig hebt (bijvoorbeeld Nederland en Europa). Dat beperkt de schade als er iets misgaat.",
+          "Zet \"Caller ID van de trunk gebruiken\" aan, zodat het nummer dat Kiestoon meestuurt wordt getoond. Kiestoon stuurt alleen nummers die van jou zijn.",
+          "Sla op. Voys toont nu het Account ID en het wachtwoord: die heb je allebei nodig in Kiestoon.",
+          "Open Geavanceerde (SIP) instellingen en zet de CLI-header op Remote-Party-ID. Laat de vaste hostname leeg: Kiestoon registreert zelf.",
+          "Optioneel, veiliger: sta onder Extra beveiliging alleen het publieke IP-adres van je Kiestoon-server toe.",
+          "Open het belplan van elk Voys-nummer en stuur inkomende gesprekken naar deze VoIP-trunk."
+        ],
+        "kiestoonTitle": "2. In Kiestoon",
+        "kiestoon": [
+          "Provider: Voys (al gekozen). Host ha.voys.nl, poort 0 (DNS SRV), UDP, codecs alaw,g722 en de IP-ranges van Voys zijn ingevuld.",
+          "Gebruikersnaam: het Account ID uit Freedom. Wachtwoord: het wachtwoord van de trunk. Laat de authenticatiegebruikersnaam leeg.",
+          "Nummerweergave: een van je Voys-nummers, bijvoorbeeld 0201234567 of +31201234567.",
+          "Maximaal aantal gelijktijdige gesprekken: hetzelfde aantal als de lijnen in Freedom.",
+          "Sla op. Binnen een minuut wordt de status Aangemeld.",
+          "Inkomende routes: voeg per Voys-nummer een route toe. Voys stuurt het nummer als +31201234567; Kiestoon herkent ook 0201234567.",
+          "Uitgaande routes: voeg een route toe met de voorinstelling voor Nederlandse nummers en kies de Voys-trunk.",
+          "Staat Kiestoon achter NAT? Vul het publieke adres in bij Instellingen → Netwerk en NAT en stuur de SIP-poort en RTP-poorten door naar de server. De IP-ranges van Voys worden automatisch toegelaten in de firewall."
+        ],
+        "troubleshootTitle": "Als het niet werkt",
+        "troubleshoot": [
+          "Status blijft Geweigerd: controleer het Account ID en wachtwoord. Kopieer het wachtwoord opnieuw uit Freedom.",
+          "Status blijft Niet aangemeld: je netwerk blokkeert misschien DNS SRV of poort 6060. Vul host sipproxy.voipgrid.nl en poort 5060 in.",
+          "Inkomende gesprekken komen in de verkeerde route: zet \"Gebeld nummer komt uit\" op To-header.",
+          "De andere kant hoort niets of jij hoort niets: bijna altijd NAT. Controleer het publieke adres en het doorsturen van de RTP-poorten.",
+          "Er wordt een ander nummer getoond: zet \"Caller ID van de trunk gebruiken\" aan in Freedom en controleer of het nummer van jou is."
+        ],
+        "terms": "Voys ondersteunt het koppelen van je eigen telefooncentrale via een VoIP-trunk, maar helpt niet bij het instellen van de centrale zelf. De fraudedetectie van Voys blokkeert een trunk bij verdacht belverkeer."
+      }
+    }
   },
   "routes": {
     "addInbound": "Inkomende route toevoegen",

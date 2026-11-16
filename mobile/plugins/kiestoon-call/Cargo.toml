@@ -1,0 +1,16 @@
+[package]
+name = "tauri-plugin-kiestoon-call"
+version = "0.0.0"
+description = "Kiestoon mobile app: push wake-up (APNs VoIP / FCM) and the system call screen (CallKit / Android)"
+authors = ["RHIS"]
+license = "GPL-3.0-or-later"
+edition = "2021"
+rust-version = "1.80"
+links = "tauri-plugin-kiestoon-call"
+
+[dependencies]
+tauri = { version = "2" }
+serde = { version = "1", features = ["derive"] }
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }

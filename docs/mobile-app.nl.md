@@ -45,6 +45,20 @@ nooit een wachtwoord.
 Onder **Mijn apparaten** zie je je gekoppelde telefoons. **Testmelding sturen** controleert of meldingen
 aankomen; **Ontkoppelen** verwijdert een telefoon.
 
+## De app gebruiken
+
+De app heeft de schermen van de [Windows-softphone](softphone.md), met het menu als tabbalk onderaan. Een
+inkomend gesprek verschijnt op het eigen belscherm van de telefoon: op de iPhone het CallKit-scherm (ook op het
+vergrendelscherm en in de auto), op Android een schermvullend gesprek met **Opnemen** en **Weigeren**. Tijdens
+een gesprek blijven de microfoon en het geluid aan als je naar een andere app gaat of het scherm vergrendelt; op
+Android toont een melding het lopende gesprek met **Ophangen**.
+
+Nieuwe voicemail verschijnt als melding. Op Android met de beller en de AI-samenvatting; op de iPhone staat er
+**Nieuwe voicemail**, open de app om te zien wie er belde en de samenvatting.
+
+Staat **Mobiele app toestaan** uit, of is de app gebouwd zonder push (zie [De app bouwen](#de-app-bouwen)), dan
+werkt de app nog steeds als softphone zolang hij open is, net als de browsersoftphone.
+
 ## Hoe een gesprek de telefoon bereikt
 
 Een telefoon in je zak heeft geen open verbinding met de telefooncentrale: iOS en Android sluiten die om de
@@ -114,6 +128,19 @@ stores), draai dan een eigen pushdienst met je eigen sleutels van Apple en Googl
 
 Het geheim in `/var/lib/kiestoon-push/secret` verzegelt de handles. Maak er een back-up van: met een nieuw geheim
 moet elke telefoon de app één keer openen om opnieuw te registreren.
+
+### De app bouwen
+
+De broncode van de app staat in de map `mobile/` van de repository (Tauri 2, met een klein native deel in Kotlin
+en Swift voor push en het belscherm). Elke wijziging wordt door GitHub Actions gebouwd (workflow **Mobile app**):
+een debug-APK voor Android en een simulatorbuild voor de iPhone. Voor een eigen build in de stores heb je nodig:
+
+- **Android:** een Firebase-project met een Android-app `nl.rhis.kiestoon` (of je eigen id). Zet de
+  `google-services.json` daarvan in `mobile/src-tauri/gen/android/app/`; zonder dat bestand wordt de app gebouwd
+  zonder push. Onderteken de release-APK of -bundle met je uploadsleutel.
+- **iPhone:** een Apple-ontwikkelaarsaccount, een Mac met Xcode, en de capabilities **Push Notifications** en
+  **Background Modes** (Voice over IP, Audio, Remote notifications). Voer in `mobile/` eerst `npx tauri ios init`
+  en dan `./ios-setup.sh` uit; dat voegt de achtergrondmodi, de microfoontekst en de push-entitlement toe.
 
 ## Problemen oplossen
 

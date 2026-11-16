@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Kiestoon",
+  "version": "0.7.0",
+  "identifier": "nl.rhis.kiestoon",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": {
+      "csp": "default-src 'self' ipc: http://ipc.localhost; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "mobile": [
+        { "scheme": ["kiestoon"], "appLink": false }
+      ]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "publisher": "RHIS",
+    "homepage": "https://github.com/rhisijmuiden/kiestoon",
+    "copyright": "RHIS, GPL-3.0-or-later",
+    "category": "Business",
+    "shortDescription": "Kiestoon",
+    "longDescription": "The Kiestoon phone system on your phone: calls for your extension, also when the app is closed, colleagues with live status, queues and voicemail.",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.png"],
+    "iOS": {
+      "minimumSystemVersion": "16.0"
+    },
+    "android": {
+      "minSdkVersion": 29
+    }
+  }
+}

@@ -90,8 +90,9 @@ func run(log *slog.Logger) error {
 		if err != nil {
 			return err
 		}
-		senders[push.APNs] = &push.APNsSender{TeamID: env("KIESTOON_PUSH_APNS_TEAM_ID", ""), KeyID: env("KIESTOON_PUSH_APNS_KEY_ID", ""),
+		a := &push.APNsSender{TeamID: env("KIESTOON_PUSH_APNS_TEAM_ID", ""), KeyID: env("KIESTOON_PUSH_APNS_KEY_ID", ""),
 			Key: k, Bundle: env("KIESTOON_PUSH_APNS_BUNDLE", "nl.rhis.kiestoon")}
+		senders[push.APNs], senders[push.APNsVoIP] = a, a
 		log.Info("apns enabled")
 	}
 	if p := env("KIESTOON_PUSH_FCM_CREDENTIALS", ""); p != "" {
@@ -107,7 +108,7 @@ func run(log *slog.Logger) error {
 		log.Info("fcm enabled")
 	}
 	if env("KIESTOON_PUSH_LOG_ONLY", "") == "1" {
-		for _, p := range []string{push.APNs, push.FCM} {
+		for _, p := range []string{push.APNs, push.APNsVoIP, push.FCM} {
 			if senders[p] == nil {
 				senders[p] = push.LogSender{Platform: p, Log: log}
 			}

@@ -42,7 +42,7 @@ func (r *recSender) take() []push.Message {
 func TestMobileApp(t *testing.T) {
 	c, s := adminClient(t)
 	snd := &recSender{}
-	rl := &push.Relay{Secret: []byte(strings.Repeat("k", 32)), Senders: map[string]push.Sender{push.APNs: snd, push.FCM: snd}}
+	rl := &push.Relay{Secret: []byte(strings.Repeat("k", 32)), Senders: map[string]push.Sender{push.APNs: snd, push.APNsVoIP: snd, push.FCM: snd}}
 	relay := httptest.NewServer(rl.Handler())
 	defer relay.Close()
 	s.mobile.relay = &push.Client{URL: relay.URL, Key: s.installKey(context.Background())}
@@ -61,7 +61,7 @@ func TestMobileApp(t *testing.T) {
 	app := &client{t: t, url: c.url, hc: &http.Client{Jar: jar2}}
 	mustDo(t, app, "POST", "/api/desktop/claim", map[string]string{"code": p["code"].(string)}, 200)
 
-	reg := map[string]any{"appId": "A1", "name": "iPhone van Anna", "platform": "apns", "token": "devtoken", "sandbox": true}
+	reg := map[string]any{"appId": "A1", "name": "iPhone van Anna", "platform": "apns", "token": "devtoken", "alertToken": "alerttoken", "sandbox": true}
 	// Off by default.
 	mustDo(t, app, "POST", "/api/portal/mobile/register", reg, 409)
 	mustDo(t, c, "PUT", "/api/mobile/settings", map[string]any{"enabled": true, "relayURL": "http://insecure"}, 400)
@@ -120,7 +120,7 @@ func TestMobileApp(t *testing.T) {
 	s.onMobileWake(ev("Event", "UserEvent", "UserEvent", "KiestoonWake", "Ext", "201", "WakeID", "1700.5",
 		"From", url.QueryEscape("0612345678"), "FromName", url.QueryEscape("Jan, de Vries")))
 	got := snd.take()
-	if len(got) != 1 || got[0].Kind != push.KindCall || got[0].ID != "1700.5" || got[0].Token != "devtoken" || !got[0].Sandbox {
+	if len(got) != 1 || got[0].Kind != push.KindCall || got[0].ID != "1700.5" || got[0].Token != "devtoken" || got[0].Platform != push.APNsVoIP || !got[0].Sandbox {
 		t.Fatalf("wake push %+v", got)
 	}
 	var data map[string]any
@@ -128,13 +128,14 @@ func TestMobileApp(t *testing.T) {
 		t.Fatalf("payload %v %v", data, err)
 	}
 	s.onMobileWakeEnd(ev("Ext", "201", "WakeID", "1700.5", "Status", ""))
-	if got := snd.take(); len(got) != 1 || got[0].Kind != push.KindCancel {
-		t.Fatalf("cancel %+v", got)
+	// An iPhone ends the CallKit call itself: no cancel push.
+	if got := snd.take(); len(got) != 0 {
+		t.Fatalf("cancel to an iPhone %+v", got)
 	}
 	// Voicemail: only when the number of new messages goes up.
 	s.onMobileMWI(ev("Mailbox", "201@default", "New", "1"))
 	s.onMobileMWI(ev("Mailbox", "201@default", "New", "0"))
-	if got := snd.take(); len(got) != 1 || got[0].Kind != push.KindVoicemail {
+	if got := snd.take(); len(got) != 1 || got[0].Kind != push.KindVoicemail || got[0].Token != "alerttoken" || got[0].Platform != push.APNs {
 		t.Fatalf("voicemail %+v", got)
 	}
 

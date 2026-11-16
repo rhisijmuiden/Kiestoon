@@ -89,11 +89,16 @@ function ringer() {
   }
 }
 
+const webrtcAccount = () => api<WebRTCAccount>('GET', '/portal/webrtc')
+
 /**
  * auto: register straight away (the Windows softphone) instead of after the user switched the
- * browser softphone on. agent is the SIP User-Agent.
+ * browser softphone on. agent is the SIP User-Agent. account fetches the SIP account (the mobile
+ * app has its own endpoint). ring: false leaves ringing to the phone's own call screen.
  */
-export function SoftphoneProvider({ webrtc, children, auto, agent = 'Kiestoon Web' }: { webrtc: boolean; children: ReactNode; auto?: boolean; agent?: string }) {
+export function SoftphoneProvider({ webrtc, children, auto, agent = 'Kiestoon Web', account: getAccount = webrtcAccount, ring: ringOn = true }: {
+  webrtc: boolean; children: ReactNode; auto?: boolean; agent?: string; account?: () => Promise<WebRTCAccount>; ring?: boolean
+}) {
   const [status, setStatus] = useState<PhoneStatus>('off')
   const [call, setCall] = useState<CallState | null>(null)
   const [open, setOpen] = useState(false)
@@ -135,7 +140,7 @@ export function SoftphoneProvider({ webrtc, children, auto, agent = 'Kiestoon We
     if (!window.isSecureContext) return setStatus('insecure')
     setStatus('connecting')
     try {
-      const acc = await api<WebRTCAccount>('GET', '/portal/webrtc')
+      const acc = await getAccount()
       account.current = acc
       const JsSIP = await import('jssip')
       const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}${acc.wsPath}`
@@ -160,14 +165,14 @@ export function SoftphoneProvider({ webrtc, children, auto, agent = 'Kiestoon We
         const from = s.remote_identity
         setCall({ direction: 'incoming', remote: from.uri.user, remoteName: from.display_name ?? '', state: 'ringing', muted: false, held: false, startedAt: 0 })
         setOpen(true)
-        ring.current.start()
+        if (ringOn) ring.current.start()
       })
       u.start()
       ua.current = u
     } catch {
       setStatus('failed')
     }
-  }, [attach, agent])
+  }, [attach, agent, getAccount, ringOn])
 
   useEffect(() => {
     let on = !!auto

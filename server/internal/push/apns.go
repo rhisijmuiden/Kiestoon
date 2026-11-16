@@ -81,6 +81,13 @@ func (a *APNsSender) token() (string, error) {
 	return a.jwt, nil
 }
 
+// apnsTexts are the generic texts of visible notifications; the app shows the decrypted content
+// instead when it can.
+var apnsTexts = map[string]map[string][2]string{
+	"en": {KindVoicemail: {"New voicemail", "Open Kiestoon to listen."}, KindTest: {"Kiestoon", "Test notification: notifications work."}},
+	"nl": {KindVoicemail: {"Nieuwe voicemail", "Open Kiestoon om te luisteren."}, KindTest: {"Kiestoon", "Testmelding: meldingen werken."}},
+}
+
 // apnsRequest builds the headers and body Apple wants for one kind.
 func apnsRequest(bundle string, m Message) (pushType, topic, priority string, payload map[string]any) {
 	payload = map[string]any{"k": m.Kind}
@@ -98,14 +105,15 @@ func apnsRequest(bundle string, m Message) (pushType, topic, priority string, pa
 		payload["aps"] = map[string]any{"content-available": 1}
 		return "background", bundle, "5", payload
 	}
-	// Voicemail and test: a visible notification. The app's notification extension decrypts the
-	// content and shows the caller and the summary; without it the generic text stays.
-	key := "PUSH_VOICEMAIL"
-	if m.Kind == KindTest {
-		key = "PUSH_TEST"
+	// Voicemail and test: a visible notification with a generic text. A notification extension of
+	// the app can decrypt the content and show the caller and the summary instead.
+	texts, ok := apnsTexts[m.Lang]
+	if !ok {
+		texts = apnsTexts["en"]
 	}
+	t := texts[m.Kind]
 	payload["aps"] = map[string]any{
-		"alert":           map[string]any{"title-loc-key": key + "_TITLE", "loc-key": key + "_BODY"},
+		"alert":           map[string]any{"title": t[0], "body": t[1]},
 		"sound":           "default",
 		"mutable-content": 1,
 		"thread-id":       m.Kind,
@@ -115,6 +123,10 @@ func apnsRequest(bundle string, m Message) (pushType, topic, priority string, pa
 
 // Send delivers one notification.
 func (a *APNsSender) Send(ctx context.Context, m Message) error {
+	// A PushKit token only takes calls, and an alert token never takes them.
+	if (m.Platform == APNsVoIP) != (m.Kind == KindCall) {
+		return ErrWrongKind
+	}
 	jwt, err := a.token()
 	if err != nil {
 		return err

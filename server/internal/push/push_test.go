@@ -65,7 +65,7 @@ func TestRelayRoundTrip(t *testing.T) {
 		t.Fatal("handle shows the token")
 	}
 	sec := NewDeviceSecret()
-	if err := c.Send(ctx, h, sec, KindCall, "1700000000.12", map[string]string{"from": "0612345678"}); err != nil {
+	if err := c.Send(ctx, h, sec, KindCall, "1700000000.12", "en", map[string]string{"from": "0612345678"}); err != nil {
 		t.Fatal(err)
 	}
 	if len(f.got) != 1 || f.got[0].Token != "tok123" || !f.got[0].Sandbox || f.got[0].Kind != KindCall {
@@ -80,15 +80,15 @@ func TestRelayRoundTrip(t *testing.T) {
 	}
 	// Another installation cannot use the handle.
 	other := &Client{URL: srv.URL, Key: newKey(t)}
-	if err := other.Send(ctx, h, sec, KindCall, "", nil); err == nil || !strings.Contains(err.Error(), ErrCodeBadHandle) {
+	if err := other.Send(ctx, h, sec, KindCall, "", "en", nil); err == nil || !strings.Contains(err.Error(), ErrCodeBadHandle) {
 		t.Fatalf("foreign handle: %v", err)
 	}
 	// A tampered handle is refused.
-	if err := c.Send(ctx, h[:len(h)-2]+"AA", sec, KindTest, "", nil); err == nil {
+	if err := c.Send(ctx, h[:len(h)-2]+"AA", sec, KindTest, "", "en", nil); err == nil {
 		t.Fatal("tampered handle accepted")
 	}
 	// Unknown kinds are refused.
-	if err := c.Send(ctx, h, sec, "spam", "", nil); err == nil {
+	if err := c.Send(ctx, h, sec, "spam", "", "en", nil); err == nil {
 		t.Fatal("unknown kind accepted")
 	}
 }
@@ -102,13 +102,13 @@ func TestRelayGoneAndLimits(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.gone = true
-	if err := c.Send(ctx, h, NewDeviceSecret(), KindTest, "", nil); !errors.Is(err, ErrGone) {
+	if err := c.Send(ctx, h, NewDeviceSecret(), KindTest, "", "en", nil); !errors.Is(err, ErrGone) {
 		t.Fatalf("want gone, got %v", err)
 	}
 	f.gone = false
 	var last error
 	for range 5 {
-		last = c.Send(ctx, h, NewDeviceSecret(), KindTest, "", nil)
+		last = c.Send(ctx, h, NewDeviceSecret(), KindTest, "", "en", nil)
 	}
 	if last == nil || !strings.Contains(last.Error(), ErrCodeRate) {
 		t.Fatalf("want rate limit, got %v", last)
@@ -171,7 +171,7 @@ func TestAPNsSender(t *testing.T) {
 	}))
 	defer srv.Close()
 	a := &APNsSender{TeamID: "TEAM", KeyID: "KID", Key: ek, Bundle: "nl.rhis.kiestoon", BaseURL: srv.URL, SandboxURL: srv.URL}
-	if err := a.Send(context.Background(), Message{Token: "abc", Kind: KindCall, ID: "1.2", Data: "xyz"}); err != nil {
+	if err := a.Send(context.Background(), Message{Platform: APNsVoIP, Token: "abc", Kind: KindCall, ID: "1.2", Data: "xyz"}); err != nil {
 		t.Fatal(err)
 	}
 	if path != "/3/device/abc" || hdr.Get("apns-push-type") != "voip" || hdr.Get("apns-topic") != "nl.rhis.kiestoon.voip" || body["e"] != "xyz" {
@@ -188,14 +188,24 @@ func TestAPNsSender(t *testing.T) {
 	if !ecdsa.Verify(&ek.PublicKey, sum[:], new(big.Int).SetBytes(sig[:32]), new(big.Int).SetBytes(sig[32:])) {
 		t.Fatal("jwt signature invalid")
 	}
-	if err := a.Send(context.Background(), Message{Token: "abc", Kind: KindVoicemail, ID: "vm-201"}); err != nil {
+	if err := a.Send(context.Background(), Message{Platform: APNs, Token: "abc", Kind: KindVoicemail, ID: "vm-201", Lang: "nl"}); err != nil {
 		t.Fatal(err)
 	}
 	if hdr.Get("apns-push-type") != "alert" || hdr.Get("apns-topic") != "nl.rhis.kiestoon" || hdr.Get("apns-collapse-id") != "vm-201" {
 		t.Fatalf("voicemail: %v", hdr)
 	}
+	if alert := body["aps"].(map[string]any)["alert"].(map[string]any); alert["title"] != "Nieuwe voicemail" {
+		t.Fatalf("alert %v", alert)
+	}
+	// A VoIP token only takes calls, an alert token never.
+	if err := a.Send(context.Background(), Message{Platform: APNsVoIP, Token: "abc", Kind: KindVoicemail}); !errors.Is(err, ErrWrongKind) {
+		t.Fatalf("voip voicemail: %v", err)
+	}
+	if err := a.Send(context.Background(), Message{Platform: APNs, Token: "abc", Kind: KindCall}); !errors.Is(err, ErrWrongKind) {
+		t.Fatalf("alert call: %v", err)
+	}
 	status, reason = 400, "BadDeviceToken"
-	if err := a.Send(context.Background(), Message{Token: "abc", Kind: KindTest}); !errors.Is(err, ErrGone) {
+	if err := a.Send(context.Background(), Message{Platform: APNs, Token: "abc", Kind: KindTest}); !errors.Is(err, ErrGone) {
 		t.Fatalf("want gone, got %v", err)
 	}
 }

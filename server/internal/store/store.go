@@ -727,6 +727,8 @@ var migrations = []string{
 		last_push  TEXT NOT NULL DEFAULT '',
 		UNIQUE(user_id, app_id)
 	);`,
+	// An iPhone has two push tokens: PushKit (calls) and the one for visible notifications.
+	`ALTER TABLE mobile_devices ADD COLUMN alert_handle TEXT NOT NULL DEFAULT '';`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

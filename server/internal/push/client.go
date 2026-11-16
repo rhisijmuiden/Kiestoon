@@ -17,6 +17,9 @@ import (
 // DefaultRelay is the relay of the Kiestoon app that RHIS publishes.
 const DefaultRelay = "https://push.rhis.nl"
 
+// ErrWrongKind means the token cannot take this kind of notification.
+var ErrWrongKind = errors.New("push: wrong kind for this token")
+
 // ErrGone means the phone no longer accepts notifications (the app was removed): forget it.
 var ErrGone = errors.New("push: device gone")
 
@@ -90,8 +93,8 @@ func (c *Client) Register(ctx context.Context, platform, token string, sandbox b
 }
 
 // Send sends one notification. data is encrypted with the device secret first.
-func (c *Client) Send(ctx context.Context, handle, secret, kind, id string, data any) error {
-	req := PushRequest{Handle: handle, Kind: kind, ID: id, Nonce: nonce()}
+func (c *Client) Send(ctx context.Context, handle, secret, kind, id, lang string, data any) error {
+	req := PushRequest{Handle: handle, Kind: kind, ID: id, Lang: lang, Nonce: nonce()}
 	if data != nil {
 		enc, err := Seal(secret, data)
 		if err != nil {

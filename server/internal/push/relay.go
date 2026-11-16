@@ -18,11 +18,14 @@ import (
 
 // Message is what a Sender delivers to one phone.
 type Message struct {
-	Token   string
-	Sandbox bool
-	Kind    string
-	ID      string
-	Data    string
+	// Platform is the platform of the token (apns, apns-voip or fcm).
+	Platform string
+	Token    string
+	Sandbox  bool
+	Kind     string
+	ID       string
+	Data     string
+	Lang     string
 }
 
 // Sender delivers to one platform.
@@ -221,8 +224,10 @@ func (rl *Relay) push(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
-	err = snd.Send(ctx, Message{Token: d.Token, Sandbox: d.Sandbox, Kind: req.Kind, ID: req.ID, Data: req.Data})
+	err = snd.Send(ctx, Message{Platform: d.Platform, Token: d.Token, Sandbox: d.Sandbox, Kind: req.Kind, ID: req.ID, Data: req.Data, Lang: req.Lang})
 	switch {
+	case errors.Is(err, ErrWrongKind):
+		relayErr(w, http.StatusBadRequest, ErrCodeKind)
 	case errors.Is(err, ErrGone):
 		relayErr(w, http.StatusGone, ErrCodeGone)
 	case err != nil:

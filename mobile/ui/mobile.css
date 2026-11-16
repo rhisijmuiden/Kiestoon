@@ -1,0 +1,7 @@
+/* The phone: room for the notch and the home indicator, larger touch targets. */
+.page { padding: calc(env(safe-area-inset-top, 0px) + 28px) max(20px, env(safe-area-inset-right, 0px)) 0 max(20px, env(safe-area-inset-left, 0px)); }
+body { font-family: Inter, -apple-system, system-ui, Roboto, sans-serif; font-size: 15px; }
+h1 { font-family: -apple-system, system-ui, Roboto, sans-serif; }
+input[type=text], .btn { height: 48px; font-size: 16px; }
+.mono { font-family: ui-monospace, "SF Mono", "Roboto Mono", monospace; }
+.foot { margin: auto calc(-1 * max(20px, env(safe-area-inset-left, 0px))) 0; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); }

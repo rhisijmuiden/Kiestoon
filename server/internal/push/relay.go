@@ -21,11 +21,11 @@ type Message struct {
 	// Platform is the platform of the token (apns, apns-voip or fcm).
 	Platform string
 	Token    string
-	Sandbox bool
-	Kind    string
-	ID      string
-	Data    string
-	Lang    string
+	Sandbox  bool
+	Kind     string
+	ID       string
+	Data     string
+	Lang     string
 }
 
 // Sender delivers to one platform.

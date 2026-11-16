@@ -145,7 +145,12 @@
     "ai_no_key": "Voeg eerst een Claude API-sleutel toe, of kies het lokale model.",
     "ai_not_ready": "Het lokale AI-model is nog niet gedownload, of het spraakpakket is niet geïnstalleerd.",
     "ai_failed": "De samenvatting is mislukt.",
-    "ai_busy": "Er loopt al een transcriptie. Probeer het over een minuut opnieuw."
+    "ai_busy": "Er loopt al een transcriptie. Probeer het over een minuut opnieuw.",
+    "mobile_disabled": "De mobiele app staat uit. Vraag het je beheerder.",
+    "relay_failed": "De pushdienst is niet bereikbaar. Probeer het later opnieuw.",
+    "device_gone": "Deze telefoon neemt geen meldingen meer aan (de app is verwijderd) en is ontkoppeld.",
+    "invalid_relay": "Vul het https://-adres van de pushdienst in.",
+    "not_registered": "Deze telefoon is nog niet gekoppeld. Koppel hem opnieuw vanuit het portaal."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -252,7 +257,8 @@
     "cluster": "Hoge beschikbaarheid",
     "help": "Help",
     "helpTitle": "Handleiding voor deze pagina openen",
-    "ai": "AI"
+    "ai": "AI",
+    "mobileApp": "Mobiele app"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2568,7 +2574,8 @@
     },
     "device": {
       "phone": "Bureautoestel",
-      "web": "Softphone"
+      "web": "Softphone",
+      "app": "Mobiele app"
     },
     "ringing": "Gaat over",
     "transfer": "Doorverbinden",
@@ -3126,6 +3133,58 @@
       "5": "vrijdag",
       "6": "zaterdag",
       "7": "zondag"
+    }
+  },
+  "mobile": {
+    "title": "Mobiele app",
+    "subtitle": "Kiestoon op iPhone en Android, met pushmeldingen voor gesprekken en voicemail",
+    "saved": "Opgeslagen.",
+    "app": "Mobiele app",
+    "intro": "Medewerkers koppelen de Kiestoon-app op hun telefoon aan hun toestel. De app gaat over zoals een bureautoestel, ook als hij gesloten is: de telefooncentrale wekt hem met een pushmelding.",
+    "enabled": "Mobiele app toestaan",
+    "enabledHint": "Medewerkers kunnen de app dan koppelen onder Mijn apparaten.",
+    "step1": "Medewerkers installeren de Kiestoon-app uit de App Store of Google Play.",
+    "step2": "Onder Mijn apparaten in het portaal kiezen ze Mobiele app koppelen en scannen ze de QR-code.",
+    "step3": "Gesprekken voor hun toestel gaan dan ook in de app over, en nieuwe voicemail verschijnt als melding.",
+    "relay": "Pushdienst",
+    "relayText": "Apple en Google bezorgen meldingen voor een app alleen namens de uitgever. De pushdienst van RHIS stuurt ze door voor de Kiestoon-app; hij bewaart niets en kan niet lezen wat hij doorstuurt.",
+    "relayURL": "Adres van de pushdienst",
+    "relayHint": "Laat leeg voor de dienst van RHIS. Wijzig dit alleen als je een eigen versie van de app uitbrengt.",
+    "test": "Verbinding testen",
+    "testOk": "Verbonden. Bezorgt naar: {{platforms}}.",
+    "testErrors": {
+      "unreachable": "De pushdienst is vanaf deze server niet bereikbaar.",
+      "not_a_relay": "Dit adres antwoordt niet als Kiestoon-pushdienst.",
+      "invalid_relay": "Vul een https://-adres in."
+    },
+    "privacy": "Privacy",
+    "privacyText": "Wie er belt en de samenvatting van voicemail worden per telefoon versleuteld; de pushdienst ziet alleen dát er een melding naar een telefoon gaat. Elke telefooncentrale heeft een eigen sleutel en kan alleen haar eigen telefoons wekken.",
+    "publicKey": "Sleutel van deze telefooncentrale",
+    "platforms": {
+      "apns": "iPhone",
+      "fcm": "Android"
+    },
+    "devices": "Gekoppelde telefoons",
+    "device": "Telefoon",
+    "user": "Medewerker",
+    "lastSeen": "Laatst gebruikt",
+    "lastPush": "Laatste melding",
+    "linkedOn": "Gekoppeld {{date}}",
+    "noDevices": "Nog geen telefoons gekoppeld",
+    "noDevicesText": "Medewerkers koppelen de app zelf onder Mijn apparaten.",
+    "remove": "Ontkoppelen",
+    "removeConfirm": "{{name}} van {{user}} ontkoppelen? De app gaat niet meer over tot hij opnieuw is gekoppeld.",
+    "portal": {
+      "title": "Mobiele app",
+      "text": "Neem je toestel mee: de Kiestoon-app gaat over met jouw gesprekken, ook als hij gesloten is, en toont nieuwe voicemail.",
+      "link": "Mobiele app koppelen",
+      "scan": "Scan deze code met de camera van je telefoon. De Kiestoon-app opent en koppelt zichzelf.",
+      "orCode": "Of open de app, kies Koppelen met code en vul in:",
+      "qrAlt": "QR-code om de mobiele app te koppelen",
+      "lastSeen": "Laatst gebruikt {{date}}",
+      "test": "Testmelding sturen",
+      "testSent": "Testmelding verstuurd. Hij verschijnt binnen enkele seconden op je telefoon.",
+      "removeConfirm": "{{name}} ontkoppelen? De app gaat niet meer over tot je hem opnieuw koppelt."
     }
   }
 }

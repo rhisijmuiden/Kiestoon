@@ -115,6 +115,8 @@ jobs:
         run: |
           GOTOOLCHAIN=auto go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
           make edge-deb VERSION="$VERSION" GOARCH=arm64
+          make push-deb VERSION="$VERSION" GOARCH=amd64
+          make push-deb VERSION="$VERSION" GOARCH=arm64
           sudo apt-get update -qq
           sudo apt-get install -y -qq parted e2fsprogs xz-utils
           sudo CACHE_DIR="$PWD/pi-cache" ./packaging/edge/pi-image.sh "dist/kiestoon-edge_${VERSION#v}_arm64.deb" dist-pi/

@@ -406,8 +406,13 @@ func (s *Server) summariseSpool(ctx context.Context) {
 				continue
 			}
 			if t := s.transcript(b); t != "" && s.aiLoad("vm-"+sumHex(b)) == nil {
-				if s.voicemailSummary(ctx, b, t) == nil && s.aiLoad("vm-"+sumHex(b)) == nil {
+				sum := s.voicemailSummary(ctx, b, t)
+				if sum == nil && s.aiLoad("vm-"+sumHex(b)) == nil {
 					return // engine not ready: try again next turn
+				}
+				// A new message: show the summary on the mobile app too.
+				if at, err := time.Parse(time.RFC3339, m.Date); sum != nil && m.Folder == "INBOX" && err == nil && time.Since(at) < time.Hour {
+					go s.pushVoicemailSummary(e.Number, m.CallerID, sum.Summary)
 				}
 			}
 		}

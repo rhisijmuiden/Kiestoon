@@ -84,6 +84,8 @@ type Server struct {
 	journeys journeyState
 	// wall is the wallboard: agent timers, cached figures and active SLA alerts.
 	wall wallState
+	// mobile is the mobile app: voicemail counters for its notifications.
+	mobile mobileState
 }
 
 // New wires up a server.
@@ -195,6 +197,7 @@ func (s *Server) Routes() http.Handler {
 	s.aiRoutes(mux, admin, recep, full)
 	s.wallboardRoutes(mux, admin, recep)
 	s.reportRoutes(mux, admin)
+	s.mobileRoutes(mux, admin, full)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)

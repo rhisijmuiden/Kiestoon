@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, GripVertical, Headset, ListOrdered, Monitor, Phone, PhoneForwarded, Undo2, Users, UsersRound, X } from 'lucide-react'
+import { Check, GripVertical, Headset, ListOrdered, Monitor, Phone, PhoneForwarded, Smartphone, Undo2, Users, UsersRound, X } from 'lucide-react'
 import { Badge, Empty, SectionTitle, formatDuration, useApi } from './kit'
 import { Segmented, stateTone } from './pbx'
 import { Alert, Button, Card, ErrorMessage, Input } from './ui'
@@ -61,7 +61,7 @@ export function ActiveCalls({ hint }: { hint?: boolean }) {
                   <span className="block truncate text-ink"><span className={c.peerName ? 'font-medium' : 'font-mono'}>{c.peerName || c.peer || t('reception.unknownCaller')}</span></span>
                   <span className="flex flex-wrap items-center gap-x-2 text-xs text-subtle">
                     {c.peerName && c.peer && <span className="font-mono">{c.peer}</span>}
-                    <span className="inline-flex items-center gap-1">{c.device === 'web' ? <Monitor className="size-3.5" aria-hidden /> : <Phone className="size-3.5" aria-hidden />}{t(`transfer.device.${c.device}`)}</span>
+                    <span className="inline-flex items-center gap-1">{c.device === 'web' ? <Monitor className="size-3.5" aria-hidden /> : c.device === 'app' ? <Smartphone className="size-3.5" aria-hidden /> : <Phone className="size-3.5" aria-hidden />}{t(`transfer.device.${c.device}`)}</span>
                     <span className="font-mono">{c.state === 'talking' ? formatDuration(c.duration) : t('transfer.ringing')}</span>
                   </span>
                 </span>

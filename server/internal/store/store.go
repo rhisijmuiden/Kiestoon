@@ -712,6 +712,21 @@ var migrations = []string{
 		at       TEXT NOT NULL
 	);
 	CREATE INDEX sla_alerts_at ON sla_alerts(at);`,
+	// Phase 6: phones with the mobile app. handle is the opaque push handle of the relay (the push
+	// token itself is never stored); secret encrypts the content of notifications for this phone.
+	`CREATE TABLE mobile_devices (
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		app_id     TEXT NOT NULL,
+		name       TEXT NOT NULL DEFAULT '',
+		platform   TEXT NOT NULL,
+		handle     TEXT NOT NULL,
+		secret     TEXT NOT NULL,
+		created_at TEXT NOT NULL,
+		last_seen  TEXT NOT NULL DEFAULT '',
+		last_push  TEXT NOT NULL DEFAULT '',
+		UNIQUE(user_id, app_id)
+	);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

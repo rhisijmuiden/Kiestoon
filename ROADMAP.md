@@ -302,6 +302,10 @@ the testing channel.
   answer whose keywords match, optionally helped by the AI engine; "not understood" as fallback
 - [ ] Mobile app (iOS and Android), the counterpart of the Windows softphone: calls with push notifications when
   the app is closed (CallKit / Android ConnectionService), colleagues and presence, voicemail, history, queues
+  - [x] Push relay and server side (`v0.7.0-rc.6`): stateless relay `kiestoon-push` (APNs VoIP + FCM, sealed
+    handles, ed25519-signed requests per installation, content end-to-end encrypted per phone), QR linking in
+    the portal, wake-up dialplan (`<number>-app` endpoint, waits for the woken app), voicemail push with AI summary
+  - [ ] App shell (Tauri 2 iOS/Android with CallKit / ConnectionService) and store release
 - [ ] WhatsApp and SMS in the portal next to calls: a shared inbox per team or number, conversations linked to the
   phone book and the call history, notifications
 

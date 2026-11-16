@@ -10,7 +10,7 @@ LDFLAGS := -s -w \
 	-X github.com/rhisijmuiden/kiestoon/server/internal/version.Commit=$(COMMIT) \
 	-X github.com/rhisijmuiden/kiestoon/server/internal/version.BuildDate=$(BUILD_DATE)
 
-.PHONY: all web build test deb lxc edge edge-deb edge-lxc edge-pi clean run
+.PHONY: all web build test deb lxc edge edge-deb edge-lxc edge-pi push push-deb clean run
 
 all: build
 
@@ -43,6 +43,16 @@ edge-deb: edge
 	mkdir -p dist
 	cp build/kiestoon-edge-linux-$(GOARCH) build/kiestoon-edge
 	VERSION=$(DEB_VERSION) ARCH=$(GOARCH) nfpm package --config packaging/edge/nfpm.yaml --packager deb --target dist/kiestoon-edge_$(DEB_VERSION)_$(GOARCH).deb
+
+# The push relay of the mobile app (run by the publisher of the app, not by phone systems).
+push:
+	mkdir -p build
+	cd server && CGO_ENABLED=0 GOOS=linux GOARCH=$(GOARCH) go build -trimpath -ldflags "$(LDFLAGS)" -o ../build/kiestoon-push-linux-$(GOARCH) ./cmd/kiestoon-push
+
+push-deb: push
+	mkdir -p dist
+	cp build/kiestoon-push-linux-$(GOARCH) build/kiestoon-push
+	VERSION=$(DEB_VERSION) ARCH=$(GOARCH) nfpm package --config packaging/push/nfpm.yaml --packager deb --target dist/kiestoon-push_$(DEB_VERSION)_$(GOARCH).deb
 
 edge-lxc: edge-deb
 	sudo ./lxc/build-lxc.sh dist/kiestoon-edge_$(DEB_VERSION)_$(GOARCH).deb dist/

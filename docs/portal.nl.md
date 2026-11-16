@@ -103,3 +103,6 @@ Medewerkers stellen zelf hun [toetsen](phone-keys.md) in, bijvoorbeeld een snelk
 collega. De telefoon neemt de nieuwe toetsen over bij de volgende herstart of provisioning-controle.
 
 **Windows.** Voor een volwaardige softphone in de taakbalk, zie de [Windows-softphone](softphone.md).
+
+**Mobiele app.** Als je beheerder het toestaat, toont **Mobiele app koppelen** een QR-code voor de Kiestoon-app
+op je telefoon, zie [Mobiele app](mobile-app.md).

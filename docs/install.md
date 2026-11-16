@@ -32,14 +32,17 @@ portal and a one-time **setup token** for the first administrator.
 Run the installer as root on a clean Debian 13 machine:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/kiestoon/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/install.sh | sudo bash
 ```
 
 To follow the testing channel (release candidates):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/kiestoon/main/install.sh | sudo bash -s -- --channel testing
+curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/install.sh | sudo bash -s -- --channel testing
 ```
+
+!!! note ""
+    Until the first stable release, only the testing channel has releases, so use `--channel testing` for now.
 
 Installer options:
 

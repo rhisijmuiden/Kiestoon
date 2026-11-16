@@ -32,14 +32,17 @@ hetzelfde: een draaiend portaal en een eenmalige **setup-token** voor de eerste 
 Start het installatiescript als root op een schone Debian 13-machine:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/kiestoon/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/install.sh | sudo bash
 ```
 
 Om het testkanaal (release candidates) te volgen:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/kiestoon/main/install.sh | sudo bash -s -- --channel testing
+curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/install.sh | sudo bash -s -- --channel testing
 ```
+
+!!! note ""
+    Tot de eerste stabiele release heeft alleen het testkanaal releases, dus gebruik voorlopig `--channel testing`.
 
 Opties van het script:
 

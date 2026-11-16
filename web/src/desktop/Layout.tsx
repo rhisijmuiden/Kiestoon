@@ -11,7 +11,8 @@ import { Avatar } from './Avatar'
 import { CallPanel } from './CallPanel'
 import { DesktopData, myQueues, useDesktop } from './data'
 import { ShellSync } from './ShellSync'
-import { shell } from './bridge'
+import { MobileSync, mobileAccount, pushActive } from './MobileSync'
+import { inMobile, shell } from './bridge'
 
 export function DesktopLayout() {
   const [version, setVersion] = useState('')
@@ -27,6 +28,22 @@ export function DesktopLayout() {
 
 function Phone({ version }: { version: string }) {
   const { me } = useDesktop()
+  const onMobile = inMobile()
+  // With push the phone's own call screen rings; without it the page rings while it is open.
+  const [push, setPush] = useState(false)
+  useEffect(() => {
+    if (onMobile) pushActive().then(setPush).catch(() => undefined)
+  }, [onMobile])
+  if (onMobile) {
+    return (
+      <SoftphoneProvider webrtc={!!me.data?.webrtc} auto account={mobileAccount} ring={!push} agent={`Kiestoon Mobile${version ? '/' + version : ''}`}>
+        <TransferProvider>
+          <MobileSync />
+          <Frame />
+        </TransferProvider>
+      </SoftphoneProvider>
+    )
+  }
   return (
     <SoftphoneProvider webrtc={!!me.data?.webrtc} auto agent={`Kiestoon Softphone${version ? '/' + version : ''}`}>
       <TransferProvider>
@@ -56,14 +73,43 @@ function Frame() {
   const unread = (voicemail.data ?? []).filter((m) => m.folder === 'INBOX').length
   const q = myQueues(queues.data, me.data?.id)
   const icon = 'size-5'
+  const links = (
+    <>
+      <RailLink to="/desktop" end label={t('desktop.nav.contacts')} icon={<BookUser className={icon} aria-hidden />} />
+      <RailLink to="/desktop/history" label={t('desktop.nav.history')} icon={<Clock3 className={icon} aria-hidden />} />
+      <RailLink to="/desktop/keypad" label={t('desktop.nav.keypad')} icon={<Grid3x3 className={icon} aria-hidden />} />
+      <RailLink to="/desktop/queues" label={t('desktop.nav.queues')} icon={<ListOrdered className={icon} aria-hidden />} />
+      {me.data?.voicemail && <RailLink to="/desktop/voicemail" label={t('desktop.nav.voicemail')} badge={unread} icon={<VoicemailIcon className={icon} aria-hidden />} />}
+    </>
+  )
+  const status = q.mine.length > 0
+    ? <span><b className="font-semibold text-muted">{t('desktop.queuesSignedIn', { count: q.signedIn.length, total: q.mine.length })}</b></span>
+    : <span>{phone.status === 'registered' ? t('desktop.status.registered') : t(`desktop.status.${phone.status}`)}</span>
+
+  // The phone app: the menu as a tab bar at the bottom, clear of the notch and the home indicator.
+  if (inMobile()) {
+    return (
+      <div className="flex h-dvh flex-col overflow-hidden pt-[env(safe-area-inset-top)]">
+        <Header />
+        <main className="min-h-0 flex-1 overflow-y-auto">
+          {phone.call && <CallPanel />}
+          <Outlet />
+        </main>
+        <div className="flex-none border-t border-line px-3.5 py-1 text-[11px] text-subtle">{status}</div>
+        <nav aria-label={t('nav.menu')}
+          className="flex flex-none items-center justify-around border-t border-line bg-surface-2 px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
+          {links}
+          <RailLink to="/desktop/settings" label={t('desktop.nav.settings')} icon={<SettingsIcon className={icon} aria-hidden />} />
+          <RailLink to="/desktop/info" label={t('desktop.nav.info')} icon={<InfoIcon className={icon} aria-hidden />} />
+        </nav>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen overflow-hidden">
       <nav aria-label={t('nav.menu')} className="flex w-14 flex-none flex-col items-center gap-1.5 border-r border-line bg-surface-2 py-2.5">
-        <RailLink to="/desktop" end label={t('desktop.nav.contacts')} icon={<BookUser className={icon} aria-hidden />} />
-        <RailLink to="/desktop/history" label={t('desktop.nav.history')} icon={<Clock3 className={icon} aria-hidden />} />
-        <RailLink to="/desktop/keypad" label={t('desktop.nav.keypad')} icon={<Grid3x3 className={icon} aria-hidden />} />
-        <RailLink to="/desktop/queues" label={t('desktop.nav.queues')} icon={<ListOrdered className={icon} aria-hidden />} />
-        {me.data?.voicemail && <RailLink to="/desktop/voicemail" label={t('desktop.nav.voicemail')} badge={unread} icon={<VoicemailIcon className={icon} aria-hidden />} />}
+        {links}
         <div className="flex-1" />
         <RailLink to="/desktop/settings" label={t('desktop.nav.settings')} icon={<SettingsIcon className={icon} aria-hidden />} />
         <RailLink to="/desktop/info" label={t('desktop.nav.info')} icon={<InfoIcon className={icon} aria-hidden />} />
@@ -75,9 +121,7 @@ function Frame() {
           <Outlet />
         </main>
         <footer className="flex flex-none items-center gap-2 border-t border-line px-3.5 py-1.5 text-[11px] text-subtle">
-          {q.mine.length > 0
-            ? <span><b className="font-semibold text-muted">{t('desktop.queuesSignedIn', { count: q.signedIn.length, total: q.mine.length })}</b></span>
-            : <span>{phone.status === 'registered' ? t('desktop.status.registered') : t(`desktop.status.${phone.status}`)}</span>}
+          {status}
           <PoweredBy className="ml-auto flex scale-[0.8] origin-right !p-1" />
         </footer>
       </div>

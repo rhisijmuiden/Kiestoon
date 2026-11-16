@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-registration"
+description = "Enables the registration command without any pre-configured scope."
+commands.allow = ["registration"]
+
+[[permission]]
+identifier = "deny-registration"
+description = "Denies the registration command without any pre-configured scope."
+commands.deny = ["registration"]

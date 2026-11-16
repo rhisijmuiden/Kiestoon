@@ -92,11 +92,11 @@ type mobileDevice struct {
 	LastSeen  string `json:"lastSeen"`
 	LastPush  string `json:"lastPush"`
 
-	handle, secret string
+	handle, alertHandle, secret, lang string
 }
 
 const mobileCols = `d.id, d.user_id, u.username, u.display_name, COALESCE(e.number, ''), d.name, d.platform, d.created_at, d.last_seen,
-	d.last_push, d.handle, d.secret`
+	d.last_push, d.handle, d.alert_handle, d.secret, u.language`
 
 const mobileFrom = ` FROM mobile_devices d JOIN users u ON u.id = d.user_id LEFT JOIN extensions e ON e.id = u.extension_id`
 
@@ -110,7 +110,7 @@ func (s *Server) mobileDevices(ctx context.Context, where string, args ...any) (
 	for rows.Next() {
 		var d mobileDevice
 		if err := rows.Scan(&d.ID, &d.UserID, &d.User, &d.UserName, &d.Extension, &d.Name, &d.Platform, &d.CreatedAt,
-			&d.LastSeen, &d.LastPush, &d.handle, &d.secret); err != nil {
+			&d.LastSeen, &d.LastPush, &d.handle, &d.alertHandle, &d.secret, &d.lang); err != nil {
 			return nil, err
 		}
 		out = append(out, d)
@@ -272,7 +272,10 @@ func (s *Server) portalMobileRegister(w http.ResponseWriter, r *http.Request) {
 		Name     string `json:"name"`
 		Platform string `json:"platform"`
 		Token    string `json:"token"`
-		Sandbox  bool   `json:"sandbox"`
+		// AlertToken is the second token of an iPhone, for visible notifications: Token is then its
+		// PushKit (VoIP) token, which only takes calls.
+		AlertToken string `json:"alertToken"`
+		Sandbox    bool   `json:"sandbox"`
 	}
 	if err := decode(r, &req); err != nil {
 		writeErr(w, http.StatusBadRequest, "bad_request")
@@ -282,7 +285,7 @@ func (s *Server) portalMobileRegister(w http.ResponseWriter, r *http.Request) {
 	if len(req.Name) > 60 {
 		req.Name = req.Name[:60]
 	}
-	if req.AppID == "" || len(req.AppID) > 64 || (req.Platform != push.APNs && req.Platform != push.FCM) || req.Token == "" || len(req.Token) > 4096 {
+	if req.AppID == "" || len(req.AppID) > 64 || (req.Platform != push.APNs && req.Platform != push.FCM) || req.Token == "" || len(req.Token) > 4096 || len(req.AlertToken) > 4096 {
 		writeErr(w, http.StatusBadRequest, "bad_request")
 		return
 	}
@@ -297,7 +300,15 @@ func (s *Server) portalMobileRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
-	handle, err := c.Register(ctx, req.Platform, req.Token, req.Sandbox)
+	tokenPlatform := req.Platform
+	if req.Platform == push.APNs {
+		tokenPlatform = push.APNsVoIP
+	}
+	handle, err := c.Register(ctx, tokenPlatform, req.Token, req.Sandbox)
+	alertHandle := ""
+	if err == nil && req.Platform == push.APNs && req.AlertToken != "" {
+		alertHandle, err = c.Register(ctx, push.APNs, req.AlertToken, req.Sandbox)
+	}
 	if err != nil {
 		s.Log.Warn("mobile register", "err", err)
 		writeErr(w, http.StatusBadGateway, "relay_failed")
@@ -312,12 +323,12 @@ func (s *Server) portalMobileRegister(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == nil:
 		existed = true
-		_, err = s.DB.ExecContext(r.Context(), `UPDATE mobile_devices SET name = ?, platform = ?, handle = ?, secret = ?, last_seen = ? WHERE id = ?`,
-			req.Name, req.Platform, handle, secret, now, id)
+		_, err = s.DB.ExecContext(r.Context(), `UPDATE mobile_devices SET name = ?, platform = ?, handle = ?, alert_handle = ?, secret = ?, last_seen = ?
+			WHERE id = ?`, req.Name, req.Platform, handle, alertHandle, secret, now, id)
 	case errors.Is(err, sql.ErrNoRows):
 		var res sql.Result
-		res, err = s.DB.ExecContext(r.Context(), `INSERT INTO mobile_devices(user_id, app_id, name, platform, handle, secret, created_at, last_seen)
-			VALUES (?,?,?,?,?,?,?,?)`, u.ID, req.AppID, req.Name, req.Platform, handle, secret, now, now)
+		res, err = s.DB.ExecContext(r.Context(), `INSERT INTO mobile_devices(user_id, app_id, name, platform, handle, alert_handle, secret, created_at, last_seen)
+			VALUES (?,?,?,?,?,?,?,?,?)`, u.ID, req.AppID, req.Name, req.Platform, handle, alertHandle, secret, now, now)
 		if err == nil {
 			id, _ = res.LastInsertId()
 		}
@@ -371,13 +382,31 @@ func (s *Server) countMobile(ctx context.Context, userID int64) (int, error) {
 
 // ---- notifications --------------------------------------------------------------------------
 
+// errNoAlertToken: an iPhone that gave no token for visible notifications.
+var errNoAlertToken = errors.New("no alert token")
+
 // pushTo sends one notification to one phone and forgets the phone when the app is gone.
 func (s *Server) pushTo(ctx context.Context, d mobileDevice, kind, id string, data any) error {
 	c, st := s.relayClient(ctx)
 	if !st.Enabled {
 		return errors.New("mobile app disabled")
 	}
-	err := c.Send(ctx, d.handle, d.secret, kind, id, data)
+	handle := d.handle
+	if d.Platform == push.APNs {
+		switch kind {
+		case push.KindCall:
+		case push.KindCancel:
+			// iOS ends the CallKit call itself: when the caller hangs up before the app has
+			// connected, no call arrives and the app gives up after a short wait.
+			return nil
+		default:
+			if d.alertHandle == "" {
+				return errNoAlertToken
+			}
+			handle = d.alertHandle
+		}
+	}
+	err := c.Send(ctx, handle, d.secret, kind, id, d.lang, data)
 	if errors.Is(err, push.ErrGone) {
 		s.deleteMobileDevice(context.Background(), "id = ?", d.ID)
 		return err

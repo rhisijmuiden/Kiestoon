@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kiestoon</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="mobile.css" />
+</head>
+<body>
+  <main class="page">
+    <img src="mark.png" alt="" width="56" height="56" />
+    <h1 data-t="title"></h1>
+    <p class="muted" data-t="intro"></p>
+
+    <form id="form" autocomplete="off">
+      <label class="label" for="server" data-t="server"></label>
+      <input id="server" type="text" class="mono" placeholder="pbx.example.com" spellcheck="false" autocapitalize="off" inputmode="url" />
+      <label class="label" for="code" data-t="code"></label>
+      <input id="code" type="text" class="mono" placeholder="ABCD-EFGH" spellcheck="false" autocapitalize="characters" maxlength="12" />
+      <p class="subtle" data-t="codeHint" style="margin-top:4px"></p>
+      <div id="error" class="panel err hidden" role="alert"></div>
+      <button id="connect" type="submit" class="btn primary" style="margin-top:16px"><span data-t="connect"></span></button>
+    </form>
+    <div style="flex:1;min-height:20px"></div>
+    <footer class="foot">
+      <span id="version"></span>
+      <span class="rhis">Powered by <img src="rhis.svg" alt="RHIS" /></span>
+    </footer>
+  </main>
+  <script src="i18n.js"></script>
+  <script src="setup.js"></script>
+</body>
+</html>

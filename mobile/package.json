@@ -1,0 +1,12 @@
+{
+  "name": "kiestoon-mobile",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Kiestoon mobile app for iPhone and Android (Tauri shell)",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.9.6"
+  }
+}

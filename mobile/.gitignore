@@ -1,0 +1,11 @@
+node_modules/
+src-tauri/target/
+src-tauri/gen/schemas/
+src-tauri/gen/apple/
+plugins/*/target/
+plugins/*/android/build/
+plugins/*/android/.gradle/
+plugins/*/ios/.build/
+plugins/*/ios/.tauri/
+plugins/*/.tauri/
+plugins/*/android/.tauri/

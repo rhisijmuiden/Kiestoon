@@ -305,7 +305,11 @@ the testing channel.
   - [x] Push relay and server side (`v0.7.0-rc.6`): stateless relay `kiestoon-push` (APNs VoIP + FCM, sealed
     handles, ed25519-signed requests per installation, content end-to-end encrypted per phone), QR linking in
     the portal, wake-up dialplan (`<number>-app` endpoint, waits for the woken app), voicemail push with AI summary
-  - [ ] App shell (Tauri 2 iOS/Android with CallKit / ConnectionService) and store release
+  - [x] App shell (`v0.7.0-rc.7`): Tauri 2 app in `mobile/` that reuses the softphone pages with a tab bar;
+    native plugin for push (FCM, PushKit), the call screen (Android full-screen call notification, iPhone
+    CallKit) and calls kept alive in the background; separate iPhone tokens for calls and notifications;
+    CI builds (debug APK, iPhone simulator)
+  - [ ] Store release (needs the RHIS Apple and Google developer accounts, Firebase project, push.rhis.nl)
 - [ ] WhatsApp and SMS in the portal next to calls: a shared inbox per team or number, conversations linked to the
   phone book and the call history, notifications
 

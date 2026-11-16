@@ -3,7 +3,10 @@
 // no-op, so the pages still work there (handy for development).
 
 type TauriGlobal = {
-  core: { invoke: <T>(cmd: string, args?: Record<string, unknown>) => Promise<T> }
+  core: {
+    invoke: <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>
+    addPluginListener?: <T>(plugin: string, event: string, cb: (payload: T) => void) => Promise<{ unregister: () => Promise<void> }>
+  }
   event: { listen: <T>(name: string, cb: (e: { payload: T }) => void) => Promise<() => void> }
 }
 
@@ -11,8 +14,14 @@ function tauri(): TauriGlobal | null {
   return (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__ ?? null
 }
 
-/** True inside the Kiestoon Softphone app. */
+/** True inside the Kiestoon Softphone app or the Kiestoon mobile app. */
 export const inShell = () => tauri() !== null
+
+/**
+ * True inside the Kiestoon app for iPhone and Android. The mobile shell has no tray, popup or
+ * headset; calls come in through push and the call screen of the phone instead.
+ */
+export const inMobile = () => tauri() !== null && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 
 export async function invoke<T = void>(cmd: string, args?: Record<string, unknown>): Promise<T | null> {
   const t = tauri()
@@ -67,4 +76,40 @@ export const shell = {
   openExternal: (url: string) => invoke('open_external', { url }),
   unpair: () => invoke('unpair'),
   focus: () => invoke('focus_main'),
+}
+
+/** The native call plugin of the mobile app (push, call screen, call kept alive in the background). */
+export type MobileRegistration = {
+  platform: 'apns' | 'fcm'
+  token: string
+  alertToken?: string
+  sandbox: boolean
+  appId: string
+  name: string
+  pushReady: boolean
+}
+export type MobileCallAction = { action: string; id: string }
+
+const plugin = (cmd: string) => `plugin:kiestoon-call|${cmd}`
+
+export const mobile = {
+  registration: () => invoke<MobileRegistration>(plugin('registration')),
+  setSecret: (secret: string) => invoke(plugin('set_secret'), { secret }),
+  callUpdate: (state: 'ringing' | 'active' | 'ended', name: string, number: string) => invoke(plugin('call_update'), { state, name, number }),
+  takePending: () => invoke<Partial<MobileCallAction>>(plugin('take_pending')),
+  /** Listens to an event of the plugin (token, push, callAction); returns the function that stops. */
+  listen<T>(event: string, cb: (payload: T) => void): () => void {
+    const add = tauri()?.core.addPluginListener
+    if (!add) return () => undefined
+    let stop: (() => void) | null = null
+    let cancelled = false
+    add<T>('kiestoon-call', event, cb).then((l) => {
+      if (cancelled) l.unregister().catch(() => undefined)
+      else stop = () => { l.unregister().catch(() => undefined) }
+    }).catch(() => undefined)
+    return () => {
+      cancelled = true
+      stop?.()
+    }
+  },
 }

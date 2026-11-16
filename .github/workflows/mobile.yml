@@ -1,0 +1,91 @@
+name: Mobile app
+
+# Builds the Kiestoon app for Android and iPhone. These are test builds: the Android APK is a debug
+# build that installs on any phone, the iPhone build runs in the simulator. Store builds need the
+# signing keys of the RHIS developer accounts and the Firebase configuration, see
+# docs/mobile-app.md.
+
+on:
+  pull_request:
+    paths: ['mobile/**', 'web/src/desktop/**', '.github/workflows/mobile.yml']
+  push:
+    branches: [main, testing]
+    paths: ['mobile/**', '.github/workflows/mobile.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android (APK)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: mobile/src-tauri
+      - name: Android NDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;27.2.12479018" "platforms;android-36" "build-tools;36.0.0" > /dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+      - name: Version
+        run: |
+          v="$(tr -d '[:space:]' < ../VERSION | sed 's/^v//; s/-.*//')"
+          jq --arg v "$v" '.version = $v' src-tauri/tauri.conf.json > c.json && mv c.json src-tauri/tauri.conf.json
+      - run: npm ci
+      - name: Build the APK
+        run: npx tauri android build --debug --apk true --target aarch64 --target x86_64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kiestoon-android
+          path: mobile/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  ios:
+    name: iPhone (simulator)
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: mobile/src-tauri
+      - run: npm ci
+      - name: Xcode project
+        run: |
+          brew list xcodegen > /dev/null 2>&1 || brew install xcodegen
+          npx tauri ios init --ci
+          ./ios-setup.sh src-tauri/gen/apple
+      - name: Build for the simulator
+        run: npx tauri ios build --debug --target aarch64-sim

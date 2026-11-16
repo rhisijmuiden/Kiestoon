@@ -1,0 +1,17 @@
+<resources>
+    <string name="kt_channel_calls">Inkomende gesprekken</string>
+    <string name="kt_channel_messages">Voicemail en berichten</string>
+    <string name="kt_channel_ongoing">Lopend gesprek</string>
+    <string name="kt_incoming">Inkomend gesprek</string>
+    <string name="kt_unknown">Onbekend nummer</string>
+    <string name="kt_answer">Opnemen</string>
+    <string name="kt_decline">Weigeren</string>
+    <string name="kt_hangup">Ophangen</string>
+    <string name="kt_ongoing">Gesprek bezig</string>
+    <string name="kt_missed">Gemiste oproep</string>
+    <string name="kt_voicemail">Nieuwe voicemail</string>
+    <string name="kt_voicemail_from">Voicemail van %1$s</string>
+    <string name="kt_voicemail_count">Je hebt %1$d nieuwe voicemailberichten.</string>
+    <string name="kt_test">Kiestoon</string>
+    <string name="kt_test_body">Testmelding: meldingen werken.</string>
+</resources>

@@ -31,8 +31,10 @@ import (
 
 // Platforms.
 const (
-	APNs = "apns" // iPhone
-	FCM  = "fcm"  // Android
+	APNs = "apns" // iPhone: the token for visible notifications (voicemail, test)
+	// APNsVoIP is the PushKit token of an iPhone: it only takes calls, which iOS shows with CallKit.
+	APNsVoIP = "apns-voip"
+	FCM      = "fcm" // Android
 )
 
 // Kinds of notification.
@@ -81,9 +83,16 @@ type PushRequest struct {
 	// ID ties a cancel to its call and lets a newer voicemail notification replace an older one.
 	ID string `json:"id,omitempty"`
 	// Data is the encrypted content (see Seal), at most 2 KB.
-	Data  string `json:"data,omitempty"`
+	Data string `json:"data,omitempty"`
+	// Lang is the language (en or nl) of the generic text of a visible notification on iPhone; the
+	// app replaces it with the decrypted content where it can.
+	Lang  string `json:"lang,omitempty"`
 	Nonce string `json:"nonce,omitempty"`
 }
+
+// ErrCodeKind means a token cannot take this kind of notification (a call to an alert token, or a
+// voicemail to a VoIP token).
+const ErrCodeKind = "wrong_kind"
 
 // MaxData is the largest Data a push may carry: APNs allows 4 KB per notification (5 KB for VoIP).
 const MaxData = 2048

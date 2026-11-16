@@ -43,6 +43,20 @@ password, MFA, a passkey or [single sign-on](users.md#single-sign-on): the app i
 Under **My devices** you see your linked phones. **Send test notification** checks that notifications arrive;
 **Unlink** removes a phone.
 
+## Using the app
+
+The app has the screens of the [Windows softphone](softphone.md), with the menu as a tab bar at the bottom. An
+incoming call shows on the phone's own call screen: on iPhone the CallKit screen (also on the lock screen and in
+the car), on Android a full-screen call with **Answer** and **Decline**. During a call the phone keeps the
+microphone and the audio running when you switch apps or lock the screen; on Android a notification shows the
+call in progress with **Hang up**.
+
+New voicemail shows as a notification. On Android it shows the caller and the AI summary; on iPhone it reads
+**New voicemail**, open the app to see who called and the summary.
+
+When **Allow the mobile app** is off, or the app was built without push (see [Build the app](#build-the-app)),
+the app still works as a softphone while it is open, like the browser softphone.
+
 ## How a call reaches the phone
 
 A phone in a pocket has no open connection to the phone system: iOS and Android close it to save the battery.
@@ -107,6 +121,19 @@ the stores), run your own push service with your own Apple and Google keys:
 
 The secret in `/var/lib/kiestoon-push/secret` seals the handles. Back it up: with a new secret every phone has to
 open the app once to register again.
+
+### Build the app
+
+The source of the app is in the folder `mobile/` of the repository (Tauri 2, with a small native part in Kotlin
+and Swift for push and the call screen). Every change is built by GitHub Actions (workflow **Mobile app**): a
+debug APK for Android and a simulator build for iPhone. For your own store build you need:
+
+- **Android:** a Firebase project with an Android app `nl.rhis.kiestoon` (or your own id). Put its
+  `google-services.json` in `mobile/src-tauri/gen/android/app/`; without it the app builds without push. Sign the
+  release APK or bundle with your upload key.
+- **iPhone:** an Apple developer account, a Mac with Xcode, and the capabilities **Push Notifications** and
+  **Background Modes** (Voice over IP, Audio, Remote notifications). Run `npx tauri ios init` and then
+  `./ios-setup.sh` in `mobile/`, which adds the background modes, the microphone text and the push entitlement.
 
 ## Troubleshooting
 

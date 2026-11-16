@@ -113,10 +113,12 @@ the address of the portal and the one-time setup token are shown.
 ### Debian 13 server or VM
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/kiestoon/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/install.sh | sudo bash
 # or follow the testing channel:
-curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/kiestoon/main/install.sh | sudo bash -s -- --channel testing
+curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/install.sh | sudo bash -s -- --channel testing
 ```
+
+Until the first stable release, only the testing channel has releases, so use `--channel testing` for now.
 
 Open `http://<server>:8080` (or `https://<server>:8443` with a self-signed certificate), enter the setup token and
 create the first administrator. Administrators must set up two-factor authentication on first sign-in. Show the

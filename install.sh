@@ -1,8 +1,8 @@
 #!/bin/bash
 # Kiestoon installer for Debian 13 (Trixie).
 #
-#   curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/kiestoon/main/install.sh | sudo bash
-#   curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/kiestoon/main/install.sh | sudo bash -s -- --channel testing
+#   curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/install.sh | sudo bash
+#   curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/install.sh | sudo bash -s -- --channel testing
 #
 # Options:
 #   --channel production|testing   Update channel to follow (default: production)

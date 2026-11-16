@@ -114,10 +114,12 @@ setup-token staan daar.
 ### Debian 13-server of VM
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/kiestoon/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/install.sh | sudo bash
 # of volg het testkanaal:
-curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/kiestoon/main/install.sh | sudo bash -s -- --channel testing
+curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/install.sh | sudo bash -s -- --channel testing
 ```
+
+Tot de eerste stabiele release heeft alleen het testkanaal releases, dus gebruik voorlopig `--channel testing`.
 
 Open `http://<server>:8080` (of `https://<server>:8443` met een zelfondertekend certificaat), vul het setup-token in
 en maak de eerste beheerder aan. Beheerders stellen bij de eerste keer inloggen tweestapsverificatie in. Toon het

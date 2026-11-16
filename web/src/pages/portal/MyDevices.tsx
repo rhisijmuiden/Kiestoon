@@ -9,6 +9,7 @@ import type { BlfEntry, ModuleType, Phone, PhoneKey, PhoneModule, PortalMe } fro
 import { useSoftphone } from '../../lib/softphone'
 import { KeyLayout, fillKeys } from '../../components/KeyLayout'
 import { WindowsSoftphoneCard } from '../../components/WindowsSoftphone'
+import { MobileAppCard } from '../../components/MobileAppCard'
 
 type PortalPhone = Phone & { maxKeys: number; maxLines: number; moduleTypes: ModuleType[] }
 type Sip = { server: string; port: number; transport: string; username: string; password: string; srtp: boolean }
@@ -50,6 +51,7 @@ export function MyDevices() {
           )}
         </Card>
         <WindowsSoftphoneCard />
+        <MobileAppCard />
         <Card className="flex flex-col gap-3">
           <SectionTitle><span className="inline-flex items-center gap-2"><Smartphone className="size-5 text-accent" aria-hidden />{t('portal.sipApp')}</span></SectionTitle>
           <p className="text-sm text-muted">{t('portal.sipAppText')}</p>

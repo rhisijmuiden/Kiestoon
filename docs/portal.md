@@ -101,3 +101,6 @@ own [keys](phone-keys.md), for example a speed dial or a busy lamp field for a c
 keys at its next restart or provisioning check.
 
 **Windows.** For a full softphone in the taskbar, see the [Windows softphone](softphone.md).
+
+**Mobile app.** When your administrator allows it, **Link mobile app** shows a QR code for the Kiestoon app on
+your phone, see [Mobile app](mobile-app.md).

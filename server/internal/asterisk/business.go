@@ -3,6 +3,7 @@ package asterisk
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -49,21 +50,65 @@ func promptPath(o Options, id int64) string {
 }
 
 // devicesDial sets KT_DIAL to every registered device of an extension (desk phones and the browser).
-func devicesDial(x *w, e pbx.Extension) {
+// With wake, a linked mobile app rings too: through kiestoon-appwake, which wakes the phone first.
+func devicesDial(x *w, e pbx.Extension, wake bool) {
 	x.f(" same => n,Set(KT_DIAL=${PJSIP_DIAL_CONTACTS(%s)})", e.Number)
 	x.f(` same => n,ExecIf($["${KT_DIAL}" = ""]?Set(KT_DIAL=PJSIP/%s))`, e.Number)
 	if e.WebRTC {
 		x.f(" same => n,Set(KT_WEB=${PJSIP_DIAL_CONTACTS(%s)})", e.WebRTCEndpoint())
 		x.f(` same => n,ExecIf($["${KT_WEB}" != ""]?Set(KT_DIAL=${KT_DIAL}&${KT_WEB}))`)
 	}
+	if wake && e.MobileApp {
+		x.f(" same => n,Set(KT_DIAL=${KT_DIAL}&Local/%s@kiestoon-appwake)", e.Number)
+	}
 	x.f(" same => n,Set(_PICKUPMARK=%s)", e.Number)
 }
 
 func hint(e pbx.Extension) string {
+	h := "PJSIP/" + e.Number
 	if e.WebRTC {
-		return fmt.Sprintf("PJSIP/%s&PJSIP/%s", e.Number, e.WebRTCEndpoint())
+		h += "&PJSIP/" + e.WebRTCEndpoint()
 	}
-	return "PJSIP/" + e.Number
+	if e.MobileApp {
+		h += "&PJSIP/" + e.AppEndpoint()
+	}
+	return h
+}
+
+// appWakeWait is how long (half seconds) a call waits for a woken phone to connect.
+const appWakeWait = 30
+
+// genAppWake writes kiestoon-appwake: it rings the mobile app of an extension. When the app is not
+// connected (the phone sleeps), it asks the server to wake the phone with a push notification and
+// waits until the app has registered. When the call ends before that, the server takes the call
+// screen away again.
+func genAppWake(x *w, s *pbx.Snapshot) {
+	if !slices.ContainsFunc(s.Extensions, func(e pbx.Extension) bool { return e.Enabled && e.MobileApp }) {
+		return
+	}
+	x.f("[kiestoon-appwake]")
+	for _, e := range s.Extensions {
+		if !e.Enabled || !e.MobileApp {
+			continue
+		}
+		x.f("exten => %s,1,NoOp(Mobile app of %s)", e.Number, e.Number)
+		x.f(" same => n,Set(KT_APP=${PJSIP_DIAL_CONTACTS(%s)})", e.AppEndpoint())
+		x.f(` same => n,GotoIf($["${KT_APP}" != ""]?dial)`)
+		x.f(" same => n,Set(KT_WAKEID=${UNIQUEID})")
+		x.f(" same => n,Set(KT_WAKEEXT=%s)", e.Number)
+		x.f(" same => n,UserEvent(KiestoonWake,Ext: %s,WakeID: ${KT_WAKEID},From: ${URIENCODE(${CALLERID(num)})},FromName: ${URIENCODE(${CALLERID(name)})})", e.Number)
+		x.f(" same => n,Set(KT_TRY=0)")
+		x.f(" same => n(wait),Wait(0.5)")
+		x.f(" same => n,Set(KT_APP=${PJSIP_DIAL_CONTACTS(%s)})", e.AppEndpoint())
+		x.f(` same => n,GotoIf($["${KT_APP}" != ""]?dial)`)
+		x.f(" same => n,Set(KT_TRY=$[${KT_TRY} + 1])")
+		x.f(" same => n,GotoIf($[${KT_TRY} < %d]?wait)", appWakeWait)
+		x.f(" same => n,Hangup(18)")
+		x.f(" same => n(dial),Dial(${KT_APP},,tT)")
+		x.f(" same => n,Hangup()")
+	}
+	x.f(`exten => h,1,ExecIf($["${KT_WAKEID}" != ""]?UserEvent(KiestoonWakeEnd,Ext: ${KT_WAKEEXT},WakeID: ${KT_WAKEID},Status: ${DIALSTATUS}))`)
+	x.nl()
 }
 
 // classVars makes forwarded and follow-me calls use the outbound rights of the extension that forwards.
@@ -158,7 +203,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 			x.f(" same => n,Gosub(kiestoon-tcstate-%d,s,1)", f.ScheduleID)
 			x.f(` same => n,GotoIf($["${GOSUB_RETVAL}" != "open"]?closed)`)
 		}
-		devicesDial(x, e)
+		devicesDial(x, e, true)
 		recOpt := ""
 		if e.RecordMode == "ondemand" {
 			recOpt = "x"
@@ -223,6 +268,8 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		x.nl()
 	}
 
+	genAppWake(x, s)
+
 	// Ringing only the devices: used by ring groups, queues and pickup. DND counts as busy.
 	x.f("[kiestoon-ring]")
 	for _, e := range s.Extensions {
@@ -235,7 +282,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 			continue
 		}
 		x.f(` same => n,GotoIf($["${KT_SKIPBUSY}" = "1" & "${EXTENSION_STATE(%s@kiestoon-extensions)}" = "INUSE"]?busy)`, e.Number)
-		devicesDial(x, e)
+		devicesDial(x, e, true)
 		x.f(" same => n,Dial(${KT_DIAL},,tT)")
 		x.f(" same => n,Hangup()")
 		x.f(" same => n(busy),Busy(5)")
@@ -254,7 +301,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 			x.f(" same => n,Goto(busy)")
 		}
 		x.f(` same => n,GotoIf($["${EXTENSION_STATE(%s@kiestoon-extensions)}" != "NOT_INUSE"]?busy)`, e.Number)
-		devicesDial(x, e)
+		devicesDial(x, e, false)
 		x.f(" same => n,Set(CALLERID(name)=Intercom ${CALLERID(name)})")
 		x.f(" same => n,Dial(${KT_DIAL},20,b(kiestoon-autoanswer^s^1))")
 		x.f(" same => n,Hangup()")

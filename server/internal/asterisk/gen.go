@@ -179,7 +179,10 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 		x.f("support_path=yes")
 		x.nl()
 		if e.WebRTC {
-			genWebRTCEndpoint(&x, s, e)
+			genWebRTCEndpoint(&x, s, e, e.WebRTCEndpoint())
+		}
+		if e.MobileApp {
+			genWebRTCEndpoint(&x, s, e, e.AppEndpoint())
 		}
 	}
 
@@ -651,8 +654,9 @@ func extVars(x *w, e pbx.Extension) {
 	}
 }
 
-func genWebRTCEndpoint(x *w, s *pbx.Snapshot, e pbx.Extension) {
-	name := e.WebRTCEndpoint()
+// genWebRTCEndpoint writes a WebSocket endpoint of an extension: the browser and Windows softphone
+// (<number>-web) or the mobile app (<number>-app).
+func genWebRTCEndpoint(x *w, s *pbx.Snapshot, e pbx.Extension, name string) {
 	x.f("[%s]", name)
 	x.f("type=endpoint")
 	x.f("transport=transport-ws")

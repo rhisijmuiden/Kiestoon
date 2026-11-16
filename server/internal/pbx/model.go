@@ -58,10 +58,17 @@ type Extension struct {
 	// WebRTC enables the browser softphone in the user portal.
 	WebRTC       bool   `json:"webrtc"`
 	WebRTCSecret string `json:"-"`
+	// MobileApp is set in a Snapshot when the user of the extension has linked the mobile app (and
+	// the app is switched on): calls then wake the phone with a push notification.
+	MobileApp bool `json:"-"`
 }
 
 // WebRTCEndpoint is the Asterisk endpoint of the browser softphone of an extension.
 func (e Extension) WebRTCEndpoint() string { return e.Number + "-web" }
+
+// AppEndpoint is the Asterisk endpoint of the mobile app of an extension. It uses the password of
+// the browser softphone and exists only while the user has a phone with the app linked.
+func (e Extension) AppEndpoint() string { return e.Number + "-app" }
 
 // Trunk is a connection to a SIP provider.
 type Trunk struct {

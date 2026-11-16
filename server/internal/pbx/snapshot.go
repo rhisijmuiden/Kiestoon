@@ -113,6 +113,9 @@ func (r *Repo) Snapshot(ctx context.Context) (*Snapshot, error) {
 		s.Supervisors = append(s.Supervisors, n)
 	}
 	rows.Close()
+	if err := r.markMobileApps(ctx, &s); err != nil {
+		return nil, err
+	}
 	locked, _ := store.GetSetting(ctx, r.DB, FraudLockKey, "")
 	s.FraudLocked = locked != ""
 	if loc, err := time.LoadLocation(s.Settings.Timezone); err == nil {

@@ -47,6 +47,7 @@ const topics: Record<string, Topic> = {
   '/integrations': { page: 'api' },
   '/speech': { page: 'prompts', en: 'speech', nl: 'spraak' },
   '/ai': { page: 'ai' },
+  '/mobile-app': { page: 'mobile-app' },
   '/backups': { page: 'backups' },
   '/mail': { page: 'mail' },
   '/audit': { page: 'users', en: 'audit-log', nl: 'auditlog' },

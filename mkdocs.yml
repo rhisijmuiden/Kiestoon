@@ -110,6 +110,7 @@ plugins:
             Phone book: Telefoonboek
             User portal: Gebruikersportaal
             Windows softphone: Windows-softphone
+            Mobile app: Mobiele app
             Multi-site and HA: Meerdere locaties en HA
             Branch offices (Edge): Vestigingen (Edge)
             Linked systems: Gekoppelde systemen
@@ -160,6 +161,7 @@ nav:
       - Phone book: phonebook.md
       - User portal: portal.md
       - Windows softphone: softphone.md
+      - Mobile app: mobile-app.md
   - Multi-site and HA:
       - Branch offices (Edge): edge.md
       - Linked systems: multi-site.md

@@ -145,7 +145,12 @@
     "ai_no_key": "Add a Claude API key first, or choose the local model.",
     "ai_not_ready": "The local AI model is not downloaded yet, or the speech package is not installed.",
     "ai_failed": "The summary failed.",
-    "ai_busy": "Another transcription is running. Try again in a minute."
+    "ai_busy": "Another transcription is running. Try again in a minute.",
+    "mobile_disabled": "The mobile app is turned off. Ask your administrator.",
+    "relay_failed": "The push service could not be reached. Try again later.",
+    "device_gone": "This phone no longer accepts notifications (the app was removed) and has been unlinked.",
+    "invalid_relay": "Enter the https:// address of the push service.",
+    "not_registered": "This phone is not linked yet. Link it again from the portal."
   },
   "setup": {
     "title": "Welcome to Kiestoon",
@@ -252,7 +257,8 @@
     "cluster": "High availability",
     "help": "Help",
     "helpTitle": "Open the manual for this page",
-    "ai": "AI"
+    "ai": "AI",
+    "mobileApp": "Mobile app"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2568,7 +2574,8 @@
     },
     "device": {
       "phone": "Desk phone",
-      "web": "Softphone"
+      "web": "Softphone",
+      "app": "Mobile app"
     },
     "ringing": "Ringing",
     "transfer": "Transfer",
@@ -3126,6 +3133,58 @@
       "5": "Friday",
       "6": "Saturday",
       "7": "Sunday"
+    }
+  },
+  "mobile": {
+    "title": "Mobile app",
+    "subtitle": "Kiestoon on iPhone and Android, with push notifications for calls and voicemail",
+    "saved": "Saved.",
+    "app": "Mobile app",
+    "intro": "Employees link the Kiestoon app on their phone to their extension. The app rings like a desk phone, also when it is closed: the phone system wakes it with a push notification.",
+    "enabled": "Allow the mobile app",
+    "enabledHint": "Employees can then link the app under My devices.",
+    "step1": "Employees install the Kiestoon app from the App Store or Google Play.",
+    "step2": "Under My devices in the portal they choose Link mobile app and scan the QR code.",
+    "step3": "Calls for their extension ring the app too, and new voicemail shows up as a notification.",
+    "relay": "Push service",
+    "relayText": "Apple and Google only deliver notifications for an app from its publisher. The push service of RHIS forwards them for the Kiestoon app; it stores nothing and cannot read what it forwards.",
+    "relayURL": "Push service address",
+    "relayHint": "Leave empty for the RHIS service. Change it only when you publish your own build of the app.",
+    "test": "Test connection",
+    "testOk": "Connected. Delivers to: {{platforms}}.",
+    "testErrors": {
+      "unreachable": "The push service could not be reached from this server.",
+      "not_a_relay": "This address does not answer as a Kiestoon push service.",
+      "invalid_relay": "Enter an https:// address."
+    },
+    "privacy": "Privacy",
+    "privacyText": "Who is calling and the voicemail summary are encrypted for each phone; the push service only sees that a notification goes to a phone. Every phone system has its own key, so it can only wake its own phones.",
+    "publicKey": "Key of this phone system",
+    "platforms": {
+      "apns": "iPhone",
+      "fcm": "Android"
+    },
+    "devices": "Linked phones",
+    "device": "Phone",
+    "user": "Employee",
+    "lastSeen": "Last used",
+    "lastPush": "Last notification",
+    "linkedOn": "Linked {{date}}",
+    "noDevices": "No phones linked yet",
+    "noDevicesText": "Employees link the app themselves under My devices.",
+    "remove": "Unlink",
+    "removeConfirm": "Unlink {{name}} of {{user}}? The app stops ringing until it is linked again.",
+    "portal": {
+      "title": "Mobile app",
+      "text": "Take your extension with you: the Kiestoon app rings with your calls, also when it is closed, and shows new voicemail.",
+      "link": "Link mobile app",
+      "scan": "Scan this code with the camera of your phone. The Kiestoon app opens and links itself.",
+      "orCode": "Or open the app, choose Link with code and enter:",
+      "qrAlt": "QR code to link the mobile app",
+      "lastSeen": "Last used {{date}}",
+      "test": "Send test notification",
+      "testSent": "Test notification sent. It should show up on your phone in a few seconds.",
+      "removeConfirm": "Unlink {{name}}? The app stops ringing until you link it again."
     }
   }
 }

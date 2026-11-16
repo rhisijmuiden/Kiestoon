@@ -45,12 +45,19 @@ func (s *Server) onAMIEvent(m asterisk.Message) {
 			go s.onFaxOut(m)
 		case "KiestoonCallback":
 			go s.onCallbackEvent(m)
+		case "KiestoonWake":
+			go s.onMobileWake(m)
+		case "KiestoonWakeEnd":
+			go s.onMobileWakeEnd(m)
 		}
 	case "AgentConnect":
 		go s.onCallbackConnect(m)
 	case "OriginateResponse":
 		go s.onOriginateResponse(m)
 	case "DialBegin", "DialEnd", "MessageWaiting", "QueueCallerAbandon":
+		if m.Get("Event") == "MessageWaiting" {
+			go s.onMobileMWI(m)
+		}
 		if m.Get("Event") == "QueueCallerAbandon" {
 			s.journeyEvent(m)
 		}

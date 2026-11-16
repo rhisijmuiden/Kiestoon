@@ -156,10 +156,13 @@ func knownNum(n string) string {
 // activeCalls lists the device legs of an extension with the party on the other side.
 func activeCalls(l *asterisk.Live, e *pbx.Extension, x *transfers) []ActiveCall {
 	out := []ActiveCall{}
-	for _, leg := range l.LegsOf(e.Number, e.WebRTCEndpoint()) {
+	for _, leg := range l.LegsOf(e.Number, e.WebRTCEndpoint(), e.AppEndpoint()) {
 		ac := ActiveCall{Channel: leg.Channel, Peer: knownNum(leg.Connected), PeerName: knownNum(leg.ConnName), Duration: leg.Duration, Device: "phone"}
-		if leg.Endpoint == e.WebRTCEndpoint() {
+		switch leg.Endpoint {
+		case e.WebRTCEndpoint():
 			ac.Device = "web"
+		case e.AppEndpoint():
+			ac.Device = "app"
 		}
 		ac.State = "ringing"
 		if leg.State == "Up" {
@@ -201,7 +204,7 @@ func (s *Server) myLeg(w http.ResponseWriter, r *http.Request, e *pbx.Extension,
 		writeErr(w, http.StatusBadGateway, "asterisk_unavailable")
 		return nil, asterisk.Channel{}, false
 	}
-	for _, leg := range l.LegsOf(e.Number, e.WebRTCEndpoint()) {
+	for _, leg := range l.LegsOf(e.Number, e.WebRTCEndpoint(), e.AppEndpoint()) {
 		if leg.Channel == channel {
 			return l, leg, true
 		}

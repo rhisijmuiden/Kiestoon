@@ -273,7 +273,7 @@ export type Recording = {
 export type BlfEntry = { number: string; name: string; state: string; dnd: boolean }
 export type TransferTarget = { kind: 'extension' | 'ringgroup' | 'queue'; number: string; name: string; state?: string; dnd?: boolean; members?: number; waiting?: number }
 export type ActiveCall = {
-  channel: string; peer: string; peerName: string; state: 'ringing' | 'talking'; duration: number; device: 'phone' | 'web'
+  channel: string; peer: string; peerName: string; state: 'ringing' | 'talking'; duration: number; device: 'phone' | 'web' | 'app'
   consult?: { target: string; targetName: string; answered: boolean }
 }
 export type LiveLeg = { channel: string; endpoint: string; callerNum: string; callerName: string; connected: string; connectedName: string; state: string; duration: number }
@@ -454,3 +454,9 @@ export type Report = {
   id: number; name: string; period: ReportPeriod; time: string; weekday: number; workdays: boolean; queues: number[]
   sections: ReportSection[]; recipients: string[]; language: 'en' | 'nl'; enabled: boolean; lastSent: string
 }
+
+export type MobileDevice = {
+  id: number; userId: number; user: string; userName: string; extension: string; name: string
+  platform: 'apns' | 'fcm'; createdAt: string; lastSeen: string; lastPush: string
+}
+export type MobileAdmin = { enabled: boolean; relayURL: string; defaultRelayURL: string; publicKey: string; devices: MobileDevice[] }

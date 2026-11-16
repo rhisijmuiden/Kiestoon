@@ -181,6 +181,19 @@ db.prepare(`INSERT INTO wallboard_screens(name, key, queues, layouts, rotate, th
     .run(JSON.stringify({ screens: true, email: true, recipients: ['teamlead@example.com', 'support@example.com'], quiet: 15, timeCondition: tc?.id ?? 0, recovered: true }))
 }
 
+// The mobile app: switched on, with a few linked phones.
+db.prepare(`INSERT INTO settings(key, value) VALUES ('mobile', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`)
+  .run(JSON.stringify({ enabled: true, relayURL: 'https://push.rhis.nl' }))
+{
+  const users = db.prepare('SELECT id, username FROM users WHERE extension_id IS NOT NULL ORDER BY id').all()
+  const phones = [['iPhone 16 Pro', 'apns'], ['Pixel 9', 'fcm'], ['iPhone 15', 'apns'], ['Galaxy S25', 'fcm']]
+  users.slice(0, 4).forEach((u, i) => {
+    const [name, platform] = phones[i]
+    db.prepare(`INSERT INTO mobile_devices(user_id, app_id, name, platform, handle, secret, created_at, last_seen, last_push)
+      VALUES (?,?,?,?,?,?,?,?,?)`).run(u.id, `demo-${i}`, name, platform, 'h1.demo', 'demo', iso((12 + i * 5) * 86400000), iso((i + 1) * 1800000), iso((i + 2) * 3600000))
+  })
+}
+
 // A backup history through the (fake) helper.
 const c = new Client(base)
 await loginAdmin(c, fs.readFileSync(path.join(dataDir, '..', 'mfa-secret'), 'utf8').trim())

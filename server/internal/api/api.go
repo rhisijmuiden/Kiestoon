@@ -192,7 +192,7 @@ func (s *Server) Routes() http.Handler {
 	s.siteRoutes(mux, admin)
 	s.federationRoutes(mux, admin)
 	s.clusterRoutes(mux, admin)
-	s.desktopRoutes(mux, full)
+	s.desktopRoutes(mux, admin, full)
 	s.callbackRoutes(mux, recep)
 	s.aiRoutes(mux, admin, recep, full)
 	s.wallboardRoutes(mux, admin, recep)

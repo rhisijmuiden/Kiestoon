@@ -244,6 +244,8 @@ Notes on phase 5:
   by certificate fingerprint. The MSI is built by CI, attached to the release and served by the portal at
   `/download/kiestoon-softphone.msi`. Signing needs Azure Trusted Signing secrets. Not yet tested on Windows
   hardware with real headsets.
+- [x] Windows softphone in the admin console (`v0.7.0-rc.8`): System > Windows softphone offers the MSI download
+  (version, SHA-256, silent install command, server address) and lists the linked softphones with unlink.
 - [x] Phone keys, expansion modules and intercom (`v0.6.0-rc.12`): a visual key editor per model (keys left and
   right of the display, pages, drag a key onto another to swap) with line keys per account, BLF, speed dial, park,
   parking slot, intercom, do not disturb and voicemail keys. Desk phones carry extra lines (Yealink, Snom,

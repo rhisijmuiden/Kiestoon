@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -119,8 +120,10 @@ func desktopAllowed(r *http.Request) bool {
 	return false
 }
 
-func (s *Server) desktopRoutes(mux *http.ServeMux, full func(http.HandlerFunc) http.Handler) {
+func (s *Server) desktopRoutes(mux *http.ServeMux, admin, full func(http.HandlerFunc) http.Handler) {
 	mux.HandleFunc("GET /api/desktop/info", s.desktopInfo)
+	mux.Handle("GET /api/desktop/clients", admin(s.desktopClients))
+	mux.Handle("DELETE /api/desktop/clients/{id}", admin(s.desktopClientDelete))
 	mux.HandleFunc("POST /api/desktop/claim", s.desktopClaim)
 	mux.Handle("POST /api/desktop/pair", full(s.desktopPair))
 	mux.Handle("POST /api/desktop/session", full(s.desktopSession))
@@ -331,4 +334,56 @@ func (s *Server) desktopURL(r *http.Request) (string, string, error) {
 		return strings.TrimRight(p, "/"), "", nil
 	}
 	return s.portalURL(r, "")
+}
+
+// ---- admin console ----------------------------------------------------------------------------
+
+type desktopClient struct {
+	ID          int64  `json:"id"`
+	UserID      int64  `json:"userId"`
+	Username    string `json:"username"`
+	DisplayName string `json:"displayName"`
+	Extension   string `json:"extension"`
+	LinkedAt    string `json:"linkedAt"`
+	ExpiresAt   string `json:"expiresAt"`
+}
+
+// desktopClients lists the linked softphones: the desktop sessions that have not expired.
+func (s *Server) desktopClients(w http.ResponseWriter, r *http.Request) {
+	rows, err := s.DB.QueryContext(r.Context(), `
+		SELECT s.rowid, u.id, u.username, u.display_name, COALESCE(e.number, ''), s.created_at, s.expires_at
+		FROM sessions s JOIN users u ON u.id = s.user_id LEFT JOIN extensions e ON e.id = u.extension_id
+		WHERE s.method = ? AND s.expires_at > ? ORDER BY u.username, s.created_at`,
+		auth.MethodDesktop, time.Now().UTC().Format(time.RFC3339))
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	defer rows.Close()
+	out := []desktopClient{}
+	for rows.Next() {
+		var c desktopClient
+		if err := rows.Scan(&c.ID, &c.UserID, &c.Username, &c.DisplayName, &c.Extension, &c.LinkedAt, &c.ExpiresAt); err != nil {
+			writeErr(w, http.StatusInternalServerError, "internal")
+			return
+		}
+		out = append(out, c)
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// desktopClientDelete unlinks one softphone: its session ends and it shows the link screen again.
+func (s *Server) desktopClientDelete(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	res, err := s.DB.ExecContext(r.Context(), `DELETE FROM sessions WHERE rowid = ? AND method = ?`, id, auth.MethodDesktop)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		writeErr(w, http.StatusNotFound, "not_found")
+		return
+	}
+	s.audit(r, "desktop.client_removed", strconv.FormatInt(id, 10))
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

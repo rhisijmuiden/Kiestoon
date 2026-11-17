@@ -99,7 +99,7 @@ function TemplateForm({ value, models, moduleTypes, exts, onClose, onSaved }: {
           ))}
         </Select>
       </div>
-      <KeyLayout key={`${x.vendor}/${x.model}`} vendor={x.vendor} keys={keys} modules={x.modules} moduleTypes={fits} lines={model?.lines ?? 1} exts={exts}
+      <KeyLayout key={`${x.vendor}/${x.model}`} vendor={x.vendor} perPage={model?.perPage} keys={keys} modules={x.modules} moduleTypes={fits} lines={model?.lines ?? 1} exts={exts}
         onKeys={(k) => setX((o) => ({ ...o, keys: k }))} onModules={(m) => setX((o) => ({ ...o, modules: m }))} />
     </Modal>
   )

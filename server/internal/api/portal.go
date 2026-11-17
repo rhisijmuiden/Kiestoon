@@ -521,14 +521,15 @@ func (s *Server) portalPhones(w http.ResponseWriter, r *http.Request) {
 		pbx.Phone
 		MaxKeys     int                    `json:"maxKeys"`
 		Lines       int                    `json:"maxLines"`
+		PerPage     int                    `json:"perPage,omitempty"`
 		ModuleTypes []provision.ModuleType `json:"moduleTypes"`
 	}
 	out := []view{}
 	for _, p := range phones {
 		if p.ExtensionID != nil && *p.ExtensionID == e.ID {
-			max, lines := 0, 1
+			max, lines, perPage := 0, 1, 0
 			if m := provision.FindModel(p.Vendor, p.Model); m != nil {
-				max, lines = m.Keys, m.MaxLines()
+				max, lines, perPage = m.Keys, m.MaxLines(), m.PerPage
 			}
 			mts := []provision.ModuleType{}
 			for _, mt := range provision.ModuleTypes {
@@ -539,7 +540,7 @@ func (s *Server) portalPhones(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-			out = append(out, view{p, max, lines, mts})
+			out = append(out, view{p, max, lines, perPage, mts})
 		}
 	}
 	writeJSON(w, http.StatusOK, out)

@@ -34,19 +34,20 @@ type Surface = { key: string; title: string; keys: PhoneKey[]; perPage: number; 
 type Ext = { number: string; name: string }
 
 /** Keys per visible page of a phone, roughly as the display shows them. */
-function phonePerPage(vendor: string, keys: number) {
+function phonePerPage(vendor: string, keys: number, perPage?: number) {
+  if (perPage && keys > perPage) return perPage
   if (keys <= 12) return keys
   return vendor === 'snom' ? 12 : 10
 }
 
-export function KeyLayout({ vendor, keys, modules, moduleTypes, lines, exts, onKeys, onModules, canEditModules = true }: {
-  vendor: string; keys: PhoneKey[]; modules: PhoneModule[]; moduleTypes: ModuleType[]; lines: number; exts: Ext[]
+export function KeyLayout({ vendor, perPage, keys, modules, moduleTypes, lines, exts, onKeys, onModules, canEditModules = true }: {
+  vendor: string; perPage?: number; keys: PhoneKey[]; modules: PhoneModule[]; moduleTypes: ModuleType[]; lines: number; exts: Ext[]
   onKeys: (k: PhoneKey[]) => void; onModules: (m: PhoneModule[]) => void; canEditModules?: boolean
 }) {
   const { t } = useTranslation()
   const typeOf = (id: string) => moduleTypes.find((m) => m.id === id)
   const surfaces: Surface[] = []
-  if (keys.length > 0) surfaces.push({ key: 'phone', title: t('keys.phone'), keys, perPage: phonePerPage(vendor, keys.length) })
+  if (keys.length > 0) surfaces.push({ key: 'phone', title: t('keys.phone'), keys, perPage: phonePerPage(vendor, keys.length, perPage) })
   modules.forEach((m, i) => {
     const mt = typeOf(m.type)
     surfaces.push({ key: `m${i}`, title: t('keys.module', { n: i + 1, name: mt?.name ?? m.type }), keys: fillKeys(m.keys, mt?.keys ?? m.keys.length, false), perPage: mt?.perPage ?? 20, module: i })

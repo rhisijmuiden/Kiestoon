@@ -11,7 +11,7 @@ import { KeyLayout, fillKeys } from '../../components/KeyLayout'
 import { WindowsSoftphoneCard } from '../../components/WindowsSoftphone'
 import { MobileAppCard } from '../../components/MobileAppCard'
 
-type PortalPhone = Phone & { maxKeys: number; maxLines: number; moduleTypes: ModuleType[] }
+type PortalPhone = Phone & { maxKeys: number; maxLines: number; perPage?: number; moduleTypes: ModuleType[] }
 type Sip = { server: string; port: number; transport: string; username: string; password: string; srtp: boolean }
 
 /** SIP details for apps, the browser softphone and the keys of the user's own desk phones. */
@@ -113,7 +113,7 @@ function PhoneKeys({ phone, exts, lastSeen, onSaved }: { phone: PortalPhone; ext
       {saved && <Alert tone="ok">{t('portal.keysSaved')}</Alert>}
       {phone.maxKeys === 0 && modules.length === 0 ? <p className="text-sm text-subtle">{t('phones.noKeys')}</p> : (
         <>
-          <KeyLayout vendor={phone.vendor} keys={keys} modules={modules} moduleTypes={phone.moduleTypes ?? []} lines={1 + (phone.lines?.length ?? 0)} exts={exts}
+          <KeyLayout vendor={phone.vendor} perPage={phone.perPage} keys={keys} modules={modules} moduleTypes={phone.moduleTypes ?? []} lines={1 + (phone.lines?.length ?? 0)} exts={exts}
             onKeys={setKeys} onModules={setModules} canEditModules={false} />
           <div className="flex justify-end"><Button busy={busy} onClick={save}>{t('common.save')}</Button></div>
         </>

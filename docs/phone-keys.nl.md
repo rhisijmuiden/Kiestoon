@@ -46,6 +46,10 @@ Klik **Uitbreidingsmodule** en kies de module. Alle modules op een telefoon zijn
 | Snom D7 | 18 | D717, D735, D785 | 3 |
 | Grandstream GBX20 | 40 (2 pagina's van 20) | GXP2170, GRP2616 | 4 |
 
+De Yealink T42G, T42S en T42U nemen geen uitbreidingsmodule. Ze hebben 6 fysieke lijntoetsen; met meer dan 6
+ingestelde toetsen wisselt de zesde toets tussen 3 pagina's van 5, zo stel je 15 toetsen in. De T42S en T42U kunnen
+tot 12 lijnen dragen, de T42G 3.
+
 Moduletoetsen stel je precies zo in als telefoontoetsen. Een receptiemodule vol BLF-toetsen laat het hele kantoor in
 één oogopslag zien.
 

@@ -45,6 +45,10 @@ Click **Expansion module** and choose the module. All modules on a phone are of 
 | Snom D7 | 18 | D717, D735, D785 | 3 |
 | Grandstream GBX20 | 40 (2 pages of 20) | GXP2170, GRP2616 | 4 |
 
+The Yealink T42G, T42S and T42U take no expansion module. They have 6 physical line keys; with more than 6 keys
+set, the sixth key switches between 3 pages of 5, so you can set up 15 keys. The T42S and T42U carry up to 12
+lines, the T42G 3.
+
 Module keys are set up exactly like phone keys. A reception module full of BLF keys shows the whole office at a
 glance.
 

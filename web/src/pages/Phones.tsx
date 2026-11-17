@@ -283,7 +283,7 @@ function PhoneForm({ value, models, moduleTypes, exts, onClose, onSaved }: { val
         {keyCount === 0 && fits.length === 0 ? (
           <p className="text-sm text-subtle">{t('phones.noKeys')}</p>
         ) : (
-          <KeyLayout key={`${x.vendor}/${x.model}`} vendor={x.vendor} keys={keys} modules={modules} moduleTypes={fits} lines={Math.max(1, accountExts.length)} exts={exts}
+          <KeyLayout key={`${x.vendor}/${x.model}`} vendor={x.vendor} perPage={model?.perPage} keys={keys} modules={modules} moduleTypes={fits} lines={Math.max(1, accountExts.length)} exts={exts}
             onKeys={(k) => setX((o) => ({ ...o, keys: k }))} onModules={(m) => setX((o) => ({ ...o, modules: m }))} />
         )}
       </div>

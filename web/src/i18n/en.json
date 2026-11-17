@@ -258,7 +258,8 @@
     "help": "Help",
     "helpTitle": "Open the manual for this page",
     "ai": "AI",
-    "mobileApp": "Mobile app"
+    "mobileApp": "Mobile app",
+    "windowsSoftphone": "Windows softphone"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -3186,5 +3187,35 @@
       "testSent": "Test notification sent. It should show up on your phone in a few seconds.",
       "removeConfirm": "Unlink {{name}}? The app stops ringing until you link it again."
     }
+  },
+  "windowsSoftphone": {
+    "title": "Windows softphone",
+    "subtitle": "Kiestoon Softphone for Windows: download the installer and see the linked softphones",
+    "download": "Download MSI",
+    "installer": "Installer",
+    "intro": "The softphone comes with this phone system and always matches its version. Hand out the MSI to employees, or roll it out to all PCs with Intune, a group policy or another tool.",
+    "version": "Version",
+    "file": "File",
+    "size": "Size",
+    "downloadMsi": "Download the MSI",
+    "url": "Download address",
+    "noInstaller": "This server has no softphone installer yet. It comes with the next Kiestoon update.",
+    "rollout": "Rolling it out",
+    "step1": "Install the MSI on the PCs. Employees can also download it themselves in the portal under My devices.",
+    "step2": "Employees link the softphone with Link this computer in the portal, or sign in inside the app with this server address.",
+    "step3": "The softphone gets their extension automatically and updates itself with this phone system.",
+    "silent": "Silent install",
+    "silentText": "For a rollout without questions, run the MSI with this command as administrator:",
+    "server": "Server address",
+    "fingerprint": "Certificate fingerprint",
+    "clients": "Linked softphones",
+    "user": "Employee",
+    "extension": "Extension",
+    "linkedAt": "Linked",
+    "expiresAt": "Valid until",
+    "noClients": "No softphones linked yet",
+    "noClientsText": "Employees link the softphone themselves under My devices, or by signing in inside the app.",
+    "remove": "Unlink",
+    "removeConfirm": "Unlink the softphone of {{user}}? It shows the link screen again until it is linked again."
   }
 }

@@ -258,7 +258,8 @@
     "help": "Help",
     "helpTitle": "Handleiding voor deze pagina openen",
     "ai": "AI",
-    "mobileApp": "Mobiele app"
+    "mobileApp": "Mobiele app",
+    "windowsSoftphone": "Windows-softphone"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -3186,5 +3187,35 @@
       "testSent": "Testmelding verstuurd. Hij verschijnt binnen enkele seconden op je telefoon.",
       "removeConfirm": "{{name}} ontkoppelen? De app gaat niet meer over tot je hem opnieuw koppelt."
     }
+  },
+  "windowsSoftphone": {
+    "title": "Windows-softphone",
+    "subtitle": "Kiestoon Softphone voor Windows: download de installer en bekijk de gekoppelde softphones",
+    "download": "MSI downloaden",
+    "installer": "Installer",
+    "intro": "De softphone hoort bij deze telefooncentrale en heeft altijd dezelfde versie. Geef de MSI aan medewerkers, of rol hem uit naar alle pc's met Intune, een groepsbeleid of een ander hulpmiddel.",
+    "version": "Versie",
+    "file": "Bestand",
+    "size": "Grootte",
+    "downloadMsi": "MSI downloaden",
+    "url": "Downloadadres",
+    "noInstaller": "Deze server heeft nog geen softphone-installer. Die komt mee met de volgende Kiestoon-update.",
+    "rollout": "Uitrollen",
+    "step1": "Installeer de MSI op de pc's. Medewerkers kunnen hem ook zelf downloaden in het portaal onder Mijn apparaten.",
+    "step2": "Medewerkers koppelen de softphone met Deze computer koppelen in het portaal, of melden zich in de app aan met dit serveradres.",
+    "step3": "De softphone krijgt automatisch hun toestel en werkt zichzelf bij samen met deze telefooncentrale.",
+    "silent": "Stille installatie",
+    "silentText": "Voor een uitrol zonder vragen start je de MSI met deze opdracht als beheerder:",
+    "server": "Serveradres",
+    "fingerprint": "Vingerafdruk van het certificaat",
+    "clients": "Gekoppelde softphones",
+    "user": "Medewerker",
+    "extension": "Toestel",
+    "linkedAt": "Gekoppeld",
+    "expiresAt": "Geldig tot",
+    "noClients": "Nog geen softphones gekoppeld",
+    "noClientsText": "Medewerkers koppelen de softphone zelf onder Mijn apparaten, of door zich in de app aan te melden.",
+    "remove": "Ontkoppelen",
+    "removeConfirm": "De softphone van {{user}} ontkoppelen? Hij toont dan het koppelscherm tot hij opnieuw gekoppeld is."
   }
 }

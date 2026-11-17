@@ -57,6 +57,17 @@ extension.
 
 ## For administrators
 
+Open **Windows softphone** in the System menu. The page offers the MSI that comes with this server (version,
+size and SHA-256), its download address, the command for a silent install and the server address that
+employees enter in the app.
+
+```
+msiexec /i "Kiestoon-Softphone_<version>_x64.msi" /qn
+```
+
+The table **Linked softphones** lists every linked softphone with its employee and extension. **Unlink**
+ends its session (for example for a lost laptop); the softphone shows the link screen again.
+
 - The softphone uses the same WebRTC connection as the browser softphone: the server needs **https** with a
   hostname (see [Internet access](internet.md) or [own reverse proxy](reverse-proxy.md)).
 - The MSI can be rolled out with Intune, Group Policy or any other software distribution.

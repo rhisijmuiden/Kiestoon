@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -116,4 +117,41 @@ func httptestRecorder(h http.Handler, path string) *http.Response {
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	return rec.Result()
+}
+
+func TestDesktopClientsAdmin(t *testing.T) {
+	c, s := adminClient(t)
+	s.Cfg.SoftphoneDir = t.TempDir()
+	e := mustDo(t, c, "POST", "/api/pbx/extensions?welcome=1&lang=en", map[string]any{"number": "202", "name": "Bram",
+		"email": "bram@example.com", "enabled": true}, 200)
+	link := e["welcome"].(map[string]any)["link"].(string)
+	token := link[strings.Index(link, "#")+1:]
+	newClient := func() *client {
+		jar, _ := cookiejar.New(nil)
+		return &client{t: t, url: c.url, hc: &http.Client{Jar: jar}}
+	}
+	bram := newClient()
+	mustDo(t, bram, "POST", "/api/auth/password-link/set", map[string]string{"token": token, "password": "a long enough password"}, 200)
+	mustDo(t, bram, "POST", "/api/auth/login", map[string]string{"username": "bram@example.com", "password": "a long enough password"}, 200)
+
+	if l := mustDoList(t, c, "/api/desktop/clients"); len(l) != 0 {
+		t.Fatalf("clients before linking: %v", l)
+	}
+	p := mustDo(t, bram, "POST", "/api/desktop/pair", map[string]any{}, 200)
+	desk := newClient()
+	mustDo(t, desk, "POST", "/api/desktop/claim", map[string]string{"code": p["code"].(string)}, 200)
+
+	l := mustDoList(t, c, "/api/desktop/clients")
+	if len(l) != 1 || l[0]["username"] != "bram@example.com" || l[0]["extension"] != "202" {
+		t.Fatalf("clients: %v", l)
+	}
+	// Only admins see the list, and the softphone itself cannot reach it.
+	mustDo(t, bram, "GET", "/api/desktop/clients", nil, 403)
+	mustDo(t, desk, "GET", "/api/desktop/clients", nil, 403)
+
+	id := strconv.FormatInt(int64(l[0]["id"].(float64)), 10)
+	mustDo(t, c, "DELETE", "/api/desktop/clients/"+id, map[string]any{}, 200)
+	mustDo(t, c, "DELETE", "/api/desktop/clients/"+id, map[string]any{}, 404)
+	mustDo(t, desk, "GET", "/api/me", nil, 401)
+	mustDo(t, bram, "GET", "/api/me", nil, 200) // the browser session stays
 }

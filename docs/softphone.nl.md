@@ -59,6 +59,18 @@ browser](portal.md#softphone-toestellen) (WebRTC) aan voor je toestel.
 
 ## Voor beheerders
 
+Open **Windows-softphone** in het menu Systeem. De pagina biedt de MSI die bij deze server hoort (versie,
+grootte en SHA-256), het downloadadres, de opdracht voor een stille installatie en het serveradres dat
+medewerkers in de app invullen.
+
+```
+msiexec /i "Kiestoon-Softphone_<versie>_x64.msi" /qn
+```
+
+De tabel **Gekoppelde softphones** toont elke gekoppelde softphone met de medewerker en het toestel.
+**Ontkoppelen** beëindigt de sessie (bijvoorbeeld bij een verloren laptop); de softphone toont dan weer het
+koppelscherm.
+
 - De softphone gebruikt dezelfde WebRTC-verbinding als de softphone in de browser: de server heeft **https** met een
   hostnaam nodig (zie [Internettoegang](internet.md) of [eigen reverse proxy](reverse-proxy.md)).
 - De MSI kan uitgerold worden met Intune, Group Policy of andere softwaredistributie.

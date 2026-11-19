@@ -90,9 +90,9 @@ function QueueForm({ value, onClose, onSaved }: { value: Queue; onClose: () => v
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={() => save(q)}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
       <div className="grid gap-4 sm:grid-cols-[160px_1fr_1fr]">
-        <Input label={t('common.number')} value={q.number} onChange={(e) => set('number', e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" />
-        <Input label={t('common.name')} value={q.name} onChange={(e) => set('name', e.target.value)} autoFocus />
-        <Select label={t('queues.strategy')} value={q.strategy} onChange={(e) => set('strategy', e.target.value)} hint={t(`queues.strategyHints.${q.strategy}`)}>
+        <Input name="number" label={t('common.number')} value={q.number} onChange={(e) => set('number', e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" />
+        <Input name="name" label={t('common.name')} value={q.name} onChange={(e) => set('name', e.target.value)} autoFocus />
+        <Select name="strategy" label={t('queues.strategy')} value={q.strategy} onChange={(e) => set('strategy', e.target.value)} hint={t(`queues.strategyHints.${q.strategy}`)}>
           {queueStrategies.map((s) => <option key={s} value={s}>{t(`queues.strategies.${s}`)}</option>)}
         </Select>
       </div>
@@ -132,39 +132,39 @@ function QueueForm({ value, onClose, onSaved }: { value: Queue; onClose: () => v
       <RemoteAgents value={q.remoteMembers ?? []} onChange={(v) => set('remoteMembers', v)} />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Input label={t('queues.agentTimeout')} type="number" min={5} max={120} value={q.agentTimeout} onChange={(e) => set('agentTimeout', Number(e.target.value))} hint={t('common.seconds')} />
-        <Input label={t('queues.retry')} type="number" min={0} max={60} value={q.retry} onChange={(e) => set('retry', Number(e.target.value))} hint={t('common.seconds')} />
-        <Input label={t('queues.wrapup')} type="number" min={0} max={600} value={q.wrapup} onChange={(e) => set('wrapup', Number(e.target.value))} hint={t('queues.wrapupHint')} />
-        <Input label={t('queues.maxWait')} type="number" min={0} max={7200} value={q.maxWait} onChange={(e) => set('maxWait', Number(e.target.value))} hint={t('queues.zeroUnlimited')} />
-        <Input label={t('queues.maxCallers')} type="number" min={0} max={500} value={q.maxCallers} onChange={(e) => set('maxCallers', Number(e.target.value))} hint={t('queues.zeroUnlimited')} />
-        <Input label={t('ringGroups.cidPrefix')} value={q.cidPrefix} onChange={(e) => set('cidPrefix', e.target.value)} hint={t('ringGroups.cidPrefixHint')} />
+        <Input name="agentTimeout" label={t('queues.agentTimeout')} type="number" min={5} max={120} value={q.agentTimeout} onChange={(e) => set('agentTimeout', Number(e.target.value))} hint={t('common.seconds')} />
+        <Input name="retry" label={t('queues.retry')} type="number" min={0} max={60} value={q.retry} onChange={(e) => set('retry', Number(e.target.value))} hint={t('common.seconds')} />
+        <Input name="wrapup" label={t('queues.wrapup')} type="number" min={0} max={600} value={q.wrapup} onChange={(e) => set('wrapup', Number(e.target.value))} hint={t('queues.wrapupHint')} />
+        <Input name="maxWait" label={t('queues.maxWait')} type="number" min={0} max={7200} value={q.maxWait} onChange={(e) => set('maxWait', Number(e.target.value))} hint={t('queues.zeroUnlimited')} />
+        <Input name="maxCallers" label={t('queues.maxCallers')} type="number" min={0} max={500} value={q.maxCallers} onChange={(e) => set('maxCallers', Number(e.target.value))} hint={t('queues.zeroUnlimited')} />
+        <Input name="cidPrefix" label={t('ringGroups.cidPrefix')} value={q.cidPrefix} onChange={(e) => set('cidPrefix', e.target.value)} hint={t('ringGroups.cidPrefixHint')} />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Select label={t('queues.greeting')} value={q.greetingPrompt} onChange={(e) => set('greetingPrompt', Number(e.target.value))} hint={t('queues.greetingHint')}>
+        <Select name="greetingPrompt" label={t('queues.greeting')} value={q.greetingPrompt} onChange={(e) => set('greetingPrompt', Number(e.target.value))} hint={t('queues.greetingHint')}>
           <option value={0}>{t('queues.noGreeting')}</option>
           {(prompts.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </Select>
-        <Input label={t('queues.music')} value={q.music} onChange={(e) => set('music', e.target.value)} hint={t('queues.musicHint')} className="font-mono" />
+        <Input name="music" label={t('queues.music')} value={q.music} onChange={(e) => set('music', e.target.value)} hint={t('queues.musicHint')} className="font-mono" />
       </div>
-      <Toggle label={t('queues.announcePosition')} hint={t('queues.announcePositionHint')} checked={q.announcePosition} onChange={(v) => set('announcePosition', v)} />
-      {q.announcePosition && <Input label={t('queues.announceFrequency')} type="number" min={15} max={600} value={q.announceFrequency} onChange={(e) => set('announceFrequency', Number(e.target.value))} hint={t('common.seconds')} />}
-      <Toggle label={t('queues.joinEmpty')} hint={t('queues.joinEmptyHint')} checked={q.joinEmpty} onChange={(v) => set('joinEmpty', v)} />
-      <Toggle label={t('queues.record')} hint={t('queues.recordHint')} checked={q.record} onChange={(v) => set('record', v)} />
+      <Toggle name="announcePosition" label={t('queues.announcePosition')} hint={t('queues.announcePositionHint')} checked={q.announcePosition} onChange={(v) => set('announcePosition', v)} />
+      {q.announcePosition && <Input name="announceFrequency" label={t('queues.announceFrequency')} type="number" min={15} max={600} value={q.announceFrequency} onChange={(e) => set('announceFrequency', Number(e.target.value))} hint={t('common.seconds')} />}
+      <Toggle name="joinEmpty" label={t('queues.joinEmpty')} hint={t('queues.joinEmptyHint')} checked={q.joinEmpty} onChange={(v) => set('joinEmpty', v)} />
+      <Toggle name="record" label={t('queues.record')} hint={t('queues.recordHint')} checked={q.record} onChange={(v) => set('record', v)} />
       <div className="flex flex-col gap-3 rounded-xl border border-line p-4">
-        <Toggle label={t('queues.callback')} hint={t('queues.callbackHint')} checked={cb.enabled} onChange={(v) => setCb({ enabled: v })} />
+        <Toggle name="enabled" label={t('queues.callback')} hint={t('queues.callbackHint')} checked={cb.enabled} onChange={(v) => setCb({ enabled: v })} />
         {cb.enabled && (
           <div className="grid gap-4 sm:grid-cols-3">
-            <Input label={t('queues.callbackOfferEvery')} type="number" min={15} max={600} value={cb.offerEvery} onChange={(e) => setCb({ offerEvery: Number(e.target.value) })} hint={t('common.seconds')} />
-            <Input label={t('queues.callbackRetries')} type="number" min={0} max={5} value={cb.retries} onChange={(e) => setCb({ retries: Number(e.target.value) })} hint={t('queues.callbackRetriesHint')} />
-            <Input label={t('queues.callbackRetryDelay')} type="number" min={30} max={3600} value={cb.retryDelay} onChange={(e) => setCb({ retryDelay: Number(e.target.value) })} hint={t('common.seconds')} />
-            <Input label={t('queues.callbackExpire')} type="number" min={10} max={1440} value={cb.expire} onChange={(e) => setCb({ expire: Number(e.target.value) })} hint={t('queues.callbackExpireHint')} />
-            <Input label={t('queues.callbackCallerId')} value={cb.callerId} onChange={(e) => setCb({ callerId: e.target.value.replace(/[^0-9+]/g, '') })} hint={t('queues.callbackCallerIdHint')} className="font-mono" />
+            <Input name="offerEvery" label={t('queues.callbackOfferEvery')} type="number" min={15} max={600} value={cb.offerEvery} onChange={(e) => setCb({ offerEvery: Number(e.target.value) })} hint={t('common.seconds')} />
+            <Input name="retries" label={t('queues.callbackRetries')} type="number" min={0} max={5} value={cb.retries} onChange={(e) => setCb({ retries: Number(e.target.value) })} hint={t('queues.callbackRetriesHint')} />
+            <Input name="retryDelay" label={t('queues.callbackRetryDelay')} type="number" min={30} max={3600} value={cb.retryDelay} onChange={(e) => setCb({ retryDelay: Number(e.target.value) })} hint={t('common.seconds')} />
+            <Input name="expire" label={t('queues.callbackExpire')} type="number" min={10} max={1440} value={cb.expire} onChange={(e) => setCb({ expire: Number(e.target.value) })} hint={t('queues.callbackExpireHint')} />
+            <Input name="callerId" label={t('queues.callbackCallerId')} value={cb.callerId} onChange={(e) => setCb({ callerId: e.target.value.replace(/[^0-9+]/g, '') })} hint={t('queues.callbackCallerIdHint')} className="font-mono" />
           </div>
         )}
       </div>
-      <Toggle label={t('queues.supervision')} hint={t('queues.supervisionHint')} checked={opts.supervision} onChange={(v) => set('options', { ...opts, supervision: v })} />
+      <Toggle name="options" label={t('queues.supervision')} hint={t('queues.supervisionHint')} checked={opts.supervision} onChange={(v) => set('options', { ...opts, supervision: v })} />
       <DestinationPicker label={t('queues.overflow')} value={q.overflow} onChange={(d) => set('overflow', d)} exclude={{ type: 'queue', target: String(q.id) }} />
-      <Toggle label={t('common.enabled')} checked={q.enabled} onChange={(v) => set('enabled', v)} />
+      <Toggle name="enabled" label={t('common.enabled')} checked={q.enabled} onChange={(v) => set('enabled', v)} />
     </Modal>
   )
 }

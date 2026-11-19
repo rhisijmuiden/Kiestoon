@@ -73,7 +73,7 @@ function PromptForm({ value, onClose, onSaved }: { value: Prompt; onClose: () =>
     <Modal title={value.id ? t('prompts.edit', { name: value.name }) : t('prompts.add')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} disabled={!name || (!value.id && !wav)} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('common.name')} value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder={t('prompts.namePlaceholder')} />
+      <Input name="name" label={t('common.name')} value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder={t('prompts.namePlaceholder')} />
       {value.id > 0 && <p className="text-sm text-muted">{t('prompts.replaceHint')}</p>}
       <SpeakText onAudio={setWav} />
       <AudioInput value={wav} onChange={setWav} />

@@ -147,10 +147,10 @@ function EnableCard({ view, onEnabled }: { view: ClusterView; onEnabled: (code: 
         ]} />
         <p className="text-xs text-muted">{t(`cluster.modeHint.${f.mode}`)}</p>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Input label={t('cluster.address')} hint={t('cluster.addressHint')} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} className="font-mono" />
-          {f.mode === 'vip' && <Input label={t('cluster.vip')} hint={t('cluster.vipHint')} value={f.vip} onChange={(e) => setF({ ...f, vip: e.target.value })} className="font-mono" placeholder="192.168.1.10/24" />}
+          <Input name="address" label={t('cluster.address')} hint={t('cluster.addressHint')} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} className="font-mono" />
+          {f.mode === 'vip' && <Input name="vip" label={t('cluster.vip')} hint={t('cluster.vipHint')} value={f.vip} onChange={(e) => setF({ ...f, vip: e.target.value })} className="font-mono" placeholder="192.168.1.10/24" />}
           {f.mode === 'vip' && (
-            <Select label={t('cluster.interface')} value={f.interface} onChange={(e) => setF({ ...f, interface: e.target.value })}>
+            <Select name="interface" label={t('cluster.interface')} value={f.interface} onChange={(e) => setF({ ...f, interface: e.target.value })}>
               <option value="">{t('cluster.interfaceAuto')}</option>
               {view.status.interface && <option value={view.status.interface}>{view.status.interface}</option>}
             </Select>

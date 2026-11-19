@@ -64,27 +64,27 @@ export function Features() {
         <Card className="flex flex-col gap-4">
           <SectionTitle>{t('features.parking')}</SectionTitle>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input label={t('features.parkingSlots')} type="number" min={1} max={9} value={f.parkingSlots} onChange={(e) => setF({ ...f, parkingSlots: Number(e.target.value) })} hint={t('features.parkingSlotsHint', { last: 70 + f.parkingSlots })} />
-            <Input label={t('features.parkingTimeout')} type="number" min={30} max={900} value={f.parkingTimeout} onChange={(e) => setF({ ...f, parkingTimeout: Number(e.target.value) })} hint={t('features.parkingTimeoutHint')} />
+            <Input name="parkingSlots" label={t('features.parkingSlots')} type="number" min={1} max={9} value={f.parkingSlots} onChange={(e) => setF({ ...f, parkingSlots: Number(e.target.value) })} hint={t('features.parkingSlotsHint', { last: 70 + f.parkingSlots })} />
+            <Input name="parkingTimeout" label={t('features.parkingTimeout')} type="number" min={30} max={900} value={f.parkingTimeout} onChange={(e) => setF({ ...f, parkingTimeout: Number(e.target.value) })} hint={t('features.parkingTimeoutHint')} />
           </div>
           <SectionTitle>{t('features.recording')}</SectionTitle>
-          <Input label={t('features.recordingDays')} type="number" min={0} max={3650} value={f.recordingDays} onChange={(e) => setF({ ...f, recordingDays: Number(e.target.value) })} hint={t('features.recordingDaysHint')} />
-          <Toggle label={t('features.recordingBeep')} hint={t('features.recordingBeepHint')} checked={f.recordingBeep} onChange={(v) => setF({ ...f, recordingBeep: v })} />
+          <Input name="recordingDays" label={t('features.recordingDays')} type="number" min={0} max={3650} value={f.recordingDays} onChange={(e) => setF({ ...f, recordingDays: Number(e.target.value) })} hint={t('features.recordingDaysHint')} />
+          <Toggle name="recordingBeep" label={t('features.recordingBeep')} hint={t('features.recordingBeepHint')} checked={f.recordingBeep} onChange={(v) => setF({ ...f, recordingBeep: v })} />
           <SectionTitle>{t('features.journey')}</SectionTitle>
-          <Input label={t('features.journeyDays')} type="number" min={0} max={3650} value={f.journeyDays} onChange={(e) => setF({ ...f, journeyDays: Number(e.target.value) })} hint={t('features.journeyDaysHint')} />
+          <Input name="journeyDays" label={t('features.journeyDays')} type="number" min={0} max={3650} value={f.journeyDays} onChange={(e) => setF({ ...f, journeyDays: Number(e.target.value) })} hint={t('features.journeyDaysHint')} />
         </Card>
         <Card className="flex flex-col gap-4">
           <SectionTitle><span className="inline-flex items-center gap-2"><ShieldAlert className="size-5 text-warn" aria-hidden />{t('features.fraud')}</span></SectionTitle>
           <p className="text-sm text-muted">{t('features.fraudText')}</p>
           <Input label={t('features.premiumPrefixes')} value={premium} onChange={(e) => setPremium(e.target.value)} className="font-mono text-sm" hint={t('features.premiumPrefixesHint')} />
           <Input label={t('features.blockedCountries')} value={blocked} onChange={(e) => setBlocked(e.target.value)} className="font-mono text-sm" placeholder="7, 234, 882, 883" hint={t('features.blockedCountriesHint')} />
-          <Input label={t('features.maxOutbound')} type="number" min={0} max={500} value={fraud.maxOutbound} onChange={(e) => setFraud('maxOutbound', Number(e.target.value))} hint={t('features.maxOutboundHint')} />
+          <Input name="maxOutbound" label={t('features.maxOutbound')} type="number" min={0} max={500} value={fraud.maxOutbound} onChange={(e) => setFraud('maxOutbound', Number(e.target.value))} hint={t('features.maxOutboundHint')} />
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input label={t('features.alertOutbound')} type="number" min={0} value={fraud.alertOutboundPerHour} onChange={(e) => setFraud('alertOutboundPerHour', Number(e.target.value))} hint={t('features.perHour')} />
-            <Input label={t('features.alertInternational')} type="number" min={0} value={fraud.alertInternationalPerHour} onChange={(e) => setFraud('alertInternationalPerHour', Number(e.target.value))} hint={t('features.perHour')} />
+            <Input name="alertOutboundPerHour" label={t('features.alertOutbound')} type="number" min={0} value={fraud.alertOutboundPerHour} onChange={(e) => setFraud('alertOutboundPerHour', Number(e.target.value))} hint={t('features.perHour')} />
+            <Input name="alertInternationalPerHour" label={t('features.alertInternational')} type="number" min={0} value={fraud.alertInternationalPerHour} onChange={(e) => setFraud('alertInternationalPerHour', Number(e.target.value))} hint={t('features.perHour')} />
           </div>
-          <Input label={t('features.alertEmail')} type="email" value={fraud.alertEmail} onChange={(e) => setFraud('alertEmail', e.target.value)} hint={t('features.alertEmailHint')} />
-          <Toggle label={t('features.blockOnAlert')} hint={t('features.blockOnAlertHint')} checked={fraud.blockOnAlert} onChange={(v) => setFraud('blockOnAlert', v)} />
+          <Input name="alertEmail" label={t('features.alertEmail')} type="email" value={fraud.alertEmail} onChange={(e) => setFraud('alertEmail', e.target.value)} hint={t('features.alertEmailHint')} />
+          <Toggle name="blockOnAlert" label={t('features.blockOnAlert')} hint={t('features.blockOnAlertHint')} checked={fraud.blockOnAlert} onChange={(v) => setFraud('blockOnAlert', v)} />
         </Card>
       </div>
       <Card>

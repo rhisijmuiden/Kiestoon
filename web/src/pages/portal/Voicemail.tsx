@@ -142,7 +142,7 @@ function VoicemailSettings({ me, onSaved }: { me: PortalMe; onSaved: () => void 
       <SectionTitle>{t('voicemail.settings')}</SectionTitle>
       <ErrorMessage error={error} />
       {saved && <Alert tone="ok">{t('common.saved')}</Alert>}
-      <Input label={t('voicemail.newPin')} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" hint={t('voicemail.newPinHint')} />
+      <Input name="pin" label={t('voicemail.newPin')} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" hint={t('voicemail.newPinHint')} />
       <Toggle label={t('extensions.vmToEmail')} hint={me.email || t('extensions.vmNeedsEmail')} checked={email && !!me.email} disabled={!me.email} onChange={setEmail} />
       <p className="text-xs text-subtle">{t('voicemail.dialIn')}</p>
       <div className="flex justify-end"><Button busy={busy} onClick={save}>{t('common.save')}</Button></div>

@@ -105,9 +105,9 @@ export function DestinationPicker({ label, value, onChange, allowNone, exclude }
         {types.map((ty) => <option key={ty} value={ty}>{t(`dest.types.${ty}`)}</option>)}
       </Select>
       {needsTarget && (value.type === 'external' ? (
-        <Input label={t('dest.number')} value={value.target} onChange={(e) => onChange({ ...value, target: e.target.value.replace(/[^0-9+]/g, '') })} inputMode="tel" className="font-mono" placeholder="0612345678" />
+        <Input name="target" label={t('dest.number')} value={value.target} onChange={(e) => onChange({ ...value, target: e.target.value.replace(/[^0-9+]/g, '') })} inputMode="tel" className="font-mono" placeholder="0612345678" />
       ) : (
-        <Select label={t('dest.target')} value={value.target} onChange={(e) => onChange({ ...value, target: e.target.value })}>
+        <Select name="target" label={t('dest.target')} value={value.target} onChange={(e) => onChange({ ...value, target: e.target.value })}>
           {!options.some((o) => o.target === value.target) && <option value={value.target}>{value.target ? value.target : t('dest.choose')}</option>}
           {options.map((o) => <option key={o.target} value={o.target}>{o.label}</option>)}
         </Select>

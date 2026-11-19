@@ -50,14 +50,14 @@ export function Internet() {
           <SectionTitle><span className="inline-flex items-center gap-2"><Globe className="size-5 text-accent" aria-hidden />{t('internet.settings')}</span></SectionTitle>
           <div className="flex flex-col gap-4">
             <p className="text-sm text-muted">{t('internet.intro')}</p>
-            <Toggle label={t('internet.enable')} hint={t('internet.enableHint')} checked={s.enabled} onChange={(v) => set('enabled', v)} />
+            <Toggle name="enabled" label={t('internet.enable')} hint={t('internet.enableHint')} checked={s.enabled} onChange={(v) => set('enabled', v)} />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input label={t('internet.domain')} value={s.domain} onChange={(e) => set('domain', e.target.value.trim().toLowerCase())} placeholder="pbx.example.com" className="font-mono" hint={t('internet.domainHint')} />
-              <Input label={t('internet.email')} type="email" value={s.email} onChange={(e) => set('email', e.target.value.trim())} placeholder="it@example.com" hint={t('internet.emailHint')} />
+              <Input name="domain" label={t('internet.domain')} value={s.domain} onChange={(e) => set('domain', e.target.value.trim().toLowerCase())} placeholder="pbx.example.com" className="font-mono" hint={t('internet.domainHint')} />
+              <Input name="email" label={t('internet.email')} type="email" value={s.email} onChange={(e) => set('email', e.target.value.trim())} placeholder="it@example.com" hint={t('internet.emailHint')} />
             </div>
-            <Input label={t('internet.portalDomain')} value={s.portalDomain} onChange={(e) => set('portalDomain', e.target.value.trim().toLowerCase())} placeholder="voipcentrale.example.com" className="font-mono" hint={t('internet.portalDomainHint')} />
-            <Toggle label={t('internet.useForSip')} hint={t('internet.useForSipHint')} checked={s.useForSip} onChange={(v) => set('useForSip', v)} />
-            <Toggle label={t('internet.staging')} hint={t('internet.stagingHint')} checked={s.staging} onChange={(v) => set('staging', v)} />
+            <Input name="portalDomain" label={t('internet.portalDomain')} value={s.portalDomain} onChange={(e) => set('portalDomain', e.target.value.trim().toLowerCase())} placeholder="voipcentrale.example.com" className="font-mono" hint={t('internet.portalDomainHint')} />
+            <Toggle name="useForSip" label={t('internet.useForSip')} hint={t('internet.useForSipHint')} checked={s.useForSip} onChange={(v) => set('useForSip', v)} />
+            <Toggle name="staging" label={t('internet.staging')} hint={t('internet.stagingHint')} checked={s.staging} onChange={(v) => set('staging', v)} />
             {s.enabled && data.data.dns && data.data.dns.length === 0 && s.domain && <Alert tone="warn">{t('internet.noDns', { domain: s.domain })}</Alert>}
             {s.enabled && data.data.portalDns && data.data.portalDns.length === 0 && s.portalDomain && <Alert tone="warn">{t('internet.noDns', { domain: s.portalDomain })}</Alert>}
             <div className="flex justify-end">
@@ -144,10 +144,10 @@ function ReverseProxy({ onSaved }: { onSaved: () => void }) {
       <SectionTitle><span className="inline-flex items-center gap-2"><Network className="size-5 text-accent" aria-hidden />{t('proxy.title')}</span></SectionTitle>
       <div className="flex flex-col gap-4">
         <p className="text-sm text-muted">{t('proxy.intro')}</p>
-        <Toggle label={t('proxy.enable')} hint={t('proxy.enableHint')} checked={p.enabled} onChange={(v) => { setSaved(false); setP({ ...p, enabled: v }) }} />
+        <Toggle name="enabled" label={t('proxy.enable')} hint={t('proxy.enableHint')} checked={p.enabled} onChange={(v) => { setSaved(false); setP({ ...p, enabled: v }) }} />
         <Textarea label={t('proxy.trusted')} value={list} onChange={(e) => { setSaved(false); setList(e.target.value) }} placeholder={'10.0.0.5\n192.168.10.0/24'} hint={t('proxy.trustedHint')} />
-        <Input label={t('proxy.publicUrl')} value={p.publicUrl} onChange={(e) => { setSaved(false); setP({ ...p, publicUrl: e.target.value.trim() }) }} placeholder="https://pbx.example.com" className="font-mono" hint={t('proxy.publicUrlHint')} />
-        <Input label={t('proxy.portalUrl')} value={p.portalUrl} onChange={(e) => { setSaved(false); setP({ ...p, portalUrl: e.target.value.trim() }) }} placeholder="https://voipcentrale.example.com" className="font-mono" hint={t('proxy.portalUrlHint')} />
+        <Input name="publicUrl" label={t('proxy.publicUrl')} value={p.publicUrl} onChange={(e) => { setSaved(false); setP({ ...p, publicUrl: e.target.value.trim() }) }} placeholder="https://pbx.example.com" className="font-mono" hint={t('proxy.publicUrlHint')} />
+        <Input name="portalUrl" label={t('proxy.portalUrl')} value={p.portalUrl} onChange={(e) => { setSaved(false); setP({ ...p, portalUrl: e.target.value.trim() }) }} placeholder="https://voipcentrale.example.com" className="font-mono" hint={t('proxy.portalUrlHint')} />
         <div className="rounded-xl border border-line bg-surface-2/60 p-4">
           <div className="mb-2 flex items-center justify-between gap-2">
             <h3 className="text-sm font-medium text-ink">{t('proxy.check')}</h3>
@@ -269,7 +269,7 @@ function Metrics() {
       <SectionTitle><span className="inline-flex items-center gap-2"><Activity className="size-5 text-accent" aria-hidden />{t('metrics.title')}</span></SectionTitle>
       <div className="flex flex-col gap-4">
         <p className="text-sm text-muted">{t('metrics.intro')}</p>
-        <Toggle label={t('metrics.enable')} checked={m.enabled} onChange={(v) => { setSaved(false); setM({ ...m, enabled: v }) }} />
+        <Toggle name="enabled" label={t('metrics.enable')} checked={m.enabled} onChange={(v) => { setSaved(false); setM({ ...m, enabled: v }) }} />
         {m.enabled && <>
           <CopyField label={t('metrics.url')} value={d.data.url} />
           <div className="flex items-end gap-2">

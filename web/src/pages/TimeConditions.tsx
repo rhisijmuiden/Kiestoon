@@ -106,7 +106,7 @@ function TimeConditionForm({ value, onClose, onSaved }: { value: TimeCondition; 
     <Modal wide title={tc.id ? t('timeConditions.edit', { name: value.name }) : t('timeConditions.add')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={() => save(tc)}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('common.name')} value={tc.name} onChange={(e) => set('name', e.target.value)} autoFocus placeholder={t('timeConditions.namePlaceholder')} />
+      <Input name="name" label={t('common.name')} value={tc.name} onChange={(e) => set('name', e.target.value)} autoFocus placeholder={t('timeConditions.namePlaceholder')} />
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-ink-2">{t('timeConditions.openHours')}</span>
         {tc.schedule.map((s, i) => (
@@ -131,7 +131,7 @@ function TimeConditionForm({ value, onClose, onSaved }: { value: TimeCondition; 
       </div>
       <DestinationPicker label={t('timeConditions.whenOpen')} value={tc.open} onChange={(d) => set('open', d)} exclude={exclude} />
       <DestinationPicker label={t('timeConditions.whenClosed')} value={tc.closed} onChange={(d) => set('closed', d)} exclude={exclude} />
-      <Toggle label={t('timeConditions.useHolidays')} hint={t('timeConditions.useHolidaysHint')} checked={tc.useHolidays} onChange={(v) => set('useHolidays', v)} />
+      <Toggle name="useHolidays" label={t('timeConditions.useHolidays')} hint={t('timeConditions.useHolidaysHint')} checked={tc.useHolidays} onChange={(v) => set('useHolidays', v)} />
       {tc.useHolidays && <DestinationPicker allowNone label={t('timeConditions.whenHoliday')} value={tc.holiday} onChange={(d) => set('holiday', d)} exclude={exclude} />}
       <Segmented label={t('timeConditions.mode')} value={tc.mode} onChange={(m) => set('mode', m)} options={[
         { key: 'auto', label: t('timeConditions.modes.auto') },
@@ -206,8 +206,8 @@ function Holidays() {
           </div>
           {admin && (
             <div className="mt-4 grid gap-3 rounded-xl border border-line p-3 sm:grid-cols-[1fr_160px]">
-              <Input label={t('common.name')} value={nh.name} onChange={(e) => setNh({ ...nh, name: e.target.value })} placeholder={t('timeConditions.customPlaceholder')} />
-              <Input label={t('timeConditions.date')} type="date" value={nh.date} onChange={(e) => setNh({ ...nh, date: e.target.value })} />
+              <Input name="name" label={t('common.name')} value={nh.name} onChange={(e) => setNh({ ...nh, name: e.target.value })} placeholder={t('timeConditions.customPlaceholder')} />
+              <Input name="date" label={t('timeConditions.date')} type="date" value={nh.date} onChange={(e) => setNh({ ...nh, date: e.target.value })} />
               <label className="flex items-center gap-2 text-sm text-ink-2">
                 <input type="checkbox" checked={nh.annual} onChange={(e) => setNh({ ...nh, annual: e.target.checked })} className="size-4 accent-[var(--color-accent)]" />
                 {t('timeConditions.annualHint')}

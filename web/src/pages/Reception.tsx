@@ -227,8 +227,8 @@ function Callbacks({ queues }: { queues: QueueView[] }) {
           <Select label={t('reception.cbQueue')} value={queueId || withCb[0].id} onChange={(e) => setQueueId(Number(e.target.value))}>
             {withCb.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
           </Select>
-          <Input label={t('reception.cbNumber')} value={number} onChange={(e) => setNumber(e.target.value.replace(/[^0-9+]/g, ''))} inputMode="tel" className="font-mono" />
-          <Input label={t('reception.cbName')} value={name} onChange={(e) => setName(e.target.value)} />
+          <Input name="number" label={t('reception.cbNumber')} value={number} onChange={(e) => setNumber(e.target.value.replace(/[^0-9+]/g, ''))} inputMode="tel" className="font-mono" />
+          <Input name="name" label={t('reception.cbName')} value={name} onChange={(e) => setName(e.target.value)} />
           <Button busy={busy} disabled={number.length < 6} onClick={add}><PhoneCall className="size-4" aria-hidden />{t('reception.cbAdd')}</Button>
         </div>
       )}

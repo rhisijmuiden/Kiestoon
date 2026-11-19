@@ -122,18 +122,18 @@ function BoxForm({ value, onClose, onSaved }: { value: FaxBox; onClose: () => vo
     <Modal title={b.id ? t('fax.editBox', { name: value.name }) : t('fax.addBox')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={() => save(b)}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('common.name')} value={b.name} onChange={(e) => set('name', e.target.value)} placeholder={t('fax.namePlaceholder')} autoFocus />
-      <Input label={t('fax.emails')} value={b.emails} onChange={(e) => set('emails', e.target.value)} placeholder="fax@example.com, office@example.com" hint={t('fax.emailsHint')} />
-      <Input label={t('fax.keepDays')} type="number" min={0} max={3650} value={b.keepDays} onChange={(e) => set('keepDays', Number(e.target.value))} hint={t('fax.keepDaysHint')} />
-      <Toggle label={t('fax.ecm')} hint={t('fax.ecmHint')} checked={b.ecm} onChange={(v) => set('ecm', v)} />
-      <Toggle label={t('common.enabled')} checked={b.enabled} onChange={(v) => set('enabled', v)} />
+      <Input name="name" label={t('common.name')} value={b.name} onChange={(e) => set('name', e.target.value)} placeholder={t('fax.namePlaceholder')} autoFocus />
+      <Input name="emails" label={t('fax.emails')} value={b.emails} onChange={(e) => set('emails', e.target.value)} placeholder="fax@example.com, office@example.com" hint={t('fax.emailsHint')} />
+      <Input name="keepDays" label={t('fax.keepDays')} type="number" min={0} max={3650} value={b.keepDays} onChange={(e) => set('keepDays', Number(e.target.value))} hint={t('fax.keepDaysHint')} />
+      <Toggle name="ecm" label={t('fax.ecm')} hint={t('fax.ecmHint')} checked={b.ecm} onChange={(v) => set('ecm', v)} />
+      <Toggle name="enabled" label={t('common.enabled')} checked={b.enabled} onChange={(v) => set('enabled', v)} />
       <p className="text-xs text-subtle">{t('fax.routeHint')}</p>
       <h3 className="mt-2 text-sm font-semibold text-ink">{t('fax.sending')}</h3>
-      <Toggle label={t('fax.sendEnabled')} hint={t('fax.sendEnabledHint')} checked={b.sendEnabled} onChange={(v) => set('sendEnabled', v)} />
+      <Toggle name="sendEnabled" label={t('fax.sendEnabled')} hint={t('fax.sendEnabledHint')} checked={b.sendEnabled} onChange={(v) => set('sendEnabled', v)} />
       {b.sendEnabled && <>
-        <Input label={t('fax.number')} value={b.number} onChange={(e) => set('number', e.target.value)} placeholder="+31201234567" className="font-mono" hint={t('fax.numberHint')} />
-        <Input label={t('fax.senders')} value={b.senders} onChange={(e) => set('senders', e.target.value)} placeholder="jan@example.com, office@example.com" hint={t('fax.sendersHint')} />
-        <Input label={t('fax.sendPin')} type="password" value={b.sendPin ?? ''} onChange={(e) => set('sendPin', e.target.value.trim())} autoComplete="new-password"
+        <Input name="number" label={t('fax.number')} value={b.number} onChange={(e) => set('number', e.target.value)} placeholder="+31201234567" className="font-mono" hint={t('fax.numberHint')} />
+        <Input name="senders" label={t('fax.senders')} value={b.senders} onChange={(e) => set('senders', e.target.value)} placeholder="jan@example.com, office@example.com" hint={t('fax.sendersHint')} />
+        <Input name="sendPin" label={t('fax.sendPin')} type="password" value={b.sendPin ?? ''} onChange={(e) => set('sendPin', e.target.value.trim())} autoComplete="new-password"
           placeholder={b.sendPinSet ? t('common.keepSecret') : ''} hint={t('fax.sendPinHint')} />
       </>}
     </Modal>

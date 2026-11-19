@@ -22,16 +22,19 @@ ct() { docker exec "$NAME" bash -c "$*"; }
 for _ in $(seq 1 30); do ct 'systemctl is-system-running 2>/dev/null | grep -qE "running|degraded"' && break; sleep 1; done
 docker cp "$KT_DEB" "$NAME:/root/kiestoon.deb"
 docker cp "$AST_DEB" "$NAME:/root/kiestoon-asterisk.deb"
+# Install through install.sh itself, so the installer runs against a real Debian 13 /etc/os-release.
+docker cp "$(dirname "$0")/../../install.sh" "$NAME:/root/install.sh"
 EXTRA=""
 if [ -n "$SND_DEB" ]; then
   docker cp "$SND_DEB" "$NAME:/root/kiestoon-sounds-nl.deb"
-  EXTRA=/root/kiestoon-sounds-nl.deb
+  EXTRA="--sounds-deb /root/kiestoon-sounds-nl.deb"
 fi
 if [ -n "$SPEECH_DEB" ]; then
   docker cp "$SPEECH_DEB" "$NAME:/root/kiestoon-speech.deb"
-  EXTRA="$EXTRA /root/kiestoon-speech.deb"
+  EXTRA="$EXTRA --speech-deb /root/kiestoon-speech.deb"
 fi
-ct "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq /root/kiestoon-asterisk.deb /root/kiestoon.deb $EXTRA >/dev/null"
+ct "bash /root/install.sh --version v0.0.0 --dry-run | grep -q 'Would install Kiestoon v0.0.0'" || { echo "FAIL: install.sh dry run on Debian 13"; exit 1; }
+ct "bash /root/install.sh --channel testing --deb /root/kiestoon.deb --asterisk-deb /root/kiestoon-asterisk.deb $EXTRA"
 
 fail() {
   echo "FAIL: $*"

@@ -315,6 +315,7 @@ the testing channel.
 - [ ] WhatsApp and SMS in the portal next to calls: a shared inbox per team or number, conversations linked to the
   phone book and the call history, notifications
 - [x] Yealink T42G, T42S and T42U (`v0.7.0-rc.9`): provisioning, 15 line keys in 3 pages of 5, extra lines
+- [x] Installer fix for Debian 13 (`v0.7.0-rc.10`): "invalid version: 13 (trixie)" no longer stops install.sh, plus `--dry-run`
   (12 on T42S/T42U, 3 on T42G), model detection from the User-Agent
 - [x] Yealink T41P, T41S and T41U (`v0.7.0-rc.11`): same as the T42 series, 6 lines each
 

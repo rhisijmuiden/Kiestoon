@@ -64,6 +64,7 @@ func (s *Server) systemRoutes(mux *http.ServeMux, admin func(http.HandlerFunc) h
 	mux.Handle("DELETE /api/phones/{id}", admin(s.deletePhone))
 	mux.Handle("GET /api/phones/{id}/preview", admin(s.previewPhone))
 	s.phoneAssignRoutes(mux, admin)
+	s.hotdeskRoutes(mux, admin)
 	s.keyTemplateRoutes(mux, admin)
 
 	mux.Handle("GET /api/system/helper", admin(func(w http.ResponseWriter, r *http.Request) {
@@ -852,6 +853,14 @@ func (s *Server) savePhone(w http.ResponseWriter, r *http.Request) {
 		s.saveErr(w, err)
 		return
 	}
+	p.HotdeskExtensionID, p.HotdeskAt = nil, ""
+	if old != nil && old.HotdeskExtensionID != nil {
+		if p.Options.Hotdesk.Enabled {
+			p.HotdeskExtensionID, p.HotdeskAt = old.HotdeskExtensionID, old.HotdeskAt
+		} else {
+			_, _ = s.PBX.SetHotdesk(r.Context(), p.ID, nil)
+		}
+	}
 	s.audit(r, "phone.saved", p.MAC)
 	_ = s.PBX.ForgetDiscovery(r.Context(), p.MAC)
 	s.ztpAfterSave(r, &p, old)
@@ -893,8 +902,8 @@ func (s *Server) provInput(ctx context.Context, p *pbx.Phone, host, scheme strin
 			in.Server = host
 		}
 	}
-	if p.ExtensionID != nil {
-		e, err := s.PBX.Extension(ctx, *p.ExtensionID)
+	if id := p.ActiveExtensionID(); id != nil {
+		e, err := s.PBX.Extension(ctx, *id)
 		if err == nil && e.Enabled {
 			in.Ext = e
 		}

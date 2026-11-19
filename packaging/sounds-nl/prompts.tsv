@@ -196,3 +196,11 @@ kt-callback-confirm	Druk op 1 om te bevestigen, of op 2 om een ander nummer in t
 kt-callback-enter	Toets uw telefoonnummer in, gevolgd door het hekje.
 kt-callback-thanks	Dank u wel. Wij bellen u terug zodra er een medewerker vrij is. Tot ziens.
 kt-callback-agent	Terugbelverzoek uit de wachtrij. U wordt nu verbonden met de beller.
+# Hot desks (*55 / *56)
+kt-hotdesk-ext	Voer uw toestelnummer in, gevolgd door het hekje.
+kt-hotdesk-pin	Voer uw pincode in, gevolgd door het hekje.
+kt-hotdesk-wrong	Het toestelnummer of de pincode is onjuist.
+kt-hotdesk-notdesk	Deze telefoon is geen flexplek, of er is niemand aangemeld.
+kt-hotdesk-reload	De telefoon laadt nu uw instellingen. Een ogenblik geduld.
+kt-hotdesk-in	U bent aangemeld op deze telefoon.
+kt-hotdesk-out	U bent afgemeld.

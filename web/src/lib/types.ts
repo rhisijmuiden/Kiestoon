@@ -143,12 +143,14 @@ export type PhoneKey = { type: KeyType; value: string; label: string }
 export type PhoneModule = { type: string; keys: PhoneKey[] }
 export type ModuleType = { vendor: PhoneModel['vendor']; id: string; name: string; keys: number; perPage: number; max: number; models: string[] }
 export type IntercomOptions = { allow: boolean; mute: boolean; tone: boolean; barge: boolean }
+export type HotdeskOptions = { enabled: boolean; autoLogout: boolean }
 export type KeyTemplate = { id: number; name: string; vendor: PhoneModel['vendor']; model: string; keys: PhoneKey[]; modules: PhoneModule[] }
 export type Phone = {
   id: number; mac: string; vendor: PhoneModel['vendor']; model: string; extensionId: number | null; label: string
   keys: PhoneKey[]; lines: number[]; lastSeenAt: string; lastIp: string; userAgent: string
   ztpState?: '' | 'registered' | 'error' | 'elsewhere'; ztpError?: string; ztpAt?: string
-  modules?: PhoneModule[]; options?: { intercom: IntercomOptions }
+  modules?: PhoneModule[]; options?: { intercom: IntercomOptions; hotdesk?: HotdeskOptions }
+  hotdeskExtensionId?: number | null; hotdeskAt?: string
 }
 
 // ---- phase 2: business features ---------------------------------------------

@@ -3217,5 +3217,16 @@
     "noClientsText": "Employees link the softphone themselves under My devices, or by signing in inside the app.",
     "remove": "Unlink",
     "removeConfirm": "Unlink the softphone of {{user}}? It shows the link screen again until it is linked again."
+  },
+  "hotdesk": {
+    "title": "Hot desk",
+    "hint": "Anyone can log in on this phone with *55, their extension number and PIN (the voicemail PIN), and log out with *56. While nobody is logged in, the phone uses its own extension as a guest account. An extension is logged in on one hot desk at a time.",
+    "enabled": "This phone is a hot desk",
+    "autoLogout": "Log out every night",
+    "autoLogoutHint": "At 03:00 everyone is logged out, so desks start the day free.",
+    "needsGuest": "Choose an extension for the phone: it is the guest account used to dial *55.",
+    "loggedIn": "Logged in: {{ext}}",
+    "free": "Hot desk free",
+    "logout": "Log out"
   }
 }

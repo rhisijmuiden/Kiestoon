@@ -94,3 +94,20 @@ func TestTrunkSRV(t *testing.T) {
 		t.Error("port 0 written into a SIP URI")
 	}
 }
+
+func TestHotdeskCodes(t *testing.T) {
+	if strings.Contains(Generate(sample(), Options{})["extensions.conf"], "exten => *55") {
+		t.Error("*55 without an AGI listener")
+	}
+	d := Generate(sample(), Options{AGIAddr: "127.0.0.1:4573"})["extensions.conf"]
+	for _, want := range []string{"exten => *55,1,Answer()", "Read(KT_HDP,kt-hotdesk-pin,12,,2,8)",
+		"AGI(agi://127.0.0.1:4573/hotdesk,login,${KT_EXT},${CHANNEL(pjsip,remote_addr)})", "exten => *56,1,Answer()",
+		"AGI(agi://127.0.0.1:4573/hotdesk,logout,${KT_EXT},${CHANNEL(pjsip,remote_addr)})"} {
+		if !strings.Contains(d, want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+	if strings.Contains(d, "KT_HDP}") {
+		t.Error("the PIN must not be an AGI argument")
+	}
+}

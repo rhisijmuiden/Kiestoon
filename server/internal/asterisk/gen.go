@@ -31,7 +31,7 @@ type Options struct {
 	FaxDir string
 	// SpeechDir is where speech steps of a voice menu record the caller for the server.
 	SpeechDir string
-	// AGIAddr is the server's FastAGI listener (host:port) that recognises speech.
+	// AGIAddr is the server's FastAGI listener (host:port): speech steps and hot desk logins.
 	AGIAddr string
 }
 
@@ -454,7 +454,7 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 	}
 	x.nl()
 
-	genFeatureCodes(&x, s)
+	genFeatureCodes(&x, s, o)
 	genLocal(&x, s)
 	genExtensionsBusiness(&x, s)
 	genRingGroups(&x, s)

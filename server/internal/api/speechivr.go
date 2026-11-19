@@ -101,13 +101,6 @@ func (s *Server) serveAGI(ctx context.Context, c net.Conn) {
 			env[k] = v
 		}
 	}
-	if env["agi_network_script"] != "speech" {
-		return
-	}
-	ivr, _ := strconv.ParseInt(env["agi_arg_1"], 10, 64)
-	rctx, cancel := context.WithTimeout(ctx, 25*time.Second)
-	defer cancel()
-	n, label := s.recogniseSpeech(rctx, ivr, env["agi_arg_2"], env["agi_arg_3"])
 	set := func(k, v string) bool {
 		if _, err := fmt.Fprintf(c, "SET VARIABLE %s \"%s\"\n", k, v); err != nil {
 			return false
@@ -115,6 +108,36 @@ func (s *Server) serveAGI(ctx context.Context, c net.Conn) {
 		reply, err := r.ReadString('\n')
 		return err == nil && strings.HasPrefix(reply, "200")
 	}
+	switch env["agi_network_script"] {
+	case "hotdesk":
+		hctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		// What the user typed comes as channel variables, so the PIN is not in the Asterisk log.
+		get := func(k string) string {
+			if _, err := fmt.Fprintf(c, "GET VARIABLE %s\n", k); err != nil {
+				return ""
+			}
+			reply, err := r.ReadString('\n')
+			if err != nil || !strings.HasPrefix(reply, "200 result=1 (") {
+				return ""
+			}
+			v := strings.TrimPrefix(strings.TrimRight(reply, "\r\n"), "200 result=1 (")
+			return strings.TrimSuffix(v, ")")
+		}
+		number, pin := "", ""
+		if env["agi_arg_1"] == "login" {
+			number, pin = get("KT_HDN"), get("KT_HDP")
+		}
+		set("KT_HD", s.hotdeskAGI(hctx, env["agi_arg_1"], env["agi_arg_2"], env["agi_arg_3"], number, pin))
+		return
+	case "speech":
+	default:
+		return
+	}
+	ivr, _ := strconv.ParseInt(env["agi_arg_1"], 10, 64)
+	rctx, cancel := context.WithTimeout(ctx, 25*time.Second)
+	defer cancel()
+	n, label := s.recogniseSpeech(rctx, ivr, env["agi_arg_2"], env["agi_arg_3"])
 	if n > 0 && set("KT_INTENT", strconv.Itoa(n)) {
 		set("KT_INTENTL", label)
 	}

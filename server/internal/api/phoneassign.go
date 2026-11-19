@@ -106,8 +106,8 @@ func (s *Server) extNumber(ctx context.Context, id *int64) string {
 // the first extra line when it has none.
 func (s *Server) registeredAs(ctx context.Context, p *pbx.Phone) string {
 	ids := p.Lines
-	if p.ExtensionID != nil {
-		ids = append([]int64{*p.ExtensionID}, ids...)
+	if id := p.ActiveExtensionID(); id != nil {
+		ids = append([]int64{*id}, ids...)
 	}
 	for _, id := range ids {
 		if e, err := s.PBX.Extension(ctx, id); err == nil && e.Enabled {

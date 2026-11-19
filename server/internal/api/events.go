@@ -155,6 +155,7 @@ func (s *Server) checkFraud(rec cdr.Record) {
 func (s *Server) RunMaintenance(ctx context.Context) {
 	go s.runCallbacks(ctx)
 	go s.runAGI(ctx)
+	go s.runHotdeskAutoLogout(ctx)
 	go s.runSLA(ctx)
 	go s.runReports(ctx)
 	day := ""

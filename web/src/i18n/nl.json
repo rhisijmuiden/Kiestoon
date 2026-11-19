@@ -2767,14 +2767,15 @@
       "testRing": "Beltoon testen",
       "audioHint": "Tip: laat hem overgaan op je speakers en praat via je headset.",
       "headset": "Headset",
-      "noHeadset": "Geen headset met gespreksknoppen gevonden. Geluid werkt op elke headset.",
+      "noHeadset": "Geen headset gevonden. Geluid werkt op elke headset.",
       "noHeadsetShort": "geen",
       "buttonsOn": "knoppen actief",
       "buttonsOff": "alleen geluid",
-      "headsetHint": "Opnemen, ophangen en dempen met de knoppen van Jabra, Poly/Plantronics, EPOS en andere USB-headsets.",
+      "headsetHint": "Opnemen, ophangen en dempen met de knoppen van Jabra, Poly/Plantronics, EPOS, Logitech en andere USB-headsets.",
       "app": "App",
       "autostart": "Starten met Windows",
-      "unlink": "Deze computer ontkoppelen"
+      "unlink": "Deze computer ontkoppelen",
+      "headsetAuto": "Gesprekken gaan vanzelf naar deze headset zolang microfoon en luidspreker op Standaard van het systeem staan."
     },
     "info": {
       "browser": "Browser",

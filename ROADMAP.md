@@ -246,6 +246,9 @@ Notes on phase 5:
   hardware with real headsets.
 - [x] Windows softphone in the admin console (`v0.7.0-rc.8`): System > Windows softphone offers the MSI download
   (version, SHA-256, silent install command, server address) and lists the linked softphones with unlink.
+- [x] Softphone headset detection (`v0.7.0-rc.15`): headsets are also recognised by maker and name (Logitech Zone and
+  H-series, Jabra, Poly, EPOS, Yealink), telephony buttons inside consumer-control collections work, sound-only and
+  Bluetooth headsets show up in Settings, and calls use a plugged-in headset while audio is on System default.
 - [x] Phone keys, expansion modules and intercom (`v0.6.0-rc.12`): a visual key editor per model (keys left and
   right of the display, pages, drag a key onto another to swap) with line keys per account, BLF, speed dial, park,
   parking slot, intercom, do not disturb and voicemail keys. Desk phones carry extra lines (Yealink, Snom,

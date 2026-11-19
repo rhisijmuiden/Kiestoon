@@ -25,10 +25,12 @@ collega te slepen.
   [gebruikersportaal](portal.md#collegas-en-doorverbinden-met-slepen).
 - **Queues**: per wachtrij aanmelden, afmelden of pauzeren, met het aantal wachtende bellers.
 - **Voicemail** en **gespreksgeschiedenis** met terugbellen.
-- **Headsetknoppen**: opnemen, ophangen en dempen met de knoppen van Jabra, Poly/Plantronics, EPOS en andere
-  USB-headsets. Geluid werkt op elke headset.
+- **Headsetknoppen**: opnemen, ophangen en dempen met de knoppen van Jabra, Poly/Plantronics, EPOS, Logitech en
+  andere USB-headsets met gespreksknoppen. Headsets zonder gespreksknoppen en Bluetooth-headsets staan erbij als
+  "alleen geluid" en werken gewoon voor gesprekken.
 - **Geluid**: kies de microfoon, de luidspreker voor gesprekken en waar hij overgaat, bijvoorbeeld op je speakers
-  terwijl je via de headset praat.
+  terwijl je via de headset praat. Op **Standaard van het systeem** gaan gesprekken vanzelf naar een aangesloten
+  headset.
 - **Windows-integratie**: pictogram in het systeemvak, pop-up bij inkomende gesprekken, meldingen bij gemiste
   gesprekken en nieuwe voicemail, `tel:`- en `sip:`-links openen in de softphone, en **Starten met Windows**.
 - **Updates**: onder **Info** zoekt de softphone naar nieuwe versies en werkt zichzelf bij, via het kanaal

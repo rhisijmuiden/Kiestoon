@@ -5,7 +5,7 @@ import { LanguageSwitch, ThemeSwitch } from '../components/brand'
 import { Select } from '../components/kit'
 import { Button } from '../components/ui'
 import { useSession } from '../lib/session'
-import { audioKeys, audioPref } from '../lib/softphone'
+import { audioKeys, audioPref, findHeadset, refreshHeadset } from '../lib/softphone'
 import { inShell, shell, type Headset } from './bridge'
 import { Title } from './Contacts'
 import { Switch } from './Switch'
@@ -17,6 +17,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       {children}
     </section>
   )
+}
+
+/** Whether a HID name and a sound device label belong to the same headset ("Logitech Zone Wired" and "Headset (Zone Wired)"). */
+function sameDevice(hid: string, label: string) {
+  const words = (x: string) => x.toLowerCase().replace(/\(.*?\)/g, (m) => ` ${m} `).split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !['usb', 'headset', 'logitech', 'microphone', 'speakers', 'hands', 'free'].includes(w))
+  const a = words(hid)
+  return a.length > 0 && a.some((w) => words(label).includes(w))
 }
 
 /** Plays a short ring on the chosen device. */
@@ -52,6 +59,7 @@ export function Settings() {
           s?.getTracks().forEach((tr) => tr.stop())
           setDevices(await navigator.mediaDevices.enumerateDevices())
         } else setDevices(list)
+        refreshHeadset()
       } catch {
         setDevices([])
       }
@@ -59,8 +67,14 @@ export function Settings() {
     load()
     navigator.mediaDevices?.addEventListener('devicechange', load)
     shell.info().then((i) => setAutostart(i ? i.autostart : null)).catch(() => undefined)
-    shell.headsets().then(setHeadsets).catch(() => undefined)
-    return () => navigator.mediaDevices?.removeEventListener('devicechange', load)
+    const scan = () => shell.headsets().then(setHeadsets).catch(() => undefined)
+    scan()
+    // The shell looks for headset buttons every few seconds; follow it when one is plugged in.
+    const timer = window.setInterval(scan, 3000)
+    return () => {
+      window.clearInterval(timer)
+      navigator.mediaDevices?.removeEventListener('devicechange', load)
+    }
   }, [])
 
   const set = (k: keyof typeof audioKeys, v: string) => {
@@ -74,6 +88,11 @@ export function Settings() {
   }
   const inputs = devices.filter((d) => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications')
   const outputs = devices.filter((d) => d.kind === 'audiooutput' && d.deviceId !== 'default' && d.deviceId !== 'communications')
+  // A headset Windows only knows as a sound device (no call buttons, or Bluetooth).
+  const audioHeadset = findHeadset(devices)
+  const hidList = headsets ?? []
+  const soundOnly = audioHeadset && !hidList.some((h) => sameDevice(h.name, audioHeadset.mic.label)) ? audioHeadset.mic.label : ''
+  const usesHeadset = !!audioHeadset && !prefs.mic && !prefs.speaker
   const opts = (list: MediaDeviceInfo[]) => [
     <option key="" value="">{t('desktop.settings.systemDefault')}</option>,
     ...list.map((d, i) => <option key={d.deviceId} value={d.deviceId}>{d.label || `${t('desktop.settings.device')} ${i + 1}`}</option>),
@@ -95,15 +114,16 @@ export function Settings() {
 
         {inShell() && (
           <Section title={t('desktop.settings.headset')}>
-            {headsets === null || headsets.length === 0
+            {hidList.length === 0 && !soundOnly
               ? <p className="text-sm text-muted">{t('desktop.settings.noHeadset')}</p>
-              : headsets.map((h) => (
+              : [...hidList, ...(soundOnly ? [{ name: soundOnly, vendor: '', buttons: false }] : [])].map((h) => (
                 <div key={h.name} className="flex items-center gap-2.5 text-sm">
                   <Headphones className="size-4 text-accent" aria-hidden />
                   <span className="min-w-0 flex-1 truncate text-ink">{h.name}</span>
                   <span className={`text-xs ${h.buttons ? 'text-ok' : 'text-subtle'}`}>{h.buttons ? t('desktop.settings.buttonsOn') : t('desktop.settings.buttonsOff')}</span>
                 </div>
               ))}
+            {usesHeadset && <p className="text-xs text-ok">{t('desktop.settings.headsetAuto')}</p>}
             <p className="text-xs text-subtle">{t('desktop.settings.headsetHint')}</p>
           </Section>
         )}

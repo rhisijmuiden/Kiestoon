@@ -326,6 +326,9 @@ the testing channel.
   extension, nightly logout option, logged-in user and logout in the phone list
 - [x] Firmware upload (`v0.7.0-rc.16`): progress bar, a clear message per cause (disk full, timeout, broken
   connection, proxy limit), vendor file names with spaces or brackets are cleaned up instead of refused
+- [x] Newest firmware from the vendor (`v0.7.0-rc.17`): per phone model in use the running versions (from the user
+  agent) against the newest vendor firmware (Grandstream firmware page, Kiestoon catalog for the other brands), one
+  click to download and roll out, nightly check with notify or automatic roll-out, sha256 check
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CloudDownload, Download, ExternalLink, HardDriveDownload, Pencil, Radar, Trash2, Upload } from 'lucide-react'
+import { CloudDownload, Download, ExternalLink, HardDriveDownload, Pencil, Radar, RefreshCw, Settings2, Sparkles, Trash2, Upload } from 'lucide-react'
 import { Badge, CopyField, Empty, Modal, SectionTitle, Select, Table, Toggle, formatBytes, formatDate, td, useApi } from '../components/kit'
 import { IconButton } from '../components/pbx'
 import { Alert, Button, Card, ErrorMessage, Input } from '../components/ui'
 import { ApiError, api } from '../lib/api'
-import type { Firmware, PhoneModel, ZtpData, ZtpSettings } from '../lib/types'
+import type { Firmware, FirmwareLatest, FirmwareModelState, PhoneModel, ZtpData, ZtpSettings } from '../lib/types'
 
 export const vendorName = (v: string) => ({ poly: 'Poly', htek: 'Htek', akuvox: 'Akuvox', cisco: 'Cisco' } as Record<string, string>)[v] ?? v[0].toUpperCase() + v.slice(1)
 
@@ -97,6 +97,7 @@ export function FirmwarePanel({ models }: { models: PhoneModel[] }) {
 
   return (
     <>
+      <LatestFirmwareCard onChange={list.reload} />
       <Card>
         <SectionTitle><span className="inline-flex items-center gap-2"><HardDriveDownload className="size-5 text-accent" aria-hidden />{t('firmware.title')}</span></SectionTitle>
         <p className="mb-4 max-w-3xl text-sm text-muted">{t('firmware.intro')}</p>
@@ -143,6 +144,129 @@ export function FirmwarePanel({ models }: { models: PhoneModel[] }) {
       </Card>
       {edit && <FirmwareForm value={edit} models={models.filter((m) => m.vendor === edit.vendor)} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); list.reload() }} />}
     </>
+  )
+}
+
+const stateTone = { current: 'ok', rolling: 'accent', update: 'warn', nosource: 'muted' } as const
+
+/** The phone models in use, the firmware they run and the newest firmware of the vendor. */
+function LatestFirmwareCard({ onChange }: { onChange: () => void }) {
+  const { t, i18n } = useTranslation()
+  const d = useApi<FirmwareLatest>('/firmware/latest')
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState<unknown>(null)
+  const [settings, setSettings] = useState(false)
+
+  async function refresh() {
+    setBusy('refresh')
+    setError(null)
+    try {
+      d.setData(await api<FirmwareLatest>('GET', '/firmware/latest?refresh=1'))
+    } catch (e) {
+      setError(e)
+    } finally {
+      setBusy('')
+    }
+  }
+  async function rollOut(m: FirmwareModelState) {
+    setBusy(`${m.vendor}/${m.model}`)
+    setError(null)
+    try {
+      await api('POST', '/firmware/latest/install', { vendor: m.vendor, model: m.model })
+      d.reload()
+      onChange()
+    } catch (e) {
+      setError(e)
+    } finally {
+      setBusy('')
+    }
+  }
+  const data = d.data
+  const updates = data?.models.filter((m) => m.state === 'update').length ?? 0
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <SectionTitle><span className="inline-flex items-center gap-2"><Sparkles className="size-5 text-accent" aria-hidden />{t('firmware.latest.title')}</span></SectionTitle>
+          <p className="max-w-3xl text-sm text-muted">{t('firmware.latest.intro')}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="ghost" onClick={() => setSettings(true)} disabled={!data}><Settings2 className="size-4" aria-hidden />{t('firmware.latest.settings')}</Button>
+          <Button variant="secondary" busy={busy === 'refresh'} disabled={!!busy} onClick={refresh}><RefreshCw className="size-4" aria-hidden />{t('firmware.latest.check')}</Button>
+        </div>
+      </div>
+      {data && (
+        <p className="mt-3 text-xs text-subtle">
+          {t(`firmware.latest.mode_${data.mode}`)} · {t('firmware.latest.checkedAt', { when: formatDate(data.checkedAt, i18n.language) })}
+          {updates > 0 && <> · <span className="text-warn-ink">{t('firmware.latest.updates', { count: updates })}</span></>}
+        </p>
+      )}
+      <div className="mt-3 space-y-2">
+        <ErrorMessage error={error || d.error} />
+        {data && data.errors.length > 0 && <Alert tone="warn">{t('firmware.latest.sourceErrors')} <span className="font-mono text-xs">{data.errors.join(' · ')}</span></Alert>}
+      </div>
+      {data && (
+        <div className="mt-2">
+          <Table head={[t('firmware.latest.model'), t('firmware.latest.running'), t('firmware.latest.newest'), t('firmware.latest.status'), '']}
+            empty={data.models.length === 0 && <Empty icon={<Sparkles className="size-7" />} title={t('firmware.latest.emptyTitle')} text={t('firmware.latest.emptyText')} />}>
+            {data.models.map((m) => (
+              <tr key={`${m.vendor}/${m.model}`}>
+                <td className={`${td} text-ink`}>{m.name}<span className="block text-xs text-subtle">{t('firmware.latest.phones', { count: m.phones })}</span></td>
+                <td className={`${td} font-mono text-xs`}>
+                  {m.versions.map((v) => <span key={v.version} className="block">{v.version || t('firmware.latest.unknown')} <span className="text-subtle">× {v.phones}</span></span>)}
+                </td>
+                <td className={`${td} font-mono text-xs`}>
+                  {m.latest ? <>{m.latest.version}<span className="block font-sans text-subtle">{t(`firmware.latest.source_${m.latest.source}`, { defaultValue: m.latest.source })}</span></> : '–'}
+                </td>
+                <td className={td}>
+                  <Badge tone={stateTone[m.state]} dot>{t(`firmware.latest.state_${m.state}`)}</Badge>
+                  {m.behind > 0 && <span className="block pt-1 text-xs text-subtle">{t('firmware.latest.behind', { count: m.behind })}</span>}
+                </td>
+                <td className={`${td} whitespace-nowrap text-right`}>
+                  {m.state === 'update' && (
+                    <Button variant="secondary" busy={busy === `${m.vendor}/${m.model}`} disabled={!!busy} onClick={() => rollOut(m)}>
+                      <CloudDownload className="size-4" aria-hidden />{t('firmware.latest.rollOut')}
+                    </Button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </Table>
+          {busy.includes('/') && <p className="mt-2 text-xs text-subtle">{t('firmware.latest.downloading')}</p>}
+        </div>
+      )}
+      {settings && data && <WatchSettings value={data} onClose={() => setSettings(false)} onSaved={() => { setSettings(false); d.reload() }} />}
+    </Card>
+  )
+}
+
+function WatchSettings({ value, onClose, onSaved }: { value: FirmwareLatest; onClose: () => void; onSaved: () => void }) {
+  const { t } = useTranslation()
+  const [mode, setMode] = useState(value.mode)
+  const [catalogUrl, setCatalogUrl] = useState(value.catalogUrl)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<unknown>(null)
+  async function save() {
+    setBusy(true)
+    setError(null)
+    try {
+      await api('PUT', '/firmware/latest/settings', { mode, catalogUrl })
+      onSaved()
+    } catch (e) {
+      setError(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Modal title={t('firmware.latest.settings')} onClose={onClose}
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
+      <ErrorMessage error={error} />
+      <Select label={t('firmware.latest.mode')} value={mode} onChange={(e) => setMode(e.target.value as FirmwareLatest['mode'])} hint={t(`firmware.latest.modeHint_${mode}`)}>
+        {(['off', 'notify', 'auto'] as const).map((m) => <option key={m} value={m}>{t(`firmware.latest.mode_${m}`)}</option>)}
+      </Select>
+      <Input label={t('firmware.latest.catalogUrl')} value={catalogUrl} onChange={(e) => setCatalogUrl(e.target.value.trim())} placeholder={value.defaultCatalogUrl} className="font-mono" hint={t('firmware.latest.catalogHint')} />
+    </Modal>
   )
 }
 

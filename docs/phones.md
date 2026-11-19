@@ -75,6 +75,28 @@ need no internet access.
 !!! warning
     Only choose models a file is meant for. A wrong file can make a phone unusable.
 
+### Newest firmware from the vendor
+
+Above the firmware list, **Newest firmware** shows every phone model in use, the versions its phones run (read from
+the phone's user agent) and the newest version the vendor offers. Kiestoon looks this up:
+
+- **Grandstream**: on Grandstream's public firmware page.
+- **Other brands**: in the Kiestoon firmware catalog
+  ([`packaging/firmware/catalog.json`](https://github.com/rhisijmuiden/Kiestoon/blob/testing/packaging/firmware/catalog.json)),
+  with official download links of the vendors. Yealink, Snom and Poly have no public list Kiestoon can read, so this
+  catalog is kept by hand. A model without an entry shows **No source**.
+
+Click **Roll out** to download the newest version from the vendor and roll it out to all models it is meant for.
+A checksum in the catalog must match the download. Under **Automatic updates** choose:
+
+| Setting | What happens every night at 04:00 |
+| --- | --- |
+| **Off** | Nothing |
+| **Check and notify** (default) | Kiestoon checks and mails the notification address once per new version |
+| **Roll out automatically** | Kiestoon downloads new firmware and rolls it out by itself, and mails what it did |
+
+You can point Kiestoon to your own catalog (same format) with **Catalog address**.
+
 ## Zero-touch provisioning
 
 On the **Zero-touch** tab, Kiestoon shows the address to register with the vendor's redirection service. A new

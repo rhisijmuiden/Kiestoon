@@ -334,6 +334,17 @@ export type Firmware = {
   id: number; vendor: string; models: string[]; version: string; filename: string; size: number; sha256: string
   active: boolean; createdAt: string; files: number
 }
+export type FirmwareRelease = { vendor: string; models: string[]; version: string; url: string; sha256?: string; notes?: string; source: string }
+export type FirmwareModelState = {
+  vendor: string; model: string; name: string; phones: number; behind: number
+  versions: { version: string; phones: number }[]
+  latest: FirmwareRelease | null; active: Firmware | null
+  state: 'current' | 'update' | 'rolling' | 'nosource'
+}
+export type FirmwareLatest = {
+  mode: 'off' | 'notify' | 'auto'; catalogUrl: string; defaultCatalogUrl: string; checkedAt: string; errors: string[]
+  models: FirmwareModelState[]
+}
 export type ZtpGuide = { vendor: string; service: string; portal: string; path: string }
 export type ZtpSettings = { serverUrl: string; yealink: { enabled: boolean; accessKey: string; secret?: string; secretSet: boolean; api: string } }
 export type ZtpData = { settings: ZtpSettings; guides: ZtpGuide[]; effectiveUrl: string; username: string; password: string }

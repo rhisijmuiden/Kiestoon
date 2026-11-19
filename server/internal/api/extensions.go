@@ -13,6 +13,9 @@ func (s *Server) extensionRoutes(mux *http.ServeMux, admin, recep, full func(htt
 	mux.Handle("POST /api/firmware/fetch", admin(s.firmwareFetch))
 	mux.Handle("PUT /api/firmware/{id}", admin(s.firmwareSave))
 	mux.Handle("DELETE /api/firmware/{id}", admin(s.firmwareDelete))
+	mux.Handle("GET /api/firmware/latest", admin(s.firmwareLatest))
+	mux.Handle("PUT /api/firmware/latest/settings", admin(s.firmwareWatchSave))
+	mux.Handle("POST /api/firmware/latest/install", admin(s.firmwareLatestInstall))
 
 	mux.Handle("GET /api/provisioning/ztp", admin(s.ztpGet))
 	mux.Handle("PUT /api/provisioning/ztp", admin(s.ztpSave))

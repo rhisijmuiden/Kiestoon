@@ -75,6 +75,29 @@ hem bij Kiestoon op (`/prov/fw/<willekeurige code>/`), dus ze hebben geen intern
 !!! warning
     Kies alleen modellen waarvoor een bestand bedoeld is. Een verkeerd bestand kan een telefoon onbruikbaar maken.
 
+### Nieuwste firmware van de fabrikant
+
+Boven de firmwarelijst toont **Nieuwste firmware** elk gebruikt telefoonmodel, de versies die de toestellen draaien
+(uit de user agent van de telefoon) en de nieuwste versie van de fabrikant. Kiestoon zoekt die op:
+
+- **Grandstream**: op de openbare firmwarepagina van Grandstream.
+- **Andere merken**: in de Kiestoon-firmwarecatalogus
+  ([`packaging/firmware/catalog.json`](https://github.com/rhisijmuiden/Kiestoon/blob/testing/packaging/firmware/catalog.json)),
+  met officiële downloadlinks van de fabrikanten. Yealink, Snom en Poly hebben geen openbare lijst die Kiestoon kan
+  lezen, dus deze catalogus wordt met de hand bijgehouden. Een model zonder vermelding toont **Geen bron**.
+
+Klik **Uitrollen** om de nieuwste versie bij de fabrikant op te halen en uit te rollen naar alle modellen waarvoor
+hij bedoeld is. Een controlegetal (sha256) in de catalogus moet kloppen met de download. Kies bij **Automatisch
+bijwerken**:
+
+| Instelling | Wat er elke nacht om 04:00 gebeurt |
+| --- | --- |
+| **Uit** | Niets |
+| **Controleren en melden** (standaard) | Kiestoon controleert en mailt het meldingsadres één keer per nieuwe versie |
+| **Automatisch uitrollen** | Kiestoon haalt nieuwe firmware op, rolt hem zelf uit en mailt wat hij deed |
+
+Met **Adres van de catalogus** kun je Kiestoon naar een eigen catalogus (zelfde opmaak) laten kijken.
+
 ## Zero-touch provisioning
 
 Op het tabblad **Zero-touch** toont Kiestoon het adres om bij de redirectiedienst van de fabrikant te registreren.

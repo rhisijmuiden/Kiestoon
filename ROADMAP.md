@@ -316,6 +316,7 @@ the testing channel.
   phone book and the call history, notifications
 - [x] Yealink T42G, T42S and T42U (`v0.7.0-rc.9`): provisioning, 15 line keys in 3 pages of 5, extra lines
   (12 on T42S/T42U, 3 on T42G), model detection from the User-Agent
+- [x] Yealink T41P, T41S and T41U (`v0.7.0-rc.11`): same as the T42 series, 6 lines each
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

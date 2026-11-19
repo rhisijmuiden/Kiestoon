@@ -135,6 +135,9 @@ func TestGuessModel(t *testing.T) {
 		{"805ec0abcdef.cfg", "805ec0abcdef", "Yealink SIP-T42S 66.86.0.15 80:5e:c0:ab:cd:ef", "yealink", "T42S"},
 		{"805ec0abcdef.cfg", "805ec0abcdef", "Yealink SIP-T42U 108.86.0.60 80:5e:c0:ab:cd:ef", "yealink", "T42U"},
 		{"001565abcdef.cfg", "001565abcdef", "Yealink SIP-T42G 29.83.0.120 00:15:65:ab:cd:ef", "yealink", "T42G"},
+		{"001565abcdef.cfg", "001565abcdef", "Yealink SIP-T41P 36.83.0.35 00:15:65:ab:cd:ef", "yealink", "T41P"},
+		{"805ec0abcdef.cfg", "805ec0abcdef", "Yealink SIP-T41S 66.86.0.15 80:5e:c0:ab:cd:ef", "yealink", "T41S"},
+		{"805ec0abcdef.cfg", "805ec0abcdef", "Yealink SIP-T41U 108.86.0.60 80:5e:c0:ab:cd:ef", "yealink", "T41U"},
 		{"snom/000413abcdef.xml", "000413abcdef", "Mozilla/4.0 (compatible; snomD785-SIP 10.1.73.16)", "snom", "D785"},
 		{"cfg000b82abcdef.xml", "000b82abcdef", "Grandstream Model HW GRP2614 SW 1.0.5.33 DevId 000b82abcdef", "grandstream", "GRP2614"},
 		{"cfg000b82abcdef.xml", "000b82abcdef", "", "", ""},
@@ -205,7 +208,7 @@ func TestKeysLinesAndModules(t *testing.T) {
 	if !ok || lim.Lines != 16 || lim.Modules["EXP50"].Max != 3 || lim.Modules["EXP40"].Keys != 0 {
 		t.Errorf("limits: %+v", lim)
 	}
-	for model, lines := range map[string]int{"T42G": 3, "T42S": 12, "T42U": 12} {
+	for model, lines := range map[string]int{"T41P": 6, "T41S": 6, "T41U": 6, "T42G": 3, "T42S": 12, "T42U": 12} {
 		lim, ok := Limits("yealink", model)
 		if !ok || lim.Keys != 15 || lim.Lines != lines || len(lim.Modules) != 0 {
 			t.Errorf("limits %s: %+v", model, lim)

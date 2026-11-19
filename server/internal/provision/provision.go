@@ -105,8 +105,11 @@ func (m Model) MaxLines() int {
 var Models = []Model{
 	{"yealink", "T31P", "Yealink T31P", 2, 2, 0},
 	{"yealink", "T33G", "Yealink T33G", 4, 4, 0},
-	// The T42 series has 6 physical line keys; with more than 6 keys set, the last one switches
-	// between 3 pages of 5 (15 line keys). No expansion module fits these phones.
+	// The T41 and T42 series have 6 physical line keys; with more than 6 keys set, the last one
+	// switches between 3 pages of 5 (15 line keys). No expansion module fits these phones.
+	{"yealink", "T41P", "Yealink T41P", 15, 6, 5},
+	{"yealink", "T41S", "Yealink T41S", 15, 6, 5},
+	{"yealink", "T41U", "Yealink T41U", 15, 6, 5},
 	{"yealink", "T42G", "Yealink T42G", 15, 3, 5},
 	{"yealink", "T42S", "Yealink T42S", 15, 12, 5},
 	{"yealink", "T42U", "Yealink T42U", 15, 12, 5},

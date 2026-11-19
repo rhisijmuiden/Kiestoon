@@ -1,0 +1,4 @@
+{
+  "about": "Kiestoon firmware catalog: the newest firmware per phone model for vendors without a public firmware list. Kiestoon servers read this file every night. Only official vendor download links; add sha256 when known. Grandstream is read from grandstream.com directly.",
+  "firmware": []
+}

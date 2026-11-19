@@ -8,7 +8,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"slices"
@@ -148,31 +147,19 @@ func (s *Server) firmwareFetch(w http.ResponseWriter, r *http.Request) {
 		fieldErr(w, "vendor")
 		return
 	}
-	u, err := url.Parse(strings.TrimSpace(req.URL))
-	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.User != nil {
-		fieldErr(w, "url")
-		return
-	}
-	name := firmware.CleanName(path.Base(u.Path))
-	if name == "" {
+	u := strings.TrimSpace(req.URL)
+	if !firmware.ValidURL(u) || firmware.CleanName(path.Base(u)) == "" {
 		fieldErr(w, "url")
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Minute)
 	defer cancel()
 	_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(31 * time.Minute))
-	hreq, _ := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
-	resp, err := http.DefaultClient.Do(hreq)
-	if err != nil {
+	f, err := s.downloadFirmware(ctx, req.Vendor, u, "")
+	if err != nil && !isStoreErr(err) {
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "download_failed", "message": err.Error()})
 		return
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "download_failed", "message": resp.Status})
-		return
-	}
-	f, err := s.Firmware.Add(ctx, req.Vendor, name, resp.Body)
 	s.firmwareStored(w, r, f, err)
 }
 

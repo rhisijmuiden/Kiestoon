@@ -290,6 +290,13 @@ func Yealink(in Input) string {
 		w(fmt.Sprintf("account.%d.sip_server.1.port", n), in.portFor(e))
 		w(fmt.Sprintf("account.%d.sip_server.1.transport_type", n), yt)
 		w(fmt.Sprintf("account.%d.sip_server.1.expires", n), 300)
+		// Outbound proxy: send all SIP to the PBX, also for calls to other hosts and behind NAT.
+		// outbound_proxy.1.* is firmware V83 and up; outbound_host/port is the older spelling (T41P/T42G).
+		w(fmt.Sprintf("account.%d.outbound_proxy_enable", n), 1)
+		w(fmt.Sprintf("account.%d.outbound_proxy.1.address", n), in.Server)
+		w(fmt.Sprintf("account.%d.outbound_proxy.1.port", n), in.portFor(e))
+		w(fmt.Sprintf("account.%d.outbound_host", n), in.Server)
+		w(fmt.Sprintf("account.%d.outbound_port", n), in.portFor(e))
 		w(fmt.Sprintf("account.%d.subscribe_mwi", n), 1)
 		w(fmt.Sprintf("account.%d.subscribe_mwi_to_vm", n), 1)
 		w(fmt.Sprintf("voice_mail.number.%d", n), "*97")

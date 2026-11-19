@@ -324,6 +324,8 @@ the testing channel.
 - [x] Yealink outbound proxy set to the PBX on every provisioned account (`v0.7.0-rc.12`)
 - [x] Hot desks (`v0.7.0-rc.13`): `*55` log in with extension number and voicemail PIN, `*56` log out, one desk per
   extension, nightly logout option, logged-in user and logout in the phone list
+- [x] Firmware upload (`v0.7.0-rc.16`): progress bar, a clear message per cause (disk full, timeout, broken
+  connection, proxy limit), vendor file names with spaces or brackets are cleaned up instead of refused
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

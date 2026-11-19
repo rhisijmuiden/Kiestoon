@@ -57,6 +57,34 @@ var (
 // SafeName reports whether a file name can be stored and served as is.
 func SafeName(n string) bool { return reName.MatchString(n) && !strings.Contains(n, "..") }
 
+// CleanName turns a vendor's file name into a safe one: "T54W(T57W,T53W)-96.86.0.70.zip" becomes
+// "T54W_T57W_T53W_-96.86.0.70.zip", "Release Notes.pdf" becomes "Release_Notes.pdf". It returns ""
+// when nothing usable is left.
+func CleanName(n string) string {
+	n = strings.Map(func(r rune) rune {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '.', r == '_', r == '+', r == '-':
+			return r
+		}
+		return '_'
+	}, filepath.Base(strings.ReplaceAll(n, "\\", "/")))
+	for strings.Contains(n, "..") {
+		n = strings.ReplaceAll(n, "..", ".")
+	}
+	n = strings.TrimLeft(n, "._+-")
+	if len(n) > 121 {
+		ext := filepath.Ext(n)
+		if len(ext) > 10 {
+			ext = ""
+		}
+		n = n[:121-len(ext)] + ext
+	}
+	if !SafeName(n) {
+		return ""
+	}
+	return n
+}
+
 const cols = `id, vendor, models, version, filename, token, size, sha256, active, created_at`
 
 func scan(row interface{ Scan(...any) error }) (*Firmware, error) {
@@ -214,8 +242,8 @@ func newToken() string {
 // Add stores an uploaded file. A .zip is unpacked (the firmware bundles of Poly and Cisco hold many
 // files); its main file is the .loads file (Cisco), sip.ld (Poly) or else the largest file.
 func (s *Store) Add(ctx context.Context, vendor, name string, r io.Reader) (*Firmware, error) {
-	name = filepath.Base(name)
-	if !SafeName(name) {
+	name = CleanName(name)
+	if name == "" {
 		return nil, errors.New("filename")
 	}
 	tok := newToken()
@@ -288,12 +316,14 @@ func unzip(path, dir string) (string, int64, error) {
 		if zf.FileInfo().IsDir() {
 			continue
 		}
-		name := filepath.Base(zf.Name)
-		if strings.HasPrefix(name, ".") || strings.HasPrefix(zf.Name, "__MACOSX") {
+		base := filepath.Base(strings.ReplaceAll(zf.Name, "\\", "/"))
+		if strings.HasPrefix(base, ".") || strings.HasPrefix(zf.Name, "__MACOSX") {
 			continue
 		}
-		if !SafeName(name) {
-			return "", 0, fmt.Errorf("zip: file name %q", name)
+		// Vendor bundles hold names like "Release Notes.pdf": store them under a safe name.
+		name := CleanName(base)
+		if name == "" {
+			return "", 0, fmt.Errorf("zip: file name %q", base)
 		}
 		if len(files) >= 200 {
 			return "", 0, errors.New("zip: too many files")

@@ -88,6 +88,7 @@ plugins:
             Extensions: Toestellen
             Phones and provisioning: Telefoons en provisioning
             Phone keys and modules: Toetsen en uitbreidingsmodules
+            Hot desks: Flexplekken
             Trunks: Trunks (SIP-providers)
             "Provider: Voys": "Provider: Voys"
             "Provider: Cheapconnect": "Provider: Cheapconnect"
@@ -139,6 +140,7 @@ nav:
       - Extensions: extensions.md
       - Phones and provisioning: phones.md
       - Phone keys and modules: phone-keys.md
+      - Hot desks: hotdesk.md
       - Trunks: trunks.md
       - "Provider: Voys": providers/voys.md
       - "Provider: Cheapconnect": providers/cheapconnect.md

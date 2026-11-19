@@ -3217,5 +3217,16 @@
     "noClientsText": "Medewerkers koppelen de softphone zelf onder Mijn apparaten, of door zich in de app aan te melden.",
     "remove": "Ontkoppelen",
     "removeConfirm": "De softphone van {{user}} ontkoppelen? Hij toont dan het koppelscherm tot hij opnieuw gekoppeld is."
+  },
+  "hotdesk": {
+    "title": "Flexplek",
+    "hint": "Iedereen kan op deze telefoon inloggen met *55, het eigen toestelnummer en de pincode (de voicemailpincode), en uitloggen met *56. Zolang niemand is ingelogd, gebruikt de telefoon het eigen toestel als gastaccount. Een toestel is op één flexplek tegelijk ingelogd.",
+    "enabled": "Deze telefoon is een flexplek",
+    "autoLogout": "Elke nacht uitloggen",
+    "autoLogoutHint": "Om 03:00 wordt iedereen uitgelogd, zodat de flexplekken 's ochtends vrij zijn.",
+    "needsGuest": "Kies een toestel voor de telefoon: dat is het gastaccount waarmee *55 gebeld wordt.",
+    "loggedIn": "Ingelogd: {{ext}}",
+    "free": "Flexplek vrij",
+    "logout": "Uitloggen"
   }
 }

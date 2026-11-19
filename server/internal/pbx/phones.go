@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 )
 
 // Key is one programmable button on a phone or expansion module.
@@ -37,9 +38,19 @@ type IntercomOptions struct {
 	Barge bool `json:"barge"` // also during another call
 }
 
+// HotdeskOptions make a phone a hot desk (flexplek): anyone can log in on it with *55, their
+// extension number and PIN, and log out with *56. The phone's own extension is the guest account
+// it uses while nobody is logged in.
+type HotdeskOptions struct {
+	Enabled bool `json:"enabled"`
+	// AutoLogout logs everyone out at night (03:00), so desks start the day free.
+	AutoLogout bool `json:"autoLogout"`
+}
+
 // PhoneOptions are per-phone settings beyond keys and lines.
 type PhoneOptions struct {
 	Intercom IntercomOptions `json:"intercom"`
+	Hotdesk  HotdeskOptions  `json:"hotdesk"`
 }
 
 // DefaultPhoneOptions apply to phones that never had their options saved.
@@ -82,6 +93,19 @@ type Phone struct {
 	// Modules are the expansion modules in the order they are connected.
 	Modules []Module     `json:"modules"`
 	Options PhoneOptions `json:"options"`
+	// HotdeskExtensionID is the extension logged in on this hot desk (nil: nobody), since HotdeskAt.
+	// It is changed with SetHotdesk only, never by saving the phone.
+	HotdeskExtensionID *int64 `json:"hotdeskExtensionId"`
+	HotdeskAt          string `json:"hotdeskAt"`
+}
+
+// ActiveExtensionID is the extension the phone carries now: the one logged in on a hot desk, else
+// its own extension.
+func (p *Phone) ActiveExtensionID() *int64 {
+	if p.Options.Hotdesk.Enabled && p.HotdeskExtensionID != nil {
+		return p.HotdeskExtensionID
+	}
+	return p.ExtensionID
 }
 
 var reMAC = regexp.MustCompile(`^[0-9a-f]{12}$`)
@@ -96,18 +120,21 @@ func NormalizeMAC(s string) string {
 	}, s))
 }
 
-const phoneCols = `id, mac, vendor, model, extension_id, label, keys, last_seen_at, last_ip, user_agent, lines, ztp_state, ztp_error, ztp_at, modules, options`
+const phoneCols = `id, mac, vendor, model, extension_id, label, keys, last_seen_at, last_ip, user_agent, lines, ztp_state, ztp_error, ztp_at, modules, options, hotdesk_ext, hotdesk_at`
 
 func scanPhone(row interface{ Scan(...any) error }) (*Phone, error) {
 	var p Phone
-	var ext sql.NullInt64
+	var ext, hd sql.NullInt64
 	var keys, lines, modules, options string
-	err := row.Scan(&p.ID, &p.MAC, &p.Vendor, &p.Model, &ext, &p.Label, &keys, &p.LastSeenAt, &p.LastIP, &p.UserAgent, &lines, &p.ZTPState, &p.ZTPError, &p.ZTPAt, &modules, &options)
+	err := row.Scan(&p.ID, &p.MAC, &p.Vendor, &p.Model, &ext, &p.Label, &keys, &p.LastSeenAt, &p.LastIP, &p.UserAgent, &lines, &p.ZTPState, &p.ZTPError, &p.ZTPAt, &modules, &options, &hd, &p.HotdeskAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
 	if ext.Valid {
 		p.ExtensionID = &ext.Int64
+	}
+	if hd.Valid {
+		p.HotdeskExtensionID = &hd.Int64
 	}
 	_ = json.Unmarshal([]byte(keys), &p.Keys)
 	if p.Keys == nil {
@@ -316,6 +343,47 @@ func (r *Repo) SavePhone(ctx context.Context, p *Phone, lim PhoneLimits) error {
 		return ErrNotFound
 	}
 	return nil
+}
+
+// SetHotdesk logs ext in on hot desk phone id (nil logs out). An extension is logged in on one
+// hot desk at a time: logging in elsewhere logs it out here. It returns the phones that were
+// logged out that way.
+func (r *Repo) SetHotdesk(ctx context.Context, id int64, ext *int64) ([]int64, error) {
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	var others []int64
+	if ext != nil {
+		rows, err := tx.QueryContext(ctx, `SELECT id FROM phones WHERE hotdesk_ext = ? AND id <> ?`, *ext, id)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var o int64
+			if rows.Scan(&o) == nil {
+				others = append(others, o)
+			}
+		}
+		rows.Close()
+		if _, err := tx.ExecContext(ctx, `UPDATE phones SET hotdesk_ext = NULL, hotdesk_at = '' WHERE hotdesk_ext = ? AND id <> ?`, *ext, id); err != nil {
+			return nil, err
+		}
+	}
+	var v any
+	at := ""
+	if ext != nil {
+		v, at = *ext, time.Now().UTC().Format(time.RFC3339)
+	}
+	res, err := tx.ExecContext(ctx, `UPDATE phones SET hotdesk_ext = ?, hotdesk_at = ? WHERE id = ?`, v, at, id)
+	if err != nil {
+		return nil, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return nil, ErrNotFound
+	}
+	return others, tx.Commit()
 }
 
 // DeletePhone removes a phone.

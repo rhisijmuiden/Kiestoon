@@ -318,6 +318,9 @@ the testing channel.
 - [x] Installer fix for Debian 13 (`v0.7.0-rc.10`): "invalid version: 13 (trixie)" no longer stops install.sh, plus `--dry-run`
   (12 on T42S/T42U, 3 on T42G), model detection from the User-Agent
 - [x] Yealink T41P, T41S and T41U (`v0.7.0-rc.11`): same as the T42 series, 6 lines each
+- [x] Yealink outbound proxy set to the PBX on every provisioned account (`v0.7.0-rc.12`)
+- [x] Hot desks (`v0.7.0-rc.13`): `*55` log in with extension number and voicemail PIN, `*56` log out, one desk per
+  extension, nightly logout option, logged-in user and logout in the phone list
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

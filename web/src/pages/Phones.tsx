@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Eye, Link2, Pencil, Plus, Save, Smartphone, Trash2 } from 'lucide-react'
+import { Eye, Link2, LogOut, Pencil, Plus, Save, Smartphone, Trash2 } from 'lucide-react'
 import { Badge, CopyField, Empty, Modal, Select, SectionTitle, Table, Tabs, Toggle, formatDate, td, useApi } from '../components/kit'
 import { AssignForm, LinkNoticeAlert, ResyncButton, WaitingPhones, formatMac, type LinkNotice } from '../components/PhoneLink'
 import { KeyLayout, fillKeys } from '../components/KeyLayout'
@@ -28,6 +28,13 @@ export function Phones() {
   const [tab, setTab] = useState<'phones' | 'templates' | 'firmware' | 'ztp'>('phones')
   const ztp = useApi<{ settings: { yealink: { enabled: boolean } } }>('/provisioning/ztp')
   const rps = !!ztp.data?.settings.yealink.enabled
+  async function hotdeskLogout(p: Phone) {
+    try {
+      await api('PUT', `/phones/${p.id}/hotdesk`, { extensionId: null })
+    } finally {
+      list.reload()
+    }
+  }
   const extLabel = (id: number | null) => {
     const e = exts.data?.find((x) => x.id === id)
     return e ? `${e.number} · ${e.name}` : '–'
@@ -72,7 +79,17 @@ export function Phones() {
                 {p.lines?.length > 0 && <span className="ml-1.5 text-xs text-subtle">{p.vendor === 'gigaset' ? t('phones.handsetCount', { count: p.lines.length + 1 }) : t('keys.lineCount', { count: p.lines.length + 1 })}</span>}
                 {(p.modules?.length ?? 0) > 0 && <span className="ml-1.5 text-xs text-subtle">+ {p.modules!.length}× {p.modules![0].type}</span>}
               </td>
-              <td className={td}>{extLabel(p.extensionId)}</td>
+              <td className={td}>
+                {extLabel(p.extensionId)}
+                {p.options?.hotdesk?.enabled && (
+                  <div className="mt-1 flex items-center gap-1.5">
+                    {p.hotdeskExtensionId
+                      ? <><Badge tone="ok" dot>{t('hotdesk.loggedIn', { ext: extLabel(p.hotdeskExtensionId) })}</Badge>
+                        <button type="button" onClick={() => hotdeskLogout(p)} aria-label={t('hotdesk.logout')} title={t('hotdesk.logout')} className="inline-flex size-8 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent"><LogOut className="size-3.5" /></button></>
+                      : <Badge>{t('hotdesk.free')}</Badge>}
+                  </div>
+                )}
+              </td>
               <td className={td}>{p.lastSeenAt ? <><Badge tone="ok" dot>{formatDate(p.lastSeenAt, i18n.language)}</Badge> <span className="font-mono text-xs text-subtle">{p.lastIp}</span></> : <Badge>{t('phones.never')}</Badge>}</td>
               <td className={td}>{p.vendor === 'yealink' && rps ? <ZtpBadge phoneId={p.id} state={p.ztpState} error={p.ztpError} onDone={list.reload} /> : <span className="text-xs text-subtle">–</span>}</td>
               <td className={`${td} whitespace-nowrap text-right`}>
@@ -181,7 +198,9 @@ function PhoneForm({ value, models, moduleTypes, exts, onClose, onSaved }: { val
   const fits = moduleTypes.filter((m) => m.vendor === x.vendor && m.models.includes(x.model))
   const modules = (x.modules ?? []).filter((m) => fits.some((f) => f.id === m.type))
   const ic = x.options!.intercom
-  const setIc = (p: Partial<typeof ic>) => setX({ ...x, options: { intercom: { ...ic, ...p } } })
+  const setIc = (p: Partial<typeof ic>) => setX({ ...x, options: { ...x.options!, intercom: { ...ic, ...p } } })
+  const hd = x.options!.hotdesk ?? { enabled: false, autoLogout: false }
+  const setHd = (p: Partial<typeof hd>) => setX({ ...x, options: { ...x.options!, hotdesk: { ...hd, ...p } } })
   const dect = x.vendor === 'gigaset'
   const accountExts = [x.extensionId, ...lines].filter(Boolean) as number[]
   const forModel = (templates.data ?? []).filter((tp) => tp.vendor === x.vendor && tp.model === x.model)
@@ -301,6 +320,19 @@ function PhoneForm({ value, models, moduleTypes, exts, onClose, onSaved }: { val
           </div>
           {icSupport[x.vendor].length === 0 && <p className="text-xs text-subtle">{t('keys.icOnlyAllow')}</p>}
           {x.vendor === 'akuvox' && <p className="text-xs text-subtle">{t('keys.icAkuvox')}</p>}
+        </div>
+      )}
+      {!dect && x.vendor !== 'akuvox' && (
+        <div className="flex flex-col gap-3 border-t border-line pt-4">
+          <div>
+            <h3 className="text-sm font-medium text-ink-2">{t('hotdesk.title')}</h3>
+            <p className="text-xs text-subtle">{t('hotdesk.hint')}</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Toggle label={t('hotdesk.enabled')} checked={hd.enabled} onChange={(v) => setHd({ enabled: v })} />
+            <Toggle label={t('hotdesk.autoLogout')} hint={t('hotdesk.autoLogoutHint')} checked={hd.autoLogout} disabled={!hd.enabled} onChange={(v) => setHd({ autoLogout: v })} />
+          </div>
+          {hd.enabled && !x.extensionId && <p className="text-xs text-warn-ink">{t('hotdesk.needsGuest')}</p>}
         </div>
       )}
     </Modal>

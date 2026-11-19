@@ -868,10 +868,43 @@ func genParking(s *pbx.Snapshot) string {
 	return x.b.String()
 }
 
+// genHotdesk builds *55 (log in on a hot desk with extension number and PIN) and *56 (log out).
+// Kiestoon checks the PIN over FastAGI and has the phone fetch its new configuration.
+func genHotdesk(x *w, o Options) {
+	x.f("; *55 log in on a hot desk, *56 log out")
+	x.f("exten => *55,1,Answer()")
+	x.f(" same => n,Wait(0.5)")
+	x.f(" same => n,Set(KT_HDTRY=0)")
+	x.f(" same => n(ask),Read(KT_HDN,kt-hotdesk-ext,12,,2,8)")
+	x.f(" same => n,Read(KT_HDP,kt-hotdesk-pin,12,,2,8)")
+	x.f(" same => n,AGI(agi://%s/hotdesk,login,${KT_EXT},${CHANNEL(pjsip,remote_addr)})", o.AGIAddr)
+	x.f(" same => n,Set(KT_HDP=)")
+	x.f(` same => n,GotoIf($["${KT_HD}" = "ok"]?in)`)
+	x.f(` same => n,GotoIf($["${KT_HD}" = "wrong" & ${KT_HDTRY} < 2]?retry)`)
+	x.f(` same => n,GotoIf($["${KT_HD}" = "notdesk"]?notdesk)`)
+	x.f(" same => n,Playback(kt-hotdesk-wrong&vm-goodbye)")
+	x.f(" same => n,Hangup()")
+	x.f(" same => n(retry),Set(KT_HDTRY=$[${KT_HDTRY} + 1])")
+	x.f(" same => n,Playback(kt-hotdesk-wrong)")
+	x.f(" same => n,Goto(ask)")
+	x.f(" same => n(notdesk),Playback(kt-hotdesk-notdesk)")
+	x.f(" same => n,Hangup()")
+	x.f(" same => n(in),Playback(kt-hotdesk-in&kt-hotdesk-reload)")
+	x.f(" same => n,Hangup()")
+	x.f("exten => *56,1,Answer()")
+	x.f(" same => n,Wait(0.5)")
+	x.f(" same => n,AGI(agi://%s/hotdesk,logout,${KT_EXT},${CHANNEL(pjsip,remote_addr)})", o.AGIAddr)
+	x.f(` same => n,GotoIf($["${KT_HD}" = "ok"]?out)`)
+	x.f(" same => n,Playback(kt-hotdesk-notdesk)")
+	x.f(" same => n,Hangup()")
+	x.f(" same => n(out),Playback(kt-hotdesk-out&kt-hotdesk-reload)")
+	x.f(" same => n,Hangup()")
+}
+
 // genFeatureCodes builds the star codes, with the current state of each extension baked in, so
 // for example *76 knows whether it switches DND on or off. A change goes back to Kiestoon as a
 // UserEvent over AMI; Kiestoon stores it and regenerates the dialplan.
-func genFeatureCodes(x *w, s *pbx.Snapshot) {
+func genFeatureCodes(x *w, s *pbx.Snapshot, o Options) {
 	x.f("[kiestoon-features]")
 	x.f("; *97 own voicemail, *98 any mailbox, *43 echo test")
 	x.f("exten => *97,1,Answer()")
@@ -895,6 +928,9 @@ func genFeatureCodes(x *w, s *pbx.Snapshot) {
 	x.f("exten => _**X.,1,Pickup(${EXTEN:2}@PICKUPMARK)")
 	x.f(" same => n,Hangup()")
 	x.f("exten => _*80X.,1,Goto(kiestoon-intercom,${FILTER(0-9,${EXTEN:3})},1)")
+	if o.AGIAddr != "" {
+		genHotdesk(x, o)
+	}
 	x.f("; *33 listen, *34 whisper, *35 barge on a queue call of <extension> (supervisors only)")
 	x.f("exten => _*3[345]X.,1,GotoIf(${DIALPLAN_EXISTS(kiestoon-spy-${KT_EXT},${EXTEN:2},1)}?kiestoon-spy-${KT_EXT},${EXTEN:2},1)")
 	x.f(" same => n,Answer()")

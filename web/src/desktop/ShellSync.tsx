@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
-import { useSoftphone } from '../lib/softphone'
+import { refreshHeadset, useSoftphone } from '../lib/softphone'
 import { listen, shell, type TrayStatus } from './bridge'
 import { myQueues, useDesktop } from './data'
 
@@ -36,6 +36,15 @@ export function ShellSync() {
     wasRinging.current = null
     if (r && !call) shell.notify(t('desktop.notify.missed'), r.name ? `${r.name} (${r.number})` : r.number || t('reception.unknownCaller')).catch(() => undefined)
   }, [ringing, call, callerName, i18n.language, t])
+
+  // Device names only show after the microphone was opened once (the shell allows it without a
+  // prompt). Open it briefly at start, so a plugged-in headset is known before the first call.
+  useEffect(() => {
+    navigator.mediaDevices?.getUserMedia({ audio: true })
+      .then((s) => s.getTracks().forEach((tr) => tr.stop()))
+      .then(refreshHeadset)
+      .catch(() => undefined)
+  }, [])
 
   // Headset lights.
   const offhook = !!call && !ringing

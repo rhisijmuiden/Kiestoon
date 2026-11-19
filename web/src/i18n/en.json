@@ -2760,14 +2760,15 @@
       "testRing": "Test the ring",
       "audioHint": "Tip: let it ring on your speakers and talk on your headset.",
       "headset": "Headset",
-      "noHeadset": "No headset with call buttons found. Sound still works on every headset.",
+      "noHeadset": "No headset found. Sound still works on every headset.",
       "noHeadsetShort": "none",
       "buttonsOn": "buttons work",
       "buttonsOff": "sound only",
-      "headsetHint": "Answer, hang up and mute with the buttons of Jabra, Poly/Plantronics, EPOS and other USB headsets.",
+      "headsetHint": "Answer, hang up and mute with the buttons of Jabra, Poly/Plantronics, EPOS, Logitech and other USB headsets.",
       "app": "App",
       "autostart": "Start with Windows",
-      "unlink": "Unlink this computer"
+      "unlink": "Unlink this computer",
+      "headsetAuto": "Calls go to this headset by itself while microphone and speaker are on System default."
     },
     "info": {
       "browser": "Browser",

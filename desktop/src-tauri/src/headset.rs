@@ -30,6 +30,58 @@ pub struct Headsets {
 
 pub type Shared = Arc<Headsets>;
 
+/// USB vendor IDs of headset makers whose devices are always headsets (Jabra, Poly/Plantronics,
+/// EPOS/Sennheiser, Yealink). Logitech also makes mice and keyboards, so it is matched by name.
+const HEADSET_VENDORS: [u16; 5] = [0x0B0E, 0x047F, 0x1395, 0x6993, 0x3542];
+
+/// Whether a HID collection belongs to a headset, judged by vendor and product name. Used for
+/// headsets without telephony buttons (or with buttons Windows keeps for itself), so they still
+/// show up as a headset.
+pub fn looks_like_headset(vendor_id: u16, product: &str) -> bool {
+    let p = product.to_lowercase();
+    if HEADSET_VENDORS.contains(&vendor_id) {
+        return true;
+    }
+    if ["headset", "head set", "hands-free", "handsfree", "speakerphone"]
+        .iter()
+        .any(|w| p.contains(w))
+    {
+        return true;
+    }
+    // Logitech: Zone, H-series (H390, H570e, H650e) and PRO X. Gaming headsets (G435, G733) carry
+    // "Headset" in their name; G-numbers alone are also mice, so they do not count.
+    if vendor_id == 0x046D {
+        let model = p.trim_start_matches("logitech").trim_start_matches("logi").trim();
+        return model.starts_with("zone")
+            || p.contains("headset")
+            || p.contains("pro x")
+            || model
+                .split(|c: char| !c.is_ascii_alphanumeric())
+                .any(|w| w.len() >= 4 && w.starts_with('h') && w[1..4].chars().all(|c| c.is_ascii_digit()));
+    }
+    false
+}
+
+/// Which HID collections are worth opening: telephony, consumer control (some headsets put their
+/// telephony buttons inside it) and vendor pages of known headsets. Keyboards and mice are skipped.
+pub fn candidate(page: u16, vendor_id: u16, product: &str) -> bool {
+    match page {
+        crate::hid_desc::PAGE_GENERIC_DESKTOP => false,
+        crate::hid_desc::PAGE_TELEPHONY | crate::hid_desc::PAGE_CONSUMER | crate::hid_desc::PAGE_LED => true,
+        p if p >= 0xFF00 => looks_like_headset(vendor_id, product),
+        _ => false,
+    }
+}
+
+/// Adds a found headset to the list, once per name; buttons count when any collection has them.
+pub fn add_info(infos: &mut Vec<HeadsetInfo>, name: String, vendor: String, buttons: bool) {
+    if let Some(i) = infos.iter_mut().find(|i| i.name == name) {
+        i.buttons |= buttons;
+    } else {
+        infos.push(HeadsetInfo { name, vendor, buttons });
+    }
+}
+
 /// A button press, sent to the softphone page as the "headset" event.
 pub fn action_name(hook_from: bool, hook_to: bool) -> Option<&'static str> {
     match (hook_from, hook_to) {
@@ -76,27 +128,45 @@ mod win {
         let mut opened = Vec::new();
         let mut infos = Vec::new();
         for d in api.device_list() {
-            if d.usage_page() != hid_desc::PAGE_TELEPHONY {
+            let product = d.product_string().unwrap_or("").to_string();
+            if !super::candidate(d.usage_page(), d.vendor_id(), &product) {
                 continue;
             }
-            let name = d.product_string().unwrap_or("USB headset").to_string();
+            let named = super::looks_like_headset(d.vendor_id(), &product);
+            let name = if product.is_empty() { "USB headset".to_string() } else { product };
             let vendor = d.manufacturer_string().unwrap_or("").to_string();
-            let Ok(dev) = d.open_device(api) else { continue };
+            let Ok(dev) = d.open_device(api) else {
+                // Some software keeps a headset to itself; it is still a headset, just without buttons here.
+                if named || d.usage_page() == hid_desc::PAGE_TELEPHONY {
+                    super::add_info(&mut infos, name, vendor, false);
+                }
+                continue;
+            };
             let mut buf = [0u8; 4096];
-            let Ok(n) = dev.get_report_descriptor(&mut buf) else { continue };
-            let layout = hid_desc::parse(&buf[..n]);
+            let layout = match dev.get_report_descriptor(&mut buf) {
+                Ok(n) => hid_desc::parse(&buf[..n]),
+                Err(_) => Layout::default(),
+            };
             let hook = layout.find(Kind::Input, hid_desc::PAGE_TELEPHONY, hid_desc::TEL_HOOK_SWITCH);
             let mute = layout.find(Kind::Input, hid_desc::PAGE_TELEPHONY, hid_desc::TEL_PHONE_MUTE);
+            let led_off = layout.find(Kind::Output, hid_desc::PAGE_LED, hid_desc::LED_OFF_HOOK);
+            let led_ring = layout.find(Kind::Output, hid_desc::PAGE_LED, hid_desc::LED_RING);
+            let led_mute = layout.find(Kind::Output, hid_desc::PAGE_LED, hid_desc::LED_MUTE);
+            let ringer = layout.find(Kind::Output, hid_desc::PAGE_TELEPHONY, hid_desc::TEL_RINGER);
             let buttons = hook.is_some() || mute.is_some();
-            if !infos.iter().any(|i: &HeadsetInfo| i.name == name) {
-                infos.push(HeadsetInfo { name, vendor, buttons });
+            let telephony = buttons || led_off.is_some() || led_ring.is_some() || ringer.is_some();
+            if telephony || named || d.usage_page() == hid_desc::PAGE_TELEPHONY {
+                super::add_info(&mut infos, name, vendor, buttons);
+            }
+            if !telephony {
+                continue;
             }
             let _ = dev.set_blocking_mode(false);
             opened.push(Open {
-                led_off: layout.find(Kind::Output, hid_desc::PAGE_LED, hid_desc::LED_OFF_HOOK),
-                led_ring: layout.find(Kind::Output, hid_desc::PAGE_LED, hid_desc::LED_RING),
-                led_mute: layout.find(Kind::Output, hid_desc::PAGE_LED, hid_desc::LED_MUTE),
-                ringer: layout.find(Kind::Output, hid_desc::PAGE_TELEPHONY, hid_desc::TEL_RINGER),
+                led_off,
+                led_ring,
+                led_mute,
+                ringer,
                 dev,
                 layout,
                 hook,
@@ -209,5 +279,44 @@ mod tests {
         assert_eq!(super::action_name(false, true), Some("hook-off"));
         assert_eq!(super::action_name(true, false), Some("hook-on"));
         assert_eq!(super::action_name(true, true), None);
+    }
+
+    #[test]
+    fn recognises_headsets() {
+        use super::looks_like_headset as h;
+        assert!(h(0x046D, "Logitech USB Headset"));
+        assert!(h(0x046D, "Logitech Zone Wired"));
+        assert!(h(0x046D, "Zone Vibe 100"));
+        assert!(h(0x046D, "Logitech H570e Stereo"));
+        assert!(h(0x046D, "H390 USB Headset"));
+        assert!(h(0x046D, "G435 Wireless Gaming Headset"));
+        assert!(h(0x046D, "PRO X Wireless"));
+        assert!(h(0x0B0E, "Jabra Evolve2 65"));
+        assert!(h(0x1234, "Some Bluetooth Hands-Free"));
+        assert!(!h(0x046D, "USB Receiver"));
+        assert!(!h(0x046D, "MX Master 3S"));
+        assert!(!h(0x046D, "G502 HERO Gaming Mouse"));
+        assert!(!h(0x046D, "K120 Keyboard"));
+        assert!(!h(0x1234, "USB Keyboard"));
+    }
+
+    #[test]
+    fn picks_collections() {
+        use super::candidate as c;
+        assert!(c(0x0B, 0x1234, "anything"));
+        assert!(c(0x0C, 0x046D, "Logitech USB Headset"));
+        assert!(!c(0x01, 0x046D, "Logitech USB Headset"));
+        assert!(c(0xFF43, 0x046D, "Logitech Zone Wired"));
+        assert!(!c(0xFF00, 0x046D, "USB Receiver"));
+    }
+
+    #[test]
+    fn merges_infos() {
+        let mut l = Vec::new();
+        super::add_info(&mut l, "Zone".into(), "Logitech".into(), false);
+        super::add_info(&mut l, "Zone".into(), "Logitech".into(), true);
+        super::add_info(&mut l, "Zone".into(), "Logitech".into(), false);
+        assert_eq!(l.len(), 1);
+        assert!(l[0].buttons);
     }
 }

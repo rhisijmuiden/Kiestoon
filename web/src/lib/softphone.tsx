@@ -48,8 +48,47 @@ export function audioPref(k: keyof typeof audioKeys): string {
   }
 }
 
+/** Recognises a headset by the name Windows gives its microphone or speaker. */
+export const headsetLabel = /headset|head-set|hands-?free|logi|jabra|poly|plantronics|epos|sennheiser|yealink|evolve|blackwire|voyager|savi|airpods|earbuds|buds|bose|zone/i
+
+const webcamLabel = /webcam|camera|\bcam\b|brio|streamcam|c9[0-9]{2}|c6[0-9]{2}|c2[0-9]{2}/i
+
+/** A plugged-in headset: its microphone and the speaker of the same device. */
+export function findHeadset(devices: MediaDeviceInfo[]): { mic: MediaDeviceInfo; speaker?: MediaDeviceInfo } | null {
+  const real = devices.filter((d) => d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications')
+  const isHeadset = (d: MediaDeviceInfo) => headsetLabel.test(d.label) && !webcamLabel.test(d.label)
+  const mic = real.find((d) => d.kind === 'audioinput' && isHeadset(d))
+  if (!mic) return null
+  const speaker = real.find((d) => d.kind === 'audiooutput' && d.groupId && d.groupId === mic.groupId)
+    ?? real.find((d) => d.kind === 'audiooutput' && isHeadset(d))
+  return { mic, speaker }
+}
+
+// The headset in use when the user left microphone and speaker on "System default", so calls go
+// to the headset and not to the laptop speakers. Kept up to date when devices come and go.
+let autoHeadset: { mic: string; speaker: string } | null = null
+export async function refreshHeadset() {
+  try {
+    const h = findHeadset(await navigator.mediaDevices.enumerateDevices())
+    autoHeadset = h ? { mic: h.mic.deviceId, speaker: h.speaker?.deviceId ?? '' } : null
+  } catch {
+    autoHeadset = null
+  }
+}
+if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
+  refreshHeadset()
+  navigator.mediaDevices.addEventListener?.('devicechange', refreshHeadset)
+  // Device names only show once the microphone was used; check again now and then.
+  window.setInterval(refreshHeadset, 15000)
+}
+
+/** The device to use: the chosen one, else a plugged-in headset, else the system default (''). */
+export function audioDevice(k: 'mic' | 'speaker'): string {
+  return audioPref(k) || autoHeadset?.[k] || ''
+}
+
 function micConstraints(): MediaStreamConstraints {
-  const id = audioPref('mic')
+  const id = audioDevice('mic')
   return { audio: id ? { deviceId: { exact: id } } : true, video: false }
 }
 
@@ -112,7 +151,7 @@ export function SoftphoneProvider({ webrtc, children, auto, agent = 'Kiestoon We
     const play = (pc: RTCPeerConnection) => {
       pc.addEventListener('track', (ev) => {
         if (audio.current && ev.streams[0]) {
-          const sink = audioPref('speaker')
+          const sink = audioDevice('speaker')
           if (sink) (audio.current as unknown as SinkAudio).setSinkId?.(sink).catch(() => undefined)
           audio.current.srcObject = ev.streams[0]
           audio.current.play().catch(() => undefined)

@@ -3,7 +3,9 @@
 //! switch and mute button, and where its off-hook, ring and mute lights are.
 
 /// Usage pages and usages (HID Usage Tables 1.4).
+pub const PAGE_GENERIC_DESKTOP: u16 = 0x01;
 pub const PAGE_LED: u16 = 0x08;
+pub const PAGE_CONSUMER: u16 = 0x0C;
 pub const PAGE_TELEPHONY: u16 = 0x0B;
 pub const TEL_HOOK_SWITCH: u16 = 0x20;
 pub const TEL_PHONE_MUTE: u16 = 0x2F;

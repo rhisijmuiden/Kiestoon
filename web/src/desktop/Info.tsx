@@ -5,6 +5,7 @@ import { Mark, PoweredBy } from '../components/brand'
 import { useSystemInfo } from '../components/InfoDialog'
 import { Alert, Button, ErrorMessage } from '../components/ui'
 import { useSession } from '../lib/session'
+import { findHeadset } from '../lib/softphone'
 import { inShell, listen, shell, type AppInfo, type Channel, type UpdateCheck } from './bridge'
 import { Title } from './Contacts'
 
@@ -22,7 +23,12 @@ export function Info() {
 
   useEffect(() => {
     shell.info().then(setApp).catch(setError)
-    shell.headsets().then((h) => setHeadset(h?.[0]?.name ?? '')).catch(() => undefined)
+    shell.headsets().then(async (h) => {
+      const name = h?.[0]?.name
+      if (name) return setHeadset(name)
+      const a = findHeadset(await navigator.mediaDevices.enumerateDevices())
+      setHeadset(a?.mic.label ?? '')
+    }).catch(() => undefined)
     return listen<{ percent: number }>('update-progress', (p) => setInstalling(p.percent))
   }, [])
 

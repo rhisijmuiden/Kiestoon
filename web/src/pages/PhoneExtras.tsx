@@ -9,6 +9,45 @@ import type { Firmware, PhoneModel, ZtpData, ZtpSettings } from '../lib/types'
 
 export const vendorName = (v: string) => ({ poly: 'Poly', htek: 'Htek', akuvox: 'Akuvox', cisco: 'Cisco' } as Record<string, string>)[v] ?? v[0].toUpperCase() + v.slice(1)
 
+/**
+ * Sends a firmware file as the raw request body with upload progress. Errors say where it went
+ * wrong: Kiestoon answers with a JSON error; anything else came from a proxy in front of it, and a
+ * broken connection has no answer at all.
+ */
+function uploadFirmware(url: string, file: File, onProgress: (pct: number) => void): Promise<Firmware> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', url)
+    xhr.withCredentials = true
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream')
+    xhr.setRequestHeader('X-Kiestoon-Upload', '1')
+    let sent = 0
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        sent = e.loaded
+        onProgress(Math.min(100, Math.floor((e.loaded / e.total) * 100)))
+      }
+    }
+    xhr.onload = () => {
+      let data: { error?: string; field?: string; message?: string } & Partial<Firmware> = {}
+      let isJSON = true
+      try {
+        data = JSON.parse(xhr.responseText)
+      } catch {
+        isJSON = false
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && isJSON) return resolve(data as Firmware)
+      if (isJSON && data.error) return reject(new ApiError(xhr.status, data.error, data.field, data.message))
+      // Not from Kiestoon: a reverse proxy refused or cut off the upload.
+      const code = xhr.status === 413 ? 'proxy_too_large' : xhr.status === 502 || xhr.status === 504 ? 'proxy_timeout' : 'internal'
+      reject(new ApiError(xhr.status, code, undefined, `HTTP ${xhr.status}`))
+    }
+    xhr.onerror = () => reject(new ApiError(0, 'upload_interrupted', undefined, `${Math.round(sent / 1048576)} / ${Math.round(file.size / 1048576)} MB`))
+    xhr.ontimeout = xhr.onerror
+    xhr.send(file)
+  })
+}
+
 /** Firmware files per phone model. Phones fetch the active firmware for their model on the next provisioning. */
 export function FirmwarePanel({ models }: { models: PhoneModel[] }) {
   const { t, i18n } = useTranslation()
@@ -19,17 +58,16 @@ export function FirmwarePanel({ models }: { models: PhoneModel[] }) {
   const [error, setError] = useState<unknown>(null)
   const [edit, setEdit] = useState<Firmware | null>(null)
 
+  const [progress, setProgress] = useState(0)
+
   async function upload(file: File) {
     setBusy('upload')
     setError(null)
+    setProgress(0)
     try {
-      const res = await fetch(`/api/firmware/upload?vendor=${encodeURIComponent(vendor)}&name=${encodeURIComponent(file.name)}`, {
-        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/octet-stream', 'X-Kiestoon-Upload': '1' }, body: file,
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new ApiError(res.status, data.error ?? 'internal', data.field, data.message)
+      const data = await uploadFirmware(`/api/firmware/upload?vendor=${encodeURIComponent(vendor)}&name=${encodeURIComponent(file.name)}`, file, setProgress)
       list.reload()
-      setEdit(data as Firmware)
+      setEdit(data)
     } catch (e) {
       setError(e)
     } finally {
@@ -69,10 +107,15 @@ export function FirmwarePanel({ models }: { models: PhoneModel[] }) {
           <Input label={t('firmware.url')} value={url} onChange={(e) => setUrl(e.target.value.trim())} placeholder="https://…/T54W-96.86.0.70.rom" className="font-mono" />
           <Button variant="secondary" busy={busy === 'fetch'} disabled={!url || !!busy} onClick={fetchUrl}><CloudDownload className="size-4" aria-hidden />{t('firmware.fetch')}</Button>
           <label className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-gradient-to-br from-accent to-accent-2 px-4 text-sm font-semibold text-on-accent shadow-[0_8px_30px_-10px_rgb(34_211_238_/_0.6)] hover:brightness-110 focus-within:ring-2 focus-within:ring-accent/40 ${busy ? 'pointer-events-none opacity-60' : ''}`}>
-            <Upload className="size-4" aria-hidden />{busy === 'upload' ? t('firmware.uploading') : t('firmware.upload')}
+            <Upload className="size-4" aria-hidden />{busy === 'upload' ? `${t('firmware.uploading')} ${progress}%` : t('firmware.upload')}
             <input type="file" className="sr-only" accept=".rom,.bin,.zip,.loads,.ld,.img,.fw,.z" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f) }} />
           </label>
         </div>
+        {busy === 'upload' && (
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-tint/10" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label={t('firmware.uploading')}>
+            <div className="h-full rounded-full bg-gradient-to-r from-accent to-accent-2 transition-[width]" style={{ width: `${progress}%` }} />
+          </div>
+        )}
         <p className="mt-2 text-xs text-subtle">{t('firmware.hint')}</p>
         <div className="mt-3"><ErrorMessage error={error || list.error} /></div>
       </Card>

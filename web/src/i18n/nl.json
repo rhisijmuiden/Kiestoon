@@ -150,7 +150,14 @@
     "relay_failed": "De pushdienst is niet bereikbaar. Probeer het later opnieuw.",
     "device_gone": "Deze telefoon neemt geen meldingen meer aan (de app is verwijderd) en is ontkoppeld.",
     "invalid_relay": "Vul het https://-adres van de pushdienst in.",
-    "not_registered": "Deze telefoon is nog niet gekoppeld. Koppel hem opnieuw vanuit het portaal."
+    "not_registered": "Deze telefoon is nog niet gekoppeld. Koppel hem opnieuw vanuit het portaal.",
+    "disk_full": "De schijf van de server is vol. Maak ruimte vrij (oude back-ups, opnames of firmware) en probeer het opnieuw.",
+    "upload_timeout": "Het uploaden duurde te lang en de server is gestopt met wachten. Probeer het opnieuw via een snellere verbinding, of gebruik Downloaden via een link.",
+    "upload_interrupted": "De verbinding viel weg tijdens het uploaden. Staat er een proxy of firewall voor Kiestoon die uploads beperkt? Probeer het opnieuw, of gebruik Downloaden via een link.",
+    "storage_permission": "Kiestoon mag niet in de firmwaremap schrijven. Voer /usr/lib/kiestoon/fix-permissions als root uit op de server.",
+    "proxy_too_large": "Een proxy voor Kiestoon weigerde het bestand omdat het te groot is (HTTP 413). Verhoog de uploadlimiet, bij nginx client_max_body_size 1g.",
+    "proxy_timeout": "Een proxy voor Kiestoon gaf het uploaden op (gateway time-out). Verhoog de time-outs of gebruik Downloaden via een link.",
+    "file_too_large": "Het bestand is groter dan 1 GB."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",

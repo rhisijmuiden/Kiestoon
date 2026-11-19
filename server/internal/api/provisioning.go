@@ -5,12 +5,15 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"slices"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/rhisijmuiden/kiestoon/server/internal/firmware"
@@ -90,12 +93,32 @@ func (s *Server) firmwareStored(w http.ResponseWriter, r *http.Request, f *firmw
 				return
 			}
 			s.Log.Warn("firmware upload", "err", err)
-			writeErr(w, http.StatusInternalServerError, "internal")
+			code, status := uploadErrCode(err)
+			writeJSON(w, status, map[string]string{"error": code, "message": err.Error()})
 		}
 		return
 	}
 	s.audit(r, "firmware.added", f.Vendor+" "+f.Filename)
 	writeJSON(w, http.StatusOK, f)
+}
+
+// uploadErrCode names why storing an upload failed, for a message the admin can act on.
+func uploadErrCode(err error) (string, int) {
+	var tooBig *http.MaxBytesError
+	var ne net.Error
+	switch {
+	case errors.As(err, &tooBig):
+		return "file_too_large", http.StatusRequestEntityTooLarge
+	case errors.Is(err, syscall.ENOSPC), errors.Is(err, syscall.EDQUOT):
+		return "disk_full", http.StatusInsufficientStorage
+	case errors.Is(err, os.ErrDeadlineExceeded), errors.As(err, &ne) && ne.Timeout():
+		return "upload_timeout", http.StatusRequestTimeout
+	case errors.Is(err, io.ErrUnexpectedEOF), errors.Is(err, syscall.ECONNRESET), errors.Is(err, net.ErrClosed):
+		return "upload_interrupted", http.StatusBadRequest
+	case errors.Is(err, os.ErrPermission):
+		return "storage_permission", http.StatusInternalServerError
+	}
+	return "internal", http.StatusInternalServerError
 }
 
 // firmwareUpload takes the file as the request body: POST /api/firmware/upload?vendor=…&name=…
@@ -130,8 +153,8 @@ func (s *Server) firmwareFetch(w http.ResponseWriter, r *http.Request) {
 		fieldErr(w, "url")
 		return
 	}
-	name := path.Base(u.Path)
-	if !firmware.SafeName(name) {
+	name := firmware.CleanName(path.Base(u.Path))
+	if name == "" {
 		fieldErr(w, "url")
 		return
 	}

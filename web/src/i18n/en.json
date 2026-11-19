@@ -150,7 +150,14 @@
     "relay_failed": "The push service could not be reached. Try again later.",
     "device_gone": "This phone no longer accepts notifications (the app was removed) and has been unlinked.",
     "invalid_relay": "Enter the https:// address of the push service.",
-    "not_registered": "This phone is not linked yet. Link it again from the portal."
+    "not_registered": "This phone is not linked yet. Link it again from the portal.",
+    "disk_full": "The server's disk is full. Free up space (old backups, recordings or firmware) and try again.",
+    "upload_timeout": "The upload took too long and the server stopped waiting. Try again on a faster connection, or use Download from a link.",
+    "upload_interrupted": "The connection broke during the upload. Is there a proxy or firewall in front of Kiestoon that limits uploads? Try again, or use Download from a link.",
+    "storage_permission": "Kiestoon may not write to its firmware folder. Run /usr/lib/kiestoon/fix-permissions on the server as root.",
+    "proxy_too_large": "A proxy in front of Kiestoon refused the file as too large (HTTP 413). Raise its upload limit, for nginx client_max_body_size 1g.",
+    "proxy_timeout": "A proxy in front of Kiestoon gave up on the upload (gateway timeout). Raise its timeouts or use Download from a link.",
+    "file_too_large": "The file is larger than 1 GB."
   },
   "setup": {
     "title": "Welcome to Kiestoon",

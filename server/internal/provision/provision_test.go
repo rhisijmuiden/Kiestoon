@@ -174,6 +174,8 @@ func TestKeysLinesAndModules(t *testing.T) {
 	y := Yealink(in)
 	for _, want := range []string{
 		"account.2.user_name = 250", "account.2.sip_server.1.port = 5061", "account.2.sip_server.1.transport_type = 2",
+		"account.1.outbound_proxy_enable = 1", "account.1.outbound_proxy.1.address = pbx.local", "account.1.outbound_proxy.1.port = 5060",
+		"account.2.outbound_proxy.1.address = pbx.local", "account.2.outbound_proxy.1.port = 5061", "account.1.outbound_host = pbx.local",
 		"linekey.2.type = 15\nlinekey.2.line = 2", "linekey.3.type = 16\nlinekey.3.line = 1\nlinekey.3.value = 202\nlinekey.3.extension = **",
 		"linekey.4.type = 10\nlinekey.4.line = 1\nlinekey.4.value = 70", "linekey.5.value = 71\nlinekey.5.extension = \n",
 		"linekey.6.type = 13\nlinekey.6.line = 1\nlinekey.6.value = *80203", "linekey.7.value = *76", "linekey.8.value = *97",

@@ -51,6 +51,7 @@ Opties van het script:
 | `--channel production|testing` | Updatekanaal dat gevolgd wordt (standaard `production`) |
 | `--version vX.Y.Z` | Precies deze versie installeren in plaats van de nieuwste |
 | `--deb`, `--asterisk-deb`, `--sounds-deb`, `--speech-deb` | Lokale pakketten installeren (voor ontwikkeling) |
+| `--dry-run` | Alleen tonen welke release geïnstalleerd zou worden, niets wijzigen |
 
 Het script installeert de pakketten `kiestoon` (portaal en API), `kiestoon-asterisk` (Asterisk 22 LTS, gebouwd
 voor Kiestoon), `kiestoon-sounds-nl` (Nederlandse gesproken teksten) en de diensten `kiestoon-helper` (een kleine

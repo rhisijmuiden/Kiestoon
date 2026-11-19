@@ -51,6 +51,7 @@ Installer options:
 | `--channel production|testing` | Update channel to follow (default `production`) |
 | `--version vX.Y.Z` | Install exactly this release instead of the newest |
 | `--deb`, `--asterisk-deb`, `--sounds-deb`, `--speech-deb` | Install local packages (for development) |
+| `--dry-run` | Only show which release would be installed, change nothing |
 
 The installer adds the packages `kiestoon` (portal and API), `kiestoon-asterisk` (Asterisk 22 LTS, built for
 Kiestoon), `kiestoon-sounds-nl` (Dutch voice prompts) and the services `kiestoon-helper` (a small root helper for

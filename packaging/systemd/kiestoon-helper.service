@@ -1,0 +1,30 @@
+[Unit]
+Description=Kiestoon privileged helper (firewall, fail2ban, backups)
+Documentation=https://github.com/rhisijmuiden/kiestoon
+After=network-online.target nftables.service
+Wants=network-online.target
+Before=kiestoon.service
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/kiestoon/kiestoon.env
+ExecStart=/usr/bin/kiestoon helper
+Restart=on-failure
+RestartSec=3
+RuntimeDirectory=kiestoon-helper
+RuntimeDirectoryMode=0750
+StateDirectory=kiestoon-helper
+StateDirectoryMode=0700
+CacheDirectory=kiestoon
+# The helper only takes a fixed set of validated commands from root and the kiestoon user.
+NoNewPrivileges=yes
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectClock=yes
+LockPersonality=yes
+RestrictRealtime=yes
+
+[Install]
+WantedBy=multi-user.target

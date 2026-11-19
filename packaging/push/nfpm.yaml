@@ -1,0 +1,34 @@
+# Builds the Kiestoon push relay .deb (amd64 and arm64). Used by `make push-deb` and the release workflow.
+# Only the publisher of the mobile app (RHIS, or whoever builds their own app) runs this.
+name: kiestoon-push
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+version_schema: semver
+section: comm
+priority: optional
+maintainer: RHIS <info@rhis.nl>
+description: |
+  Kiestoon push relay.
+  Forwards wake-up and voicemail notifications from Kiestoon phone systems to the Kiestoon mobile
+  app through Apple (APNs) and Google (FCM). Stores nothing and cannot read what it forwards.
+vendor: RHIS
+homepage: https://github.com/rhisijmuiden/kiestoon
+license: GPL-3.0-or-later
+
+depends:
+  - ca-certificates
+
+contents:
+  - src: ./build/kiestoon-push
+    dst: /usr/bin/kiestoon-push
+    file_info: { mode: 0755 }
+  - src: ./packaging/push/kiestoon-push.service
+    dst: /usr/lib/systemd/system/kiestoon-push.service
+  - src: ./packaging/push/kiestoon-push.env
+    dst: /etc/kiestoon-push/kiestoon-push.env
+    type: config|noreplace
+    file_info: { mode: 0640 }
+
+scripts:
+  postinstall: ./packaging/push/postinstall.sh

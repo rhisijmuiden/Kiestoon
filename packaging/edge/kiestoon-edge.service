@@ -1,0 +1,19 @@
+[Unit]
+Description=Kiestoon Edge (branch office satellite)
+Documentation=https://github.com/rhisijmuiden/kiestoon/blob/main/docs/edge.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Runs as root: it writes the WireGuard, Kamailio and rtpengine configuration and restarts them.
+ExecStart=/usr/bin/kiestoon-edge serve
+Restart=always
+RestartSec=5
+StateDirectory=kiestoon-edge
+StateDirectoryMode=0700
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

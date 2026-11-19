@@ -1,0 +1,94 @@
+# Builds the manual (MkDocs Material, English and Dutch) with fresh screenshots of a demo office and publishes it
+# on GitHub Pages: https://rhisijmuiden.github.io/Kiestoon/
+# The screenshots are made from the code of this commit (tools/docs/demo.sh + capture.mjs), so they always match the
+# portal. The site is pushed to the gh-pages branch; Settings > Pages must use "Deploy from a branch: gh-pages".
+name: Docs
+
+on:
+  push:
+    branches: [testing]
+    paths:
+      - docs/**
+      - mkdocs.yml
+      - tools/docs/**
+      - web/**
+      - server/**
+      - VERSION
+      - .github/workflows/docs.yml
+  pull_request:
+    paths:
+      - docs/**
+      - mkdocs.yml
+      - tools/docs/**
+      - web/src/components/help.tsx
+      - .github/workflows/docs.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    name: Build and publish the manual
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: tools/docs/requirements.txt
+
+      - name: Build Kiestoon
+        run: make build VERSION="$(cat VERSION)"
+
+      - name: Install Playwright and MkDocs
+        run: |
+          npm install --no-save --no-package-lock --prefix tools/docs playwright@1.63.0
+          npx --prefix tools/docs playwright install --with-deps chromium
+          pip install -r tools/docs/requirements.txt
+
+      - name: Start the demo office
+        run: tools/docs/demo.sh build/kiestoon-linux-amd64 "$RUNNER_TEMP/demo" 8090
+
+      - name: Screenshots (English and Dutch, light and dark)
+        run: node tools/docs/capture.mjs http://127.0.0.1:8090 "$RUNNER_TEMP/demo" docs/assets/screenshots
+
+      - name: Build the site
+        env:
+          NO_MKDOCS_2_WARNING: '1'
+        run: |
+          mkdocs build --strict
+          node tools/docs/check-help.mjs site
+
+      - name: Logs of the demo office
+        if: failure()
+        run: tail -n 200 "$RUNNER_TEMP"/demo/*.log || true
+
+      - name: Publish to GitHub Pages
+        if: github.event_name != 'pull_request'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          publish_branch: gh-pages
+          force_orphan: true
+          user_name: github-actions[bot]
+          user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          commit_message: Manual for ${{ github.sha }}

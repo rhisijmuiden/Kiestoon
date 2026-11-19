@@ -1,0 +1,18 @@
+# English voice prompts for Kiestoon features that the Asterisk core sounds do not cover.
+# build.sh speaks them with Piper (voice en_US-ljspeech-medium, public domain data set) into
+# /var/lib/asterisk/sounds/en. One prompt per line: <file name><TAB><text>.
+# Queue callback (phase 6)
+kt-callback-offer	Would you rather be called back? Press 1. You will keep your place in the queue.
+kt-callback-number	We will call you back on the number
+kt-callback-confirm	Press 1 to confirm, or 2 to enter another number.
+kt-callback-enter	Please enter your phone number, followed by the hash key.
+kt-callback-thanks	Thank you. We will call you back as soon as an agent is available. Goodbye.
+kt-callback-agent	Queue callback. You are now being connected to the caller.
+# Hot desks (*55 / *56)
+kt-hotdesk-ext	Please enter your extension number, followed by the hash key.
+kt-hotdesk-pin	Please enter your PIN, followed by the hash key.
+kt-hotdesk-wrong	The extension number or PIN is not correct.
+kt-hotdesk-notdesk	This phone is not a hot desk, or nobody is logged in.
+kt-hotdesk-reload	The phone is now loading your settings. One moment please.
+kt-hotdesk-in	You are logged in on this phone.
+kt-hotdesk-out	You are logged out.

@@ -1,0 +1,10 @@
+[Unit]
+Description=Install a Kiestoon update requested from the portal
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/kiestoon/kiestoon.env
+ExecStart=/usr/lib/kiestoon/kiestoon-updater
+TimeoutStartSec=20min

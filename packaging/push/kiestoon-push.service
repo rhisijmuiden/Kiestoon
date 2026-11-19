@@ -1,0 +1,26 @@
+[Unit]
+Description=Kiestoon push relay (notifications for the mobile app)
+Documentation=https://github.com/rhisijmuiden/kiestoon/blob/main/docs/mobile-app.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/kiestoon-push/kiestoon-push.env
+ExecStart=/usr/bin/kiestoon-push
+Restart=always
+RestartSec=5
+User=kiestoon-push
+Group=kiestoon-push
+StateDirectory=kiestoon-push
+StateDirectoryMode=0700
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallFilter=@system-service
+
+[Install]
+WantedBy=multi-user.target

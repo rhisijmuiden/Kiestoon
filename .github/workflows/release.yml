@@ -1,0 +1,276 @@
+name: Release
+
+# Push a tag to publish a release:
+#   vX.Y.Z-rc.N  -> pre-release, offered on the testing channel
+#   vX.Y.Z       -> release, offered on the production channel
+# Or change the VERSION file in a pull request into testing (rc versions) or main (stable versions):
+# after the merge this workflow creates the tag and the release on that commit.
+on:
+  push:
+    tags: ['v*']
+    branches: [testing, main]
+    paths: [VERSION]
+
+permissions:
+  contents: write
+
+jobs:
+  asterisk:
+    name: Asterisk package (${{ matrix.arch }})
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache the package
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: dist-asterisk
+          key: asterisk-${{ matrix.arch }}-${{ hashFiles('packaging/asterisk/**') }}
+      - name: Build Asterisk in Debian 13
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: docker run --rm -v "$PWD:/src" -w /src debian:trixie packaging/asterisk/build.sh dist-asterisk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asterisk-${{ matrix.arch }}
+          path: dist-asterisk/*.deb
+          retention-days: 3
+
+  sounds:
+    name: Dutch voice prompts
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache the package
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: dist-sounds
+          key: sounds-nl-${{ hashFiles('packaging/sounds-nl/**') }}
+      - name: Speak the prompts in Debian 13
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: docker run --rm -v "$PWD:/src" -w /src debian:trixie packaging/sounds-nl/build.sh dist-sounds
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sounds-nl
+          path: dist-sounds/*.deb
+          retention-days: 3
+
+  speech:
+    name: Local speech package (${{ matrix.arch }})
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache the package
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: dist-speech
+          key: speech-${{ matrix.arch }}-${{ hashFiles('packaging/speech/**') }}
+      - name: Build Piper and whisper.cpp in Debian 13
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: docker run --rm -v "$PWD:/src" -w /src debian:trixie packaging/speech/build.sh dist-speech
+      - uses: actions/upload-artifact@v4
+        with:
+          name: speech-${{ matrix.arch }}
+          path: dist-speech/*.deb
+          retention-days: 3
+
+  edge-pi:
+    name: Kiestoon Edge Raspberry Pi image
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - name: Determine version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then TAG="$GITHUB_REF_NAME"; else TAG="$(tr -d '[:space:]' < VERSION)"; fi
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+      - name: Cache the base image
+        uses: actions/cache@v4
+        with:
+          path: pi-cache
+          key: raspios-${{ hashFiles('packaging/edge/pi-image.sh') }}
+      - name: Build the image
+        env:
+          VERSION: ${{ env.TAG }}
+        run: |
+          GOTOOLCHAIN=auto go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
+          make edge-deb VERSION="$VERSION" GOARCH=arm64
+          make push-deb VERSION="$VERSION" GOARCH=amd64
+          make push-deb VERSION="$VERSION" GOARCH=arm64
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq parted e2fsprogs xz-utils
+          sudo CACHE_DIR="$PWD/pi-cache" ./packaging/edge/pi-image.sh "dist/kiestoon-edge_${VERSION#v}_arm64.deb" dist-pi/
+          sudo chown -R "$(id -u):$(id -g)" dist-pi pi-cache
+      - uses: actions/upload-artifact@v4
+        with:
+          name: edge-pi
+          path: dist-pi/*.img.xz
+          retention-days: 3
+
+  softphone:
+    name: Windows softphone (MSI)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+      - name: Build the MSI
+        shell: bash
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SIGNING_ENDPOINT: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          AZURE_SIGNING_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          AZURE_SIGNING_PROFILE: ${{ secrets.AZURE_SIGNING_PROFILE }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then TAG="$GITHUB_REF_NAME"; else TAG="$(tr -d '[:space:]' < VERSION)"; fi
+          desktop/build-msi.sh "$TAG" dist-softphone
+      - uses: actions/upload-artifact@v4
+        with:
+          name: softphone
+          path: dist-softphone/*.msi
+          if-no-files-found: error
+          retention-days: 3
+
+  release:
+    needs: [asterisk, sounds, speech, edge-pi, softphone]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Determine version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then TAG="$GITHUB_REF_NAME"; else TAG="$(tr -d '[:space:]' < VERSION)"; fi
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          if [[ "$GITHUB_REF_TYPE" != "tag" ]] && gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists, nothing to do."; echo "SKIP=1" >> "$GITHUB_ENV"
+          fi
+
+      - name: Check version
+        if: env.SKIP != '1'
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "invalid tag: $TAG"; exit 1; }
+          if [[ "$TAG" != *-* && "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_TYPE" != "tag" ]]; then
+            echo "stable releases (without -rc) are made from main"; exit 1
+          fi
+
+      - name: Windows softphone
+        if: env.SKIP != '1'
+        uses: actions/download-artifact@v5
+        with:
+          name: softphone
+          path: build/softphone
+
+      - name: Build packages (amd64, arm64)
+        if: env.SKIP != '1'
+        env:
+          VERSION: ${{ env.TAG }}
+        run: |
+          GOTOOLCHAIN=auto go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
+          make web
+          (cd server && go test ./...)
+          make deb VERSION="$VERSION" GOARCH=amd64
+          make deb VERSION="$VERSION" GOARCH=arm64
+          make edge-deb VERSION="$VERSION" GOARCH=amd64
+          make edge-deb VERSION="$VERSION" GOARCH=arm64
+
+      - name: Asterisk packages
+        if: env.SKIP != '1'
+        uses: actions/download-artifact@v5
+        with:
+          pattern: asterisk-*
+          path: dist
+          merge-multiple: true
+
+      - name: Dutch voice prompts
+        if: env.SKIP != '1'
+        uses: actions/download-artifact@v5
+        with:
+          name: sounds-nl
+          path: dist
+
+      - name: Local speech packages
+        if: env.SKIP != '1'
+        uses: actions/download-artifact@v5
+        with:
+          pattern: speech-*
+          path: dist
+          merge-multiple: true
+
+      - name: Build Proxmox LXC template (amd64)
+        if: env.SKIP != '1'
+        env:
+          VERSION: ${{ env.TAG }}
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq debootstrap
+          sudo ./lxc/build-lxc.sh "dist/kiestoon_${VERSION#v}_amd64.deb" dist/ dist/kiestoon-asterisk_*_amd64.deb dist/kiestoon-sounds-nl_*_all.deb \
+            dist/kiestoon-speech_*_amd64.deb
+          sudo ./lxc/build-lxc.sh "dist/kiestoon-edge_${VERSION#v}_amd64.deb" dist/
+          sudo chown -R "$(id -u):$(id -g)" dist
+
+      - name: Raspberry Pi image
+        if: env.SKIP != '1'
+        uses: actions/download-artifact@v5
+        with:
+          name: edge-pi
+          path: dist
+
+      - name: Checksums
+        if: env.SKIP != '1'
+        run: |
+          cd dist
+          cp ../build/softphone/*.msi .
+          sha256sum -- *.deb *.tar.zst *.img.xz *.msi > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish GitHub release
+        if: env.SKIP != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=()
+          if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); else flags+=(--latest); fi
+          gh release create "$TAG" dist/*.deb dist/*.tar.zst dist/*.img.xz dist/*.msi dist/SHA256SUMS \
+            --target "$GITHUB_SHA" --title "Kiestoon $TAG" --generate-notes "${flags[@]}"

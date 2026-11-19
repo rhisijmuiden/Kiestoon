@@ -1,0 +1,13 @@
+/dist/
+/build/
+server/internal/web/dist/*
+!server/internal/web/dist/.gitkeep
+web/node_modules/
+web/dist/
+*.deb
+*.tar.zst
+/dist-asterisk/
+docs/assets/screenshots/
+/site/
+tools/docs/node_modules/
+__pycache__/

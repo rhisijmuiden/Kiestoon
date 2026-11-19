@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "local",
+  "description": "The app's own pages: the setup screen and the incoming-call popup.",
+  "windows": ["main", "incoming"],
+  "permissions": [
+    "core:default",
+    "allow-setup-info",
+    "allow-probe-server",
+    "allow-connect",
+    "allow-browser-login",
+    "allow-incoming-action"
+  ]
+}

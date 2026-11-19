@@ -1,0 +1,206 @@
+# Dutch voice prompts for Kiestoon. One prompt per line: <file name><TAB><text>.
+# build.sh speaks them with Piper (voice nl_NL-pim-medium, CC0) and stores them as 8 kHz WAV
+# under /usr/share/asterisk/sounds/nl. Asterisk falls back to English for anything missing.
+# Kiestoon dialplan
+activated	Geactiveerd.
+de-activated	Gedeactiveerd.
+do-not-disturb	Niet storen.
+call-fwd-unconditional	Al uw gesprekken worden doorgeschakeld naar
+call-fwd-cancelled	Doorschakelen is uitgeschakeld.
+agent-loginok	U bent aangemeld.
+agent-loggedoff	U bent afgemeld.
+pbx-invalid	Dit nummer is ongeldig. Probeer het opnieuw.
+option-is-invalid	Dat is geen geldige keuze.
+ss-noservice	Dit nummer is niet bereikbaar.
+all-circuits-busy-now	Alle lijnen zijn op dit moment bezet. Probeer het later opnieuw.
+demo-echotest	Dit is de echotest. Wat u zegt, hoort u terug. Druk op hekje om te stoppen.
+pbx-transfer	Doorverbinden.
+pbx-invalidpark	Er staat geen gesprek geparkeerd op deze plek.
+auth-thankyou	Dank u wel.
+agent-pass	Voer uw wachtwoord in, gevolgd door hekje.
+pls-try-again	Probeer het opnieuw.
+goodbye	Tot ziens.
+# Voicemail
+vm-intro	Spreek uw bericht in na de toon. Hang op of druk op hekje als u klaar bent.
+vm-theperson	De persoon op toestel
+vm-isunavail	is op dit moment niet bereikbaar.
+vm-isonphone	is in gesprek.
+vm-nobodyavail	Er is op dit moment niemand bereikbaar.
+vm-login	Voer uw voicemailboxnummer in, gevolgd door hekje.
+vm-password	Voer uw pincode in, gevolgd door hekje.
+vm-incorrect	Onjuiste pincode.
+vm-incorrect-mailbox	Onjuiste voicemailbox.
+vm-goodbye	Tot ziens.
+vm-youhave	U heeft
+vm-INBOX	nieuw
+vm-INBOXs	nieuwe
+vm-Old	oud
+vm-Olds	oude
+vm-message	bericht
+vm-messages	berichten
+vm-no	geen
+vm-and	en
+vm-first	Eerste bericht.
+vm-last	Laatste bericht.
+vm-nomore	Er zijn geen berichten meer.
+vm-onefor	Druk 1 voor
+vm-for	voor
+vm-press	Druk
+vm-star-cancel	Druk op sterretje om te annuleren.
+vm-options	Druk 1 om uw onbereikbaar-begroeting op te nemen, 2 voor uw in-gesprek-begroeting, 3 voor uw naam, 4 voor uw tijdelijke begroeting, 5 om uw pincode te wijzigen. Druk op sterretje om terug te gaan.
+vm-instructions	Druk 5 om het bericht te herhalen, 4 voor het vorige bericht, 6 voor het volgende bericht, 7 om het te verwijderen, 9 om het te bewaren, of sterretje voor hulp.
+vm-opts	Druk 0 voor de instellingen van uw voicemailbox, of sterretje om af te sluiten.
+vm-repeat	Druk 5 om dit bericht te herhalen.
+vm-next	Druk 6 voor het volgende bericht.
+vm-prev	Druk 4 voor het vorige bericht.
+vm-delete	Druk 7 om dit bericht te verwijderen.
+vm-undelete	Druk 7 om het verwijderen ongedaan te maken.
+vm-deleted	Verwijderd.
+vm-msgsaved	Uw bericht is opgeslagen.
+vm-saved	Bewaard.
+vm-savemessage	Druk 9 om dit bericht te bewaren.
+vm-toforward	Druk 8 om dit bericht door te sturen.
+vm-advopts	Druk 3 voor meer opties.
+vm-received	Ontvangen op
+vm-from	Van
+vm-from-phonenumber	Bericht van telefoonnummer
+vm-from-extension	Bericht van toestel
+vm-unknown-caller	een onbekende beller
+vm-review	Druk 1 om dit bericht te verzenden, 2 om het te beluisteren, of 3 om het opnieuw op te nemen.
+vm-torerecord	Druk 3 om opnieuw op te nemen.
+vm-tooshort	Uw bericht was te kort.
+vm-sorry	Sorry, dat begreep ik niet.
+vm-then-pound	gevolgd door hekje.
+vm-mailboxfull	De voicemailbox is vol. Er kunnen geen berichten meer worden ingesproken.
+vm-newuser	Welkom bij uw nieuwe voicemailbox. Stel eerst uw pincode, uw naam en uw begroeting in.
+vm-rec-name	Spreek na de toon uw naam in en druk daarna op hekje.
+vm-rec-unv	Spreek na de toon uw onbereikbaar-begroeting in en druk daarna op hekje.
+vm-rec-busy	Spreek na de toon uw in-gesprek-begroeting in en druk daarna op hekje.
+vm-rec-temp	Spreek na de toon uw tijdelijke begroeting in en druk daarna op hekje.
+vm-tempgreeting	Druk 1 om uw tijdelijke begroeting op te nemen.
+vm-tempgreeting2	Druk 1 om uw tijdelijke begroeting opnieuw op te nemen, of 2 om hem te verwijderen.
+vm-tempremoved	Uw tijdelijke begroeting is verwijderd.
+vm-newpassword	Voer uw nieuwe pincode in, gevolgd door hekje.
+vm-reenterpassword	Voer de nieuwe pincode nogmaals in, gevolgd door hekje.
+vm-passchanged	Uw pincode is gewijzigd.
+vm-mismatch	De pincodes komen niet overeen.
+vm-msginstruct	Druk 5 om dit bericht te herhalen, 7 om het te verwijderen, of 9 om het te bewaren.
+vm-helpexit	Druk op sterretje voor hulp, of hekje om af te sluiten.
+vm-changeto	Druk 1 om naar een andere map te gaan.
+vm-saveoper	Druk 1 om het bericht te bewaren, of 0 om de telefonist te bellen.
+# Queues
+queue-thankyou	Dank u voor uw geduld. U wordt zo snel mogelijk geholpen.
+queue-youarenext	U bent nu de eerste in de wachtrij.
+queue-thereare	Er zijn nog
+queue-callswaiting	bellers voor u.
+queue-holdtime	De verwachte wachttijd is
+queue-minutes	minuten.
+queue-minute	minuut.
+queue-seconds	seconden.
+queue-less-than	minder dan
+queue-reporthold	Wachttijd
+queue-periodic-announce	Al onze medewerkers zijn in gesprek. Blijf aan de lijn, u wordt zo snel mogelijk geholpen.
+queue-quantity1	Er is
+queue-quantity2	beller voor u.
+# Conference rooms
+conf-getpin	Voer de pincode van de vergadering in, gevolgd door hekje.
+conf-invalidpin	Deze pincode is onjuist.
+conf-onlyperson	U bent de enige deelnemer.
+conf-thereare	Er zijn
+conf-otherinparty	andere deelnemers in de vergadering.
+conf-onlyone	Er is één andere deelnemer in de vergadering.
+conf-placeintoconf	U wordt nu in de vergadering geplaatst.
+conf-waitforleader	De vergadering begint zodra de voorzitter binnenkomt.
+conf-leaderhasleft	De voorzitter heeft de vergadering verlaten.
+conf-hasjoin	is binnengekomen.
+conf-hasleft	heeft de vergadering verlaten.
+conf-kicked	U bent uit de vergadering verwijderd.
+conf-locked	Deze vergadering is vergrendeld.
+conf-lockednow	De vergadering is nu vergrendeld.
+conf-unlockednow	De vergadering is nu ontgrendeld.
+conf-now-muted	U bent nu gedempt.
+conf-now-unmuted	U bent niet meer gedempt.
+conf-muted	Gedempt.
+conf-unmuted	Niet meer gedempt.
+conf-usermenu	Druk 1 om uzelf te dempen of het dempen op te heffen.
+conf-adminmenu	Druk 1 om uzelf te dempen, 2 om de vergadering te vergrendelen of te ontgrendelen.
+conf-errormenu	Ongeldige keuze.
+conf-userswilljoin	deelnemers komen binnen.
+conf-full	Deze vergadering is vol.
+# Parking
+parked	Geparkeerd op
+# Digits and numbers (Asterisk's Dutch number rules use these files)
+digits/0	nul
+digits/1	één
+digits/2	twee
+digits/3	drie
+digits/4	vier
+digits/5	vijf
+digits/6	zes
+digits/7	zeven
+digits/8	acht
+digits/9	negen
+digits/10	tien
+digits/11	elf
+digits/12	twaalf
+digits/13	dertien
+digits/14	veertien
+digits/15	vijftien
+digits/16	zestien
+digits/17	zeventien
+digits/18	achttien
+digits/19	negentien
+digits/20	twintig
+digits/30	dertig
+digits/40	veertig
+digits/50	vijftig
+digits/60	zestig
+digits/70	zeventig
+digits/80	tachtig
+digits/90	negentig
+digits/hundred	honderd
+digits/thousand	duizend
+digits/million	miljoen
+digits/nl-en	en
+digits/star	sterretje
+digits/pound	hekje
+digits/at	om
+digits/oclock	uur
+digits/today	vandaag
+digits/yesterday	gisteren
+digits/day-0	zondag
+digits/day-1	maandag
+digits/day-2	dinsdag
+digits/day-3	woensdag
+digits/day-4	donderdag
+digits/day-5	vrijdag
+digits/day-6	zaterdag
+digits/mon-0	januari
+digits/mon-1	februari
+digits/mon-2	maart
+digits/mon-3	april
+digits/mon-4	mei
+digits/mon-5	juni
+digits/mon-6	juli
+digits/mon-7	augustus
+digits/mon-8	september
+digits/mon-9	oktober
+digits/mon-10	november
+digits/mon-11	december
+letters/at	apenstaartje
+letters/dot	punt
+# Queue callback (phase 6)
+kt-callback-offer	Wilt u liever teruggebeld worden? Druk dan op 1. U behoudt uw plaats in de wachtrij.
+kt-callback-number	Wij bellen u terug op het nummer
+kt-callback-confirm	Druk op 1 om te bevestigen, of op 2 om een ander nummer in te toetsen.
+kt-callback-enter	Toets uw telefoonnummer in, gevolgd door het hekje.
+kt-callback-thanks	Dank u wel. Wij bellen u terug zodra er een medewerker vrij is. Tot ziens.
+kt-callback-agent	Terugbelverzoek uit de wachtrij. U wordt nu verbonden met de beller.
+# Hot desks (*55 / *56)
+kt-hotdesk-ext	Voer uw toestelnummer in, gevolgd door het hekje.
+kt-hotdesk-pin	Voer uw pincode in, gevolgd door het hekje.
+kt-hotdesk-wrong	Het toestelnummer of de pincode is onjuist.
+kt-hotdesk-notdesk	Deze telefoon is geen flexplek, of er is niemand aangemeld.
+kt-hotdesk-reload	De telefoon laadt nu uw instellingen. Een ogenblik geduld.
+kt-hotdesk-in	U bent aangemeld op deze telefoon.
+kt-hotdesk-out	U bent afgemeld.

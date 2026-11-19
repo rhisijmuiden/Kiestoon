@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+/* Colours and type come from branding/tokens.json. Keep the two in sync.
+   The values below are the dark theme (the default). The light theme overrides the same
+   variables further down, so every utility (bg-surface, text-ink, ...) follows the theme. */
+@theme {
+  --color-bg: #070B14;
+  --color-surface: #0F172A;
+  --color-surface-2: #0B1120;
+  --color-field: #0A1224;
+  --color-inset: #070C18;
+  --color-line: rgb(148 163 184 / 0.14);
+  --color-ink: #E2E8F0;
+  --color-ink-2: #CBD5E1;
+  --color-nav: #A8B3C7;
+  --color-muted: #94A3B8;
+  --color-subtle: #7C8AA3;
+  --color-tint: #FFFFFF;
+  --color-grid-dot: rgb(255 255 255 / 0.05);
+  --color-accent: #22D3EE;
+  --color-accent-2: #818CF8;
+  --color-accent-ink: #A5F3FC;
+  --color-on-accent: #06121F;
+  --color-ok: #34D399;
+  --color-ok-ink: #A7F3D0;
+  --color-warn: #FBBF24;
+  --color-warn-ink: #FDE68A;
+  --color-danger: #F87171;
+  --color-danger-ink: #FECACA;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: dark;
+  --card-top: rgb(15 23 42 / 0.92);
+  --card-bottom: rgb(11 17 32 / 0.92);
+  --card-shadow: none;
+  --page-glow: rgb(34 211 238 / 0.10);
+}
+
+/* Light theme: same house style, daylight palette. Darker cyan and indigo keep the accent
+   readable on white (WCAG AA for text). Set by data-theme="light" on <html>. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: #F4F7FB;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #FFFFFF;
+  --color-field: #FFFFFF;
+  --color-inset: #EEF2F7;
+  --color-line: rgb(15 23 42 / 0.12);
+  --color-ink: #0F172A;
+  --color-ink-2: #334155;
+  --color-nav: #475569;
+  --color-muted: #526072;
+  --color-subtle: #64748B;
+  --color-tint: #0F172A;
+  --color-grid-dot: rgb(15 23 42 / 0.08);
+  --color-accent: #0891B2;
+  --color-accent-2: #6366F1;
+  --color-accent-ink: #0E7490;
+  --color-on-accent: #FFFFFF;
+  --color-ok: #059669;
+  --color-ok-ink: #047857;
+  --color-warn: #D97706;
+  --color-warn-ink: #92400E;
+  --color-danger: #DC2626;
+  --color-danger-ink: #B91C1C;
+  --card-top: #FFFFFF;
+  --card-bottom: #FBFCFE;
+  --card-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.12);
+  --page-glow: rgb(8 145 178 / 0.08);
+}
+
+html, body, #root { min-height: 100%; }
+select option { background: var(--color-surface); color: var(--color-ink); }
+body {
+  margin: 0;
+  background: radial-gradient(1200px 500px at 70% -10%, var(--page-glow), transparent 60%), var(--color-bg);
+  background-attachment: fixed;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+[aria-invalid="true"]:focus-visible { outline-color: var(--color-danger); }
+
+@utility card {
+  background: linear-gradient(180deg, var(--card-top), var(--card-bottom));
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+}
+
+@utility glow-ok { box-shadow: 0 0 10px var(--color-ok); }
+
+/* "Powered by RHIS" keeps a dark badge in both themes: the RHIS logo is white and must not be
+   recoloured (RHIS house style). */
+@utility rhis-badge {
+  background: rgb(11 17 32 / 0.92);
+  border: 1px solid rgb(148 163 184 / 0.22);
+  color: #CBD5E1;
+}
+
+/* IVR flow canvas (React Flow). Colours follow the theme tokens. */
+.kt-flow .react-flow { --xy-background-color: transparent; --xy-edge-stroke: var(--color-subtle); --xy-connectionline-stroke: var(--color-accent); }
+.kt-flow .react-flow__pane { cursor: default; }
+.kt-flow .react-flow__pane.dragging { cursor: grabbing; }
+.kt-flow .react-flow__node { cursor: pointer; }
+.kt-flow .react-flow__node:focus-visible { outline: none; }
+.kt-flow .react-flow__node:focus-visible > div { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.kt-flow .react-flow__handle { transition: transform 0.12s; }
+.kt-flow .react-flow__handle:hover, .kt-flow .react-flow__handle.connectingto { transform: translate(var(--kt-hx, 0), -50%) scale(1.45); }
+.kt-flow .react-flow__handle-left { --kt-hx: -50%; }
+.kt-flow .react-flow__handle-right { --kt-hx: 50%; }
+.kt-flow .react-flow__edge-path { transition: stroke-width 0.12s; }
+.kt-flow .react-flow__edge:hover .react-flow__edge-path,
+.kt-flow .react-flow__edge.selected .react-flow__edge-path { stroke-width: 3.5 !important; filter: drop-shadow(0 0 6px currentColor); }
+.kt-flow .react-flow__controls {
+  overflow: hidden; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface); box-shadow: var(--card-shadow);
+}
+.kt-flow .react-flow__controls-button {
+  width: 34px; height: 34px; border: 0; border-bottom: 1px solid var(--color-line); background: transparent; color: var(--color-ink-2);
+}
+.kt-flow .react-flow__controls-button:last-child { border-bottom: 0; }
+.kt-flow .react-flow__controls-button:hover { background: rgb(from var(--color-tint) r g b / 0.06); color: var(--color-ink); }
+.kt-flow .react-flow__controls-button svg { width: 12px; height: 12px; fill: currentColor; }
+.kt-flow .react-flow__minimap {
+  overflow: hidden; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface); box-shadow: var(--card-shadow);
+}
+.kt-flow .react-flow__minimap-mask { fill: rgb(from var(--color-bg) r g b / 0.55); }
+.kt-flow .react-flow__minimap-node { stroke: none; }

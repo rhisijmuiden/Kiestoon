@@ -1,0 +1,41 @@
+# Builds the Kiestoon Edge .deb (amd64 and arm64). Used by `make edge-deb` and the release workflow.
+name: kiestoon-edge
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+version_schema: semver
+section: comm
+priority: optional
+maintainer: RHIS <info@rhis.nl>
+description: |
+  Kiestoon Edge: satellite for a branch office.
+  Connects the office to the central Kiestoon through a WireGuard tunnel (no port forwarding)
+  and runs a local SIP proxy (Kamailio) and media relay (rtpengine) for the office phones.
+vendor: RHIS
+homepage: https://github.com/rhisijmuiden/kiestoon
+license: GPL-3.0-or-later
+
+depends:
+  - ca-certificates
+  - wireguard-tools
+  - iproute2
+  - kamailio
+  - kamailio-extra-modules
+  - rtpengine-daemon
+
+contents:
+  - src: ./build/kiestoon-edge
+    dst: /usr/bin/kiestoon-edge
+    file_info: { mode: 0755 }
+  - src: ./packaging/edge/kiestoon-edge.service
+    dst: /usr/lib/systemd/system/kiestoon-edge.service
+  - src: ./packaging/edge/rtpengine-daemon.conf
+    dst: /usr/lib/systemd/system/rtpengine-daemon.service.d/kiestoon-edge.conf
+  - src: ./packaging/edge/kamailio.conf
+    dst: /usr/lib/systemd/system/kamailio.service.d/kiestoon-edge.conf
+  - src: ./packaging/edge/sysctl.conf
+    dst: /usr/lib/sysctl.d/60-kiestoon-edge.conf
+
+scripts:
+  postinstall: ./packaging/edge/postinstall.sh
+  preremove: ./packaging/edge/preremove.sh

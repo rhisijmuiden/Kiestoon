@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-incoming-show"
+description = "Enables the incoming_show command without any pre-configured scope."
+commands.allow = ["incoming_show"]
+
+[[permission]]
+identifier = "deny-incoming-show"
+description = "Denies the incoming_show command without any pre-configured scope."
+commands.deny = ["incoming_show"]

@@ -1,0 +1,217 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, testing]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  asterisk:
+    name: Asterisk package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache the package
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: dist-asterisk
+          key: asterisk-amd64-${{ hashFiles('packaging/asterisk/**') }}
+      - name: Build Asterisk in Debian 13
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: docker run --rm -v "$PWD:/src" -w /src debian:trixie packaging/asterisk/build.sh dist-asterisk
+      - name: Show package
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" dist-asterisk
+          dpkg-deb -I dist-asterisk/*.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asterisk-amd64
+          path: dist-asterisk/*.deb
+          retention-days: 3
+
+  sounds:
+    name: Dutch voice prompts
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache the package
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: dist-sounds
+          key: sounds-nl-${{ hashFiles('packaging/sounds-nl/**') }}
+      - name: Speak the prompts in Debian 13
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: docker run --rm -v "$PWD:/src" -w /src debian:trixie packaging/sounds-nl/build.sh dist-sounds
+      - name: Show package
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" dist-sounds
+          dpkg-deb -I dist-sounds/*.deb
+          dpkg-deb -c dist-sounds/*.deb | grep -c '\.wav$'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sounds-nl
+          path: dist-sounds/*.deb
+          retention-days: 3
+
+  speech:
+    name: Local speech package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache the package
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: dist-speech
+          key: speech-amd64-${{ hashFiles('packaging/speech/**') }}
+      - name: Build Piper and whisper.cpp in Debian 13
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: docker run --rm -v "$PWD:/src" -w /src debian:trixie packaging/speech/build.sh dist-speech
+      - name: Show package
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" dist-speech
+          dpkg-deb -I dist-speech/*.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: speech-amd64
+          path: dist-speech/*.deb
+          retention-days: 3
+
+  softphone:
+    name: Windows softphone (MSI)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+      - name: Unit tests
+        shell: bash
+        run: cd desktop/src-tauri && cargo test --locked
+      - name: Build the MSI
+        shell: bash
+        run: desktop/build-msi.sh "v$(tr -d '[:space:]' < VERSION | sed 's/^v//')" dist-softphone
+      - uses: actions/upload-artifact@v4
+        with:
+          name: softphone-msi
+          path: dist-softphone/*.msi
+          if-no-files-found: error
+          retention-days: 3
+
+  test:
+    name: Test and build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Web UI (translations, type check, build)
+        run: make web
+
+      - name: Go vet and tests
+        working-directory: server
+        run: |
+          test -z "$(gofmt -l .)" || { gofmt -l .; echo "run gofmt"; exit 1; }
+          go vet ./...
+          go test -race ./...
+
+      - name: Shell scripts
+        run: |
+          shellcheck -S warning install.sh lxc/build-lxc.sh packaging/kiestoon-updater packaging/fix-permissions \
+            packaging/scripts/*.sh packaging/asterisk/*.sh packaging/ci/*.sh packaging/sounds-nl/*.sh packaging/speech/*.sh \
+            packaging/edge/*.sh
+          packaging/ci/install-sh-test.sh
+
+      - name: Debian package
+        run: |
+          GOTOOLCHAIN=auto go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
+          make deb VERSION="v0.0.0-ci.${GITHUB_RUN_NUMBER}"
+          make edge-deb VERSION="v0.0.0-ci.${GITHUB_RUN_NUMBER}"
+          GOARCH=arm64 make edge VERSION="v0.0.0-ci.${GITHUB_RUN_NUMBER}"
+          for d in dist/*.deb; do dpkg-deb -I "$d"; dpkg-deb -c "$d"; done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kiestoon-amd64
+          path: dist/*.deb
+          retention-days: 3
+
+  edge-pi:
+    name: Kiestoon Edge Raspberry Pi image
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - name: Cache the base image
+        uses: actions/cache@v4
+        with:
+          path: pi-cache
+          key: raspios-${{ hashFiles('packaging/edge/pi-image.sh') }}
+      - name: Build the image (not compressed)
+        run: |
+          GOTOOLCHAIN=auto go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
+          make edge-deb VERSION="v0.0.0-ci.${GITHUB_RUN_NUMBER}" GOARCH=arm64
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq parted e2fsprogs xz-utils
+          sudo SKIP_COMPRESS=1 CACHE_DIR="$PWD/pi-cache" ./packaging/edge/pi-image.sh dist/kiestoon-edge_*_arm64.deb dist-pi/
+          sudo chown -R "$(id -u):$(id -g)" pi-cache
+      - name: Check the image
+        run: |
+          set -x
+          IMG="$(ls dist-pi/*.img)"
+          LOOP="$(sudo losetup -P --show -f "$IMG")"
+          sudo mkdir -p /mnt/pi && sudo mount -o ro "${LOOP}p2" /mnt/pi
+          test -x /mnt/pi/usr/bin/kiestoon-edge
+          # -L: the link target is absolute and only resolves inside the image.
+          test -L /mnt/pi/etc/systemd/system/multi-user.target.wants/kiestoon-edge.service
+          test ! -L /mnt/pi/etc/systemd/system/multi-user.target.wants/rtpengine-daemon.service
+          test -x /mnt/pi/usr/sbin/kamailio && test -x /mnt/pi/usr/bin/rtpengine && test -x /mnt/pi/usr/bin/wg
+          sudo chroot /mnt/pi /usr/bin/kiestoon-edge version
+          sudo umount /mnt/pi && sudo losetup -d "$LOOP"
+
+  install:
+    name: Install test (Debian 13)
+    needs: [asterisk, sounds, speech, test]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Install both packages and check the services
+        env:
+          KEEP: '1'
+        run: packaging/ci/install-test.sh dist/kiestoon_*_amd64.deb dist/kiestoon-asterisk_*_amd64.deb dist/kiestoon-sounds-nl_*_all.deb dist/kiestoon-speech_*_amd64.deb
+      - name: Pair a Kiestoon Edge and register a phone through it
+        run: packaging/ci/edge-test.sh kt-install-test dist/kiestoon-edge_*_amd64.deb

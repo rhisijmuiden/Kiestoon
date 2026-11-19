@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kiestoon Edge</title>
+<style>
+:root{--bg:#070B14;--surface:#0F172A;--surface2:#0B1120;--line:rgb(148 163 184/.14);--ink:#E2E8F0;--muted:#94A3B8;--accent:#22D3EE;--accent2:#818CF8;--ok:#34D399;--warn:#FBBF24;--danger:#F87171}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(1200px 500px at 70% -10%,rgb(34 211 238/.10),transparent 60%),var(--bg)}
+main{max-width:720px;margin:0 auto;padding:40px 16px 80px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-weight:700;color:#04121a}
+h1{font-size:20px;margin:0}
+.sub{color:var(--muted);font-size:13px}
+.card{background:linear-gradient(180deg,rgb(15 23 42/.9),rgb(11 17 32/.9));border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:16px}
+h2{font-size:15px;margin:0 0 12px}
+dl{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:8px 16px;margin:0}
+dt{color:var(--muted)}dd{margin:0;word-break:break-all}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;font-size:12px;border:1px solid var(--line)}
+.dot{width:8px;height:8px;border-radius:50%}
+.ok .dot{background:var(--ok);box-shadow:0 0 10px var(--ok)}.bad .dot{background:var(--danger)}.wait .dot{background:var(--warn)}
+textarea{width:100%;min-height:96px;resize:vertical;background:var(--surface2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:13px ui-monospace,monospace}
+button{cursor:pointer;border:0;border-radius:10px;padding:9px 16px;font-weight:600;color:#04121a;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+button:disabled{opacity:.5;cursor:default}
+.lang{background:transparent;color:var(--muted);border:1px solid var(--line);padding:5px 10px;font-weight:500}
+.err{color:var(--danger);margin-top:10px}.hint{color:var(--muted);font-size:13px}
+code{background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+footer{position:fixed;right:16px;bottom:12px;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}
+footer img{height:18px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand"><div class="logo">K</div><div><h1>Kiestoon Edge</h1><div class="sub" id="host"></div></div></div>
+    <button class="lang" id="lang"></button>
+  </header>
+  <section class="card" id="pair" hidden>
+    <h2 data-t="pairTitle"></h2>
+    <p class="hint" data-t="pairHint"></p>
+    <textarea id="code" spellcheck="false" placeholder="KT1-E-..."></textarea>
+    <div style="margin-top:12px"><button id="go" data-t="pairButton"></button></div>
+    <div class="err" id="err" hidden></div>
+  </section>
+  <section class="card" id="status" hidden>
+    <h2 data-t="statusTitle"></h2>
+    <dl>
+      <dt data-t="site"></dt><dd id="s-name"></dd>
+      <dt data-t="central"></dt><dd id="s-hub"></dd>
+      <dt data-t="tunnel"></dt><dd id="s-tunnel"></dd>
+      <dt data-t="office"></dt><dd id="s-lan"></dd>
+      <dt data-t="lastContact"></dt><dd id="s-last"></dd>
+      <dt data-t="services"></dt><dd id="s-svc"></dd>
+    </dl>
+    <div class="err" id="s-err" hidden></div>
+  </section>
+  <section class="card" id="phones" hidden>
+    <h2 data-t="phonesTitle"></h2>
+    <p class="hint" data-t="phonesHint"></p>
+    <dl>
+      <dt data-t="sipServer"></dt><dd><code id="p-sip"></code></dd>
+      <dt data-t="provUrl"></dt><dd><code id="p-prov"></code></dd>
+    </dl>
+  </section>
+  <p class="hint" data-t="resetHint"></p>
+</main>
+<footer><span>Powered by</span><img src="/rhis.svg" alt="RHIS"></footer>
+<script>
+const T={en:{pairTitle:"Pair with your Kiestoon",pairHint:"In the Kiestoon portal, open Sites, add a branch office and paste its pairing code here. You can also put the code in kiestoon-edge.txt on the boot partition.",pairButton:"Pair",statusTitle:"Status",site:"Branch office",central:"Kiestoon",tunnel:"Tunnel address",office:"Office address",lastContact:"Last contact",services:"Services",connected:"Connected",notConnected:"No connection",never:"never",phonesTitle:"Phones",phonesHint:"Point the phones in this office at the edge. Their extensions stay on the central Kiestoon.",sipServer:"SIP server",provUrl:"Provisioning URL",resetHint:"To pair this edge with another Kiestoon, run kiestoon-edge reset on the device.",lang:"Nederlands",errors:{invalid_code:"This is not a valid pairing code for an edge.",invalid_pairing_code:"The pairing code is wrong or expired. Create a new one in the portal.",hub_disabled:"Branch offices are switched off on the Kiestoon.",already_paired:"This edge is already paired.",subnet_full:"No tunnel address free on the Kiestoon.",too_many_attempts:"Too many attempts, try again later.",unreachable:"Cannot reach the Kiestoon."}},
+nl:{pairTitle:"Koppelen met je Kiestoon",pairHint:"Open in het Kiestoon-portaal Locaties, voeg een vestiging toe en plak de koppelcode hier. Je kunt de code ook in kiestoon-edge.txt op de bootpartitie zetten.",pairButton:"Koppelen",statusTitle:"Status",site:"Vestiging",central:"Kiestoon",tunnel:"Tunneladres",office:"Kantooradres",lastContact:"Laatste contact",services:"Diensten",connected:"Verbonden",notConnected:"Geen verbinding",never:"nooit",phonesTitle:"Toestellen",phonesHint:"Laat de toestellen in deze vestiging naar de edge wijzen. Hun toestelnummers blijven op de centrale Kiestoon.",sipServer:"SIP-server",provUrl:"Provisioning-URL",resetHint:"Om deze edge met een andere Kiestoon te koppelen, voer je kiestoon-edge reset uit op het apparaat.",lang:"English",errors:{invalid_code:"Dit is geen geldige koppelcode voor een edge.",invalid_pairing_code:"De koppelcode klopt niet of is verlopen. Maak een nieuwe aan in het portaal.",hub_disabled:"Vestigingen staan uit op de Kiestoon.",already_paired:"Deze edge is al gekoppeld.",subnet_full:"Geen tunneladres meer vrij op de Kiestoon.",too_many_attempts:"Te veel pogingen, probeer het later opnieuw.",unreachable:"De Kiestoon is niet bereikbaar."}}};
+let lang=(()=>{try{return localStorage.getItem("lang")}catch(e){return null}})()||(navigator.language||"en").slice(0,2);if(!T[lang])lang="en";
+const $=id=>document.getElementById(id);
+function tr(){document.documentElement.lang=lang;document.querySelectorAll("[data-t]").forEach(e=>e.textContent=T[lang][e.dataset.t]);$("lang").textContent=T[lang].lang}
+$("lang").onclick=()=>{lang=lang==="en"?"nl":"en";try{localStorage.setItem("lang",lang)}catch(e){}tr();load()};
+function pill(ok,text){const s=document.createElement("span");s.className="pill "+(ok===true?"ok":ok===false?"bad":"wait");s.innerHTML='<span class="dot"></span>';s.append(text);return s}
+async function load(){
+  let s;try{s=await (await fetch("/api/status",{cache:"no-store"})).json()}catch(e){return}
+  $("host").textContent=s.hostname+" · v"+s.version;
+  $("pair").hidden=s.paired;$("status").hidden=!s.paired;$("phones").hidden=!s.paired;
+  if(!s.paired)return;
+  $("s-name").textContent=s.name||"";$("s-hub").textContent=s.hubUrl||"";$("s-tunnel").textContent=s.tunnelIp+" → "+s.hubAddress;
+  $("s-lan").textContent=(s.lanAddress||"")+(s.lanNet?" ("+s.lanNet+")":"");
+  const last=$("s-last");last.textContent="";last.append(pill(s.connected,s.connected?T[lang].connected:T[lang].notConnected));
+  if(s.lastContact&&!s.lastContact.startsWith("0001"))last.append(" "+new Date(s.lastContact).toLocaleString(lang));
+  const svc=$("s-svc");svc.textContent="";Object.entries(s.services||{}).forEach(([k,v])=>{svc.append(pill(v==="active"?true:v==="activating"?null:false,k)," ")});
+  $("s-err").hidden=!s.lastError;$("s-err").textContent=s.lastError||"";
+  $("p-sip").textContent=s.lanAddress?s.lanAddress+":5060":"";$("p-prov").textContent=s.lanAddress?"http://"+s.lanAddress+"/prov/":"";
+}
+$("go").onclick=async()=>{
+  const b=$("go");b.disabled=true;$("err").hidden=true;
+  try{const r=await fetch("/api/pair",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code:$("code").value})});
+    const j=await r.json();if(!r.ok){$("err").textContent=T[lang].errors[j.error]||j.detail||j.error;$("err").hidden=false}else{$("code").value=""}
+  }catch(e){$("err").textContent=T[lang].errors.unreachable;$("err").hidden=false}
+  b.disabled=false;load();
+};
+tr();load();setInterval(load,10000);
+</script>
+</body>
+</html>

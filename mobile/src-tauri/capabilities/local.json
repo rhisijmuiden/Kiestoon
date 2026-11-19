@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "local",
+  "description": "The app's own setup screen.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "deep-link:default",
+    "allow-setup-info",
+    "allow-connect"
+  ]
+}

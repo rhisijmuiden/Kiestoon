@@ -1,0 +1,168 @@
+package pbx
+
+import (
+	"context"
+	"time"
+
+	"github.com/rhisijmuiden/kiestoon/server/internal/store"
+)
+
+// Snapshot is everything the Asterisk configuration is generated from.
+type Snapshot struct {
+	Settings       Settings
+	Features       FeatureSettings
+	Holidays       Holidays
+	Extensions     []Extension
+	Trunks         []Trunk
+	Inbound        []InboundRoute
+	Outbound       []OutboundRoute
+	RingGroups     []RingGroup
+	Queues         []Queue
+	IVRs           []IVR
+	TimeConditions []TimeCondition
+	Conferences    []Conference
+	Prompts        []Prompt
+	FaxBoxes       []FaxBox
+	Contacts       []Contact
+	Phonebook      PhonebookSettings
+	// Multi-site (phase 5)
+	Hub       HubSettings
+	Peers     []FedPeer
+	SunRoutes []SunRoute
+	// Supervisors are the extension numbers of enabled users with the role reception or higher:
+	// they may listen, whisper and barge on calls of queues with supervision on.
+	Supervisors []string
+	// FraudLocked blocks international and premium calls after a fraud alert.
+	FraudLocked bool
+	// Now decides which year's holidays go into the dialplan (it is regenerated every night).
+	Now time.Time
+}
+
+// Snapshot reads the current phone system data.
+func (r *Repo) Snapshot(ctx context.Context) (*Snapshot, error) {
+	var s Snapshot
+	var err error
+	if s.Settings, err = LoadSettings(ctx, r.DB); err != nil {
+		return nil, err
+	}
+	if s.Extensions, err = r.Extensions(ctx); err != nil {
+		return nil, err
+	}
+	if s.Trunks, err = r.Trunks(ctx); err != nil {
+		return nil, err
+	}
+	if s.Inbound, err = r.InboundRoutes(ctx); err != nil {
+		return nil, err
+	}
+	if s.Outbound, err = r.OutboundRoutes(ctx); err != nil {
+		return nil, err
+	}
+	if s.Features, err = LoadFeatureSettings(ctx, r.DB); err != nil {
+		return nil, err
+	}
+	if s.Holidays, err = LoadHolidays(ctx, r.DB); err != nil {
+		return nil, err
+	}
+	if s.FaxBoxes, err = r.FaxBoxes(ctx); err != nil {
+		return nil, err
+	}
+	if s.Contacts, err = r.Contacts(ctx); err != nil {
+		return nil, err
+	}
+	if s.Phonebook, err = LoadPhonebookSettings(ctx, r.DB); err != nil {
+		return nil, err
+	}
+	if s.RingGroups, err = r.RingGroups(ctx); err != nil {
+		return nil, err
+	}
+	if s.Queues, err = r.Queues(ctx); err != nil {
+		return nil, err
+	}
+	if s.IVRs, err = r.IVRs(ctx); err != nil {
+		return nil, err
+	}
+	if s.TimeConditions, err = r.TimeConditions(ctx); err != nil {
+		return nil, err
+	}
+	if s.Conferences, err = r.Conferences(ctx); err != nil {
+		return nil, err
+	}
+	if s.Prompts, err = r.Prompts(ctx); err != nil {
+		return nil, err
+	}
+	if s.Hub, err = LoadHub(ctx, r.DB); err != nil {
+		return nil, err
+	}
+	if s.Peers, err = r.FedPeers(ctx); err != nil {
+		return nil, err
+	}
+	if s.SunRoutes, err = r.SunRoutes(ctx); err != nil {
+		return nil, err
+	}
+	rows, err := r.DB.QueryContext(ctx, `SELECT DISTINCT e.number FROM users u JOIN extensions e ON e.id = u.extension_id
+		WHERE u.enabled = 1 AND u.role IN ('reception','admin','superadmin') ORDER BY e.number`)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var n string
+		if err := rows.Scan(&n); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		s.Supervisors = append(s.Supervisors, n)
+	}
+	rows.Close()
+	if err := r.markMobileApps(ctx, &s); err != nil {
+		return nil, err
+	}
+	locked, _ := store.GetSetting(ctx, r.DB, FraudLockKey, "")
+	s.FraudLocked = locked != ""
+	if loc, err := time.LoadLocation(s.Settings.Timezone); err == nil {
+		s.Now = time.Now().In(loc)
+	} else {
+		s.Now = time.Now()
+	}
+	return &s, nil
+}
+
+// TrunkPreset pre-fills the trunk form for a provider. The administrator still enters the
+// account details the provider gave them.
+type TrunkPreset struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	AuthMode  string `json:"authMode"`
+	Host      string `json:"host"`
+	Port      int    `json:"port"`
+	Transport string `json:"transport"`
+	DIDSource string `json:"didSource"`
+	Codecs    string `json:"codecs"`
+	// MatchIPs are the networks the provider sends calls from (comma separated).
+	MatchIPs string `json:"matchIps"`
+	Note     string `json:"note"` // translation key with provider specific hints
+	// Guide is the translation key of a step-by-step setup guide, "" when there is none.
+	Guide string `json:"guide"`
+	// DocsURL points to the provider page in the Kiestoon documentation.
+	DocsURL string `json:"docsUrl,omitempty"`
+}
+
+// TrunkPresets lists the provider templates offered in the UI.
+var TrunkPresets = []TrunkPreset{
+	{ID: "generic", Name: "Generic (registration)", AuthMode: "register", Port: 5060, Transport: "udp", DIDSource: "to", Codecs: "alaw,ulaw,g722", Note: "generic"},
+	{ID: "generic-ip", Name: "Generic (IP authentication)", AuthMode: "ip", Port: 5060, Transport: "udp", DIDSource: "ruri", Codecs: "alaw,ulaw", Note: "ip"},
+	// Voys: ha.voys.nl has DNS SRV records (UDP 6060/5060 on the VoIPGRID SIP proxies), so the port
+	// is left at 0 to follow them. Calls come from 195.35.114.0/23 and 185.103.76.0/22.
+	// Source: https://help.voys.nl/voip-trunk-configuratie
+	{ID: "voys", Name: "Voys", AuthMode: "register", Host: "ha.voys.nl", Port: 0, Transport: "udp", DIDSource: "ruri", Codecs: "alaw,g722",
+		MatchIPs: VoysNetworks, Note: "voys", Guide: "voys", DocsURL: "https://rhisijmuiden.github.io/Kiestoon/providers/voys/"},
+	{ID: "voipgrid", Name: "VoIPGRID platform (Spitsgroep, partners)", AuthMode: "register", Port: 5060, Transport: "udp", DIDSource: "to", Codecs: "alaw,g722", Note: "voipgrid"},
+	{ID: "kpn", Name: "KPN SIP trunk", AuthMode: "ip", Port: 5060, Transport: "udp", DIDSource: "ruri", Codecs: "alaw", Note: "kpn"},
+	{ID: "telnyx", Name: "Telnyx", AuthMode: "register", Host: "sip.telnyx.com", Port: 5061, Transport: "tls", DIDSource: "to", Codecs: "alaw,ulaw,g722", Note: "telnyx"},
+	{ID: "twilio", Name: "Twilio Elastic SIP", AuthMode: "ip", Port: 5060, Transport: "udp", DIDSource: "ruri", Codecs: "ulaw,alaw", Note: "twilio"},
+}
+
+// VoysNetworks are the address ranges Voys (VoIPGRID) sends SIP and media from.
+const VoysNetworks = "195.35.114.0/23,185.103.76.0/22"
+
+// FraudLockKey is set (to the time of the alert) while international calls are blocked.
+const FraudLockKey = "fraud_locked"

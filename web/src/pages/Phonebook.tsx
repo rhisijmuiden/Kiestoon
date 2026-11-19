@@ -106,16 +106,16 @@ function ContactForm({ value, onClose, onSaved }: { value: Contact; onClose: () 
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={() => save(c)}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label={t('common.name')} value={c.name} onChange={(e) => set('name', e.target.value)} autoFocus />
-        <Input label={t('phonebook.company')} value={c.company} onChange={(e) => set('company', e.target.value)} />
+        <Input name="name" label={t('common.name')} value={c.name} onChange={(e) => set('name', e.target.value)} autoFocus />
+        <Input name="company" label={t('phonebook.company')} value={c.company} onChange={(e) => set('company', e.target.value)} />
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
-        <Input label={t('phonebook.work')} value={c.work} onChange={(e) => set('work', tel(e.target.value))} inputMode="tel" className="font-mono" />
-        <Input label={t('phonebook.mobile')} value={c.mobile} onChange={(e) => set('mobile', tel(e.target.value))} inputMode="tel" className="font-mono" />
-        <Input label={t('phonebook.other')} value={c.other} onChange={(e) => set('other', tel(e.target.value))} inputMode="tel" className="font-mono" />
+        <Input name="work" label={t('phonebook.work')} value={c.work} onChange={(e) => set('work', tel(e.target.value))} inputMode="tel" className="font-mono" />
+        <Input name="mobile" label={t('phonebook.mobile')} value={c.mobile} onChange={(e) => set('mobile', tel(e.target.value))} inputMode="tel" className="font-mono" />
+        <Input name="other" label={t('phonebook.other')} value={c.other} onChange={(e) => set('other', tel(e.target.value))} inputMode="tel" className="font-mono" />
       </div>
-      <Input label={t('phonebook.email')} type="email" value={c.email} onChange={(e) => set('email', e.target.value)} />
-      <Input label={t('phonebook.notes')} value={c.notes} onChange={(e) => set('notes', e.target.value)} />
+      <Input name="email" label={t('phonebook.email')} type="email" value={c.email} onChange={(e) => set('email', e.target.value)} />
+      <Input name="notes" label={t('phonebook.notes')} value={c.notes} onChange={(e) => set('notes', e.target.value)} />
     </Modal>
   )
 }
@@ -178,16 +178,16 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.close')}</Button><Button busy={busy} disabled={!s} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error ?? info.error} />
       {s && d && <>
-        <Toggle label={t('phonebook.includeExtensions')} hint={t('phonebook.includeExtensionsHint')} checked={s.includeExtensions} onChange={(v) => set('includeExtensions', v)} />
-        <Toggle label={t('phonebook.callerIdLookup')} hint={t('phonebook.callerIdLookupHint')} checked={s.callerIdLookup} onChange={(v) => set('callerIdLookup', v)} />
-        <Toggle label={t('phonebook.xml')} hint={t('phonebook.xmlHint')} checked={s.xmlEnabled} onChange={(v) => set('xmlEnabled', v)} />
-        <Toggle label={t('phonebook.ldap')} hint={t('phonebook.ldapHint')} checked={s.ldapEnabled} onChange={(v) => set('ldapEnabled', v)} />
+        <Toggle name="includeExtensions" label={t('phonebook.includeExtensions')} hint={t('phonebook.includeExtensionsHint')} checked={s.includeExtensions} onChange={(v) => set('includeExtensions', v)} />
+        <Toggle name="callerIdLookup" label={t('phonebook.callerIdLookup')} hint={t('phonebook.callerIdLookupHint')} checked={s.callerIdLookup} onChange={(v) => set('callerIdLookup', v)} />
+        <Toggle name="xmlEnabled" label={t('phonebook.xml')} hint={t('phonebook.xmlHint')} checked={s.xmlEnabled} onChange={(v) => set('xmlEnabled', v)} />
+        <Toggle name="ldapEnabled" label={t('phonebook.ldap')} hint={t('phonebook.ldapHint')} checked={s.ldapEnabled} onChange={(v) => set('ldapEnabled', v)} />
         {s.ldapEnabled && <>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input label={t('phonebook.ldapPort')} type="number" value={s.ldapPort} onChange={(e) => set('ldapPort', Number(e.target.value))} />
-            <Input label={t('phonebook.ldapsPort')} type="number" value={s.ldapsPort} onChange={(e) => set('ldapsPort', Number(e.target.value))} hint={t('phonebook.ldapsPortHint')} />
+            <Input name="ldapPort" label={t('phonebook.ldapPort')} type="number" value={s.ldapPort} onChange={(e) => set('ldapPort', Number(e.target.value))} />
+            <Input name="ldapsPort" label={t('phonebook.ldapsPort')} type="number" value={s.ldapsPort} onChange={(e) => set('ldapsPort', Number(e.target.value))} hint={t('phonebook.ldapsPortHint')} />
           </div>
-          <Toggle label={t('phonebook.ldapAuth')} hint={t('phonebook.ldapAuthHint')} checked={s.ldapAuth} onChange={(v) => set('ldapAuth', v)} />
+          <Toggle name="ldapAuth" label={t('phonebook.ldapAuth')} hint={t('phonebook.ldapAuthHint')} checked={s.ldapAuth} onChange={(v) => set('ldapAuth', v)} />
           <SectionTitle action={d.ldapRunning ? <Badge tone="ok" dot>{t('phonebook.ldapRunning')}</Badge> : <Badge dot>{t('phonebook.ldapStopped')}</Badge>}>{t('phonebook.phoneSettings')}</SectionTitle>
           <div className="grid gap-3 sm:grid-cols-2">
             <CopyField label={t('phonebook.server')} value={`${d.server}:${s.ldapPort}`} />

@@ -66,7 +66,7 @@ export function Mail() {
         <Card>
           <SectionTitle>{t('mail.server')}</SectionTitle>
           <div className="flex flex-col gap-4">
-            <Toggle label={t('mail.enabled')} hint={t('mail.enabledHint')} checked={m.enabled} onChange={(v) => set('enabled', v)} />
+            <Toggle name="enabled" label={t('mail.enabled')} hint={t('mail.enabledHint')} checked={m.enabled} onChange={(v) => set('enabled', v)} />
             <div className="flex flex-wrap gap-2">
               <span className="self-center text-xs text-subtle">{t('mail.presets')}:</span>
               <Button variant="ghost" onClick={() => preset('m365')}>Microsoft 365</Button>
@@ -74,16 +74,16 @@ export function Mail() {
               <Button variant="ghost" onClick={() => preset('custom')}>{t('mail.custom')}</Button>
             </div>
             <div className="grid gap-4 sm:grid-cols-[1fr_110px]">
-              <Input label={t('mail.host')} value={m.host} onChange={(e) => set('host', e.target.value.trim())} className="font-mono" placeholder="smtp.example.com" />
-              <Input label={t('mail.port')} type="number" value={m.port} onChange={(e) => set('port', Number(e.target.value))} />
+              <Input name="host" label={t('mail.host')} value={m.host} onChange={(e) => set('host', e.target.value.trim())} className="font-mono" placeholder="smtp.example.com" />
+              <Input name="port" label={t('mail.port')} type="number" value={m.port} onChange={(e) => set('port', Number(e.target.value))} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Select label={t('mail.security')} value={m.security} onChange={(e) => securityPort(e.target.value as MailSettings['security'])}>
+              <Select name="security" label={t('mail.security')} value={m.security} onChange={(e) => securityPort(e.target.value as MailSettings['security'])}>
                 <option value="starttls">STARTTLS (587)</option>
                 <option value="tls">{t('mail.implicitTls')} (465)</option>
                 <option value="none">{t('mail.noTls')} (25)</option>
               </Select>
-              <Select label={t('mail.auth')} value={m.auth} onChange={(e) => set('auth', e.target.value as MailSettings['auth'])}>
+              <Select name="auth" label={t('mail.auth')} value={m.auth} onChange={(e) => set('auth', e.target.value as MailSettings['auth'])}>
                 <option value="password">{t('mail.authPassword')}</option>
                 <option value="oauth2_m365">OAuth2 · Microsoft 365</option>
                 <option value="oauth2_google">OAuth2 · Google Workspace</option>
@@ -92,26 +92,26 @@ export function Mail() {
             </div>
             {m.security === 'none' && <Alert tone="warn">{t('mail.noTlsWarn')}</Alert>}
             {m.auth !== 'none' && (
-              <Input label={m.auth === 'password' ? t('mail.username') : t('mail.mailbox')} value={m.username} onChange={(e) => set('username', e.target.value.trim())} autoComplete="off" />
+              <Input name="username" label={m.auth === 'password' ? t('mail.username') : t('mail.mailbox')} value={m.username} onChange={(e) => set('username', e.target.value.trim())} autoComplete="off" />
             )}
             {m.auth === 'password' && (
-              <Input label={t('mail.password')} type="password" value={m.password ?? ''} placeholder={m.passwordSet ? '••••••••' : ''} hint={m.passwordSet ? t('common.keepSecret') : undefined} onChange={(e) => set('password', e.target.value)} autoComplete="new-password" />
+              <Input name="password" label={t('mail.password')} type="password" value={m.password ?? ''} placeholder={m.passwordSet ? '••••••••' : ''} hint={m.passwordSet ? t('common.keepSecret') : undefined} onChange={(e) => set('password', e.target.value)} autoComplete="new-password" />
             )}
             {(m.auth === 'oauth2_m365' || m.auth === 'oauth2_google') && (
               <div className="grid gap-4 rounded-xl border border-line p-4">
                 <p className="text-xs text-subtle">{t(m.auth === 'oauth2_m365' ? 'mail.m365Hint' : 'mail.googleHint')}</p>
-                {m.auth === 'oauth2_m365' && <Input label={t('mail.tenantId')} value={m.tenantId} onChange={(e) => set('tenantId', e.target.value.trim())} className="font-mono" />}
-                <Input label={t('mail.clientId')} value={m.clientId} onChange={(e) => set('clientId', e.target.value.trim())} className="font-mono" />
-                <Input label={t('mail.clientSecret')} type="password" value={m.clientSecret ?? ''} placeholder={m.clientSecretSet ? '••••••••' : ''} onChange={(e) => set('clientSecret', e.target.value)} autoComplete="new-password" />
-                {m.auth === 'oauth2_google' && <Input label={t('mail.refreshToken')} type="password" value={m.refreshToken ?? ''} placeholder={m.refreshTokenSet ? '••••••••' : ''} onChange={(e) => set('refreshToken', e.target.value)} autoComplete="new-password" />}
+                {m.auth === 'oauth2_m365' && <Input name="tenantId" label={t('mail.tenantId')} value={m.tenantId} onChange={(e) => set('tenantId', e.target.value.trim())} className="font-mono" />}
+                <Input name="clientId" label={t('mail.clientId')} value={m.clientId} onChange={(e) => set('clientId', e.target.value.trim())} className="font-mono" />
+                <Input name="clientSecret" label={t('mail.clientSecret')} type="password" value={m.clientSecret ?? ''} placeholder={m.clientSecretSet ? '••••••••' : ''} onChange={(e) => set('clientSecret', e.target.value)} autoComplete="new-password" />
+                {m.auth === 'oauth2_google' && <Input name="refreshToken" label={t('mail.refreshToken')} type="password" value={m.refreshToken ?? ''} placeholder={m.refreshTokenSet ? '••••••••' : ''} onChange={(e) => set('refreshToken', e.target.value)} autoComplete="new-password" />}
               </div>
             )}
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input label={t('mail.fromAddress')} type="email" value={m.fromAddress} onChange={(e) => set('fromAddress', e.target.value.trim())} />
-              <Input label={t('mail.fromName')} value={m.fromName} onChange={(e) => set('fromName', e.target.value)} />
+              <Input name="fromAddress" label={t('mail.fromAddress')} type="email" value={m.fromAddress} onChange={(e) => set('fromAddress', e.target.value.trim())} />
+              <Input name="fromName" label={t('mail.fromName')} value={m.fromName} onChange={(e) => set('fromName', e.target.value)} />
             </div>
-            <Input label={t('mail.notify')} type="email" value={m.notifyAddress} onChange={(e) => set('notifyAddress', e.target.value.trim())} hint={t('mail.notifyHint')} />
-            <Toggle label={t('mail.skipVerify')} hint={t('mail.skipVerifyHint')} checked={m.skipVerify} onChange={(v) => set('skipVerify', v)} />
+            <Input name="notifyAddress" label={t('mail.notify')} type="email" value={m.notifyAddress} onChange={(e) => set('notifyAddress', e.target.value.trim())} hint={t('mail.notifyHint')} />
+            <Toggle name="skipVerify" label={t('mail.skipVerify')} hint={t('mail.skipVerifyHint')} checked={m.skipVerify} onChange={(v) => set('skipVerify', v)} />
             <ErrorMessage error={error} />
             {saved && <Alert tone="ok">{t('common.saved')}</Alert>}
             <div className="flex justify-end"><Button busy={busy} onClick={save}>{t('common.save')}</Button></div>

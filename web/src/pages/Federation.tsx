@@ -112,11 +112,11 @@ function InviteDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={create}>{t('sites.createCode')}</Button></>}>
       <ErrorMessage error={error} />
       <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
-        <Input label={t('federation.siteName')} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder={t('federation.siteNamePlaceholder')} autoFocus />
-        <Input label={t('federation.prefix')} value={f.prefix} onChange={(e) => setF({ ...f, prefix: e.target.value.replace(/\D/g, '') })} inputMode="numeric" className="font-mono" placeholder="8" />
+        <Input name="name" label={t('federation.siteName')} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder={t('federation.siteNamePlaceholder')} autoFocus />
+        <Input name="prefix" label={t('federation.prefix')} value={f.prefix} onChange={(e) => setF({ ...f, prefix: e.target.value.replace(/\D/g, '') })} inputMode="numeric" className="font-mono" placeholder="8" />
       </div>
       <p className="text-xs text-muted">{t('federation.prefixHint')}</p>
-      <Input label={t('sites.portalUrl')} hint={t('federation.urlHint')} value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} placeholder="https://pbx.example.com:8443" />
+      <Input name="url" label={t('sites.portalUrl')} hint={t('federation.urlHint')} value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} placeholder="https://pbx.example.com:8443" />
     </Modal>
   )
 }
@@ -142,10 +142,10 @@ function JoinDialog({ onClose, onJoined }: { onClose: () => void; onJoined: () =
     <Modal title={t('federation.join')} subtitle={t('federation.joinText')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={go}>{t('federation.join')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('sites.pairingCode')} value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} className="font-mono" placeholder="KT1-F-…" autoFocus />
+      <Input name="code" label={t('sites.pairingCode')} value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} className="font-mono" placeholder="KT1-F-…" autoFocus />
       <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
-        <Input label={t('federation.siteName')} hint={t('federation.siteNameJoinHint')} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
-        <Input label={t('federation.prefix')} value={f.prefix} onChange={(e) => setF({ ...f, prefix: e.target.value.replace(/\D/g, '') })} inputMode="numeric" className="font-mono" placeholder="6" />
+        <Input name="name" label={t('federation.siteName')} hint={t('federation.siteNameJoinHint')} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+        <Input name="prefix" label={t('federation.prefix')} value={f.prefix} onChange={(e) => setF({ ...f, prefix: e.target.value.replace(/\D/g, '') })} inputMode="numeric" className="font-mono" placeholder="6" />
       </div>
       <p className="text-xs text-muted">{t('federation.prefixJoinHint')}</p>
     </Modal>
@@ -169,10 +169,10 @@ function PeerForm({ peer, onClose, onSaved }: { peer: FedPeer; onClose: () => vo
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
       <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
-        <Input label={t('federation.siteName')} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
-        <Input label={t('federation.prefix')} value={f.prefix} onChange={(e) => setF({ ...f, prefix: e.target.value.replace(/\D/g, '') })} inputMode="numeric" className="font-mono" />
+        <Input name="name" label={t('federation.siteName')} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+        <Input name="prefix" label={t('federation.prefix')} value={f.prefix} onChange={(e) => setF({ ...f, prefix: e.target.value.replace(/\D/g, '') })} inputMode="numeric" className="font-mono" />
       </div>
-      <Toggle label={t('federation.directDial')} hint={t('federation.directDialHint')} checked={f.directDial} onChange={(v) => setF({ ...f, directDial: v })} />
+      <Toggle name="directDial" label={t('federation.directDial')} hint={t('federation.directDialHint')} checked={f.directDial} onChange={(v) => setF({ ...f, directDial: v })} />
       <div className="grid gap-4 sm:grid-cols-2">
         <CopyField label={t('sites.tunnel')} value={`${peer.localIp} → ${peer.tunnelIp}`} />
         {peer.endpoint && <CopyField label={t('federation.endpoint')} value={peer.endpoint} />}

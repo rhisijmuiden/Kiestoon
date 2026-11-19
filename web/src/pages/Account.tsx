@@ -55,9 +55,9 @@ export function Account() {
             {done && <Alert tone="ok">{t('account.changed')}</Alert>}
             {mismatch && <Alert>{t('setup.passwordMismatch')}</Alert>}
             <ErrorMessage error={error} />
-            <Input label={t('account.current')} type="password" value={form.current} onChange={(e) => setForm({ ...form, current: e.target.value })} required autoComplete="current-password" />
-            <Input label={t('account.new')} hint={t('setup.passwordHint')} type="password" value={form.next} onChange={(e) => setForm({ ...form, next: e.target.value })} required minLength={12} autoComplete="new-password" />
-            <Input label={t('account.repeat')} type="password" value={form.repeat} onChange={(e) => setForm({ ...form, repeat: e.target.value })} required minLength={12} autoComplete="new-password" />
+            <Input name="current" label={t('account.current')} type="password" value={form.current} onChange={(e) => setForm({ ...form, current: e.target.value })} required autoComplete="current-password" />
+            <Input name="next" label={t('account.new')} hint={t('setup.passwordHint')} type="password" value={form.next} onChange={(e) => setForm({ ...form, next: e.target.value })} required minLength={12} autoComplete="new-password" />
+            <Input name="repeat" label={t('account.repeat')} type="password" value={form.repeat} onChange={(e) => setForm({ ...form, repeat: e.target.value })} required minLength={12} autoComplete="new-password" />
             <Button type="submit" busy={busy} className="self-start">{t('common.save')}</Button>
           </form>
         </Card>

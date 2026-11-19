@@ -66,11 +66,11 @@ export function Standby() {
             <ErrorMessage error={primaryAlive ? null : error} />
             {primaryAlive && <Alert tone="warn">{t('standby.primaryAlive')}</Alert>}
             <div className="grid gap-4 sm:grid-cols-3">
-              <Input label={t('setup.username')} value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} required autoComplete="username" />
-              <Input label={t('setup.password')} type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} required autoComplete="current-password" />
-              <Input label={t('standby.code')} value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} inputMode="numeric" autoComplete="one-time-code" className="font-mono" />
+              <Input name="username" label={t('setup.username')} value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} required autoComplete="username" />
+              <Input name="password" label={t('setup.password')} type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} required autoComplete="current-password" />
+              <Input name="code" label={t('standby.code')} value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} inputMode="numeric" autoComplete="one-time-code" className="font-mono" />
             </div>
-            {(alive || primaryAlive) && <Toggle label={t('standby.force')} hint={t('standby.forceHint')} checked={f.force} onChange={(x) => setF({ ...f, force: x })} />}
+            {(alive || primaryAlive) && <Toggle name="force" label={t('standby.force')} hint={t('standby.forceHint')} checked={f.force} onChange={(x) => setF({ ...f, force: x })} />}
             <div><Button type="submit" busy={busy}>{t('standby.promote')}</Button></div>
           </form>
         )}

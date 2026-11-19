@@ -58,6 +58,7 @@
     "mail_failed": "De mail kon niet worden verstuurd.",
     "invalid": "Deze waarde is niet geldig.",
     "required": "Dit veld is verplicht.",
+    "host_pin_needed": "Stel een pincode voor de voorzitter in, of zet \"Wachten op de voorzitter\" uit.",
     "duplicate": "Deze waarde is al in gebruik.",
     "invalid_number_length": "Het nummer past niet in het nummerplan.",
     "reserved_number": "Dit nummer is gereserveerd voor alarmnummers.",

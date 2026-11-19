@@ -78,7 +78,7 @@ export function SendFax({ admin }: { admin: boolean }) {
               <Select label={t('fax.send.from')} value={boxId} onChange={(e) => setBoxId(Number(e.target.value))}>
                 {boxes.data?.map((b) => <option key={b.id} value={b.id}>{b.name}{b.number ? ` (${b.number})` : ''}</option>)}
               </Select>
-              <Input label={t('fax.send.to')} value={number} onChange={(e) => setNumber(e.target.value)} placeholder="+31201234567" className="font-mono" inputMode="tel" />
+              <Input name="number" label={t('fax.send.to')} value={number} onChange={(e) => setNumber(e.target.value)} placeholder="+31201234567" className="font-mono" inputMode="tel" />
               <div className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium text-ink-2">{t('fax.send.document')}</span>
                 <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[10px] border border-dashed border-line bg-field px-3.5 text-sm text-muted hover:border-accent/50 focus-within:ring-2 focus-within:ring-accent/30">
@@ -161,20 +161,20 @@ export function FaxMailSettings() {
         <SectionTitle><span className="inline-flex items-center gap-2"><MailCheck className="size-5 text-accent" aria-hidden />{t('fax.mail.title')}</span></SectionTitle>
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted">{t('fax.mail.intro')}</p>
-          <Toggle label={t('fax.mail.enable')} checked={m.enabled} onChange={(v) => set('enabled', v)} />
+          <Toggle name="enabled" label={t('fax.mail.enable')} checked={m.enabled} onChange={(v) => set('enabled', v)} />
           <div className="grid gap-4 sm:grid-cols-[2fr_1fr_1fr]">
-            <Input label={t('fax.mail.host')} value={m.host} onChange={(e) => set('host', e.target.value.trim())} placeholder="imap.example.com" className="font-mono" />
-            <Input label={t('fax.mail.port')} type="number" value={m.port || ''} onChange={(e) => set('port', Number(e.target.value))} placeholder={m.security === 'tls' ? '993' : '143'} />
-            <Select label={t('fax.mail.security')} value={m.security} onChange={(e) => set('security', e.target.value as FaxMail['security'])}>
+            <Input name="host" label={t('fax.mail.host')} value={m.host} onChange={(e) => set('host', e.target.value.trim())} placeholder="imap.example.com" className="font-mono" />
+            <Input name="port" label={t('fax.mail.port')} type="number" value={m.port || ''} onChange={(e) => set('port', Number(e.target.value))} placeholder={m.security === 'tls' ? '993' : '143'} />
+            <Select name="security" label={t('fax.mail.security')} value={m.security} onChange={(e) => set('security', e.target.value as FaxMail['security'])}>
               <option value="tls">TLS</option><option value="starttls">STARTTLS</option>
             </Select>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input label={t('fax.mail.username')} value={m.username} onChange={(e) => set('username', e.target.value.trim())} autoComplete="off" placeholder="fax@example.com" />
-            <Input label={t('fax.mail.password')} type="password" value={m.password ?? ''} onChange={(e) => set('password', e.target.value)} autoComplete="new-password" placeholder={m.passwordSet ? t('common.keepSecret') : ''} />
+            <Input name="username" label={t('fax.mail.username')} value={m.username} onChange={(e) => set('username', e.target.value.trim())} autoComplete="off" placeholder="fax@example.com" />
+            <Input name="password" label={t('fax.mail.password')} type="password" value={m.password ?? ''} onChange={(e) => set('password', e.target.value)} autoComplete="new-password" placeholder={m.passwordSet ? t('common.keepSecret') : ''} />
           </div>
-          <Input label={t('fax.mail.folder')} value={m.folder} onChange={(e) => set('folder', e.target.value)} placeholder="INBOX" className="font-mono" />
-          <Toggle label={t('fax.mail.delete')} hint={t('fax.mail.deleteHint')} checked={m.delete} onChange={(v) => set('delete', v)} />
+          <Input name="folder" label={t('fax.mail.folder')} value={m.folder} onChange={(e) => set('folder', e.target.value)} placeholder="INBOX" className="font-mono" />
+          <Toggle name="delete" label={t('fax.mail.delete')} hint={t('fax.mail.deleteHint')} checked={m.delete} onChange={(v) => set('delete', v)} />
           {saved && <Alert tone="ok">{t('fax.mail.saved')}</Alert>}
           <ErrorMessage error={error} />
           <div className="flex justify-end"><Button busy={busy} onClick={save}>{t('common.save')}</Button></div>

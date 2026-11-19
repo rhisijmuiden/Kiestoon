@@ -65,17 +65,17 @@ function ConferenceForm({ value, onClose, onSaved }: { value: Conference; onClos
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={() => save(c)}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
       <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
-        <Input label={t('common.number')} value={c.number} onChange={(e) => set('number', e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" />
-        <Input label={t('common.name')} value={c.name} onChange={(e) => set('name', e.target.value)} autoFocus />
+        <Input name="number" label={t('common.number')} value={c.number} onChange={(e) => set('number', e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" />
+        <Input name="name" label={t('common.name')} value={c.name} onChange={(e) => set('name', e.target.value)} autoFocus />
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
-        <Input label={t('conferences.pin')} value={c.pin} onChange={(e) => set('pin', e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" hint={t('conferences.pinHint')} />
-        <Input label={t('conferences.adminPin')} value={c.adminPin} onChange={(e) => set('adminPin', e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" hint={t('conferences.adminPinHint')} />
-        <Input label={t('conferences.maxMembers')} type="number" min={2} max={100} value={c.maxMembers} onChange={(e) => set('maxMembers', Number(e.target.value))} />
+        <Input name="pin" label={t('conferences.pin')} value={c.pin} onChange={(e) => set('pin', e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" hint={t('conferences.pinHint')} />
+        <Input name="adminPin" label={t('conferences.adminPin')} value={c.adminPin} onChange={(e) => set('adminPin', e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" hint={t('conferences.adminPinHint')} />
+        <Input name="maxMembers" label={t('conferences.maxMembers')} type="number" min={2} max={100} value={c.maxMembers} onChange={(e) => set('maxMembers', Number(e.target.value))} />
       </div>
-      <Toggle label={t('conferences.waitAdmin')} hint={t('conferences.waitAdminHint')} checked={c.waitAdmin} onChange={(v) => set('waitAdmin', v)} />
-      <Toggle label={t('conferences.record')} hint={t('conferences.recordHint')} checked={c.record} onChange={(v) => set('record', v)} />
-      <Toggle label={t('common.enabled')} checked={c.enabled} onChange={(v) => set('enabled', v)} />
+      <Toggle name="waitAdmin" label={t('conferences.waitAdmin')} hint={t('conferences.waitAdminHint')} checked={c.waitAdmin} onChange={(v) => set('waitAdmin', v)} />
+      <Toggle name="record" label={t('conferences.record')} hint={t('conferences.recordHint')} checked={c.record} onChange={(v) => set('record', v)} />
+      <Toggle name="enabled" label={t('common.enabled')} checked={c.enabled} onChange={(v) => set('enabled', v)} />
     </Modal>
   )
 }

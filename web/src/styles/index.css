@@ -85,6 +85,7 @@ body {
 }
 
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+[aria-invalid="true"]:focus-visible { outline-color: var(--color-danger); }
 
 @utility card {
   background: linear-gradient(180deg, var(--card-top), var(--card-bottom));

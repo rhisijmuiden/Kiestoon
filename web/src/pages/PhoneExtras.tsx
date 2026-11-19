@@ -125,7 +125,7 @@ function FirmwareForm({ value, models, onClose, onSaved }: { value: Firmware; mo
     <Modal title={t('firmware.edit')} subtitle={`${vendorName(f.vendor)} · ${f.filename}`} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('firmware.version')} value={f.version} onChange={(e) => setF({ ...f, version: e.target.value })} placeholder="96.86.0.70" className="font-mono" hint={t('firmware.versionHint')} />
+      <Input name="version" label={t('firmware.version')} value={f.version} onChange={(e) => setF({ ...f, version: e.target.value })} placeholder="96.86.0.70" className="font-mono" hint={t('firmware.versionHint')} />
       <div>
         <h3 className="mb-1 text-sm font-medium text-ink-2">{t('firmware.models')}</h3>
         <p className="mb-3 text-xs text-subtle">{t('firmware.modelsHint')}</p>
@@ -137,7 +137,7 @@ function FirmwareForm({ value, models, onClose, onSaved }: { value: Firmware; mo
           ))}
         </div>
       </div>
-      <Toggle label={t('firmware.activate')} hint={t('firmware.activateHint')} checked={f.active} onChange={(v) => setF({ ...f, active: v })} />
+      <Toggle name="active" label={t('firmware.activate')} hint={t('firmware.activateHint')} checked={f.active} onChange={(v) => setF({ ...f, active: v })} />
       <p className="break-all font-mono text-[11px] text-subtle">SHA-256 {f.sha256}</p>
     </Modal>
   )
@@ -228,14 +228,14 @@ function ZtpForm({ value, onClose, onSaved }: { value: ZtpSettings; onClose: () 
     <Modal title={t('ztp.settings')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('ztp.serverUrlOverride')} value={x.serverUrl} onChange={(e) => setX({ ...x, serverUrl: e.target.value.trim() })} placeholder="https://pbx.example.com/prov/" className="font-mono" hint={t('ztp.serverUrlHint')} />
-      <Toggle label={t('ztp.yealinkEnable')} hint={t('ztp.yealinkEnableHint')} checked={y.enabled} onChange={(v) => setY({ enabled: v })} />
+      <Input name="serverUrl" label={t('ztp.serverUrlOverride')} value={x.serverUrl} onChange={(e) => setX({ ...x, serverUrl: e.target.value.trim() })} placeholder="https://pbx.example.com/prov/" className="font-mono" hint={t('ztp.serverUrlHint')} />
+      <Toggle name="enabled" label={t('ztp.yealinkEnable')} hint={t('ztp.yealinkEnableHint')} checked={y.enabled} onChange={(v) => setY({ enabled: v })} />
       {y.enabled && <>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label={t('ztp.accessKey')} value={y.accessKey} onChange={(e) => setY({ accessKey: e.target.value.trim() })} className="font-mono" autoComplete="off" />
-          <Input label={t('ztp.secret')} type="password" value={y.secret ?? ''} onChange={(e) => setY({ secret: e.target.value.trim() })} placeholder={y.secretSet ? t('common.keepSecret') : ''} autoComplete="new-password" />
+          <Input name="accessKey" label={t('ztp.accessKey')} value={y.accessKey} onChange={(e) => setY({ accessKey: e.target.value.trim() })} className="font-mono" autoComplete="off" />
+          <Input name="secret" label={t('ztp.secret')} type="password" value={y.secret ?? ''} onChange={(e) => setY({ secret: e.target.value.trim() })} placeholder={y.secretSet ? t('common.keepSecret') : ''} autoComplete="new-password" />
         </div>
-        <Input label={t('ztp.api')} value={y.api} onChange={(e) => setY({ api: e.target.value.trim() })} placeholder="https://api-dm.yealink.com:8443" className="font-mono" hint={t('ztp.apiHint')} />
+        <Input name="api" label={t('ztp.api')} value={y.api} onChange={(e) => setY({ api: e.target.value.trim() })} placeholder="https://api-dm.yealink.com:8443" className="font-mono" hint={t('ztp.apiHint')} />
       </>}
     </Modal>
   )

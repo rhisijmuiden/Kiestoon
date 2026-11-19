@@ -1,7 +1,8 @@
-import { forwardRef, useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react'
+import { forwardRef, useId, useImperativeHandle, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react'
 import { ApiError } from '../lib/api'
+import { FieldErrorText, invalidCls, nextErrorSeq, useFieldError, useFieldScope, useReportFieldError } from './fielderrors'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
@@ -33,20 +34,30 @@ export function Button({
 }
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: ReactNode }>(
-  function Input({ label, hint, className = '', ...rest }, ref) {
+  function Input({ label, hint, className = '', onChange, ...rest }, ref) {
     const id = useId()
+    const inner = useRef<HTMLInputElement>(null)
+    useImperativeHandle(ref, () => inner.current as HTMLInputElement)
+    const err = useFieldError(rest.name, label, inner)
+    const describedBy = [err.message && `${id}-err`, hint && `${id}-hint`].filter(Boolean).join(' ') || undefined
     return (
       <div className="flex flex-col gap-1.5">
-        <label htmlFor={id} className="text-sm font-medium text-ink-2">
+        <label htmlFor={id} className={`text-sm font-medium ${err.message ? 'text-danger-ink' : 'text-ink-2'}`}>
           {label}
         </label>
         <input
-          ref={ref}
+          ref={inner}
           id={id}
-          aria-describedby={hint ? `${id}-hint` : undefined}
+          aria-describedby={describedBy}
+          aria-invalid={err.message ? true : undefined}
+          onChange={(e) => {
+            err.clear()
+            onChange?.(e)
+          }}
           {...rest}
-          className={`min-h-11 rounded-[10px] border border-line bg-field px-3.5 text-[15px] text-ink placeholder:text-subtle outline-none transition focus:border-accent/60 focus:ring-2 focus:ring-accent/20 ${className}`}
+          className={`min-h-11 rounded-[10px] border bg-field px-3.5 text-[15px] text-ink placeholder:text-subtle outline-none transition ${err.message ? invalidCls : 'border-line focus:border-accent/60 focus:ring-2 focus:ring-accent/20'} ${className}`}
         />
+        {err.message && <FieldErrorText id={`${id}-err`}>{err.message}</FieldErrorText>}
         {hint && (
           <p id={`${id}-hint`} className="text-xs text-subtle">
             {hint}
@@ -76,16 +87,50 @@ export function Alert({ tone = 'danger', children }: { tone?: 'danger' | 'ok' | 
   )
 }
 
-/** Shows an API error in the user's language. */
+const errorSeqs = new WeakMap<object, number>()
+const errorSeq = (e: unknown) => {
+  if (!e || typeof e !== 'object') return 0
+  let n = errorSeqs.get(e)
+  if (!n) {
+    n = nextErrorSeq()
+    errorSeqs.set(e, n)
+  }
+  return n
+}
+
+/**
+ * Shows an API error in the user's language. When the error is about one field, the banner names
+ * that field and the field itself turns red with the message under it (see fielderrors.tsx).
+ */
 export function ErrorMessage({ error }: { error: unknown }) {
   const { t } = useTranslation()
+  const scope = useFieldScope()
+  const apiErr = error instanceof ApiError ? error : null
+  const code = apiErr?.code ?? 'internal'
+  const fieldKey = apiErr?.field || undefined
+  const rawField = fieldKey ? scope?.label(fieldKey) || t(`fields.${fieldKey}`, { defaultValue: '' }) : ''
+  const field = rawField.charAt(0).toUpperCase() + rawField.slice(1)
+  const message = error ? t(`errors.${code}`, { defaultValue: t('errors.internal'), field }) : ''
+  useReportFieldError(error ? fieldKey : undefined, message, errorSeq(error))
   if (!error) return null
-  const code = error instanceof ApiError ? error.code : 'internal'
-  const field = error instanceof ApiError && error.field ? t(`fields.${error.field}`, { defaultValue: error.field }) : ''
-  const detail = error instanceof ApiError ? error.detail : ''
+  const detail = apiErr?.detail ?? ''
   return (
     <Alert>
-      {t(`errors.${code}`, { defaultValue: t('errors.internal'), field })}
+      {field ? (
+        <>
+          {fieldKey && scope?.label(fieldKey) ? (
+            <button type="button" onClick={() => scope.focus(fieldKey)} className="font-semibold underline decoration-dotted underline-offset-2 hover:decoration-solid">
+              {field}
+            </button>
+          ) : (
+            <span className="font-semibold">{field}</span>
+          )}
+          {': '}
+          {message}
+        </>
+      ) : (
+        message
+      )}
       {detail && <span className="mt-1 block font-mono text-xs opacity-80">{detail}</span>}
     </Alert>
   )

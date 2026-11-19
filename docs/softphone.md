@@ -23,10 +23,11 @@ headset, with your colleagues, phone book and queues at hand, and transfer calls
   **Direct** or **Ask first**, just like in the [user portal](portal.md#colleagues-and-drag-and-drop-transfer).
 - **Queues**: sign in, sign out or pause per queue, with the number of waiting callers.
 - **Voicemail** and **call history** with call back.
-- **Headset buttons**: answer, hang up and mute with the buttons of Jabra, Poly/Plantronics, EPOS and other USB
-  headsets. Sound works on every headset.
+- **Headset buttons**: answer, hang up and mute with the buttons of Jabra, Poly/Plantronics, EPOS, Logitech and
+  other USB headsets that offer call buttons. Headsets without call buttons, and Bluetooth headsets, are shown as
+  "sound only" and work for calls.
 - **Sound**: choose the microphone, the speaker for calls, and where it rings, for example on your speakers while
-  you talk on the headset.
+  you talk on the headset. On **System default**, calls go to a plugged-in headset by themselves.
 - **Windows integration**: tray icon, incoming-call popup, notifications for missed calls and new voicemail,
   `tel:` and `sip:` links open in the softphone, and **Start with Windows**.
 - **Updates**: under **Info** the softphone checks for new versions and updates itself, on the **Production** or

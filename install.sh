@@ -11,6 +11,7 @@
 #   --asterisk-deb /path/to.deb    Local kiestoon-asterisk package to install with --deb
 #   --sounds-deb /path/to.deb      Local kiestoon-sounds-nl package (Dutch prompts) to install with --deb
 #   --speech-deb /path/to.deb      Local kiestoon-speech package (text-to-speech, speech-to-text) to install with --deb
+#   --dry-run                      Only show which release and packages would be installed
 set -euo pipefail
 
 REPO="${KIESTOON_REPO:-rhisijmuiden/kiestoon}"
@@ -19,6 +20,8 @@ VERSION=""
 LOCAL_DEB=""
 AST_PATH=""
 SND_PATH=""
+SPEECH_PATH=""
+DRY_RUN=""
 
 cyan() { printf '\033[1;36m%s\033[0m\n' "$*"; }
 die() { printf '\033[1;31mError:\033[0m %s\n' "$*" >&2; exit 1; }
@@ -31,21 +34,49 @@ while [ $# -gt 0 ]; do
     --asterisk-deb) AST_PATH="$(readlink -f "${2:-}")"; shift 2 ;;
     --sounds-deb) SND_PATH="$(readlink -f "${2:-}")"; shift 2 ;;
     --speech-deb) SPEECH_PATH="$(readlink -f "${2:-}")"; shift 2 ;;
-    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
+    --dry-run) DRY_RUN=1; shift ;;
+    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
     *) die "unknown option: $1" ;;
   esac
 done
 
-[ "$(id -u)" = "0" ] || die "run this installer as root (sudo)."
+[ -n "$DRY_RUN" ] || [ "$(id -u)" = "0" ] || die "run this installer as root (sudo)."
 [ "$CHANNEL" = "production" ] || [ "$CHANNEL" = "testing" ] || die "--channel must be production or testing."
 
-. /etc/os-release
-if [ "${ID:-}" != "debian" ] || [ "${VERSION_ID:-}" != "13" ]; then
-  echo "Warning: Kiestoon is made for Debian 13. This system is ${PRETTY_NAME:-unknown}. Continuing in 5 seconds…"
-  sleep 5
+# Read os-release in a subshell: it defines VERSION (for example "13 (trixie)"), which would
+# overwrite our own VERSION and break the release lookup.
+OS_RELEASE="${KIESTOON_OS_RELEASE:-/etc/os-release}"
+# shellcheck disable=SC1090
+os_field() { [ -r "$OS_RELEASE" ] && (. "$OS_RELEASE" && printf '%s' "${!1:-}") || true; }
+OS_ID="$(os_field ID)"
+OS_VERSION_ID="$(os_field VERSION_ID)"
+OS_NAME="$(os_field PRETTY_NAME)"
+if [ "$OS_ID" != "debian" ] || [ "$OS_VERSION_ID" != "13" ]; then
+  echo "Warning: Kiestoon is made for Debian 13. This system is ${OS_NAME:-unknown}. Continuing in 5 seconds…"
+  [ -n "$DRY_RUN" ] || sleep 5
 fi
 
 cyan "Kiestoon installer"
+# Find the release to install (the newest on the channel unless --version was given) and check it.
+resolve_version() {
+  if [ -z "$VERSION" ]; then
+    echo "Looking up the newest release on the $CHANNEL channel…"
+    FILTER='.[] | select(.draft | not)'
+    [ "$CHANNEL" = "production" ] && FILTER="$FILTER | select(.prerelease | not)"
+    VERSION="$(curl -fsSL "https://api.github.com/repos/$REPO/releases?per_page=50" | jq -r "[$FILTER | .tag_name] | first // empty")"
+    [ -n "$VERSION" ] || die "no release found on the $CHANNEL channel yet."
+  fi
+  [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || die "invalid version: $VERSION"
+}
+if [ -n "$DRY_RUN" ]; then
+  if [ -n "$LOCAL_DEB" ]; then
+    echo "Would install local package: $LOCAL_DEB"
+    exit 0
+  fi
+  resolve_version
+  echo "Would install Kiestoon $VERSION: kiestoon_${VERSION#v}_$(dpkg --print-architecture 2>/dev/null || echo amd64).deb (channel $CHANNEL)"
+  exit 0
+fi
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq curl jq ca-certificates zstd >/dev/null
@@ -57,14 +88,7 @@ ARCH="$(dpkg --print-architecture)"
 if [ -n "$LOCAL_DEB" ]; then
   DEB_PATH="$(readlink -f "$LOCAL_DEB")"
 else
-  if [ -z "$VERSION" ]; then
-    echo "Looking up the newest release on the $CHANNEL channel…"
-    FILTER='.[] | select(.draft | not)'
-    [ "$CHANNEL" = "production" ] && FILTER="$FILTER | select(.prerelease | not)"
-    VERSION="$(curl -fsSL "https://api.github.com/repos/$REPO/releases?per_page=50" | jq -r "[$FILTER | .tag_name] | first // empty")"
-    [ -n "$VERSION" ] || die "no release found on the $CHANNEL channel yet."
-  fi
-  [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || die "invalid version: $VERSION"
+  resolve_version
   DEB="kiestoon_${VERSION#v}_${ARCH}.deb"
   echo "Downloading Kiestoon $VERSION ($ARCH)…"
   curl -fsSL -o "$WORK/$DEB" "https://github.com/$REPO/releases/download/$VERSION/$DEB" || die "download failed: $DEB"

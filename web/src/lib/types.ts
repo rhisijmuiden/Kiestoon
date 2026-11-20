@@ -136,7 +136,7 @@ export type BackupRun = {
 export type Snapshot = { id: string; shortId: string; time: string; hostname: string; tags: string[] }
 export type Schedule = { enabled: boolean; time: string; fullWeekday: number; retention: { daily: number; weekly: number; monthly: number } }
 
-export type ProvSettings = { enabled: boolean; username: string; password: string; server: string; adminPassword: string; ntpServer: string; language: 'en' | 'nl' }
+export type ProvSettings = { enabled: boolean; username: string; password: string; server: string; adminPasswordMode: 'perPhone' | 'shared'; adminPassword: string; ntpServer: string; language: 'en' | 'nl' }
 export type PhoneModel = { vendor: 'yealink' | 'snom' | 'grandstream' | 'fanvil' | 'gigaset' | 'poly' | 'htek' | 'akuvox' | 'cisco'; id: string; name: string; keys: number; lines?: number; perPage?: number }
 export type KeyType = 'none' | 'line' | 'blf' | 'speed' | 'park' | 'parkslot' | 'intercom' | 'dnd' | 'voicemail'
 export type PhoneKey = { type: KeyType; value: string; label: string }

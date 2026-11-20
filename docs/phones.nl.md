@@ -29,7 +29,7 @@ Open **Toestellen & provisioning** en klik **Provisioning-instellingen**:
 | **Provisioning aan** | Telefoons mogen hun configuratie ophalen |
 | **Serveradres voor toestellen** | Hostnaam of IP-adres waarmee telefoons Kiestoon bereiken |
 | **Gebruikersnaam / Wachtwoord** | Beveiligen het provisioning-adres. Worden gemaakt; houd ze geheim |
-| **Beheerwachtwoord toestel** | Wordt op elke telefoon gezet, voor de eigen webinterface |
+| **Beheerwachtwoord toestellen** | Vervangt het fabriekswachtwoord van de webinterface van het toestel: **Uniek per toestel** (standaard) of **Hetzelfde voor alle toestellen**. Zie hieronder |
 | **Tijdserver** | NTP-server voor de telefoons, bijvoorbeeld `nl.pool.ntp.org` |
 | **Taal** | Taal op het display van de telefoon |
 
@@ -64,6 +64,17 @@ een telefoon opnieuw laden. **Configuratie bekijken** toont precies het bestand 
 
 Een Gigaset N670- of N870-basisstation heeft meerdere handsets. Handset 1 gebruikt het toestel van de telefoon; geef
 elke volgende handset een eigen toestel onder **Handsets**.
+
+## Beheerwachtwoord toestel
+
+Provisioning vervangt het fabriekswachtwoord van de webinterface van elk toestel (zoals `admin` / `admin`). Met
+**Uniek per toestel** (de standaard) maakt Kiestoon voor elk toestel een sterk wachtwoord; met **Hetzelfde voor alle
+toestellen** krijgt elk toestel het wachtwoord dat je bij **Provisioning-instellingen** invult.
+
+Klik in de lijst op het sleutelicoon van een toestel om de gebruikersnaam (`admin`) en het wachtwoord te zien, te
+kopiëren en de webinterface van het toestel te openen. Een label laat zien of het toestel het wachtwoord al heeft:
+het krijgt het bij zijn volgende controle (na een herstart, een **Resync** of 's nachts). **Nieuw wachtwoord** maakt
+een nieuw wachtwoord voor dat toestel. Elke keer dat iemand een wachtwoord bekijkt of vernieuwt, komt in het auditlog.
 
 ## Firmware
 

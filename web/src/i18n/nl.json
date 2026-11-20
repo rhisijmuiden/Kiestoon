@@ -159,7 +159,8 @@
     "proxy_timeout": "Een proxy voor Kiestoon gaf het uploaden op (gateway time-out). Verhoog de time-outs of gebruik Downloaden via een link.",
     "file_too_large": "Het bestand is groter dan 1 GB.",
     "checksum_mismatch": "Het gedownloade bestand klopt niet met het controlegetal in de catalogus en is verwijderd.",
-    "no_firmware_source": "Voor dit model is geen nieuwere firmware bekend."
+    "no_firmware_source": "Voor dit model is geen nieuwere firmware bekend.",
+    "admin_password_shared": "Alle toestellen gebruiken nu hetzelfde wachtwoord: wijzig het bij Provisioning-instellingen."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -759,8 +760,6 @@
     "serverHint": "De hostnaam of het IP-adres waarmee toestellen deze server bereiken.",
     "provUser": "Gebruikersnaam",
     "provPassword": "Wachtwoord",
-    "adminPassword": "Beheerwachtwoord toestel",
-    "adminPasswordHint": "Wordt op elk toestel ingesteld, voor de eigen webinterface.",
     "ntp": "Tijdserver",
     "add": "Toestel toevoegen",
     "edit": "Toestel bewerken",
@@ -3276,5 +3275,29 @@
     "loggedIn": "Ingelogd: {{ext}}",
     "free": "Flexplek vrij",
     "logout": "Uitloggen"
+  },
+  "adminPw": {
+    "title": "Beheerwachtwoord toestel",
+    "settingsTitle": "Beheerwachtwoord toestellen",
+    "settingsHint": "Vervangt bij provisioning het fabriekswachtwoord (zoals admin / admin) voor de eigen webinterface van het toestel.",
+    "perPhone": "Uniek per toestel",
+    "shared": "Hetzelfde voor alle toestellen",
+    "perPhoneText": "Kiestoon maakt voor elk toestel een sterk wachtwoord. Je vindt het via het sleutelicoon in de toestellenlijst.",
+    "sharedLabel": "Wachtwoord voor alle toestellen",
+    "sharedHint": "Minimaal 8 tekens. Na wijzigen krijgen alle toestellen het bij hun volgende controle.",
+    "generate": "Genereren",
+    "newPassword": "Nieuw wachtwoord",
+    "badgeShared": "Hetzelfde voor alle toestellen",
+    "badgeUnique": "Uniek voor dit toestel",
+    "applied": "Ingesteld {{when}}",
+    "pending": "Nog niet op het toestel",
+    "user": "Gebruikersnaam",
+    "password": "Wachtwoord",
+    "openWeb": "Webinterface openen ({{ip}})",
+    "pendingText": "Het toestel krijgt dit wachtwoord bij zijn volgende controle: na een herstart, een Resync of 's nachts.",
+    "sharedNote": "Wijzigen kan bij Provisioning-instellingen.",
+    "uniqueNote": "Nieuw wachtwoord: het toestel krijgt het bij zijn volgende controle.",
+    "audit": "Het bekijken van een wachtwoord komt in het auditlog.",
+    "confirmNew": "Een nieuw wachtwoord maken voor dit toestel? Het krijgt het nieuwe bij zijn volgende controle."
   }
 }

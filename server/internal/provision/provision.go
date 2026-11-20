@@ -27,17 +27,29 @@ type Settings struct {
 	// Server is the address phones use to reach the PBX (IP or host name). Empty: the address
 	// the phone used to fetch its configuration.
 	Server string `json:"server"`
-	// AdminPassword is set as the web interface password of every phone.
+	// AdminPasswordMode is how phones get the password of their own web interface: perPhone (a
+	// generated password for each phone, the default) or shared (AdminPassword on every phone).
+	AdminPasswordMode string `json:"adminPasswordMode"`
+	// AdminPassword is the shared web interface password.
 	AdminPassword string `json:"adminPassword"`
 	NTPServer     string `json:"ntpServer"`
 	Language      string `json:"language"` // en | nl
 }
+
+// Admin password modes.
+const (
+	AdminPerPhone = "perPhone"
+	AdminShared   = "shared"
+)
 
 // Load reads the settings and creates credentials on first use.
 func Load(ctx context.Context, db *sql.DB) (Settings, error) {
 	s := Settings{Enabled: true, NTPServer: "pool.ntp.org", Language: "en"}
 	if err := store.GetJSON(ctx, db, SettingsKey, &s); err != nil {
 		return s, err
+	}
+	if s.AdminPasswordMode == "" {
+		s.AdminPasswordMode = AdminPerPhone
 	}
 	if s.Username == "" || s.Password == "" || s.AdminPassword == "" {
 		if s.Username == "" {
@@ -62,6 +74,12 @@ var reSafe = regexp.MustCompile(`^[A-Za-z0-9._-]{1,64}$`)
 func (s *Settings) Validate() error {
 	if !reSafe.MatchString(s.Username) || len(s.Password) < 12 || strings.ContainsAny(s.Password, " :@/\n") {
 		return fmt.Errorf("credentials")
+	}
+	if s.AdminPasswordMode == "" {
+		s.AdminPasswordMode = AdminPerPhone
+	}
+	if s.AdminPasswordMode != AdminPerPhone && s.AdminPasswordMode != AdminShared {
+		return fmt.Errorf("adminPasswordMode")
 	}
 	if len(s.AdminPassword) < 8 || strings.ContainsAny(s.AdminPassword, "\n\r\"<>&") {
 		return fmt.Errorf("adminPassword")

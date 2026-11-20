@@ -29,7 +29,7 @@ Open **Phones & provisioning** and click **Provisioning settings**:
 | **Provisioning on** | Phones may fetch their configuration |
 | **Server address for phones** | Host name or IP address phones use to reach Kiestoon |
 | **Username / Password** | Protect the provisioning address. Generated; keep them private |
-| **Phone admin password** | Set on every phone, for its own web interface |
+| **Phone admin password** | Replaces the factory password of the phone's own web interface: **Unique per phone** (default) or **Same for all phones**. See below |
 | **Time server** | NTP server for the phones, for example `nl.pool.ntp.org` |
 | **Language** | Language on the phone display |
 
@@ -64,6 +64,17 @@ and label), move a phone to another extension, or unlink it. **Fetch configurati
 
 A Gigaset N670 or N870 base station carries several handsets. Handset 1 uses the extension of the phone; give each
 further handset its own extension under **Handsets**.
+
+## Phone admin password
+
+Provisioning replaces the factory password of every phone's own web interface (such as `admin` / `admin`). With
+**Unique per phone** (the default) Kiestoon makes a strong password for each phone; with **Same for all phones**
+every phone gets the password you enter under **Provisioning settings**.
+
+Click the key icon of a phone in the list to see the user name (`admin`) and password, copy them and open the
+phone's web interface. A badge shows whether the phone already has the password: it gets it on its next check
+(after a reboot, a **Resync** or at night). **New password** makes a new one for that phone. Every look at a
+password and every new password is written to the audit log.
 
 ## Firmware
 

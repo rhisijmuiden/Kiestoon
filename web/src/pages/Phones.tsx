@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Eye, Link2, LogOut, Pencil, Plus, Save, Smartphone, Trash2 } from 'lucide-react'
+import { ExternalLink, Eye, KeyRound, Link2, LogOut, Pencil, Plus, RefreshCw, Save, ShieldCheck, Smartphone, Trash2, Wand2 } from 'lucide-react'
 import { Badge, CopyField, Empty, Modal, Select, SectionTitle, Table, Tabs, Toggle, formatDate, td, useApi } from '../components/kit'
 import { AssignForm, LinkNoticeAlert, ResyncButton, WaitingPhones, formatMac, type LinkNotice } from '../components/PhoneLink'
 import { KeyLayout, fillKeys } from '../components/KeyLayout'
 import { KeyTemplatesPanel } from './KeyTemplates'
 import { FirmwarePanel, ZtpBadge, ZtpPanel, vendorName } from './PhoneExtras'
-import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
+import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
+import { Segmented } from '../components/pbx'
 import { api } from '../lib/api'
 import type { DiscoveredPhone, Extension, KeyTemplate, ModuleType, Phone, PhoneModel, ProvSettings, ResyncState } from '../lib/types'
 
@@ -24,6 +25,7 @@ export function Phones() {
   const [notice, setNotice] = useState<LinkNotice | null>(null)
   const changed = (n?: LinkNotice) => { if (n) setNotice(n); list.reload(); discovered.reload() }
   const [edit, setEdit] = useState<Phone | null>(null)
+  const [adminPw, setAdminPw] = useState<Phone | null>(null)
   const [preview, setPreview] = useState<{ phone: Phone; body: string } | null>(null)
   const [tab, setTab] = useState<'phones' | 'templates' | 'firmware' | 'ztp'>('phones')
   const ztp = useApi<{ settings: { yealink: { enabled: boolean } } }>('/provisioning/ztp')
@@ -95,6 +97,7 @@ export function Phones() {
               <td className={`${td} whitespace-nowrap text-right`}>
                 <button type="button" onClick={() => setAssign(p)} aria-label={t('phoneLink.assignTitle')} title={t('phoneLink.assignTitle')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent"><Link2 className="size-4" /></button>
                 <ResyncButton phone={p} onDone={setNotice} />
+                <button type="button" onClick={() => setAdminPw(p)} aria-label={t('adminPw.title')} title={t('adminPw.title')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent"><KeyRound className="size-4" /></button>
                 <button type="button" onClick={() => showPreview(p)} aria-label={t('phones.preview')} title={t('phones.preview')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-accent"><Eye className="size-4" /></button>
                 <button type="button" onClick={() => setEdit(p)} aria-label={t('common.edit')} title={t('common.edit')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-tint/5 hover:text-ink"><Pencil className="size-4" /></button>
                 <button type="button" onClick={() => remove(p)} aria-label={t('common.delete')} title={t('common.delete')} className="inline-flex size-10 items-center justify-center rounded-lg text-muted hover:bg-danger/10 hover:text-danger"><Trash2 className="size-4" /></button>
@@ -107,6 +110,7 @@ export function Phones() {
       {assign && <AssignForm phone={assign} exts={exts.data ?? []} onClose={() => setAssign(null)} onDone={(n) => { setAssign(null); changed(n) }} />}
       {edit && models.data && <PhoneForm value={edit} models={models.data} moduleTypes={moduleTypes.data ?? []} exts={exts.data ?? []} onClose={() => setEdit(null)}
         onSaved={(resync) => { const wasNew = !edit.id; setEdit(null); changed(wasNew || !resync ? undefined : { kind: 'resync', resync }) }} />}
+      {adminPw && <AdminPasswordModal phone={adminPw} onClose={() => setAdminPw(null)} />}
       {preview && (
         <Modal wide title={t('phones.preview')} subtitle={preview.phone.mac} onClose={() => setPreview(null)}>
           <pre className="max-h-[60vh] overflow-auto rounded-xl border border-line bg-field p-4 font-mono text-xs text-ink-2">{preview.body}</pre>
@@ -164,13 +168,89 @@ function ProvSettingsForm({ value, onClose, onSaved }: { value: ProvSettings; on
         <Input label={t('phones.provUser')} value={x.username} onChange={(e) => setX({ ...x, username: e.target.value.trim() })} className="font-mono" />
         <Input label={t('phones.provPassword')} value={x.password} onChange={(e) => setX({ ...x, password: e.target.value.trim() })} className="font-mono" />
       </div>
-      <Input label={t('phones.adminPassword')} value={x.adminPassword} onChange={(e) => setX({ ...x, adminPassword: e.target.value })} hint={t('phones.adminPasswordHint')} className="font-mono" />
+      <AdminPasswordSettings value={x} onChange={(v) => setX({ ...x, ...v })} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Input label={t('phones.ntp')} value={x.ntpServer} onChange={(e) => setX({ ...x, ntpServer: e.target.value.trim() })} className="font-mono" />
         <Select label={t('common.language')} value={x.language} onChange={(e) => setX({ ...x, language: e.target.value as 'en' | 'nl' })}>
           <option value="en">English</option><option value="nl">Nederlands</option>
         </Select>
       </div>
+    </Modal>
+  )
+}
+
+/** How phones get their admin password: a unique one per phone, or one for all phones. */
+function AdminPasswordSettings({ value, onChange }: { value: ProvSettings; onChange: (v: Partial<ProvSettings>) => void }) {
+  const { t } = useTranslation()
+  const generate = () => {
+    const abc = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    const r = crypto.getRandomValues(new Uint32Array(16))
+    onChange({ adminPassword: Array.from(r, (n) => abc[n % abc.length]).join('') })
+  }
+  return (
+    <div className="flex flex-col gap-3 border-t border-line pt-4">
+      <div>
+        <h3 className="flex items-center gap-2 text-sm font-medium text-ink-2"><ShieldCheck className="size-4 text-accent" aria-hidden />{t('adminPw.settingsTitle')}</h3>
+        <p className="text-xs text-subtle">{t('adminPw.settingsHint')}</p>
+      </div>
+      <Segmented value={value.adminPasswordMode} onChange={(m) => onChange({ adminPasswordMode: m })} options={[{ key: 'perPhone', label: t('adminPw.perPhone') }, { key: 'shared', label: t('adminPw.shared') }]} />
+      {value.adminPasswordMode === 'perPhone' ? (
+        <p className="rounded-xl border border-line bg-surface-2/60 p-3 text-sm text-muted">{t('adminPw.perPhoneText')}</p>
+      ) : (
+        <div className="flex items-start gap-2">
+          <div className="flex-1"><Input name="adminPassword" label={t('adminPw.sharedLabel')} value={value.adminPassword} onChange={(e) => onChange({ adminPassword: e.target.value })} hint={t('adminPw.sharedHint')} className="font-mono" /></div>
+          <Button variant="secondary" className="mt-7" onClick={generate}><Wand2 className="size-4" aria-hidden />{t('adminPw.generate')}</Button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+type AdminPasswordView = { user: string; password: string; mode: 'perPhone' | 'shared'; applied: boolean; appliedAt: string; lastIp: string }
+
+/** The admin password of one phone, for its own web interface. Opening it is written to the audit log. */
+function AdminPasswordModal({ phone, onClose }: { phone: Phone; onClose: () => void }) {
+  const { t, i18n } = useTranslation()
+  const [v, setV] = useState<AdminPasswordView | null>(null)
+  const [error, setError] = useState<unknown>(null)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    api<AdminPasswordView>('GET', `/phones/${phone.id}/admin-password`).then(setV, setError)
+  }, [phone.id])
+  async function renew() {
+    if (!window.confirm(t('adminPw.confirmNew'))) return
+    setBusy(true)
+    setError(null)
+    try {
+      setV(await api<AdminPasswordView>('POST', `/phones/${phone.id}/admin-password`, {}))
+    } catch (e) {
+      setError(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const shared = v?.mode === 'shared'
+  return (
+    <Modal title={t('adminPw.title')} subtitle={`${phone.label || phone.model} · ${formatMac(phone.mac)}`} onClose={onClose}
+      footer={<>{v && !shared && <Button variant="ghost" busy={busy} onClick={renew}><RefreshCw className="size-4" aria-hidden />{t('adminPw.newPassword')}</Button>}<Button onClick={onClose}>{t('common.close')}</Button></>}>
+      <ErrorMessage error={error} />
+      {v && <>
+        <div className="flex flex-wrap items-center gap-2">
+          {shared ? <Badge tone="accent">{t('adminPw.badgeShared')}</Badge> : <Badge tone="ok" dot>{t('adminPw.badgeUnique')}</Badge>}
+          {v.applied ? <Badge tone="ok" dot>{t('adminPw.applied', { when: formatDate(v.appliedAt, i18n.language) })}</Badge> : <Badge tone="warn" dot>{t('adminPw.pending')}</Badge>}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-[140px_1fr]">
+          <CopyField label={t('adminPw.user')} value={v.user} />
+          <CopyField label={t('adminPw.password')} value={v.password} secret />
+        </div>
+        {v.lastIp && (
+          <a href={`http://${v.lastIp}`} target="_blank" rel="noreferrer" className="inline-flex w-max items-center gap-2 text-sm text-accent hover:underline">
+            <ExternalLink className="size-4" aria-hidden />{t('adminPw.openWeb', { ip: v.lastIp })}
+          </a>
+        )}
+        {!v.applied && <Alert tone="warn">{t('adminPw.pendingText')}</Alert>}
+        <p className="text-xs text-subtle">{shared ? t('adminPw.sharedNote') : t('adminPw.uniqueNote')} {t('adminPw.audit')}</p>
+      </>}
     </Modal>
   )
 }

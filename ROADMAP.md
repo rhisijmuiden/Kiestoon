@@ -329,6 +329,9 @@ the testing channel.
 - [x] Newest firmware from the vendor (`v0.7.0-rc.17`): per phone model in use the running versions (from the user
   agent) against the newest vendor firmware (Grandstream firmware page, Kiestoon catalog for the other brands), one
   click to download and roll out, nightly check with notify or automatic roll-out, sha256 check
+- [x] Phone admin password (`v0.7.0-rc.18`): provisioning replaces the factory web interface password with a unique
+  generated password per phone (default) or one shared password; key icon in the phone list shows and copies it,
+  shows whether the phone has it, makes a new one; every look is audit-logged
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

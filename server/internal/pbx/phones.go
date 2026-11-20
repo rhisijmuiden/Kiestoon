@@ -2,7 +2,9 @@ package pbx
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"regexp"
@@ -109,6 +111,47 @@ func (p *Phone) ActiveExtensionID() *int64 {
 }
 
 var reMAC = regexp.MustCompile(`^[0-9a-f]{12}$`)
+
+// AdminPassword returns the phone's own admin password and when it was set ("" when it has none).
+// It is kept out of Phone so it never travels with the phone list.
+func (r *Repo) AdminPassword(ctx context.Context, id int64) (string, string, error) {
+	var pw, at string
+	err := r.DB.QueryRowContext(ctx, `SELECT admin_password, admin_password_at FROM phones WHERE id = ?`, id).Scan(&pw, &at)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", "", ErrNotFound
+	}
+	return pw, at, err
+}
+
+// SetAdminPassword stores a new admin password for a phone.
+func (r *Repo) SetAdminPassword(ctx context.Context, id int64, pw string) (string, error) {
+	at := time.Now().UTC().Format(time.RFC3339)
+	res, err := r.DB.ExecContext(ctx, `UPDATE phones SET admin_password = ?, admin_password_at = ? WHERE id = ?`, pw, at, id)
+	if err != nil {
+		return "", err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return "", ErrNotFound
+	}
+	return at, nil
+}
+
+// AdminPasswordSent records which admin password the phone received (as a hash).
+func (r *Repo) AdminPasswordSent(ctx context.Context, id int64, pw string) {
+	_, _ = r.DB.ExecContext(ctx, `UPDATE phones SET admin_password_sent = ? WHERE id = ?`, hashAdminPassword(pw), id)
+}
+
+// AdminPasswordReceived reports whether the phone last received this admin password.
+func (r *Repo) AdminPasswordReceived(ctx context.Context, id int64, pw string) bool {
+	var sent string
+	_ = r.DB.QueryRowContext(ctx, `SELECT admin_password_sent FROM phones WHERE id = ?`, id).Scan(&sent)
+	return sent != "" && sent == hashAdminPassword(pw)
+}
+
+func hashAdminPassword(pw string) string {
+	sum := sha256.Sum256([]byte("kiestoon-admin-password:" + pw))
+	return hex.EncodeToString(sum[:])
+}
 
 // NormalizeMAC turns "00:15:65:AB:CD:EF" into "001565abcdef".
 func NormalizeMAC(s string) string {

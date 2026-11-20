@@ -65,6 +65,7 @@ func (s *Server) systemRoutes(mux *http.ServeMux, admin func(http.HandlerFunc) h
 	mux.Handle("GET /api/phones/{id}/preview", admin(s.previewPhone))
 	s.phoneAssignRoutes(mux, admin)
 	s.hotdeskRoutes(mux, admin)
+	s.adminPasswordRoutes(mux, admin)
 	s.keyTemplateRoutes(mux, admin)
 
 	mux.Handle("GET /api/system/helper", admin(func(w http.ResponseWriter, r *http.Request) {
@@ -895,6 +896,11 @@ func (s *Server) provInput(ctx context.Context, p *pbx.Phone, host, scheme strin
 	}
 	st, _ := pbx.LoadSettings(ctx, s.DB)
 	in := provision.Input{Settings: set, PBX: st, Phone: *p, Server: set.Server}
+	if p.ID != 0 {
+		if pw, err := s.adminPasswordFor(ctx, set, p.ID); err == nil && pw != "" {
+			in.Settings.AdminPassword = pw
+		}
+	}
 	if in.Server == "" {
 		if h, _, err := net.SplitHostPort(host); err == nil {
 			in.Server = h
@@ -1059,6 +1065,7 @@ func (s *Server) ProvisioningHandler() http.Handler {
 		}
 		body, ct := provision.Render(in)
 		s.PBX.TouchPhone(r.Context(), phone.ID, ip, r.UserAgent())
+		s.PBX.AdminPasswordSent(r.Context(), phone.ID, in.Settings.AdminPassword)
 		s.provLimit.Reset(ip)
 		w.Header().Set("Content-Type", ct)
 		_, _ = w.Write([]byte(body))

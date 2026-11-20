@@ -159,7 +159,8 @@
     "proxy_timeout": "A proxy in front of Kiestoon gave up on the upload (gateway timeout). Raise its timeouts or use Download from a link.",
     "file_too_large": "The file is larger than 1 GB.",
     "checksum_mismatch": "The downloaded file does not match the checksum in the catalog and was removed.",
-    "no_firmware_source": "No newer firmware is known for this model."
+    "no_firmware_source": "No newer firmware is known for this model.",
+    "admin_password_shared": "Every phone uses the same password now: change it under Provisioning settings."
   },
   "setup": {
     "title": "Welcome to Kiestoon",
@@ -759,8 +760,6 @@
     "serverHint": "The host name or IP address phones use to reach this server.",
     "provUser": "Username",
     "provPassword": "Password",
-    "adminPassword": "Phone admin password",
-    "adminPasswordHint": "Set on every phone, for its own web interface.",
     "ntp": "Time server",
     "add": "Add phone",
     "edit": "Edit phone",
@@ -3276,5 +3275,29 @@
     "loggedIn": "Logged in: {{ext}}",
     "free": "Hot desk free",
     "logout": "Log out"
+  },
+  "adminPw": {
+    "title": "Phone admin password",
+    "settingsTitle": "Phone admin password",
+    "settingsHint": "Replaces the factory password (such as admin / admin) during provisioning, for the phone's own web interface.",
+    "perPhone": "Unique per phone",
+    "shared": "Same for all phones",
+    "perPhoneText": "Kiestoon makes a strong password for every phone. Find it with the key icon in the phone list.",
+    "sharedLabel": "Password for all phones",
+    "sharedHint": "At least 8 characters. Changing it updates every phone on its next check.",
+    "generate": "Generate",
+    "newPassword": "New password",
+    "badgeShared": "Same for all phones",
+    "badgeUnique": "Unique for this phone",
+    "applied": "Set {{when}}",
+    "pending": "Not on the phone yet",
+    "user": "User name",
+    "password": "Password",
+    "openWeb": "Open web interface ({{ip}})",
+    "pendingText": "The phone gets this password on its next check: after a reboot, a Resync or at night.",
+    "sharedNote": "Change it under Provisioning settings.",
+    "uniqueNote": "New password: the phone gets it on its next check.",
+    "audit": "Viewing a password is written to the audit log.",
+    "confirmNew": "Make a new password for this phone? It gets the new one on its next check."
   }
 }

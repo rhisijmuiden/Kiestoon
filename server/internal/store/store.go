@@ -732,6 +732,11 @@ var migrations = []string{
 	// Hot desks: the extension logged in on a phone and since when.
 	`ALTER TABLE phones ADD COLUMN hotdesk_ext INTEGER REFERENCES extensions(id) ON DELETE SET NULL;
 	ALTER TABLE phones ADD COLUMN hotdesk_at TEXT NOT NULL DEFAULT '';`,
+	// The admin password of a phone's own web interface (unique per phone), when it was set, and a
+	// hash of the password the phone last received.
+	`ALTER TABLE phones ADD COLUMN admin_password TEXT NOT NULL DEFAULT '';
+	ALTER TABLE phones ADD COLUMN admin_password_at TEXT NOT NULL DEFAULT '';
+	ALTER TABLE phones ADD COLUMN admin_password_sent TEXT NOT NULL DEFAULT '';`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

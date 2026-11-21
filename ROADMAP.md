@@ -348,6 +348,8 @@ the testing channel.
   usage meter with an 80% mail, voice picker with free samples filtered on the PBX language, engine and voice per
   prompt in the IVR builder and Voice prompts, audio converted to 8 kHz and cached on the server (same text costs no
   credits), fallback to Piper, prompts remember text and voice so they can be spoken again with another voice
+- [x] Dutch trunk templates (`v0.7.0-rc.26`): Cheapconnect, Speakup, Vodafone Ziggo Zakelijk and an updated KPN
+  template (standard SBCs, TCP), each with a step-by-step guide in the trunk form and a docs page (EN + NL)
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

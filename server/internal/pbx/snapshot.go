@@ -168,13 +168,36 @@ var TrunkPresets = []TrunkPreset{
 	{ID: "voys", Name: "Voys", AuthMode: "register", Host: "ha.voys.nl", Port: 0, Transport: "udp", DIDSource: "ruri", Codecs: "alaw,g722",
 		MatchIPs: VoysNetworks, Note: "voys", Guide: "voys", DocsURL: "https://rhisijmuiden.github.io/Kiestoon/providers/voys/"},
 	{ID: "voipgrid", Name: "VoIPGRID platform (Spitsgroep, partners)", AuthMode: "register", Port: 5060, Transport: "udp", DIDSource: "to", Codecs: "alaw,g722", Note: "voipgrid"},
-	{ID: "kpn", Name: "KPN SIP trunk", AuthMode: "ip", Port: 5060, Transport: "udp", DIDSource: "ruri", Codecs: "alaw", Note: "kpn"},
+	// KPN (KPN EEN / VoIP Connect): IP trunk to the KPN SBC, TCP 5060 preferred, G.711 A-law only to the
+	// PSTN, E.164 numbers. Standard SBC 213.162.171.164, second SBC 213.162.171.180 with high availability.
+	// KPN can hand out other addresses per order. Source: KPN EEN dienst Vast (VoIP Connect) configuration
+	// guidelines (innovaphone, 2017).
+	{ID: "kpn", Name: "KPN SIP trunk (KPN EEN / VoIP Connect)", AuthMode: "ip", Host: KPNSBC, Port: 5060, Transport: "tcp", DIDSource: "ruri", Codecs: "alaw",
+		MatchIPs: KPNNetworks, Note: "kpn", Guide: "kpn", DocsURL: "https://rhisijmuiden.github.io/Kiestoon/providers/kpn/"},
+	// Cheapconnect: registration on sip.cheapconnect.net:5060 UDP, username = the number in 31... format.
+	// Source: https://www.cheapconnect.nl/en/business-voip/sip-trunk-setup/
+	{ID: "cheapconnect", Name: "Cheapconnect", AuthMode: "register", Host: "sip.cheapconnect.net", Port: 5060, Transport: "udp", DIDSource: "to", Codecs: "alaw,ulaw,g722",
+		Note: "cheapconnect", Guide: "cheapconnect", DocsURL: "https://rhisijmuiden.github.io/Kiestoon/providers/cheapconnect/"},
+	// Speakup: registration on sip.speakup.nl, username = the number in 31... format, G.711 and RFC 2833.
+	// Sources: Swyx KB "SIP Provider SpeakUp (NL)", Tuxis "Speakup trunk instellen Kerio Operator".
+	{ID: "speakup", Name: "Speakup", AuthMode: "register", Host: "sip.speakup.nl", Port: 5060, Transport: "udp", DIDSource: "to", Codecs: "alaw,ulaw",
+		Note: "speakup", Guide: "speakup", DocsURL: "https://rhisijmuiden.github.io/Kiestoon/providers/speakup/"},
+	// Vodafone Ziggo Zakelijk: registration on trunk.sipnl.net:5060, username and password supplied by Ziggo
+	// (31... format, without @trunk.sipnl.net), T.38 for fax. Source: Panasonic KX-NS setup guide "Ziggo SIP Trunk".
+	{ID: "ziggo", Name: "Vodafone Ziggo Zakelijk", AuthMode: "register", Host: "trunk.sipnl.net", Port: 5060, Transport: "udp", DIDSource: "to", Codecs: "alaw,ulaw",
+		Note: "ziggo", Guide: "ziggo", DocsURL: "https://rhisijmuiden.github.io/Kiestoon/providers/ziggo/"},
 	{ID: "telnyx", Name: "Telnyx", AuthMode: "register", Host: "sip.telnyx.com", Port: 5061, Transport: "tls", DIDSource: "to", Codecs: "alaw,ulaw,g722", Note: "telnyx"},
 	{ID: "twilio", Name: "Twilio Elastic SIP", AuthMode: "ip", Port: 5060, Transport: "udp", DIDSource: "ruri", Codecs: "ulaw,alaw", Note: "twilio"},
 }
 
 // VoysNetworks are the address ranges Voys (VoIPGRID) sends SIP and media from.
 const VoysNetworks = "195.35.114.0/23,185.103.76.0/22"
+
+// KPNSBC is the standard KPN SBC for SIP trunks; KPNNetworks adds the second SBC used with high availability.
+const (
+	KPNSBC      = "213.162.171.164"
+	KPNNetworks = "213.162.171.164,213.162.171.180"
+)
 
 // FraudLockKey is set (to the time of the alert) while international calls are blocked.
 const FraudLockKey = "fraud_locked"

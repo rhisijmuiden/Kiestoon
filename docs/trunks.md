@@ -21,10 +21,13 @@ numbers. You can have several trunks, for example a main provider and a backup.
 | --- | --- | --- |
 | **Voys** | Registration | `ha.voys.nl` with DNS SRV failover. [Full guide](providers/voys.md) |
 | **VoIPGRID platform** (Spitsgroep, partners) | Registration | Create a VoIP trunk in their portal and use the server they give you |
-| **KPN SIP trunk** | IP address | Fill in the IP addresses from your KPN order |
+| **KPN SIP trunk** | IP address | KPN SBC `213.162.171.164` (+ `.180`), TCP. [Full guide](providers/kpn.md) |
+| **Cheapconnect** | Registration | `sip.cheapconnect.net`. [Full guide](providers/cheapconnect.md) |
+| **Speakup** | Registration | `sip.speakup.nl`. [Full guide](providers/speakup.md) |
+| **Vodafone Ziggo Zakelijk** | Registration | `trunk.sipnl.net`. [Full guide](providers/ziggo.md) |
 | **Telnyx** | Registration | Credential connection; TLS on port 5061 recommended |
 | **Twilio Elastic SIP** | IP address | Add the public IP of this server to the trunk's access control list |
-| **Generic (registration)** | Registration | Any provider that gives a username and password. Example: [Cheapconnect](providers/cheapconnect.md) |
+| **Generic (registration)** | Registration | Any provider that gives a username and password |
 | **Generic (IP authentication)** | IP address | Ask the provider which IP addresses they send calls from |
 
 ## Fields

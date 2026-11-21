@@ -21,10 +21,13 @@ telefoonnummers ontvangt. Je kunt meerdere trunks hebben, bijvoorbeeld een hoofd
 | --- | --- | --- |
 | **Voys** | Registratie | `ha.voys.nl` met DNS SRV-failover. [Volledige uitleg](providers/voys.md) |
 | **VoIPGRID platform** (Spitsgroep, partners) | Registratie | Maak een VoIP-trunk in hun portaal en gebruik de server die je krijgt |
-| **KPN SIP trunk** | IP-adres | Vul de IP-adressen uit je KPN-bestelling in |
+| **KPN SIP trunk** | IP-adres | KPN-SBC `213.162.171.164` (+ `.180`), TCP. [Volledige uitleg](providers/kpn.md) |
+| **Cheapconnect** | Registratie | `sip.cheapconnect.net`. [Volledige uitleg](providers/cheapconnect.md) |
+| **Speakup** | Registratie | `sip.speakup.nl`. [Volledige uitleg](providers/speakup.md) |
+| **Vodafone Ziggo Zakelijk** | Registratie | `trunk.sipnl.net`. [Volledige uitleg](providers/ziggo.md) |
 | **Telnyx** | Registratie | Credential connection; TLS op poort 5061 aangeraden |
 | **Twilio Elastic SIP** | IP-adres | Zet het publieke IP van deze server in de toegangslijst van de trunk |
-| **Generic (registration)** | Registratie | Elke provider die een gebruikersnaam en wachtwoord geeft. Voorbeeld: [Cheapconnect](providers/cheapconnect.md) |
+| **Generic (registration)** | Registratie | Elke provider die een gebruikersnaam en wachtwoord geeft |
 | **Generic (IP authentication)** | IP-adres | Vraag de provider vanaf welke IP-adressen ze gesprekken sturen |
 
 ## Velden

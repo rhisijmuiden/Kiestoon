@@ -1,6 +1,9 @@
 package pbx
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"slices"
 	"testing"
 )
@@ -66,6 +69,47 @@ func TestValidateTrunkPort(t *testing.T) {
 	for _, p := range TrunkPresets {
 		if p.ID == "voys" && (p.Host != "ha.voys.nl" || p.MatchIPs != VoysNetworks || p.Guide == "") {
 			t.Fatalf("voys preset incomplete: %+v", p)
+		}
+	}
+}
+
+// Every provider template must have its hint (and guide, when it has one) in English and Dutch.
+func TestTrunkPresetTranslations(t *testing.T) {
+	for _, lang := range []string{"en", "nl"} {
+		raw, err := os.ReadFile(filepath.Join("..", "..", "..", "web", "src", "i18n", lang+".json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var doc struct {
+			Trunks struct {
+				Notes  map[string]string `json:"notes"`
+				Guides map[string]struct {
+					Title    string   `json:"title"`
+					Portal   []string `json:"portal"`
+					Kiestoon []string `json:"kiestoon"`
+					Terms    string   `json:"terms"`
+				} `json:"guides"`
+			} `json:"trunks"`
+		}
+		if err := json.Unmarshal(raw, &doc); err != nil {
+			t.Fatal(err)
+		}
+		seen := map[string]bool{}
+		for _, p := range TrunkPresets {
+			if seen[p.ID] {
+				t.Fatalf("duplicate preset id %q", p.ID)
+			}
+			seen[p.ID] = true
+			if doc.Trunks.Notes[p.Note] == "" {
+				t.Errorf("%s: note %q missing", lang, p.Note)
+			}
+			if p.Guide == "" {
+				continue
+			}
+			g, ok := doc.Trunks.Guides[p.Guide]
+			if !ok || g.Title == "" || len(g.Portal) == 0 || len(g.Kiestoon) == 0 || g.Terms == "" {
+				t.Errorf("%s: guide %q incomplete", lang, p.Guide)
+			}
 		}
 	}
 }

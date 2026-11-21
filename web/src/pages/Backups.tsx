@@ -192,17 +192,17 @@ function ScheduleCard() {
     <Card>
       <SectionTitle>{t('backups.schedule')}</SectionTitle>
       <div className="flex flex-col gap-3">
-        <Toggle label={t('backups.scheduleOn')} hint={t('backups.scheduleHint')} checked={s.enabled} onChange={(v) => setS({ ...s, enabled: v })} />
+        <Toggle name="enabled" label={t('backups.scheduleOn')} hint={t('backups.scheduleHint')} checked={s.enabled} onChange={(v) => setS({ ...s, enabled: v })} />
         <div className="grid gap-3 sm:grid-cols-2">
-          <Input label={t('backups.time')} type="time" value={s.time} onChange={(e) => setS({ ...s, time: e.target.value })} />
-          <Select label={t('backups.fullDay')} value={s.fullWeekday} onChange={(e) => setS({ ...s, fullWeekday: Number(e.target.value) })}>
+          <Input name="time" label={t('backups.time')} type="time" value={s.time} onChange={(e) => setS({ ...s, time: e.target.value })} />
+          <Select name="fullWeekday" label={t('backups.fullDay')} value={s.fullWeekday} onChange={(e) => setS({ ...s, fullWeekday: Number(e.target.value) })}>
             {days.map((d) => <option key={d} value={d}>{t(`backups.weekdays.${d}`)}</option>)}
           </Select>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <Input label={t('backups.keepDaily')} type="number" min={0} value={s.retention.daily} onChange={(e) => ret('daily', Number(e.target.value))} />
-          <Input label={t('backups.keepWeekly')} type="number" min={0} value={s.retention.weekly} onChange={(e) => ret('weekly', Number(e.target.value))} />
-          <Input label={t('backups.keepMonthly')} type="number" min={0} value={s.retention.monthly} onChange={(e) => ret('monthly', Number(e.target.value))} />
+          <Input name="daily" label={t('backups.keepDaily')} type="number" min={0} value={s.retention.daily} onChange={(e) => ret('daily', Number(e.target.value))} />
+          <Input name="weekly" label={t('backups.keepWeekly')} type="number" min={0} value={s.retention.weekly} onChange={(e) => ret('weekly', Number(e.target.value))} />
+          <Input name="monthly" label={t('backups.keepMonthly')} type="number" min={0} value={s.retention.monthly} onChange={(e) => ret('monthly', Number(e.target.value))} />
         </div>
         <p className="text-xs text-subtle">{t('backups.allTargets')}</p>
         <ErrorMessage error={error} />
@@ -236,8 +236,8 @@ function TargetForm({ value, onClose, onSaved }: { value: BackupTarget; onClose:
   return (
     <Modal title={v.id ? t('backups.editTarget') : t('backups.addTarget')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
-      <Input label={t('backups.name')} value={v.name} onChange={(e) => set('name', e.target.value)} placeholder="NAS office" />
-        <Select label={t('backups.protocol')} value={v.kind} onChange={(e) => {
+      <Input name="name" label={t('backups.name')} value={v.name} onChange={(e) => set('name', e.target.value)} placeholder="NAS office" />
+        <Select name="kind" label={t('backups.protocol')} value={v.kind} onChange={(e) => {
           const k = e.target.value as BackupTarget['kind']
           setV((o) => ({
             ...o, kind: k, port: o.port === defaultPorts[o.kind] ? defaultPorts[k] : o.port,
@@ -258,41 +258,41 @@ function TargetForm({ value, onClose, onSaved }: { value: BackupTarget; onClose:
         </Select>
       {v.kind !== 'onedrive' && (
         <div className="grid gap-3 sm:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
-          <Input label={v.kind === 's3' ? t('backups.endpoint') : t('backups.host')} value={v.host} onChange={(e) => set('host', e.target.value)}
+          <Input name="host" label={v.kind === 's3' ? t('backups.endpoint') : t('backups.host')} value={v.host} onChange={(e) => set('host', e.target.value)}
             placeholder={v.kind === 's3' ? 's3.eu-central-1.amazonaws.com' : v.kind === 'smb' ? 'nas.office.lan' : 'backup.example.com'} />
-          <Input label={t('backups.port')} type="number" value={v.port} onChange={(e) => set('port', Number(e.target.value))} />
+          <Input name="port" label={t('backups.port')} type="number" value={v.port} onChange={(e) => set('port', Number(e.target.value))} />
         </div>
       )}
       {v.kind === 'onedrive' && v.onedrive && <>
         <p className="text-xs text-subtle">{t('backups.onedrive.intro')}</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Input label={t('backups.onedrive.clientId')} value={v.onedrive.clientId} className="font-mono"
+          <Input name="onedrive" label={t('backups.onedrive.clientId')} value={v.onedrive.clientId} className="font-mono"
             onChange={(e) => set('onedrive', { ...v.onedrive!, clientId: e.target.value.trim() })} placeholder="00000000-0000-0000-0000-000000000000" />
-          <Input label={t('backups.onedrive.tenant')} value={v.onedrive.tenant} className="font-mono" hint={t('backups.onedrive.tenantHint')}
+          <Input name="onedrive" label={t('backups.onedrive.tenant')} value={v.onedrive.tenant} className="font-mono" hint={t('backups.onedrive.tenantHint')}
             onChange={(e) => set('onedrive', { ...v.onedrive!, tenant: e.target.value.trim() })} placeholder="common" />
         </div>
-        <Input label={t('backups.onedrive.clientSecret')} type="password" value={v.onedrive.clientSecret ?? ''} autoComplete="new-password"
+        <Input name="onedrive" label={t('backups.onedrive.clientSecret')} type="password" value={v.onedrive.clientSecret ?? ''} autoComplete="new-password"
           placeholder={v.onedrive.secretSet ? t('common.keepSecret') : ''} hint={t('backups.onedrive.clientSecretHint')}
           onChange={(e) => set('onedrive', { ...v.onedrive!, clientSecret: e.target.value })} />
         {!v.id && <Alert tone="warn">{t('backups.onedrive.connectAfterSave')}</Alert>}
       </>}
       {v.kind === 's3' && <>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Select label={t('backups.s3.provider')} value={v.provider ?? 'AWS'} onChange={(e) => set('provider', e.target.value)}>
+          <Select name="provider" label={t('backups.s3.provider')} value={v.provider ?? 'AWS'} onChange={(e) => set('provider', e.target.value)}>
             {s3Providers.map((p) => <option key={p} value={p}>{p === 'Other' ? t('backups.s3.other') : p}</option>)}
           </Select>
-          <Input label={t('backups.s3.region')} value={v.region ?? ''} onChange={(e) => set('region', e.target.value.trim())} placeholder="eu-central-1" className="font-mono" hint={t('backups.s3.regionHint')} />
+          <Input name="region" label={t('backups.s3.region')} value={v.region ?? ''} onChange={(e) => set('region', e.target.value.trim())} placeholder="eu-central-1" className="font-mono" hint={t('backups.s3.regionHint')} />
         </div>
         <p className="text-xs text-subtle">{t('backups.s3.hint')}</p>
       </>}
       {v.kind === 'webdav' && <>
-        <Select label={t('backups.webdav.vendor')} value={v.provider ?? 'nextcloud'} onChange={(e) => set('provider', e.target.value)}>
+        <Select name="provider" label={t('backups.webdav.vendor')} value={v.provider ?? 'nextcloud'} onChange={(e) => set('provider', e.target.value)}>
           {davVendors.map((p) => <option key={p} value={p}>{t(`backups.webdav.vendors.${p}`)}</option>)}
         </Select>
         <p className="text-xs text-subtle">{t('backups.webdav.hint')}</p>
       </>}
       {v.kind === 'smb' && <>
-        <Input label={t('backups.smb.domain')} value={v.domain ?? ''} onChange={(e) => set('domain', e.target.value.trim())} placeholder="WORKGROUP" hint={t('backups.smb.domainHint')} />
+        <Input name="domain" label={t('backups.smb.domain')} value={v.domain ?? ''} onChange={(e) => set('domain', e.target.value.trim())} placeholder="WORKGROUP" hint={t('backups.smb.domainHint')} />
         <p className="text-xs text-subtle">{t('backups.smb.hint')}</p>
       </>}
       {(v.kind === 's3' || v.kind === 'webdav') && (
@@ -301,24 +301,24 @@ function TargetForm({ value, onClose, onSaved }: { value: BackupTarget; onClose:
       )}
       {v.kind === 'ftp' && <Alert tone="warn">{t('backups.ftpWarn')}</Alert>}
       {v.kind === 'scp' && <p className="text-xs text-subtle">{t('backups.scpHint')}</p>}
-      {v.kind === 'ftps' && <Toggle label={t('backups.implicitTls')} hint={t('backups.implicitTlsHint')} checked={v.implicitTls} onChange={(x) => set('implicitTls', x)} />}
+      {v.kind === 'ftps' && <Toggle name="implicitTls" label={t('backups.implicitTls')} hint={t('backups.implicitTlsHint')} checked={v.implicitTls} onChange={(x) => set('implicitTls', x)} />}
       {v.kind !== 'onedrive' && (
         <div className="grid gap-3 sm:grid-cols-2">
-          <Input label={v.kind === 's3' ? t('backups.s3.accessKey') : t('backups.username')} value={v.username} onChange={(e) => set('username', e.target.value)} autoComplete="off" className={v.kind === 's3' ? 'font-mono' : undefined} />
-          <Input label={v.kind === 's3' ? t('backups.s3.secretKey') : t('backups.password')} type="password" value={v.password ?? ''} onChange={(e) => set('password', e.target.value)}
+          <Input name="username" label={v.kind === 's3' ? t('backups.s3.accessKey') : t('backups.username')} value={v.username} onChange={(e) => set('username', e.target.value)} autoComplete="off" className={v.kind === 's3' ? 'font-mono' : undefined} />
+          <Input name="password" label={v.kind === 's3' ? t('backups.s3.secretKey') : t('backups.password')} type="password" value={v.password ?? ''} onChange={(e) => set('password', e.target.value)}
             placeholder={v.passwordSet ? t('common.keepSecret') : ''} autoComplete="new-password" hint={ssh ? t('backups.passwordOrKey') : undefined} />
         </div>
       )}
       {ssh && (
-        <Textarea label={t('backups.privateKey')} value={v.privateKey ?? ''} onChange={(e) => set('privateKey', e.target.value)}
+        <Textarea name="privateKey" label={t('backups.privateKey')} value={v.privateKey ?? ''} onChange={(e) => set('privateKey', e.target.value)}
           placeholder={v.keySet ? t('common.keepSecret') : '-----BEGIN OPENSSH PRIVATE KEY-----'} hint={t('backups.privateKeyHint')} />
       )}
-      <Input label={v.kind === 's3' ? t('backups.s3.bucket') : v.kind === 'smb' ? t('backups.smb.share') : t('backups.path')} value={v.path} onChange={(e) => set('path', e.target.value)}
+      <Input name="path" label={v.kind === 's3' ? t('backups.s3.bucket') : v.kind === 'smb' ? t('backups.smb.share') : t('backups.path')} value={v.path} onChange={(e) => set('path', e.target.value)}
         placeholder={v.kind === 'smb' ? 'Backups/kiestoon' : v.kind === 'webdav' ? 'kiestoon' : undefined}
         hint={v.kind === 's3' ? t('backups.s3.bucketHint') : v.kind === 'smb' ? t('backups.smb.shareHint') : v.kind === 'webdav' ? t('backups.webdav.pathHint') : t('backups.pathHint')} />
-      <Toggle label={t('common.enabled')} hint={t('backups.enabledHint')} checked={v.enabled} onChange={(x) => set('enabled', x)} />
+      <Toggle name="enabled" label={t('common.enabled')} hint={t('backups.enabledHint')} checked={v.enabled} onChange={(x) => set('enabled', x)} />
       {!v.id && (
-        <Input label={t('backups.existingKey')} type="password" value={v.repoPassword ?? ''} onChange={(e) => set('repoPassword', e.target.value.trim())}
+        <Input name="repoPassword" label={t('backups.existingKey')} type="password" value={v.repoPassword ?? ''} onChange={(e) => set('repoPassword', e.target.value.trim())}
           autoComplete="new-password" className="font-mono" hint={t('backups.existingKeyHint')} />
       )}
       {!v.id && <p className="text-xs text-subtle">{t('backups.encryption')}</p>}

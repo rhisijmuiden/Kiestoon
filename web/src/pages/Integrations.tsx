@@ -100,17 +100,17 @@ function TokenForm({ onClose, onCreated }: { onClose: () => void; onCreated: (to
     <Modal title={t('integrations.addToken')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('integrations.create')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('common.name')} value={x.name} onChange={(e) => setX({ ...x, name: e.target.value })} placeholder="CRM" autoFocus />
+      <Input name="name" label={t('common.name')} value={x.name} onChange={(e) => setX({ ...x, name: e.target.value })} placeholder="CRM" autoFocus />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Select label={t('integrations.rights')} value={x.role} onChange={(e) => setX({ ...x, role: e.target.value })} hint={t('integrations.rightsHint')}>
+        <Select name="role" label={t('integrations.rights')} value={x.role} onChange={(e) => setX({ ...x, role: e.target.value })} hint={t('integrations.rightsHint')}>
           {(['admin', 'reception', 'user'] as const).filter((r) => roleRank(r) <= myRank).map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
         </Select>
-        <Select label={t('integrations.expires')} value={x.expiresDays} onChange={(e) => setX({ ...x, expiresDays: Number(e.target.value) })}>
+        <Select name="expiresDays" label={t('integrations.expires')} value={x.expiresDays} onChange={(e) => setX({ ...x, expiresDays: Number(e.target.value) })}>
           {[30, 90, 365, 730].map((d) => <option key={d} value={d}>{t('integrations.days', { count: d })}</option>)}
           <option value={0}>{t('integrations.noExpiry')}</option>
         </Select>
       </div>
-      <Toggle label={t('integrations.readOnly')} hint={t('integrations.readOnlyHint')} checked={x.readOnly} onChange={(v) => setX({ ...x, readOnly: v })} />
+      <Toggle name="readOnly" label={t('integrations.readOnly')} hint={t('integrations.readOnlyHint')} checked={x.readOnly} onChange={(v) => setX({ ...x, readOnly: v })} />
       <p className="text-xs text-subtle">{t('integrations.blockedRoutes')}</p>
     </Modal>
   )
@@ -194,8 +194,8 @@ function WebhookForm({ value, events, onClose, onSaved }: { value: Webhook; even
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
       <div className="grid gap-4 sm:grid-cols-[1fr_2fr]">
-        <Input label={t('common.name')} value={h.name} onChange={(e) => setH({ ...h, name: e.target.value })} placeholder="CRM" autoFocus />
-        <Input label="URL" value={h.url} onChange={(e) => setH({ ...h, url: e.target.value.trim() })} className="font-mono text-sm" placeholder="https://crm.example.com/kiestoon" />
+        <Input name="name" label={t('common.name')} value={h.name} onChange={(e) => setH({ ...h, name: e.target.value })} placeholder="CRM" autoFocus />
+        <Input name="url" label="URL" value={h.url} onChange={(e) => setH({ ...h, url: e.target.value.trim() })} className="font-mono text-sm" placeholder="https://crm.example.com/kiestoon" />
       </div>
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-ink-2">{t('integrations.events')}</span>
@@ -212,7 +212,7 @@ function WebhookForm({ value, events, onClose, onSaved }: { value: Webhook; even
         </div>
       </div>
       {h.secret && <CopyField label={t('integrations.secret')} value={h.secret} secret />}
-      <Toggle label={t('common.enabled')} checked={h.enabled} onChange={(v) => setH({ ...h, enabled: v })} />
+      <Toggle name="enabled" label={t('common.enabled')} checked={h.enabled} onChange={(v) => setH({ ...h, enabled: v })} />
     </Modal>
   )
 }

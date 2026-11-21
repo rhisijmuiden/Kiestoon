@@ -162,16 +162,16 @@ function ProvSettingsForm({ value, onClose, onSaved }: { value: ProvSettings; on
     <Modal title={t('phones.settings')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Toggle label={t('phones.enabled')} checked={x.enabled} onChange={(v) => setX({ ...x, enabled: v })} />
-      <Input label={t('phones.server')} value={x.server} onChange={(e) => setX({ ...x, server: e.target.value.trim() })} hint={t('phones.serverHint')} className="font-mono" />
+      <Toggle name="enabled" label={t('phones.enabled')} checked={x.enabled} onChange={(v) => setX({ ...x, enabled: v })} />
+      <Input name="server" label={t('phones.server')} value={x.server} onChange={(e) => setX({ ...x, server: e.target.value.trim() })} hint={t('phones.serverHint')} className="font-mono" />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label={t('phones.provUser')} value={x.username} onChange={(e) => setX({ ...x, username: e.target.value.trim() })} className="font-mono" />
-        <Input label={t('phones.provPassword')} value={x.password} onChange={(e) => setX({ ...x, password: e.target.value.trim() })} className="font-mono" />
+        <Input name="username" label={t('phones.provUser')} value={x.username} onChange={(e) => setX({ ...x, username: e.target.value.trim() })} className="font-mono" />
+        <Input name="password" label={t('phones.provPassword')} value={x.password} onChange={(e) => setX({ ...x, password: e.target.value.trim() })} className="font-mono" />
       </div>
       <AdminPasswordSettings value={x} onChange={(v) => setX({ ...x, ...v })} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label={t('phones.ntp')} value={x.ntpServer} onChange={(e) => setX({ ...x, ntpServer: e.target.value.trim() })} className="font-mono" />
-        <Select label={t('common.language')} value={x.language} onChange={(e) => setX({ ...x, language: e.target.value as 'en' | 'nl' })}>
+        <Input name="ntpServer" label={t('phones.ntp')} value={x.ntpServer} onChange={(e) => setX({ ...x, ntpServer: e.target.value.trim() })} className="font-mono" />
+        <Select name="language" label={t('common.language')} value={x.language} onChange={(e) => setX({ ...x, language: e.target.value as 'en' | 'nl' })}>
           <option value="en">English</option><option value="nl">Nederlands</option>
         </Select>
       </div>
@@ -318,18 +318,18 @@ function PhoneForm({ value, models, moduleTypes, exts, onClose, onSaved }: { val
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label={t('phones.mac')} value={x.mac} onChange={(e) => setX({ ...x, mac: e.target.value })} placeholder="00:15:65:AB:CD:EF" className="font-mono" />
-        <Input label={t('phones.label')} value={x.label} onChange={(e) => setX({ ...x, label: e.target.value })} placeholder={t('phones.labelPlaceholder')} />
+        <Input name="mac" label={t('phones.mac')} value={x.mac} onChange={(e) => setX({ ...x, mac: e.target.value })} placeholder="00:15:65:AB:CD:EF" className="font-mono" />
+        <Input name="label" label={t('phones.label')} value={x.label} onChange={(e) => setX({ ...x, label: e.target.value })} placeholder={t('phones.labelPlaceholder')} />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Select label={t('phones.model')} value={`${x.vendor}/${x.model}`} onChange={(e) => { const [v, m] = e.target.value.split('/'); setX({ ...x, vendor: v as Phone['vendor'], model: m }) }}>
+        <Select name="model" label={t('phones.model')} value={`${x.vendor}/${x.model}`} onChange={(e) => { const [v, m] = e.target.value.split('/'); setX({ ...x, vendor: v as Phone['vendor'], model: m }) }}>
           {vendors.map((v) => (
             <optgroup key={v} label={vendorName(v)}>
               {models.filter((m) => m.vendor === v).map((m) => <option key={m.id} value={`${v}/${m.id}`}>{m.name}</option>)}
             </optgroup>
           ))}
         </Select>
-        <Select label={t('phones.extension')} value={x.extensionId ?? ''} onChange={(e) => setX({ ...x, extensionId: e.target.value ? Number(e.target.value) : null })}>
+        <Select name="extensionId" label={t('phones.extension')} value={x.extensionId ?? ''} onChange={(e) => setX({ ...x, extensionId: e.target.value ? Number(e.target.value) : null })}>
           <option value="">–</option>
           {exts.map((e) => <option key={e.id} value={e.id}>{e.number} · {e.name}</option>)}
         </Select>
@@ -393,10 +393,10 @@ function PhoneForm({ value, models, moduleTypes, exts, onClose, onSaved }: { val
             <p className="text-xs text-subtle">{t('keys.intercomHint')}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Toggle label={t('keys.icAllow')} checked={ic.allow} onChange={(v) => setIc({ allow: v })} />
-            {icSupport[x.vendor].includes('tone') && <Toggle label={t('keys.icTone')} checked={ic.tone} disabled={!ic.allow} onChange={(v) => setIc({ tone: v })} />}
-            {icSupport[x.vendor].includes('mute') && <Toggle label={t('keys.icMute')} checked={ic.mute} disabled={!ic.allow} onChange={(v) => setIc({ mute: v })} />}
-            {icSupport[x.vendor].includes('barge') && <Toggle label={t('keys.icBarge')} hint={t('keys.icBargeHint')} checked={ic.barge} disabled={!ic.allow} onChange={(v) => setIc({ barge: v })} />}
+            <Toggle name="allow" label={t('keys.icAllow')} checked={ic.allow} onChange={(v) => setIc({ allow: v })} />
+            {icSupport[x.vendor].includes('tone') && <Toggle name="tone" label={t('keys.icTone')} checked={ic.tone} disabled={!ic.allow} onChange={(v) => setIc({ tone: v })} />}
+            {icSupport[x.vendor].includes('mute') && <Toggle name="mute" label={t('keys.icMute')} checked={ic.mute} disabled={!ic.allow} onChange={(v) => setIc({ mute: v })} />}
+            {icSupport[x.vendor].includes('barge') && <Toggle name="barge" label={t('keys.icBarge')} hint={t('keys.icBargeHint')} checked={ic.barge} disabled={!ic.allow} onChange={(v) => setIc({ barge: v })} />}
           </div>
           {icSupport[x.vendor].length === 0 && <p className="text-xs text-subtle">{t('keys.icOnlyAllow')}</p>}
           {x.vendor === 'akuvox' && <p className="text-xs text-subtle">{t('keys.icAkuvox')}</p>}
@@ -409,8 +409,8 @@ function PhoneForm({ value, models, moduleTypes, exts, onClose, onSaved }: { val
             <p className="text-xs text-subtle">{t('hotdesk.hint')}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Toggle label={t('hotdesk.enabled')} checked={hd.enabled} onChange={(v) => setHd({ enabled: v })} />
-            <Toggle label={t('hotdesk.autoLogout')} hint={t('hotdesk.autoLogoutHint')} checked={hd.autoLogout} disabled={!hd.enabled} onChange={(v) => setHd({ autoLogout: v })} />
+            <Toggle name="enabled" label={t('hotdesk.enabled')} checked={hd.enabled} onChange={(v) => setHd({ enabled: v })} />
+            <Toggle name="autoLogout" label={t('hotdesk.autoLogout')} hint={t('hotdesk.autoLogoutHint')} checked={hd.autoLogout} disabled={!hd.enabled} onChange={(v) => setHd({ autoLogout: v })} />
           </div>
           {hd.enabled && !x.extensionId && <p className="text-xs text-warn-ink">{t('hotdesk.needsGuest')}</p>}
         </div>

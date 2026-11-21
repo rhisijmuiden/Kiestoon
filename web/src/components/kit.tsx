@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode, type S
 import { useTranslation } from 'react-i18next'
 import { Check, Copy, Eye, EyeOff, X } from 'lucide-react'
 import { api } from '../lib/api'
+import { FieldErrorScope, FieldErrorText, invalidCls, useFieldError } from './fielderrors'
 
 /** Loads data from the API and offers a reload. */
 export function useApi<T>(path: string | null, intervalMs?: number) {
@@ -54,62 +55,83 @@ export function Modal({ title, subtitle, onClose, children, footer, wide }: {
           <X className="size-5" aria-hidden />
         </button>
       </div>
-      <div className="flex flex-col gap-4 p-5">{children}</div>
-      {footer && <div className="sticky bottom-0 flex flex-wrap justify-end gap-2.5 border-t border-line bg-surface/95 p-4 backdrop-blur">{footer}</div>}
+      <FieldErrorScope>
+        <div className="flex flex-col gap-4 p-5">{children}</div>
+        {footer && <div className="sticky bottom-0 flex flex-wrap justify-end gap-2.5 border-t border-line bg-surface/95 p-4 backdrop-blur">{footer}</div>}
+      </FieldErrorScope>
     </dialog>
   )
 }
 
-const fieldCls =
-  'min-h-11 w-full rounded-[10px] border border-line bg-field px-3.5 text-[15px] text-ink placeholder:text-subtle outline-none transition focus:border-accent/60 focus:ring-2 focus:ring-accent/20'
+const fieldBase =
+  'min-h-11 w-full rounded-[10px] border bg-field px-3.5 text-[15px] text-ink placeholder:text-subtle outline-none transition'
+const fieldOk = 'border-line focus:border-accent/60 focus:ring-2 focus:ring-accent/20'
+const fieldState = (invalid: boolean) => `${fieldBase} ${invalid ? invalidCls : fieldOk}`
+const labelCls = (invalid: boolean) => `text-sm font-medium ${invalid ? 'text-danger-ink' : 'text-ink-2'}`
 
-export function Select({ label, hint, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & { label: string; hint?: ReactNode }) {
+export function Select({ label, hint, children, onChange, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & { label: string; hint?: ReactNode }) {
   const id = useId()
+  const ref = useRef<HTMLSelectElement>(null)
+  const err = useFieldError(rest.name, label, ref)
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-ink-2">{label}</label>
-      <select id={id} {...rest} className={fieldCls}>
+      <label htmlFor={id} className={labelCls(!!err.message)}>{label}</label>
+      <select ref={ref} id={id} aria-invalid={err.message ? true : undefined} aria-describedby={err.message ? `${id}-err` : undefined}
+        onChange={(e) => { err.clear(); onChange?.(e) }} {...rest} className={fieldState(!!err.message)}>
         {children}
       </select>
+      {err.message && <FieldErrorText id={`${id}-err`}>{err.message}</FieldErrorText>}
       {hint && <p className="text-xs text-subtle">{hint}</p>}
     </div>
   )
 }
 
-export function Textarea({ label, hint, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string; hint?: ReactNode }) {
+export function Textarea({ label, hint, onChange, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string; hint?: ReactNode }) {
   const id = useId()
+  const ref = useRef<HTMLTextAreaElement>(null)
+  const err = useFieldError(rest.name, label, ref)
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-ink-2">{label}</label>
-      <textarea id={id} {...rest} className={`${fieldCls} min-h-24 py-2.5 font-mono text-sm`} />
+      <label htmlFor={id} className={labelCls(!!err.message)}>{label}</label>
+      <textarea ref={ref} id={id} aria-invalid={err.message ? true : undefined} aria-describedby={err.message ? `${id}-err` : undefined}
+        onChange={(e) => { err.clear(); onChange?.(e) }} {...rest} className={`${fieldState(!!err.message)} min-h-24 py-2.5 font-mono text-sm`} />
+      {err.message && <FieldErrorText id={`${id}-err`}>{err.message}</FieldErrorText>}
       {hint && <p className="text-xs text-subtle">{hint}</p>}
     </div>
   )
 }
 
-export function Toggle({ label, hint, checked, onChange, disabled }: {
-  label: string; hint?: ReactNode; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean
+export function Toggle({ label, hint, checked, onChange, disabled, name }: {
+  label: string; hint?: ReactNode; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean; name?: string
 }) {
   const id = useId()
+  const ref = useRef<HTMLButtonElement>(null)
+  const err = useFieldError(name, label, ref)
   return (
-    <div className="flex items-start justify-between gap-4 rounded-xl border border-line bg-surface-2/60 px-4 py-3">
-      <div>
-        <label htmlFor={id} className="text-sm font-medium text-ink">{label}</label>
-        {hint && <p className="mt-0.5 text-xs text-subtle">{hint}</p>}
+    <div className={`flex flex-col gap-1.5 rounded-xl border px-4 py-3 ${err.message ? 'border-danger/70 bg-danger/5' : 'border-line bg-surface-2/60'}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <label htmlFor={id} className={`text-sm font-medium ${err.message ? 'text-danger-ink' : 'text-ink'}`}>{label}</label>
+          {hint && <p className="mt-0.5 text-xs text-subtle">{hint}</p>}
+        </div>
+        <button
+          ref={ref}
+          id={id}
+          type="button"
+          role="switch"
+          aria-checked={checked}
+          aria-invalid={err.message ? true : undefined}
+          aria-describedby={err.message ? `${id}-err` : undefined}
+          disabled={disabled}
+          onClick={() => { err.clear(); onChange(!checked) }}
+          className={`relative mt-0.5 inline-flex h-6 w-11 flex-none items-center rounded-full border transition disabled:opacity-50 ${
+            checked ? 'border-accent/60 bg-accent/30' : 'border-line bg-tint/5'
+          }`}
+        >
+          <span className={`inline-block size-4 rounded-full transition ${checked ? 'translate-x-6 bg-accent shadow-[0_0_10px_var(--color-accent)]' : 'translate-x-1 bg-muted'}`} />
+        </button>
       </div>
-      <button
-        id={id}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        disabled={disabled}
-        onClick={() => onChange(!checked)}
-        className={`relative mt-0.5 inline-flex h-6 w-11 flex-none items-center rounded-full border transition disabled:opacity-50 ${
-          checked ? 'border-accent/60 bg-accent/30' : 'border-line bg-tint/5'
-        }`}
-      >
-        <span className={`inline-block size-4 rounded-full transition ${checked ? 'translate-x-6 bg-accent shadow-[0_0_10px_var(--color-accent)]' : 'translate-x-1 bg-muted'}`} />
-      </button>
+      {err.message && <FieldErrorText id={`${id}-err`}>{err.message}</FieldErrorText>}
     </div>
   )
 }

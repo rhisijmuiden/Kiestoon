@@ -1175,7 +1175,7 @@ func (r *Repo) SaveConference(ctx context.Context, plan NumberPlan, c *Conferenc
 		return invalid("invalid", "adminPin")
 	}
 	if c.WaitAdmin && c.AdminPIN == "" {
-		return invalid("required", "adminPin")
+		return invalid("host_pin_needed", "adminPin")
 	}
 	if c.MaxMembers == 0 {
 		c.MaxMembers = 20

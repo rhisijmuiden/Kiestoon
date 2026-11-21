@@ -88,33 +88,33 @@ function ProviderForm({ value, onClose, onSaved }: { value: SsoProvider; onClose
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={() => save(p)}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Select label={t('sso.kind')} value={p.kind} onChange={(e) => {
+        <Select name="kind" label={t('sso.kind')} value={p.kind} onChange={(e) => {
           const kind = e.target.value as SsoProvider['kind']
           setP((x) => ({ ...x, kind, ...(x.id ? {} : presets[kind]), name: x.id ? x.name : t(`sso.kinds.${kind}`) }))
         }}>
           {(Object.keys(presets) as SsoProvider['kind'][]).map((k) => <option key={k} value={k}>{t(`sso.kinds.${k}`)}</option>)}
         </Select>
-        <Input label={t('sso.buttonName')} value={p.name} onChange={(e) => set('name', e.target.value)} hint={t('sso.buttonNameHint')} />
+        <Input name="name" label={t('sso.buttonName')} value={p.name} onChange={(e) => set('name', e.target.value)} hint={t('sso.buttonNameHint')} />
       </div>
       {p.kind === 'saml' ? (
         <>
-          <Input label={t('sso.samlMetadataUrl')} value={p.issuer} onChange={(e) => set('issuer', e.target.value.trim())} className="font-mono text-sm"
+          <Input name="issuer" label={t('sso.samlMetadataUrl')} value={p.issuer} onChange={(e) => set('issuer', e.target.value.trim())} className="font-mono text-sm"
             placeholder="https://login.microsoftonline.com/<tenant>/federationmetadata/2007-06/federationmetadata.xml?appid=…" hint={t('sso.samlMetadataUrlHint')} />
-          <Textarea label={t('sso.samlMetadata')} value={p.samlMetadata ?? ''} onChange={(e) => set('samlMetadata', e.target.value)} rows={5}
+          <Textarea name="samlMetadata" label={t('sso.samlMetadata')} value={p.samlMetadata ?? ''} onChange={(e) => set('samlMetadata', e.target.value)} rows={5}
             placeholder={'<EntityDescriptor …>'} hint={t('sso.samlMetadataHint')} />
-          <Input label={t('sso.samlGroups')} value={p.groupsClaim} onChange={(e) => set('groupsClaim', e.target.value.trim())} className="font-mono text-sm" hint={t('sso.samlGroupsHint')} />
+          <Input name="groupsClaim" label={t('sso.samlGroups')} value={p.groupsClaim} onChange={(e) => set('groupsClaim', e.target.value.trim())} className="font-mono text-sm" hint={t('sso.samlGroupsHint')} />
         </>
       ) : (
         <>
-          <Input label={t('sso.issuer')} value={p.issuer} onChange={(e) => set('issuer', e.target.value.trim())} className="font-mono text-sm" hint={t(`sso.issuerHints.${p.kind}`)} />
+          <Input name="issuer" label={t('sso.issuer')} value={p.issuer} onChange={(e) => set('issuer', e.target.value.trim())} className="font-mono text-sm" hint={t(`sso.issuerHints.${p.kind}`)} />
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label={t('sso.clientId')} value={p.clientId} onChange={(e) => set('clientId', e.target.value.trim())} className="font-mono text-sm" />
-          <Input label={t('sso.clientSecret')} type="password" value={p.clientSecret ?? ''} onChange={(e) => set('clientSecret', e.target.value)} autoComplete="off"
+          <Input name="clientId" label={t('sso.clientId')} value={p.clientId} onChange={(e) => set('clientId', e.target.value.trim())} className="font-mono text-sm" />
+          <Input name="clientSecret" label={t('sso.clientSecret')} type="password" value={p.clientSecret ?? ''} onChange={(e) => set('clientSecret', e.target.value)} autoComplete="off"
             placeholder={p.secretSet ? '••••••••' : ''} hint={p.secretSet ? t('sso.secretKeep') : undefined} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label={t('sso.scopes')} value={p.scopes} onChange={(e) => set('scopes', e.target.value)} className="font-mono text-sm" />
-          <Input label={t('sso.groupsClaim')} value={p.groupsClaim} onChange={(e) => set('groupsClaim', e.target.value.trim())} className="font-mono text-sm" hint={t('sso.groupsClaimHint')} />
+          <Input name="scopes" label={t('sso.scopes')} value={p.scopes} onChange={(e) => set('scopes', e.target.value)} className="font-mono text-sm" />
+          <Input name="groupsClaim" label={t('sso.groupsClaim')} value={p.groupsClaim} onChange={(e) => set('groupsClaim', e.target.value.trim())} className="font-mono text-sm" hint={t('sso.groupsClaimHint')} />
         </div>
         </>
       )}
@@ -130,13 +130,13 @@ function ProviderForm({ value, onClose, onSaved }: { value: SsoProvider; onClose
         ))}
         <div><Button variant="ghost" onClick={() => set('roleMap', [...p.roleMap, { group: '', role: 'admin' }])}><Plus className="size-4" aria-hidden /> {t('sso.addMapping')}</Button></div>
       </div>
-      <Select label={t('sso.defaultRole')} value={p.defaultRole} onChange={(e) => set('defaultRole', e.target.value)} hint={t('sso.defaultRoleHint')}>
+      <Select name="defaultRole" label={t('sso.defaultRole')} value={p.defaultRole} onChange={(e) => set('defaultRole', e.target.value)} hint={t('sso.defaultRoleHint')}>
         <option value="">{t('sso.noAccess')}</option>
         {roles.filter((r) => r !== 'superadmin').map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
       </Select>
-      <Toggle label={t('sso.autoCreate')} hint={t('sso.autoCreateHint')} checked={p.autoCreate} onChange={(v) => set('autoCreate', v)} />
-      <Toggle label={t('sso.trustMfa')} hint={t('sso.trustMfaHint')} checked={p.trustMfa} onChange={(v) => set('trustMfa', v)} />
-      <Toggle label={t('common.enabled')} checked={p.enabled} onChange={(v) => set('enabled', v)} />
+      <Toggle name="autoCreate" label={t('sso.autoCreate')} hint={t('sso.autoCreateHint')} checked={p.autoCreate} onChange={(v) => set('autoCreate', v)} />
+      <Toggle name="trustMfa" label={t('sso.trustMfa')} hint={t('sso.trustMfaHint')} checked={p.trustMfa} onChange={(v) => set('trustMfa', v)} />
+      <Toggle name="enabled" label={t('common.enabled')} checked={p.enabled} onChange={(v) => set('enabled', v)} />
     </Modal>
   )
 }

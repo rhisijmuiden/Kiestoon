@@ -63,16 +63,16 @@ export function History() {
       </PageHeader>
       <Card>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <Input label={t('history.search')} value={f.q} onChange={(e) => set('q', e.target.value)} placeholder="201, 06…" />
-          <Input label={t('history.from')} type="date" value={f.from} onChange={(e) => set('from', e.target.value)} />
-          <Input label={t('history.to')} type="date" value={f.to} onChange={(e) => set('to', e.target.value)} />
-          <Select label={t('history.direction')} value={f.direction} onChange={(e) => set('direction', e.target.value)}>
+          <Input name="q" label={t('history.search')} value={f.q} onChange={(e) => set('q', e.target.value)} placeholder="201, 06…" />
+          <Input name="from" label={t('history.from')} type="date" value={f.from} onChange={(e) => set('from', e.target.value)} />
+          <Input name="to" label={t('history.to')} type="date" value={f.to} onChange={(e) => set('to', e.target.value)} />
+          <Select name="direction" label={t('history.direction')} value={f.direction} onChange={(e) => set('direction', e.target.value)}>
             <option value="">{t('history.all')}</option>
             <option value="inbound">{t('history.dir.inbound')}</option>
             <option value="outbound">{t('history.dir.outbound')}</option>
             <option value="internal">{t('history.dir.internal')}</option>
           </Select>
-          <Select label={t('history.result')} value={f.disposition} onChange={(e) => set('disposition', e.target.value)}>
+          <Select name="disposition" label={t('history.result')} value={f.disposition} onChange={(e) => set('disposition', e.target.value)}>
             <option value="">{t('history.all')}</option>
             {['ANSWERED', 'NO ANSWER', 'BUSY', 'FAILED', 'CONGESTION'].map((d) => <option key={d} value={d}>{t(`history.disp.${d.replace(' ', '_')}`)}</option>)}
           </Select>

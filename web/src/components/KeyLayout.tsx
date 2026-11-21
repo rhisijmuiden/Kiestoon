@@ -228,7 +228,7 @@ function KeyForm({ k, n, lines, exts, onChange }: { k: PhoneKey; n: number; line
         {keyTypes.map((ty) => <option key={ty} value={ty}>{t(`phones.keyTypes.${ty}`)}</option>)}
       </Select>
       {k.type === 'line' && (
-        <Select label={t('keys.account')} value={k.value || '1'} onChange={(e) => set({ value: e.target.value === '1' ? '' : e.target.value })}>
+        <Select name="value" label={t('keys.account')} value={k.value || '1'} onChange={(e) => set({ value: e.target.value === '1' ? '' : e.target.value })}>
           {Array.from({ length: Math.max(1, lines) }, (_, i) => <option key={i} value={String(i + 1)}>{t('keys.lineN', { n: i + 1 })}</option>)}
         </Select>
       )}
@@ -240,13 +240,13 @@ function KeyForm({ k, n, lines, exts, onChange }: { k: PhoneKey; n: number; line
         </Select>
       )}
       {k.type === 'parkslot' && (
-        <Select label={t('keys.slot')} value={k.value} onChange={(e) => set({ value: e.target.value, label: k.label || `Park ${e.target.value}` })}>
+        <Select name="value" label={t('keys.slot')} value={k.value} onChange={(e) => set({ value: e.target.value, label: k.label || `Park ${e.target.value}` })}>
           {Array.from({ length: 9 }, (_, i) => <option key={i} value={`7${i + 1}`}>{`7${i + 1}`}</option>)}
         </Select>
       )}
-      {k.type === 'speed' && <Input label={t('keys.number')} value={k.value} onChange={(e) => set({ value: e.target.value })} className="font-mono" inputMode="tel" />}
+      {k.type === 'speed' && <Input name="value" label={t('keys.number')} value={k.value} onChange={(e) => set({ value: e.target.value })} className="font-mono" inputMode="tel" />}
       {['none', 'park', 'dnd', 'voicemail'].includes(k.type) && <p className="self-center text-xs text-subtle sm:col-span-1">{t(`keys.explain.${k.type}`)}</p>}
-      {k.type !== 'none' && <Input label={t('phones.keyLabel')} value={k.label} maxLength={20} onChange={(e) => set({ label: e.target.value })} />}
+      {k.type !== 'none' && <Input name="label" label={t('phones.keyLabel')} value={k.label} maxLength={20} onChange={(e) => set({ label: e.target.value })} />}
     </div>
   )
 }

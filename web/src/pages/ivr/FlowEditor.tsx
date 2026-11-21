@@ -405,7 +405,7 @@ function TestCall({ ivr, onClose }: { ivr: IVR; onClose: () => void }) {
     <Modal title={t('ivr.test.title')} subtitle={t('ivr.test.subtitle')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.close')}</Button><Button busy={busy} disabled={!chosen} onClick={call}><PhoneCall className="size-4" aria-hidden />{t('ivr.test.call')}</Button></>}>
       <ErrorMessage error={error} />
-      <Select label={t('ivr.test.extension')} value={chosen} onChange={(e) => setExt(e.target.value)}>
+      <Select name="extension" label={t('ivr.test.extension')} value={chosen} onChange={(e) => setExt(e.target.value)}>
         {(exts.data ?? []).map((e) => <option key={e.id} value={e.number}>{e.number} · {e.name}</option>)}
       </Select>
       {done && <p className="text-sm text-ok">{t('ivr.test.ringing', { ext: chosen })}</p>}

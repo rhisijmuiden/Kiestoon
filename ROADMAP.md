@@ -338,6 +338,8 @@ the testing channel.
   Teams users with an E.164 number and optional extension (Teams only, or Teams + desk phone), internal dialling by
   extension, outside calls via the routes or one trunk, generated PowerShell script (gateway, voice route, policy,
   numbers)
+- [x] Form errors point at the field (`v0.7.0-rc.23`): red border, message under the field, focus on it, banner names
+  the field; conference rooms explain that "Wait for the host" needs a host PIN
 - [x] CRM integrations and call pop-up (`v0.7.0-rc.24`): HubSpot, Salesforce, Pipedrive and Exact Online. Pop-up on
   incoming calls (web portal, Windows softphone, reception list) with deals, tickets, last activity and owner, note and
   follow-up task after the call, create unknown numbers. Every call logged under the owner who answered, call-back task

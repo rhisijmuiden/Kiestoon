@@ -332,7 +332,7 @@ the testing channel.
 - [x] Phone admin password (`v0.7.0-rc.18`): provisioning replaces the factory web interface password with a unique
   generated password per phone (default) or one shared password; key icon in the phone list shows and copies it,
   shows whether the phone has it, makes a new one; every look is audit-logged
-- [x] Form errors point at the field (`v0.7.0-rc.21`): red border, message under the field, focus on it, banner names
+- [x] Form errors point at the field (`v0.7.0-rc.20`): red border, message under the field, focus on it, banner names
   the field; conference rooms explain that "Wait for the host" needs a host PIN
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),

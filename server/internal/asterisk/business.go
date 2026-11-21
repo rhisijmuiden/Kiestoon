@@ -61,6 +61,15 @@ func devicesDial(x *w, e pbx.Extension, wake bool) {
 	if wake && e.MobileApp {
 		x.f(" same => n,Set(KT_DIAL=${KT_DIAL}&Local/%s@kiestoon-appwake)", e.Number)
 	}
+	// A linked Microsoft Teams user: Teams rings too, or only Teams.
+	if wake && e.TeamsNumber != "" {
+		teams := "Local/" + strings.TrimPrefix(e.TeamsNumber, "+") + "@kiestoon-teams-out/n"
+		if e.TeamsOnly {
+			x.f(" same => n,Set(KT_DIAL=%s)", teams)
+		} else {
+			x.f(" same => n,Set(KT_DIAL=${KT_DIAL}&%s)", teams)
+		}
+	}
 	x.f(" same => n,Set(_PICKUPMARK=%s)", e.Number)
 }
 

@@ -69,6 +69,10 @@ type Ports struct {
 	// Tunnels lets traffic that arrives through a Kiestoon tunnel (interfaces kt*) reach SIP, the
 	// media ports and the portal.
 	Tunnels bool
+	// Teams is the SIP TLS port of Microsoft Teams Direct Routing (0: off). Only TeamsNets may
+	// reach it.
+	Teams     int
+	TeamsNets []string
 	// ClusterPeer is the other node of a high-availability pair: it may send VRRP.
 	ClusterPeer string
 }
@@ -284,6 +288,15 @@ func Ruleset(c Config, p Ports, trunkIPs []string, geo *Geo) (string, error) {
 			}
 			fmt.Fprintf(&b, "\t\t%s saddr @%s udp dport %d accept\n", fam, setName, p.SIP)
 			fmt.Fprintf(&b, "\t\t%s saddr @%s tcp dport { %d, %d } accept\n", fam, setName, p.SIP, p.SIPTLS)
+		}
+	}
+	if p.Teams > 0 && len(p.TeamsNets) > 0 {
+		tn, err := normalizeList(p.TeamsNets)
+		if err != nil {
+			return "", err
+		}
+		if t4, _ := split(tn); len(t4) > 0 {
+			fmt.Fprintf(&b, "\t\tip saddr { %s } tcp dport %d accept\n", strings.Join(t4, ", "), p.Teams)
 		}
 	}
 	if len(p.WireGuard) > 0 {

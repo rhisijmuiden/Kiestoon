@@ -96,6 +96,11 @@ func Caddyfile(s Settings, upstream string) (string, error) {
 	if cs.Staging {
 		b.WriteString("\tacme_ca https://acme-staging-v02.api.letsencrypt.org/directory\n")
 	}
+	if cs.UseForSIP {
+		// SIP clients need an RSA certificate: Microsoft Teams Direct Routing and many desk phones
+		// do not support ECDSA, Caddy's default.
+		b.WriteString("\tkey_type rsa2048\n")
+	}
 	b.WriteString("\tservers {\n\t\tprotocols h1 h2\n\t}\n}\n\n")
 	// One site for both host names: Caddy gets a certificate per name, Kiestoon tells them apart by
 	// the Host header.

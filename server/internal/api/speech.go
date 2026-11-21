@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/rhisijmuiden/kiestoon/server/internal/ai"
+	"github.com/rhisijmuiden/kiestoon/server/internal/elevenlabs"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -119,45 +120,31 @@ func (s *Server) speechRemove(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// speechTTS speaks typed text for a prompt: the result is the same 8 kHz WAV as an uploaded prompt.
+// speechTTS speaks typed text for a prompt with Piper or ElevenLabs: the result is the same 8 kHz
+// WAV as an uploaded prompt, with the source to store along with the prompt.
 func (s *Server) speechTTS(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Text     string `json:"text"`
-		Language string `json:"language"`
-		Voice    string `json:"voice"`
-	}
+	var req ttsRequest
 	if err := decode(r, &req); err != nil {
 		writeErr(w, http.StatusBadRequest, "bad_request")
 		return
 	}
-	st := s.speechSettings(r.Context())
-	if !st.TTS.Enabled {
-		writeErr(w, http.StatusConflict, "speech_not_ready")
-		return
-	}
-	voice := req.Voice
-	if voice == "" {
-		voice = st.TTS.VoiceEN
-		if req.Language == "nl" {
-			voice = st.TTS.VoiceNL
-		}
-	}
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Minute)
 	defer cancel()
-	audio, err := s.speechEngine().Speak(ctx, voice, req.Text)
+	res, err := s.speak(ctx, req)
+	var e *elevenlabs.Error
 	switch {
-	case errors.Is(err, speech.ErrNotReady):
+	case err == nil:
+		writeJSON(w, http.StatusOK, encodeAudio(res))
+	case errors.Is(err, errTTSOff), errors.Is(err, speech.ErrNotReady):
 		writeErr(w, http.StatusConflict, "speech_not_ready")
-		return
-	case err != nil && err.Error() == "text":
+	case err.Error() == "text":
 		fieldErr(w, "text")
-		return
-	case err != nil:
+	case errors.Is(err, elevenlabs.ErrNoKey), errors.As(err, &e):
+		s.elErr(w, err)
+	default:
 		s.Log.Warn("text-to-speech", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "speech_failed", "message": err.Error()})
-		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"audio": base64.StdEncoding.EncodeToString(audio)})
 }
 
 // ---- voicemail transcripts --------------------------------------------------

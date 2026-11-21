@@ -270,6 +270,8 @@ func (s *Server) savePrompt(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name  string `json:"name"`
 		Audio string `json:"audio"` // base64 WAV, 8 kHz mono 16 bit; empty on rename
+		// Source: how the audio was spoken from text (only with Audio).
+		Source *pbx.PromptSource `json:"source"`
 	}
 	if err := decode(r, &req); err != nil {
 		writeErr(w, http.StatusBadRequest, "bad_request")
@@ -283,6 +285,7 @@ func (s *Server) savePrompt(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, http.StatusBadRequest, "invalid_audio")
 			return
 		}
+		p.Source = req.Source
 	} else if p.ID == 0 {
 		writeErr(w, http.StatusBadRequest, "invalid_audio")
 		return
@@ -292,7 +295,7 @@ func (s *Server) savePrompt(w http.ResponseWriter, r *http.Request) {
 			s.saveErr(w, err)
 			return
 		}
-		p.DurationMS = old.DurationMS
+		p.DurationMS, p.Source = old.DurationMS, old.Source
 	}
 	if err := s.PBX.SavePrompt(r.Context(), &p); err != nil {
 		s.saveErr(w, err)

@@ -73,6 +73,7 @@ type Server struct {
 	xfers    transfers
 	Firmware *firmware.Store
 	speech   speechState
+	el       elState
 	faxMu    sync.Mutex
 	siteMu   sync.Mutex
 	fed      fedState

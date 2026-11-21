@@ -24,7 +24,7 @@ import (
 
 // Replicated are the directories (inside the data directory) the standby keeps in sync. Generated
 // configuration, the mail queue, update state and downloaded geo data are left out on purpose.
-var Replicated = []string{"asterisk", "pbx/tls", "pbx/prompts", "fax", "speech", "firmware"}
+var Replicated = []string{"asterisk", "pbx/tls", "pbx/prompts", "fax", "speech", "firmware", "secrets"}
 
 // Allowed reports whether a relative path may be served to and written by the standby.
 func Allowed(rel string) bool {

@@ -10,10 +10,12 @@ rm -rf "$WORK" && mkdir -p "$WORK/data"
 AMI_PORT=$((PORT + 1000))
 node "$HERE/fake-ami.mjs" "$AMI_PORT" > "$WORK/ami.log" 2>&1 &
 echo $! > "$WORK/pids"
+node "$HERE/fake-eleven.mjs" "$((PORT + 1200))" > "$WORK/eleven.log" 2>&1 &
+echo $! >> "$WORK/pids"
 node "$HERE/fake-helper.mjs" "$WORK/helper.sock" "$WORK/wg-keys.json" > "$WORK/helper.log" 2>&1 &
 echo $! >> "$WORK/pids"
 start() {
-KIESTOON_DATA_DIR="$WORK/data" KIESTOON_LISTEN="127.0.0.1:$PORT" KIESTOON_TLS_LISTEN=off KIESTOON_CHANNEL=testing KIESTOON_AI_BASE_URL=http://127.0.0.1:9 \
+KIESTOON_DATA_DIR="$WORK/data" KIESTOON_LISTEN="127.0.0.1:$PORT" KIESTOON_TLS_LISTEN=off KIESTOON_CHANNEL=testing KIESTOON_AI_BASE_URL=http://127.0.0.1:9 KIESTOON_ELEVENLABS_BASE_URL="http://127.0.0.1:$((PORT + 1200))" \
   KIESTOON_AMI_ADDR="127.0.0.1:$AMI_PORT" KIESTOON_HELPER_SOCKET="$WORK/helper.sock" TZ=Europe/Amsterdam \
   "$BIN" >> "$WORK/server.log" 2>&1 &
 echo $! > "$WORK/server.pid"

@@ -1206,29 +1206,64 @@ func (r *Repo) DeleteConference(ctx context.Context, id int64) error {
 
 // Prompt is an uploaded or recorded audio file, used by IVRs and queues.
 type Prompt struct {
-	ID         int64  `json:"id"`
-	Name       string `json:"name"`
-	DurationMS int64  `json:"durationMs"`
-	CreatedAt  string `json:"createdAt"`
+	ID         int64         `json:"id"`
+	Name       string        `json:"name"`
+	DurationMS int64         `json:"durationMs"`
+	CreatedAt  string        `json:"createdAt"`
+	Source     *PromptSource `json:"source,omitempty"`
+}
+
+// PromptSource says how a prompt was spoken from text. Recorded and uploaded prompts have none.
+type PromptSource struct {
+	Engine    string `json:"engine"` // piper | elevenlabs
+	Voice     string `json:"voice"`
+	VoiceName string `json:"voiceName,omitempty"`
+	Model     string `json:"model,omitempty"`
+	Language  string `json:"language,omitempty"`
+	Text      string `json:"text"`
+}
+
+// Valid reports whether the source can be stored.
+func (s *PromptSource) Valid() bool {
+	return (s.Engine == "piper" || s.Engine == "elevenlabs") && s.Voice != "" && len(s.Voice) <= 64 &&
+		len(s.VoiceName) <= 80 && len(s.Model) <= 64 && len(s.Language) <= 8 && s.Text != "" && len(s.Text) <= 8000
 }
 
 func scanPrompt(row interface{ Scan(...any) error }) (*Prompt, error) {
 	var p Prompt
-	err := row.Scan(&p.ID, &p.Name, &p.DurationMS, &p.CreatedAt)
+	var src string
+	err := row.Scan(&p.ID, &p.Name, &p.DurationMS, &p.CreatedAt, &src)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
+	}
+	if err == nil && src != "" && src != "{}" {
+		var s PromptSource
+		if json.Unmarshal([]byte(src), &s) == nil && s.Text != "" {
+			p.Source = &s
+		}
 	}
 	return &p, err
 }
 
+func promptSourceJSON(s *PromptSource) string {
+	if s == nil || !s.Valid() {
+		return "{}"
+	}
+	b, err := json.Marshal(s)
+	if err != nil {
+		return "{}"
+	}
+	return string(b)
+}
+
 // Prompts returns all prompts.
 func (r *Repo) Prompts(ctx context.Context) ([]Prompt, error) {
-	return queryAll(ctx, r.DB, `SELECT id, name, duration_ms, created_at FROM prompts ORDER BY name`, scanPrompt)
+	return queryAll(ctx, r.DB, `SELECT id, name, duration_ms, created_at, source FROM prompts ORDER BY name`, scanPrompt)
 }
 
 // Prompt returns one prompt.
 func (r *Repo) Prompt(ctx context.Context, id int64) (*Prompt, error) {
-	return scanPrompt(r.DB.QueryRowContext(ctx, `SELECT id, name, duration_ms, created_at FROM prompts WHERE id = ?`, id))
+	return scanPrompt(r.DB.QueryRowContext(ctx, `SELECT id, name, duration_ms, created_at, source FROM prompts WHERE id = ?`, id))
 }
 
 // SavePrompt stores the prompt metadata (the audio file is written by the caller).
@@ -1238,14 +1273,14 @@ func (r *Repo) SavePrompt(ctx context.Context, p *Prompt) error {
 		return invalid("required", "name")
 	}
 	if p.ID == 0 {
-		res, err := r.DB.ExecContext(ctx, `INSERT INTO prompts(name, duration_ms) VALUES (?, ?)`, p.Name, p.DurationMS)
+		res, err := r.DB.ExecContext(ctx, `INSERT INTO prompts(name, duration_ms, source) VALUES (?, ?, ?)`, p.Name, p.DurationMS, promptSourceJSON(p.Source))
 		if err != nil {
 			return err
 		}
 		p.ID, _ = res.LastInsertId()
 		return nil
 	}
-	return updateRow(ctx, r.DB, `UPDATE prompts SET name = ?, duration_ms = ? WHERE id = ?`, []any{p.Name, p.DurationMS, p.ID}, "name")
+	return updateRow(ctx, r.DB, `UPDATE prompts SET name = ?, duration_ms = ?, source = ? WHERE id = ?`, []any{p.Name, p.DurationMS, promptSourceJSON(p.Source), p.ID}, "name")
 }
 
 // PromptInUse reports whether an IVR or queue plays the prompt.

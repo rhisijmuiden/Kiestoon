@@ -1,27 +1,54 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Background, BackgroundVariant, Controls, MiniMap, ReactFlow, ReactFlowProvider, useEdgesState, useNodesState, useReactFlow,
+  Background, BackgroundVariant, ConnectionLineType, Controls, MiniMap, ReactFlow, ReactFlowProvider, useEdgesState, useNodesState, useReactFlow,
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from '@xyflow/react'
 import '@xyflow/react/dist/base.css'
-import { ArrowLeft, LayoutGrid, PhoneCall, Redo2, Undo2 } from 'lucide-react'
+import { Activity, ArrowLeft, LayoutGrid, PhoneCall, Redo2, Spline, Undo2, Waypoints } from 'lucide-react'
 import { Badge, Modal, Select, useApi } from '../../components/kit'
 import { resetDestinations, useDestinations, useSaver } from '../../components/pbx'
 import { Button, ErrorMessage } from '../../components/ui'
 import { api } from '../../lib/api'
 import { useSession } from '../../lib/session'
 import { useTheme } from '../../lib/theme'
-import type { Extension, InboundRoute, IVR, Prompt, TimeCondition } from '../../lib/types'
+import type { Extension, InboundRoute, IVR, IvrLive, Prompt, TimeCondition } from '../../lib/types'
 import { NodePanel } from './NodePanel'
 import {
-  NODE_W, autoLayout, blankFlow, canConnect, dataForKind, fromFlow, intentPort, kindTone, kinds, makeEdge, newId, toFlow, toneOf, tones,
+  NODE_W, autoLayout, blankFlow, canConnect, dataForKind, fromFlow, intentPort, kindTone, makeEdge, newId, toFlow, toneOf, tones,
   type Kind, type StepData, type StepNode,
 } from './flow'
-import { FlowInfoContext, kindIcon, nodeTypes, type FlowInfo } from './nodes'
+import { LineStyleContext, edgeTypes, type LineStyle } from './edges'
+import { FlowInfoContext, kindIcon, nodeTypes, toneClass, type FlowInfo } from './nodes'
 
 type Snapshot = { nodes: StepNode[]; edges: Edge[] }
 const DRAG_TYPE = 'application/x-kiestoon-step'
+
+/** The building blocks in the palette, grouped as a menu designer thinks about them. */
+const GROUPS: { key: string; kinds: Kind[] }[] = [
+  { key: 'menu', kinds: ['key', 'timeout', 'repeat'] },
+  { key: 'audio', kinds: ['audio', 'speech'] },
+  { key: 'route', kinds: ['extension', 'ringgroup', 'queue', 'voicemail', 'ivr', 'external', 'hangup'] },
+  { key: 'logic', kinds: ['time'] },
+]
+
+/** A per-browser view preference (line style, call flow animation). */
+function usePref<T extends string>(key: string, initial: T): [T, (v: T) => void] {
+  const [v, setV] = useState<T>(() => {
+    try {
+      return (localStorage.getItem(key) as T | null) ?? initial
+    } catch {
+      return initial
+    }
+  })
+  const set = (x: T) => {
+    setV(x)
+    try {
+      localStorage.setItem(key, x)
+    } catch { /* private mode */ }
+  }
+  return [v, set]
+}
 
 export function FlowEditor(props: { value: IVR; onClose: () => void; onSaved: (v: IVR) => void }) {
   return (
@@ -39,6 +66,9 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
   const tcs = useApi<TimeCondition[]>('/pbx/timeconditions')
   const inbound = useApi<InboundRoute[]>('/pbx/inbound')
   const dests = useDestinations()
+  const live = useApi<IvrLive>('/pbx/ivrs/live', 15000)
+  const [lineStyle, setLineStyle] = usePref<LineStyle>('kt-ivr-lines', 'curve')
+  const [motion, setMotion] = usePref<'on' | 'off'>('kt-ivr-motion', 'on')
 
   const initial = useMemo(() => fromFlow(value.flow ?? blankFlow()), [value])
   const [ivr, setIvr] = useState<IVR>(value)
@@ -240,8 +270,8 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
     prompts: promptMap,
     destLabel: (type, target) => dests?.options.find((o) => o.type === type && o.target === target)?.label
       ?? (type === 'timecondition' ? tcs.data?.find((c) => String(c.id) === target)?.name : undefined),
-    problems, name: ivr.name, phone,
-  }), [promptMap, dests, tcs.data, problems, ivr.name, phone])
+    problems, name: ivr.name, phone, live: live.data,
+  }), [promptMap, dests, tcs.data, problems, ivr.name, phone, live.data])
 
   const sel = selected ? byId.get(selected) : undefined
 
@@ -278,40 +308,61 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
         <ErrorMessage error={error} />
 
         {/* Palette */}
-        <div role="toolbar" aria-label={t('ivr.palette')} className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-line bg-surface-2 px-3 py-2">
-          <span className="mr-1 text-xs text-subtle">{t('ivr.paletteHint')}</span>
-          {kinds.map((k) => {
-            const I = kindIcon[k]
-            const disabled = (k === 'timeout' && hasTimeout) || (k === 'key' && usedDigits.length >= 12)
-            return (
-              <button key={k} type="button" draggable={!disabled} disabled={disabled}
-                onDragStart={(e) => { e.dataTransfer.setData(DRAG_TYPE, k); e.dataTransfer.effectAllowed = 'move' }}
-                onClick={() => addNode(k)} title={t('ivr.paletteClick')}
-                className="inline-flex h-8 cursor-grab items-center gap-1.5 rounded-lg border border-line bg-field px-2.5 text-xs text-ink-2 transition hover:border-accent/50 hover:text-ink active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-40">
-                <I className={`size-3.5 ${tones[kindTone(k)].text}`} aria-hidden />{t(`ivr.kind.${k}`)}
-              </button>
-            )
-          })}
+        <div role="toolbar" aria-label={t('ivr.palette')} className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-line bg-surface-2 px-3 py-2.5">
+          {GROUPS.map((g) => (
+            <div key={g.key} className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-0.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-subtle">{t(`ivr.group.${g.key}`)}</span>
+              {g.kinds.map((k) => {
+                const I = kindIcon[k]
+                const disabled = (k === 'timeout' && hasTimeout) || (k === 'key' && usedDigits.length >= 12)
+                return (
+                  <button key={k} type="button" draggable={!disabled} disabled={disabled}
+                    onDragStart={(e) => { e.dataTransfer.setData(DRAG_TYPE, k); e.dataTransfer.effectAllowed = 'move' }}
+                    onClick={() => addNode(k)} title={t('ivr.paletteClick')}
+                    className={`kt-tile ${toneClass(kindTone(k))} inline-flex h-9 cursor-grab items-center gap-2 rounded-[11px] border border-line pl-1 pr-3 text-[12.5px] text-ink-2 hover:text-ink active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-40`}>
+                    <span className="kt-chip size-7 rounded-lg"><I className="size-[15px]" aria-hidden /></span>{t(`ivr.kind.${k}`)}
+                  </button>
+                )
+              })}
+            </div>
+          ))}
+          <div className="ml-auto flex items-center gap-1.5">
+            <div role="group" aria-label={t('ivr.lines.label')} className="inline-flex gap-0.5 rounded-[10px] border border-line bg-field p-0.5">
+              {([['curve', Spline], ['step', Waypoints]] as const).map(([v, I]) => (
+                <button key={v} type="button" aria-pressed={lineStyle === v} onClick={() => setLineStyle(v)} title={t(`ivr.lines.${v}`)} aria-label={t(`ivr.lines.${v}`)}
+                  className={`inline-flex size-7 items-center justify-center rounded-lg transition ${lineStyle === v ? 'bg-accent/15 text-ink ring-1 ring-accent/45' : 'text-muted hover:text-ink'}`}>
+                  <I className="size-4" aria-hidden />
+                </button>
+              ))}
+            </div>
+            <button type="button" aria-pressed={motion === 'on'} onClick={() => setMotion(motion === 'on' ? 'off' : 'on')} title={t('ivr.motion')} aria-label={t('ivr.motion')}
+              className={`inline-flex size-8 items-center justify-center rounded-[10px] border border-line transition ${motion === 'on' ? 'bg-accent/15 text-ink' : 'bg-field text-muted hover:text-ink'}`}>
+              <Activity className="size-4" aria-hidden />
+            </button>
+          </div>
         </div>
 
         {/* Canvas + side panel */}
         <div className="relative flex h-[calc(100dvh-250px)] min-h-[560px] overflow-hidden rounded-2xl border border-line bg-bg">
-          <div ref={wrapper} className="kt-flow min-w-0 flex-1" onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }} onDrop={onDrop}>
+          <LineStyleContext.Provider value={lineStyle}>
+          <div ref={wrapper} className={`kt-flow kt-ivr min-w-0 flex-1 ${motion === 'off' ? 'no-motion' : ''}`} onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }} onDrop={onDrop}>
             <ReactFlow<StepNode, Edge>
-              nodes={nodes} edges={edges} nodeTypes={nodeTypes}
+              nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
               onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={isValidConnection}
               onNodeClick={(_, n) => setSelected(n.id)} onPaneClick={() => setSelected(null)}
               onNodeDragStop={() => setDirty(true)}
               colorMode={theme} fitView fitViewOptions={{ padding: 0.08, maxZoom: 1 }} minZoom={0.2} maxZoom={1.6}
               deleteKeyCode={['Backspace', 'Delete']} proOptions={{ hideAttribution: true }}
-              defaultEdgeOptions={{ type: 'smoothstep' }} connectionLineStyle={{ stroke: 'var(--color-accent)', strokeWidth: 2, strokeDasharray: '6 4' }}
+              defaultEdgeOptions={{ type: 'flow' }} connectionLineType={lineStyle === 'step' ? ConnectionLineType.SmoothStep : ConnectionLineType.Bezier}
+              connectionLineStyle={{ stroke: 'var(--color-accent)', strokeWidth: 2.5, strokeDasharray: '6 5', strokeLinecap: 'round' }}
               ariaLabelConfig={{ 'node.a11yDescription.default': t('ivr.a11yNode') }}>
-              <Background variant={BackgroundVariant.Dots} gap={22} size={1.4} color="var(--color-grid-dot)" />
+              <Background id="dots" variant={BackgroundVariant.Dots} gap={22} size={1.5} color="var(--kt-canvas-dot)" />
               <Controls showInteractive={false} position="bottom-right" />
-              <MiniMap position="bottom-left" pannable zoomable nodeBorderRadius={6}
-                nodeColor={(n) => tones[toneOf(n.data as StepData)].stroke} bgColor="var(--color-surface)" maskColor="rgb(from var(--color-bg) r g b / 0.6)" />
+              <MiniMap position="bottom-left" pannable zoomable nodeBorderRadius={8}
+                nodeColor={(n) => tones[toneOf(n.data as StepData)].stroke} bgColor="transparent" maskColor="rgb(from var(--kt-canvas) r g b / 0.55)" />
             </ReactFlow>
           </div>
+          </LineStyleContext.Provider>
           {sel && (
             <div className="absolute inset-0 z-10 bg-surface-2 lg:static lg:inset-auto lg:w-[380px] lg:flex-none lg:border-l lg:border-line">
               <NodePanel node={sel} ivr={ivr} setIvr={(fn) => { setIvr(fn); setDirty(true) }}

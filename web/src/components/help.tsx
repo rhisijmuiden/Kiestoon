@@ -20,6 +20,7 @@ const topics: Record<string, Topic> = {
   '/reception': { page: 'switchboard' },
   '/wallboard': { page: 'wallboard' },
   '/wallboard/settings': { page: 'wallboard', en: 'tv-links', nl: 'tv-links' },
+  '/wallboard/designer': { page: 'wallboard', en: 'design-your-own-screen', nl: 'je-eigen-scherm-ontwerpen' },
   '/fax': { page: 'fax' },
   '/history': { page: 'history' },
   // A call journey (?call=...) opened from the call history or My calls.
@@ -62,7 +63,7 @@ const topics: Record<string, Topic> = {
 /** The manual page for a portal path, in the given language (en or nl). */
 export function helpUrl(pathname: string, language: string): string {
   const nl = language.startsWith('nl')
-  const path = pathname.replace(/\/+$/, '') || '/'
+  const path = pathname.replace(/\/+$/, '').replace(/\/\d+$/, '') || '/'
   const topic = topics[path] ?? topics['/']
   const section = nl ? topic.nl : topic.en
   return `${DOCS_URL}${nl ? 'nl/' : ''}${topic.page ? `${topic.page}/` : ''}${section ? `#${section}` : ''}`

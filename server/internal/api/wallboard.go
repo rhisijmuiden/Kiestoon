@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"net/http"
 	"slices"
@@ -21,11 +22,13 @@ import (
 func (s *Server) wallboardRoutes(mux *http.ServeMux, admin, recep func(http.HandlerFunc) http.Handler) {
 	mux.Handle("GET /api/reception/wallboard", recep(s.wallboardData))
 	mux.HandleFunc("GET /api/wall/{key}", s.wallScreenData)
+	mux.HandleFunc("POST /api/wall/{key}/pin", s.wallScreenPin)
 	mux.Handle("GET /api/wallboard/settings", admin(s.wallSettings))
 	mux.Handle("POST /api/wallboard/screens", admin(s.wallScreenSave))
 	mux.Handle("PUT /api/wallboard/screens/{id}", admin(s.wallScreenSave))
 	mux.Handle("DELETE /api/wallboard/screens/{id}", admin(s.wallScreenDelete))
 	mux.Handle("POST /api/wallboard/screens/{id}/key", admin(s.wallScreenKey))
+	mux.Handle("POST /api/wallboard/screens/{id}/publish", admin(s.wallScreenPublish))
 	mux.Handle("PUT /api/wallboard/alerts", admin(s.wallAlertsSave))
 	mux.Handle("PUT /api/wallboard/sla", admin(s.wallSLASave))
 }
@@ -38,8 +41,12 @@ type wallState struct {
 	calls   map[string]queueCallOf
 	cache   *wallData
 	cacheAt time.Time
-	active  map[string]*slaAlert
-	mailed  map[string]time.Time
+	// past are the calls of yesterday and the 6 days before today, read again every minute.
+	past   []qstats.Call
+	pastAt time.Time
+	pastOf time.Time
+	active map[string]*slaAlert
+	mailed map[string]time.Time
 }
 
 type agentTrack struct {
@@ -85,6 +92,10 @@ type wallQueue struct {
 	Paused      int             `json:"paused"`
 	Today       qstats.Totals   `json:"today"`
 	Hours       [24]qstats.Hour `json:"hours"`
+	// LastHour, Yesterday and Week (the last 7 days, today included) are for the designer's tiles.
+	LastHour  qstats.Totals `json:"lastHour"`
+	Yesterday qstats.Totals `json:"yesterday"`
+	Week      qstats.Totals `json:"week"`
 }
 
 // Agent states on the wallboard.
@@ -126,6 +137,8 @@ type wallScreenInfo struct {
 	Layouts []string `json:"layouts"`
 	Rotate  int      `json:"rotate"`
 	Theme   string   `json:"theme"`
+	// Design is the published design of the designer; nil = the classic layouts.
+	Design *pbx.WallDesign `json:"design,omitempty"`
 }
 
 type wallData struct {
@@ -164,6 +177,25 @@ func startOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }
 
+// pastCalls returns the queue calls of the 7 days before today (cached for a minute).
+func (s *Server) pastCalls(ctx context.Context, today time.Time) []qstats.Call {
+	s.wall.mu.Lock()
+	if s.wall.pastOf.Equal(today) && time.Since(s.wall.pastAt) < time.Minute {
+		p := s.wall.past
+		s.wall.mu.Unlock()
+		return p
+	}
+	s.wall.mu.Unlock()
+	calls, err := (&qstats.Store{DB: s.DB}).Calls(ctx, today.AddDate(0, 0, -6), today)
+	if err != nil {
+		s.Log.Warn("queue statistics", "err", err)
+	}
+	s.wall.mu.Lock()
+	s.wall.past, s.wall.pastAt, s.wall.pastOf = calls, time.Now(), today
+	s.wall.mu.Unlock()
+	return calls
+}
+
 // wallBuild returns the wallboard figures of all queues, at most two seconds old.
 func (s *Server) wallBuild(ctx context.Context) *wallData {
 	s.wall.mu.Lock()
@@ -185,7 +217,32 @@ func (s *Server) wallBuild(ctx context.Context) *wallData {
 	if err != nil {
 		s.Log.Warn("queue statistics", "err", err)
 	}
-	sum := qstats.Summarize(calls, func(id int64) int { return target[id] }, loc)
+	tgt := func(id int64) int { return target[id] }
+	sum := qstats.Summarize(calls, tgt, loc)
+	var recent []qstats.Call
+	for _, c := range calls {
+		if !c.Joined.Before(now.Add(-time.Hour)) {
+			recent = append(recent, c)
+		}
+	}
+	hour := qstats.Summarize(recent, tgt, loc)
+	past := s.pastCalls(ctx, startOfDay(now))
+	var yest []qstats.Call
+	for _, c := range past {
+		if !c.Joined.Before(startOfDay(now).AddDate(0, 0, -1)) {
+			yest = append(yest, c)
+		}
+	}
+	yday := qstats.Summarize(yest, tgt, loc)
+	week := qstats.Summarize(append(slices.Clip(past), calls...), tgt, loc)
+	totalsOf := func(m map[int64]*qstats.Totals, id int64) qstats.Totals {
+		if t := m[id]; t != nil {
+			return *t
+		}
+		var t qstats.Totals
+		t.Finish()
+		return t
+	}
 
 	live := map[int64]asterisk.QueueState{}
 	connected := s.AMI.Connected()
@@ -218,6 +275,7 @@ func (s *Server) wallBuild(ctx context.Context) *wallData {
 		} else {
 			wq.Today.Finish()
 		}
+		wq.LastHour, wq.Yesterday, wq.Week = totalsOf(hour.Queues, q.ID), totalsOf(yday.Queues, q.ID), totalsOf(week.Queues, q.ID)
 		if st, ok := live[q.ID]; ok {
 			wq.Live = true
 			for _, c := range st.Callers {
@@ -331,7 +389,7 @@ func (s *Server) activeAlertsLocked() []slaAlert {
 // forScreen limits the figures to the queues of a tv link and hides what a tv should not show.
 func (d *wallData) forScreen(w *pbx.WallScreen, alertsOn bool) *wallData {
 	out := &wallData{Now: d.Now, Live: d.Live, Queues: []wallQueue{}, Agents: []wallAgent{}, Alerts: []slaAlert{},
-		Screen: &wallScreenInfo{Name: w.Name, Layouts: w.Layouts, Rotate: w.Rotate, Theme: w.Theme}}
+		Screen: &wallScreenInfo{Name: w.Name, Layouts: w.Layouts, Rotate: w.Rotate, Theme: w.Theme, Design: w.Published}}
 	keep := func(id int64) bool { return len(w.Queues) == 0 || slices.Contains(w.Queues, id) }
 	mask := func(n string) string {
 		if !w.HideNames {
@@ -390,22 +448,78 @@ func (s *Server) wallboardData(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, d)
 }
 
-// wallScreenData serves a tv link. It needs no session: the key in the link is the secret.
-func (s *Server) wallScreenData(w http.ResponseWriter, r *http.Request) {
+// wallScreen finds the screen of a tv address: the secret link /wall/<key>, or the screen's own
+// address /wall/<slug> when its access allows that. A tv that typed the pin code sends the key
+// in X-Wall-Key. It writes the error itself and returns nil when the screen may not be shown.
+func (s *Server) wallScreen(w http.ResponseWriter, r *http.Request, pinOK bool) *pbx.WallScreen {
 	ip := clientIP(r)
 	if s.provLimit.Blocked(ip) {
 		writeErr(w, http.StatusTooManyRequests, "too_many_attempts")
-		return
+		return nil
 	}
-	sc, err := s.PBX.WallScreenByKey(r.Context(), r.PathValue("key"))
+	ref := r.PathValue("key")
+	sc, err := s.PBX.WallScreenByKey(r.Context(), ref)
+	if err != nil {
+		sc, err = s.PBX.WallScreenBySlug(r.Context(), ref)
+		if err == nil && sc.Access == pbx.AccessLink {
+			err = pbx.ErrNotFound
+		}
+		if err == nil && sc.Access == pbx.AccessPin && !pinOK {
+			key := r.Header.Get("X-Wall-Key")
+			if key == "" {
+				writeErr(w, http.StatusUnauthorized, "pin_required")
+				return nil
+			}
+			if subtle.ConstantTimeCompare([]byte(key), []byte(sc.Key)) != 1 {
+				s.provLimit.Fail(ip)
+				writeErr(w, http.StatusUnauthorized, "pin_required")
+				return nil
+			}
+		}
+	}
 	if err != nil {
 		s.provLimit.Fail(ip)
 		writeErr(w, http.StatusNotFound, "not_found")
+		return nil
+	}
+	if !sc.Allows(ip) {
+		writeErr(w, http.StatusForbidden, "network_not_allowed")
+		return nil
+	}
+	return sc
+}
+
+// wallScreenData serves a tv link. It needs no session: the key in the link, or the access of
+// the screen's own address, decides.
+func (s *Server) wallScreenData(w http.ResponseWriter, r *http.Request) {
+	sc := s.wallScreen(w, r, false)
+	if sc == nil {
 		return
 	}
 	s.PBX.TouchWallScreen(r.Context(), sc.ID, time.Now())
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, s.wallBuild(r.Context()).forScreen(sc, pbx.LoadAlertSettings(r.Context(), s.DB).Screens))
+}
+
+// wallScreenPin checks the pin code of a screen and gives the tv the key to remember.
+func (s *Server) wallScreenPin(w http.ResponseWriter, r *http.Request) {
+	sc := s.wallScreen(w, r, true)
+	if sc == nil {
+		return
+	}
+	var in struct {
+		Pin string `json:"pin"`
+	}
+	if err := decode(r, &in); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request")
+		return
+	}
+	if sc.Access != pbx.AccessPin || !sc.CheckPin(in.Pin) {
+		s.provLimit.Fail(clientIP(r))
+		writeErr(w, http.StatusUnauthorized, "wrong_pin")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"key": sc.Key})
 }
 
 // ---- settings ---------------------------------------------------------------
@@ -474,6 +588,21 @@ func (s *Server) wallScreenSave(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	writeJSON(w, http.StatusOK, sc)
+}
+
+func (s *Server) wallScreenPublish(w http.ResponseWriter, r *http.Request) {
+	id := pathID(r)
+	if err := s.PBX.PublishWallScreen(r.Context(), id, time.Now()); err != nil {
+		s.saveErr(w, err)
+		return
+	}
+	sc, err := s.PBX.WallScreen(r.Context(), id)
+	if err != nil {
+		s.saveErr(w, err)
+		return
+	}
+	s.audit(r, "wallboard.screen.published", sc.Name)
 	writeJSON(w, http.StatusOK, sc)
 }
 

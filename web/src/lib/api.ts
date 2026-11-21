@@ -4,13 +4,13 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
+export async function api<T = unknown>(method: string, path: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<T> {
   let res: Response
   try {
     res = await fetch(`/api${path}`, {
       method,
       credentials: 'same-origin',
-      headers: method === 'GET' ? {} : { 'Content-Type': 'application/json' },
+      headers: { ...(method === 'GET' ? {} : { 'Content-Type': 'application/json' }), ...extraHeaders },
       body: method === 'GET' ? undefined : JSON.stringify(body ?? {}),
     })
   } catch {

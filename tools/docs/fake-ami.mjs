@@ -52,7 +52,10 @@ function contacts() {
   return Object.entries(ua).map(([ext, agent], i) => {
     const endpoint = agent === 'Kiestoon Web' ? `${ext}-web` : ext
     return { Endpoint: endpoint, Uri: `sip:${endpoint}@192.168.10.${40 + i}:5060`, Status: 'Reachable', RoundtripUsec: String(1800 + i * 950), UserAgent: agent }
-  })
+  }).concat(['sip', 'sip2', 'sip3'].map((h, i) => ({
+    // Microsoft Teams Direct Routing: the three SIP proxies of Microsoft.
+    Endpoint: 'kt-teams', Uri: `sip:${h}.pstnhub.microsoft.com:5061;transport=tls`, Status: 'Reachable', RoundtripUsec: String(17800 + i * 6100), UserAgent: '',
+  })))
 }
 
 // Call records are made relative to this moment, so every reconnect sends the same records.

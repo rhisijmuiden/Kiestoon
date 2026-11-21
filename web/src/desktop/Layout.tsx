@@ -11,6 +11,7 @@ import { Avatar } from './Avatar'
 import { CallPanel } from './CallPanel'
 import { DesktopData, myQueues, useDesktop } from './data'
 import { ShellSync } from './ShellSync'
+import { CrmPopup } from '../components/CrmPopup'
 import { MobileSync, mobileAccount, pushActive } from './MobileSync'
 import { inMobile, shell } from './bridge'
 
@@ -49,6 +50,7 @@ function Phone({ version }: { version: string }) {
       <TransferProvider>
         <ShellSync />
         <Frame />
+        <CrmPopup />
       </TransferProvider>
     </SoftphoneProvider>
   )

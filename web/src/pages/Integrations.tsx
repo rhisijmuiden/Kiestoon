@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { History, KeySquare, Pencil, Plus, Send, Trash2, Webhook as WebhookIcon } from 'lucide-react'
 import { Badge, CopyField, Empty, Modal, Select, Table, Tabs, Toggle, formatDate, td, useApi } from '../components/kit'
@@ -7,16 +8,20 @@ import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../compone
 import { api, roleRank } from '../lib/api'
 import { useSession } from '../lib/session'
 import type { ApiToken, Webhook, WebhookDelivery } from '../lib/types'
+import { Crm } from './integrations/Crm'
 
 /** REST API tokens and webhooks. */
 export function Integrations() {
   const { t } = useTranslation()
-  const [tab, setTab] = useState<'tokens' | 'webhooks'>('tokens')
+  const [params, setParams] = useSearchParams()
+  const p = params.get('tab')
+  const tab: 'tokens' | 'webhooks' | 'crm' = p === 'webhooks' || p === 'crm' ? p : 'tokens'
+  const setTab = (v: string) => setParams((q) => { q.set('tab', v); q.delete('exact'); return q }, { replace: true })
   return (
     <>
       <PageHeader title={t('integrations.title')} subtitle={t('integrations.subtitle')} />
-      <Tabs value={tab} onChange={setTab} tabs={[{ key: 'tokens', label: t('integrations.tokens') }, { key: 'webhooks', label: t('integrations.webhooks') }]} />
-      {tab === 'tokens' ? <Tokens /> : <Webhooks />}
+      <Tabs value={tab} onChange={setTab} tabs={[{ key: 'crm', label: t('integrations.crm') }, { key: 'tokens', label: t('integrations.tokens') }, { key: 'webhooks', label: t('integrations.webhooks') }]} />
+      {tab === 'crm' ? <Crm /> : tab === 'tokens' ? <Tokens /> : <Webhooks />}
     </>
   )
 }

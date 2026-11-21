@@ -7,6 +7,7 @@ import { HelpButton } from './help'
 import { InfoDialog, useSystemInfo } from './InfoDialog'
 import { nav, visible } from './nav'
 import { SoftphoneDock } from './SoftphoneDock'
+import { CrmPopup } from './CrmPopup'
 import { useApi } from './kit'
 import { isAdmin } from '../lib/api'
 import { useSession } from '../lib/session'
@@ -161,6 +162,7 @@ export function Layout() {
       <PoweredBy className="fixed bottom-4 right-6 z-20 hidden sm:flex" />
       {infoOpen && <InfoDialog admin={admin} onClose={() => { setInfoOpen(false); reload() }} />}
       <SoftphoneDock />
+      {hasExtension && <CrmPopup />}
     </div>
     </SoftphoneProvider>
   )

@@ -3,11 +3,11 @@
 Everything the web portal does goes through the same JSON API under `/api/`. Other programs (a CRM, a
 helpdesk, scripts) use it with an **API token**. Webhooks tell those programs when something happens.
 
-![System › API & webhooks](shot:integrations)
+![System › Integrations](shot:integrations)
 
 ## API tokens
 
-Create a token under **API & webhooks › API tokens › New token**. The token is shown once; Kiestoon stores only
+Create a token under **Integrations › API tokens › New token**. The token is shown once; Kiestoon stores only
 a hash of it.
 
 ```sh
@@ -39,7 +39,7 @@ curl -H "Authorization: Bearer kt_…" https://pbx.example.com/api/pbx/extension
 
 ## Webhooks
 
-Add a webhook under **API & webhooks › Webhooks › Add webhook** and choose the events. Kiestoon sends a `POST` with
+Add a webhook under **Integrations › Webhooks › Add webhook** and choose the events. Kiestoon sends a `POST` with
 JSON to your URL:
 
 ```json

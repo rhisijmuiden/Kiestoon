@@ -3,11 +3,11 @@
 Alles wat het webportaal doet, gaat via dezelfde JSON-API onder `/api/`. Andere programma's (een CRM, een
 helpdesk, scripts) gebruiken die met een **API-token**. Webhooks laten die programma's weten wanneer er iets gebeurt.
 
-![API & webhooks](shot:integrations)
+![Integraties](shot:integrations)
 
 ## API-tokens
 
-Maak een token aan onder **API & webhooks › API-tokens › Nieuw token**. Het token wordt één keer getoond; Kiestoon
+Maak een token aan onder **Integraties › API-tokens › Nieuw token**. Het token wordt één keer getoond; Kiestoon
 bewaart alleen een hash ervan.
 
 ```sh
@@ -39,7 +39,7 @@ curl -H "Authorization: Bearer kt_…" https://pbx.example.com/api/pbx/extension
 
 ## Webhooks
 
-Voeg een webhook toe onder **API & webhooks › Webhooks › Webhook toevoegen** en kies de gebeurtenissen. Kiestoon
+Voeg een webhook toe onder **Integrations › Webhooks › Webhook toevoegen** en kies de gebeurtenissen. Kiestoon
 stuurt een `POST` met JSON naar je URL:
 
 ```json

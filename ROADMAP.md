@@ -340,6 +340,10 @@ the testing channel.
   numbers)
 - [x] Form errors point at the field (`v0.7.0-rc.23`): red border, message under the field, focus on it, banner names
   the field; conference rooms explain that "Wait for the host" needs a host PIN
+- [x] CRM integrations and call pop-up (`v0.7.0-rc.24`): HubSpot, Salesforce, Pipedrive and Exact Online. Pop-up on
+  incoming calls (web portal, Windows softphone, reception list) with deals, tickets, last activity and owner, note and
+  follow-up task after the call, create unknown numbers. Every call logged under the owner who answered, call-back task
+  for missed calls, recording link and AI summary, retries for 24 hours with a sync log; CRM name on desk phones
 - [x] Dutch trunk templates (`v0.7.0-rc.25`): Cheapconnect, Speakup, Vodafone Ziggo Zakelijk and an updated KPN
   template (standard SBCs, TCP), each with a step-by-step guide in the trunk form and a docs page (EN + NL)
 

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ChevronRight, Download, Loader2, PhoneIncoming, PhoneOutgoing, Repeat } from 'lucide-react'
 import { Badge, Select, Table, formatDate, formatDuration, td, useApi } from '../components/kit'
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
+import { crmColors, crmNames, useCrmStatus, type CrmCallInfo } from '../lib/crm'
 import { MosPill } from '../components/quality'
 import type { Cdr, QualityLimits } from '../lib/types'
 
@@ -47,6 +48,9 @@ export function History() {
   const dispTone = (d: string) => (d === 'ANSWERED' ? 'ok' : d === 'NO ANSWER' || d === 'BUSY' ? 'warn' : 'danger') as 'ok' | 'warn' | 'danger'
   const total = list.data?.total ?? 0
   const { call, open, close } = useCallParam()
+  const crmOn = !!useCrmStatus()?.active
+  const linked = [...new Set((list.data?.records ?? []).filter((r) => r.direction !== 'internal').map((r) => r.linkedId || r.uniqueId))]
+  const crm = useApi<Record<string, CrmCallInfo>>(crmOn && linked.length ? `/crm/calls?linked=${encodeURIComponent(linked.join(','))}` : null)
   if (call) {
     return <Suspense fallback={<JourneyFallback />}><CallJourney id={call} base="/cdr/journey" recordingBase="/recordings" onBack={close} /></Suspense>
   }
@@ -76,7 +80,7 @@ export function History() {
       </Card>
       <ErrorMessage error={list.error} />
       <Card>
-        <Table head={[t('history.time'), '', t('history.caller'), t('history.called'), t('history.duration'), t('history.result'), t('history.trunk'), 'MOS', '']}
+        <Table head={[t('history.time'), '', t('history.caller'), t('history.called'), t('history.duration'), t('history.result'), ...(crmOn ? ['CRM'] : []), t('history.trunk'), 'MOS', '']}
           empty={list.data?.records.length === 0 && <p className="py-10 text-center text-sm text-muted">{t('history.empty')}</p>}>
           {list.data?.records.map((r) => (
             <tr key={r.id} {...rowOpen(() => open(r.linkedId || r.uniqueId), t('journey.open', { time: formatDate(r.start, i18n.language) }))}>
@@ -88,6 +92,7 @@ export function History() {
               <td className={`${td} font-mono`}>{r.dst}</td>
               <td className={`${td} font-mono`}>{formatDuration(r.billsec)}</td>
               <td className={td}><Badge tone={dispTone(r.disposition)}>{t(`history.disp.${r.disposition.replace(' ', '_')}`, { defaultValue: r.disposition })}</Badge></td>
+              {crmOn && <td className={td}><CrmCell info={crm.data?.[r.linkedId || r.uniqueId]} internal={r.direction === 'internal'} /></td>}
               <td className={td}>{r.trunk || '–'}</td>
               <td className={td}>{list.data?.quality?.[r.linkedId] ? <MosPill mos={list.data.quality[r.linkedId]} limits={list.data.qualityLimits ?? defaultLimits} /> : <span className="text-subtle">–</span>}</td>
               <td className={`${td} text-right`}><ChevronRight className="inline size-4 text-subtle" aria-hidden /></td>
@@ -106,4 +111,24 @@ export function History() {
       </Card>
     </>
   )
+}
+
+function CrmCell({ info, internal }: { info?: CrmCallInfo; internal: boolean }) {
+  const { t } = useTranslation()
+  if (internal || !info) return <span className="text-subtle">–</span>
+  const kind = info.crm || undefined
+  const dot = kind ? <span className="inline-block size-2.5 flex-none rounded-[3px]" style={{ background: crmColors[kind] }} aria-hidden /> : null
+  switch (info.state) {
+    case 'logged': {
+      const label = <>{dot}{info.task ? t('crm.cell.task') : t('crm.cell.logged')} · {kind ? crmNames[kind] : ''}</>
+      return info.url
+        ? <a href={info.url} target="_blank" rel="noopener noreferrer" title={info.contact} className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-ok-ink hover:underline">{label}</a>
+        : <span title={info.contact} className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-ok-ink">{label}</span>
+    }
+    case 'pending': case 'retry': case 'lookup':
+      return <Badge tone="warn">{t('crm.cell.retry')}{kind ? ` · ${crmNames[kind]}` : ''}</Badge>
+    case 'failed':
+      return <Badge tone="danger">{t('crm.cell.failed')}</Badge>
+  }
+  return <span className="text-xs text-subtle">{t('crm.cell.skipped')}</span>
 }

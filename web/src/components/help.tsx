@@ -34,6 +34,7 @@ const topics: Record<string, Topic> = {
   '/conferences': { page: 'conferences' },
   '/prompts': { page: 'prompts' },
   '/trunks': { page: 'trunks' },
+  '/teams': { page: 'teams' },
   '/quality': { page: 'call-quality' },
   '/quality/settings': { page: 'call-quality', en: 'alerts', nl: 'meldingen' },
   '/phones': { page: 'phones' },

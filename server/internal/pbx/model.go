@@ -61,6 +61,10 @@ type Extension struct {
 	// MobileApp is set in a Snapshot when the user of the extension has linked the mobile app (and
 	// the app is switched on): calls then wake the phone with a push notification.
 	MobileApp bool `json:"-"`
+	// TeamsNumber is set in a Snapshot when a Microsoft Teams user is linked to the extension: calls
+	// to the extension ring that Teams number too (or only, with TeamsOnly).
+	TeamsNumber string `json:"-"`
+	TeamsOnly   bool   `json:"-"`
 }
 
 // WebRTCEndpoint is the Asterisk endpoint of the browser softphone of an extension.

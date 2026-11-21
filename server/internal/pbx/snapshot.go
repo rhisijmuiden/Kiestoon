@@ -29,6 +29,8 @@ type Snapshot struct {
 	Hub       HubSettings
 	Peers     []FedPeer
 	SunRoutes []SunRoute
+	// Teams is Microsoft Teams Direct Routing.
+	Teams TeamsSettings
 	// Supervisors are the extension numbers of enabled users with the role reception or higher:
 	// they may listen, whisper and barge on calls of queues with supervision on.
 	Supervisors []string
@@ -122,6 +124,10 @@ func (r *Repo) Snapshot(ctx context.Context) (*Snapshot, error) {
 	if err := r.markMobileApps(ctx, &s); err != nil {
 		return nil, err
 	}
+	if s.Teams, err = LoadTeams(ctx, r.DB); err != nil {
+		return nil, err
+	}
+	markTeams(&s)
 	locked, _ := store.GetSetting(ctx, r.DB, FraudLockKey, "")
 	s.FraudLocked = locked != ""
 	if loc, err := time.LoadLocation(s.Settings.Timezone); err == nil {

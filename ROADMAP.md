@@ -340,6 +340,8 @@ the testing channel.
   numbers)
 - [x] Form errors point at the field (`v0.7.0-rc.23`): red border, message under the field, focus on it, banner names
   the field; conference rooms explain that "Wait for the host" needs a host PIN
+- [x] Dutch trunk templates (`v0.7.0-rc.25`): Cheapconnect, Speakup, Vodafone Ziggo Zakelijk and an updated KPN
+  template (standard SBCs, TCP), each with a step-by-step guide in the trunk form and a docs page (EN + NL)
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

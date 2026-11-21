@@ -671,10 +671,13 @@
       "generic": "Vul de gegevens van je provider in.",
       "ip": "Vraag je provider vanaf welke IP-adressen ze gesprekken sturen, en geef hen het publieke IP-adres van deze server.",
       "voipgrid": "Voor andere aanbieders op het VoIPGRID-platform: maak een VoIP-trunk aan in hun portaal, gebruik het account-ID en wachtwoord en vul de server in die zij opgeven.",
-      "kpn": "KPN verbindt op IP-adres. Vul de IP-adressen uit je KPN-opdracht in.",
+      "kpn": "KPN koppelt op IP-adres. De standaard KPN-SBC en TCP zijn ingevuld; controleer de adressen in je KPN-order en geef KPN het publieke IP-adres van deze server.",
       "telnyx": "Maak een credential connection in het Telnyx-portaal. TLS op poort 5061 wordt aangeraden.",
       "twilio": "Maak een Elastic SIP-trunk, zet het publieke IP van deze server in de access control list en gebruik je termination-URI als host.",
-      "voys": "Maak een VoIP-trunk aan in Voys Freedom en gebruik het account-ID en wachtwoord daarvan. Server, codecs en de IP-ranges van Voys zijn al ingevuld."
+      "voys": "Maak een VoIP-trunk aan in Voys Freedom en gebruik het account-ID en wachtwoord daarvan. Server, codecs en de IP-ranges van Voys zijn al ingevuld.",
+      "cheapconnect": "Gebruik het nummer van je Cheapconnect SIP-account (formaat 31...) als gebruikersnaam en het SIP-wachtwoord. Server en codecs zijn al ingevuld.",
+      "speakup": "Gebruik het trunknummer (formaat 31...) en de loginnaam en het wachtwoord van Speakup. Server en codecs zijn al ingevuld.",
+      "ziggo": "Gebruik de gebruikersnaam (formaat 31..., zonder @trunk.sipnl.net) en het wachtwoord van Vodafone Ziggo. Server en codecs zijn al ingevuld."
     },
     "t38": "T.38-fax",
     "t38Hint": "Ontvang faxen via T.38 als de provider dat aanbiedt; anders gaat de fax via G.711.",
@@ -716,6 +719,107 @@
           "Er wordt een ander nummer getoond: zet \"Caller ID van de trunk gebruiken\" aan in Freedom en controleer of het nummer van jou is."
         ],
         "terms": "Voys ondersteunt het koppelen van je eigen telefooncentrale via een VoIP-trunk, maar helpt niet bij het instellen van de centrale zelf. De fraudedetectie van Voys blokkeert een trunk bij verdacht belverkeer."
+      },
+      "kpn": {
+        "title": "Stap voor stap: KPN SIP-trunk koppelen",
+        "intro": "Je hebt een KPN SIP-trunk nodig (KPN EEN Vast / VoIP Connect) en een vast publiek IP-adres voor Kiestoon. KPN levert de trunk; de instellingen staan in je order.",
+        "portalTitle": "1. Bij KPN",
+        "portal": [
+          "Geef KPN bij de bestelling het vaste publieke IP-adres van je Kiestoon-server. KPN accepteert alleen SIP van adressen die het kent.",
+          "Noteer de SBC-adressen en het SIP-domein uit je order. Standaard is SBC 213.162.171.164; met verhoogde beschikbaarheid komt er een tweede SBC 213.162.171.180 bij.",
+          "Vraag KPN de nummers in internationale notatie (+31...) aan te bieden. Dat is het standaardprofiel."
+        ],
+        "kiestoonTitle": "2. In Kiestoon",
+        "kiestoon": [
+          "Provider: KPN SIP-trunk (al gekozen). IP-authenticatie, host 213.162.171.164, TCP poort 5060, codec alaw en beide KPN-SBC's zijn ingevuld. Pas ze aan als je order iets anders zegt.",
+          "Nummerweergave: een nummer uit je KPN-nummerblok. Andere nummers accepteert KPN niet.",
+          "T.38-fax: zet het aan onder Geavanceerde instellingen als je faxen ontvangt. KPN biedt eerst T.38 aan en valt terug op G.711.",
+          "Opslaan, en maak daarna per nummer een inkomende route en een uitgaande route met deze trunk.",
+          "Firewall: sta de KPN-SBC's toe op TCP 5060 en de RTP-poorten. Kiestoon doet dit voor de adressen in de trunk."
+        ],
+        "troubleshootTitle": "Als het niet werkt",
+        "troubleshoot": [
+          "Helemaal geen gesprekken: controleer of KPN het juiste publieke IP-adres van deze server heeft en of TCP 5060 open staat.",
+          "Gesprekken naar KPN mobiel mislukken: zorg dat alleen de codec alaw wordt aangeboden.",
+          "Verkeerd nummer zichtbaar: de nummerweergave moet een nummer uit je KPN-blok zijn."
+        ],
+        "terms": "KPN verwijdert P-Asserted-Identity en accepteert alleen nummers van je eigen trunk als nummerweergave. De waarden komen uit de configuratierichtlijnen van KPN (2017); je KPN-order gaat altijd voor."
+      },
+      "cheapconnect": {
+        "title": "Stap voor stap: Cheapconnect koppelen",
+        "intro": "Je hebt een Cheapconnect-account met een SIP-account (telefoonnummer) nodig. Het kost ongeveer vijf minuten.",
+        "portalTitle": "1. Bij Cheapconnect",
+        "portal": [
+          "Log in op je Cheapconnect-account en open het SIP-account (het telefoonnummer) dat je wilt gebruiken.",
+          "Noteer de SIP-gebruikersnaam (het nummer in internationaal formaat zonder +, bijvoorbeeld 31851234567) en het SIP-wachtwoord.",
+          "Optioneel, veiliger: beperk het account tot het publieke IP-adres van je Kiestoon-server en stel een bestedingslimiet in."
+        ],
+        "kiestoonTitle": "2. In Kiestoon",
+        "kiestoon": [
+          "Provider: Cheapconnect (al gekozen). Host sip.cheapconnect.net, poort 5060, UDP en codecs alaw,ulaw,g722 zijn ingevuld.",
+          "Gebruikersnaam: het nummer van het SIP-account, bijvoorbeeld 31851234567. Wachtwoord: het SIP-wachtwoord.",
+          "Nummerweergave: hetzelfde Cheapconnect-nummer.",
+          "Opslaan. Binnen een minuut wordt de status Aangemeld: Cheapconnect stuurt inkomende gesprekken alleen naar een geregistreerde trunk.",
+          "Maak een inkomende route voor het nummer en zet de trunk in een uitgaande route.",
+          "Achter NAT? Vul het publieke adres in bij Instellingen → Netwerk en NAT en stuur UDP 5060 en de RTP-poorten door."
+        ],
+        "troubleshootTitle": "Als het niet werkt",
+        "troubleshoot": [
+          "Status Geweigerd: verkeerde gebruikersnaam of wachtwoord. Kopieer ze opnieuw uit Cheapconnect.",
+          "Status blijft Niet aangemeld: controleer of uitgaand UDP 5060 is toegestaan.",
+          "Inkomende gesprekken komen in de verkeerde route: zet \"Gebeld nummer komt uit\" op Request-URI.",
+          "Geen geluid: NAT. Controleer het publieke adres en de RTP-portforward."
+        ],
+        "terms": "Instellingen uit de SIP-trunkhandleiding voor Asterisk van Cheapconnect. De waarden in je eigen Cheapconnect-account gaan altijd voor."
+      },
+      "speakup": {
+        "title": "Stap voor stap: Speakup koppelen",
+        "intro": "Je hebt een Speakup SIP-trunk nodig. Speakup geeft je een loginnaam, een wachtwoord en de nummers van de trunk.",
+        "portalTitle": "1. Bij Speakup",
+        "portal": [
+          "Vraag Speakup om de gegevens van de SIP-trunk: loginnaam, wachtwoord en de trunknummers in formaat 31....",
+          "Optioneel, veiliger: vraag Speakup de trunk alleen te accepteren vanaf het publieke IP-adres van je Kiestoon-server."
+        ],
+        "kiestoonTitle": "2. In Kiestoon",
+        "kiestoon": [
+          "Provider: Speakup (al gekozen). Host sip.speakup.nl, poort 5060, UDP en codecs alaw,ulaw zijn ingevuld.",
+          "Gebruikersnaam: het hoofdnummer van de trunk, bijvoorbeeld 31201234567. Authenticatie-gebruikersnaam: de Speakup-loginnaam, als die afwijkt van het nummer. Wachtwoord: het trunkwachtwoord.",
+          "Nummerweergave: een van de trunknummers. In Nederland mag je alleen je eigen nummers tonen.",
+          "T.38-fax: Speakup geeft T.38 van begin tot eind door. Gebruik voor een aparte faxtrunk host t38-sbc.speakup.nl.",
+          "Opslaan, en maak daarna inkomende routes voor de nummers en een uitgaande route met deze trunk."
+        ],
+        "troubleshootTitle": "Als het niet werkt",
+        "troubleshoot": [
+          "Status Geweigerd: controleer loginnaam en wachtwoord. Zet de loginnaam bij Authenticatie-gebruikersnaam.",
+          "Inkomende gesprekken komen in de verkeerde route: zet \"Gebeld nummer komt uit\" op Request-URI.",
+          "Geen geluid: NAT. Controleer het publieke adres en de RTP-portforward."
+        ],
+        "terms": "Speakup publiceert geen handleiding voor een eigen centrale. De instellingen komen uit koppelhandleidingen van Swyx en Tuxis; de gegevens van Speakup gaan altijd voor."
+      },
+      "ziggo": {
+        "title": "Stap voor stap: Vodafone Ziggo koppelen",
+        "intro": "Je hebt een Vodafone Ziggo Zakelijk SIP-trunk nodig. Ziggo levert per trunk een gebruikersnaam en wachtwoord.",
+        "portalTitle": "1. Bij Vodafone Ziggo",
+        "portal": [
+          "Noteer de SIP-gebruikersnaam (formaat 31..., bijvoorbeeld 31123450000) en het wachtwoord van Ziggo. Laat @trunk.sipnl.net weg.",
+          "Noteer de nummers van je nummerblok, ook in formaat 31...."
+        ],
+        "kiestoonTitle": "2. In Kiestoon",
+        "kiestoon": [
+          "Provider: Vodafone Ziggo Zakelijk (al gekozen). Host trunk.sipnl.net, poort 5060, UDP en codecs alaw,ulaw zijn ingevuld.",
+          "Gebruikersnaam en authenticatie-gebruikersnaam: de Ziggo-gebruikersnaam. Wachtwoord: het Ziggo-wachtwoord.",
+          "Nummerweergave: een nummer uit je blok.",
+          "T.38-fax: zet het aan onder Geavanceerde instellingen als je faxt.",
+          "Opslaan. De status wordt Geregistreerd. Maak inkomende routes voor je nummers en een uitgaande route met deze trunk.",
+          "Achter NAT? Vul het publieke adres in, stuur UDP 5060 en de RTP-poorten door, en alleen vanaf de Ziggo-adressen."
+        ],
+        "troubleshootTitle": "Als het niet werkt",
+        "troubleshoot": [
+          "Status Geweigerd: controleer de gebruikersnaam (zonder @trunk.sipnl.net) en het wachtwoord.",
+          "Inkomende gesprekken komen in de verkeerde route: zet \"Gebeld nummer komt uit\" op Request-URI.",
+          "Gesprekken vallen na een tijdje weg achter NAT: controleer de NAT-instellingen en de portforward."
+        ],
+        "terms": "Vodafone Ziggo publiceert geen handleiding voor een eigen centrale. De instellingen komen uit de Ziggo SIP-trunkhandleiding van Panasonic (2017); de gegevens van Ziggo gaan altijd voor."
       }
     }
   },

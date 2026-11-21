@@ -671,10 +671,13 @@
       "generic": "Fill in the details from your provider.",
       "ip": "Ask your provider which IP addresses they send calls from, and give them the public IP address of this server.",
       "voipgrid": "For other providers on the VoIPGRID platform: create a VoIP trunk in their portal, use its account ID and password and fill in the server they give you.",
-      "kpn": "KPN connects on IP address. Fill in the IP addresses from your KPN order.",
+      "kpn": "KPN connects on IP address. The standard KPN SBC and TCP are filled in; check the addresses in your KPN order and give KPN the public IP address of this server.",
       "telnyx": "Create a credential connection in the Telnyx portal. TLS on port 5061 is recommended.",
       "twilio": "Create an Elastic SIP trunk, add the public IP of this server to its access control list and use your termination URI as host.",
-      "voys": "Create a VoIP trunk in Voys Freedom and use its account ID and password. Server, codecs and the Voys IP ranges are filled in for you."
+      "voys": "Create a VoIP trunk in Voys Freedom and use its account ID and password. Server, codecs and the Voys IP ranges are filled in for you.",
+      "cheapconnect": "Use the number of your Cheapconnect SIP account (31... format) as username and its SIP password. Server and codecs are filled in for you.",
+      "speakup": "Use the trunk number (31... format) and the login name and password Speakup gave you. Server and codecs are filled in for you.",
+      "ziggo": "Use the username (31... format, without @trunk.sipnl.net) and password Vodafone Ziggo gave you. Server and codecs are filled in for you."
     },
     "t38": "T.38 fax",
     "t38Hint": "Receive faxes with T.38 when the provider offers it; otherwise fax goes over G.711.",
@@ -716,6 +719,107 @@
           "A different number is shown: turn on \"Use the caller ID of the trunk\" in Freedom and check that the number is yours."
         ],
         "terms": "Voys supports connecting your own phone system with a VoIP trunk, but does not help with setting up the phone system itself. Voys' fraud detection blocks a trunk when it sees suspicious calls."
+      },
+      "kpn": {
+        "title": "Step by step: connect a KPN SIP trunk",
+        "intro": "You need a KPN SIP trunk (KPN EEN Vast / VoIP Connect) and a fixed public IP address for Kiestoon. KPN delivers the trunk; the settings come from your order.",
+        "portalTitle": "1. At KPN",
+        "portal": [
+          "Give KPN the fixed public IP address of your Kiestoon server when ordering. KPN only accepts SIP from addresses it knows.",
+          "Note the SBC address(es) and the SIP domain from your order. Standard is SBC 213.162.171.164; with high availability a second SBC 213.162.171.180 is added.",
+          "Ask KPN to deliver numbers in international notation (+31...). That is the standard profile."
+        ],
+        "kiestoonTitle": "2. In Kiestoon",
+        "kiestoon": [
+          "Provider: KPN SIP trunk (already selected). IP authentication, host 213.162.171.164, TCP port 5060, codec alaw and both KPN SBCs are filled in. Change them when your order says otherwise.",
+          "Caller ID: a number from your KPN number block. KPN does not accept other numbers.",
+          "T.38 fax: turn it on under Advanced when you receive faxes. KPN offers T.38 first and falls back to G.711.",
+          "Save, then add an inbound route per number and an outbound route with this trunk.",
+          "Firewall: allow the KPN SBC addresses on TCP 5060 and the RTP range. Kiestoon does this for the addresses in the trunk."
+        ],
+        "troubleshootTitle": "If it does not work",
+        "troubleshoot": [
+          "No calls at all: check that KPN has the right public IP address of this server and that TCP 5060 is open.",
+          "Calls to KPN mobile fail: make sure no other codec than alaw is offered.",
+          "Wrong number shown: the caller ID must be a number from your KPN block."
+        ],
+        "terms": "KPN strips P-Asserted-Identity and accepts only numbers of your own trunk as caller ID. Values come from KPN's configuration guidelines (2017); your KPN order always wins."
+      },
+      "cheapconnect": {
+        "title": "Step by step: connect Cheapconnect",
+        "intro": "You need a Cheapconnect account with a SIP account (phone number). It takes about five minutes.",
+        "portalTitle": "1. At Cheapconnect",
+        "portal": [
+          "Sign in to your Cheapconnect account and open the SIP account (the phone number) you want to use.",
+          "Note the SIP username (the number in international format without +, for example 31851234567) and the SIP password.",
+          "Optional, more secure: limit the account to the public IP address of your Kiestoon server and set a spending limit."
+        ],
+        "kiestoonTitle": "2. In Kiestoon",
+        "kiestoon": [
+          "Provider: Cheapconnect (already selected). Host sip.cheapconnect.net, port 5060, UDP and codecs alaw,ulaw,g722 are filled in.",
+          "Username: the number of the SIP account, for example 31851234567. Password: the SIP password.",
+          "Caller ID: the same Cheapconnect number.",
+          "Save. Within a minute the status changes to Registered: Cheapconnect only routes incoming calls to a registered trunk.",
+          "Add an inbound route for the number and put the trunk in an outbound route.",
+          "Behind NAT? Fill in the public address under Settings → Network and NAT and forward UDP 5060 and the RTP range."
+        ],
+        "troubleshootTitle": "If it does not work",
+        "troubleshoot": [
+          "Status Rejected: wrong username or password. Copy them again from Cheapconnect.",
+          "Status stays Not registered: check that outgoing UDP 5060 is allowed.",
+          "Incoming calls reach the wrong route: set \"Called number comes from\" to Request URI.",
+          "No audio: NAT. Check the public address and the RTP port forward."
+        ],
+        "terms": "Settings from Cheapconnect's SIP trunk setup page for Asterisk. The values in your own Cheapconnect account always win."
+      },
+      "speakup": {
+        "title": "Step by step: connect Speakup",
+        "intro": "You need a Speakup SIP trunk. Speakup gives you a login name, a password and the numbers of the trunk.",
+        "portalTitle": "1. At Speakup",
+        "portal": [
+          "Ask Speakup for the SIP trunk details: login name, password and the trunk numbers in 31... format.",
+          "Optional, more secure: ask Speakup to only accept your trunk from the public IP address of your Kiestoon server."
+        ],
+        "kiestoonTitle": "2. In Kiestoon",
+        "kiestoon": [
+          "Provider: Speakup (already selected). Host sip.speakup.nl, port 5060, UDP and codecs alaw,ulaw are filled in.",
+          "Username: the main number of the trunk, for example 31201234567. Authentication username: the Speakup login name, when it differs from the number. Password: the trunk password.",
+          "Caller ID: one of the trunk numbers. In the Netherlands you may only show your own numbers.",
+          "T.38 fax: Speakup passes T.38 end to end. For a separate fax trunk use host t38-sbc.speakup.nl.",
+          "Save, then add inbound routes for the numbers and an outbound route with this trunk."
+        ],
+        "troubleshootTitle": "If it does not work",
+        "troubleshoot": [
+          "Status Rejected: check the login name and password. Put the login name in Authentication username.",
+          "Incoming calls reach the wrong route: switch \"Called number comes from\" to Request URI.",
+          "No audio: NAT. Check the public address and the RTP port forward."
+        ],
+        "terms": "Speakup does not publish a PBX manual. Settings come from Speakup interop guides by Swyx and Tuxis; the details Speakup gives you always win."
+      },
+      "ziggo": {
+        "title": "Step by step: connect Vodafone Ziggo",
+        "intro": "You need a Vodafone Ziggo Zakelijk SIP trunk. Ziggo supplies a username and password per trunk.",
+        "portalTitle": "1. At Vodafone Ziggo",
+        "portal": [
+          "Note the SIP username (31... format, for example 31123450000) and the password Ziggo supplied. Leave out @trunk.sipnl.net.",
+          "Note the numbers of your number block, also in 31... format."
+        ],
+        "kiestoonTitle": "2. In Kiestoon",
+        "kiestoon": [
+          "Provider: Vodafone Ziggo Zakelijk (already selected). Host trunk.sipnl.net, port 5060, UDP and codecs alaw,ulaw are filled in.",
+          "Username and authentication username: the Ziggo username. Password: the Ziggo password.",
+          "Caller ID: a number from your block.",
+          "T.38 fax: turn it on under Advanced when you use fax.",
+          "Save. The status changes to Registered. Add inbound routes for your numbers and an outbound route with this trunk.",
+          "Behind NAT? Fill in the public address, forward UDP 5060 and the RTP range, and only from the Ziggo addresses."
+        ],
+        "troubleshootTitle": "If it does not work",
+        "troubleshoot": [
+          "Status Rejected: check the username (without @trunk.sipnl.net) and the password.",
+          "Incoming calls reach the wrong route: switch \"Called number comes from\" to Request URI.",
+          "Calls drop after some time behind NAT: check the NAT settings and the port forward."
+        ],
+        "terms": "Vodafone Ziggo does not publish a PBX manual. Settings come from Panasonic's Ziggo SIP trunk setup guide (2017); the details Ziggo gives you always win."
       }
     }
   },

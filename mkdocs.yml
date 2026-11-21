@@ -92,6 +92,9 @@ plugins:
             Trunks: Trunks (SIP-providers)
             "Provider: Voys": "Provider: Voys"
             "Provider: Cheapconnect": "Provider: Cheapconnect"
+            "Provider: Speakup": "Provider: Speakup"
+            "Provider: KPN": "Provider: KPN"
+            "Provider: Vodafone Ziggo": "Provider: Vodafone Ziggo"
             Microsoft Teams: Microsoft Teams
             Inbound and outbound routes: Inkomende en uitgaande routes
             Ring groups: Belgroepen
@@ -146,6 +149,9 @@ nav:
       - Trunks: trunks.md
       - "Provider: Voys": providers/voys.md
       - "Provider: Cheapconnect": providers/cheapconnect.md
+      - "Provider: Speakup": providers/speakup.md
+      - "Provider: KPN": providers/kpn.md
+      - "Provider: Vodafone Ziggo": providers/ziggo.md
       - Microsoft Teams: teams.md
       - Inbound and outbound routes: routes.md
       - Ring groups: ring-groups.md

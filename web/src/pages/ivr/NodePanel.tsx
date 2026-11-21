@@ -10,7 +10,7 @@ import { ApiError, api } from '../../lib/api'
 import { startRecording, toTelephoneWav } from '../../lib/audio'
 import type { IVR, Prompt, SpeechData, SpeechIntent, TimeCondition } from '../../lib/types'
 import { KEYS, hasAudio, toneOf, tones, type StepData, type StepNode } from './flow'
-import { NodeTitle, iconOf } from './nodes'
+import { NodeTitle, iconOf, toneClass } from './nodes'
 
 type Mode = 'generate' | 'record' | 'upload' | 'library' | 'none'
 const MAX_UPLOAD = 10 << 20
@@ -209,7 +209,7 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
   return (
     <aside aria-label={t('ivr.panel.title')} className="flex h-full min-h-0 flex-col">
       <div className="flex items-center gap-3 border-b border-line px-4 py-3.5">
-        <span className={`inline-flex size-9 flex-none items-center justify-center rounded-xl border ${tone.border} ${tone.bg} ${tone.text}`}><Icon className="size-4" aria-hidden /></span>
+        <span className={`kt-chip ${toneClass(toneOf(d))} size-10 rounded-xl`}><Icon className="size-[19px]" aria-hidden /></span>
         <div className="min-w-0 flex-1">
           <div className="truncate font-display text-base font-semibold text-ink"><NodeTitle d={d} /></div>
           <div className="truncate text-xs text-subtle">{t(`ivr.panel.kinds.${d.type}`)}</div>

@@ -79,7 +79,7 @@ const SPEEDS = [0.75, 1, 1.25, 1.5, 2]
  * A compact player: play button, time, waveform (click to seek) and length. `size="lg"` adds a speed
  * button. `tone` is a text colour class that colours the button and the played part.
  */
-export function WavePlayer({ src, size = 'sm', tone = 'text-accent', label }: { src: string | null; size?: 'sm' | 'lg'; tone?: string; label?: string }) {
+export function WavePlayer({ src, size = 'sm', tone = 'text-accent', label, glossy }: { src: string | null; size?: 'sm' | 'lg'; tone?: string; label?: string; glossy?: boolean }) {
   const { t } = useTranslation()
   const { clip, error } = useClip(src)
   const audio = useRef<HTMLAudioElement | null>(null)
@@ -154,7 +154,7 @@ export function WavePlayer({ src, size = 'sm', tone = 'text-accent', label }: { 
   return (
     <div className={`flex min-w-0 items-center gap-2 ${lg ? 'rounded-xl border border-line bg-inset px-2.5 py-2' : ''}`}>
       <button type="button" onClick={toggle} disabled={!clip} aria-label={`${playing ? t('audio.pause') : t('audio.play')}${label ? `: ${label}` : ''}`}
-        className={`nodrag inline-flex ${btn} flex-none items-center justify-center rounded-full bg-current transition disabled:opacity-40 ${tone}`}>
+        className={`nodrag inline-flex ${btn} flex-none items-center justify-center rounded-full bg-current transition disabled:opacity-40 ${tone} ${glossy ? 'kt-play' : ''}`}>
         {!clip && !error && src ? <Loader2 className="size-3.5 animate-spin text-on-accent" aria-hidden />
           : playing ? <Pause className="size-3.5 fill-on-accent text-on-accent" aria-hidden />
             : <Play className="ml-0.5 size-3.5 fill-on-accent text-on-accent" aria-hidden />}

@@ -16,6 +16,10 @@ import (
 // onAMIEvent stores call detail records and handles the feature codes the dialplan reports.
 func (s *Server) onAMIEvent(m asterisk.Message) {
 	switch m.Get("Event") {
+	case "Newchannel", "DialBegin", "DialEnd", "Hangup":
+		s.crmAMI(m)
+	}
+	switch m.Get("Event") {
 	case "CEL", "DialBegin", "DialEnd", "QueueCallerJoin", "AgentCalled", "AgentRingNoAnswer", "AgentConnect", "AgentComplete":
 		s.journeyEvent(m)
 	}
@@ -35,6 +39,7 @@ func (s *Server) onAMIEvent(m asterisk.Message) {
 			go s.checkFraud(rec)
 		}
 		s.cdrEvent(rec)
+		s.crmCDR(rec)
 	case "UserEvent":
 		switch m.Get("UserEvent") {
 		case "Kiestoon":
@@ -159,6 +164,7 @@ func (s *Server) RunMaintenance(ctx context.Context) {
 	go s.runFirmwareWatch(ctx)
 	go s.runSLA(ctx)
 	go s.runReports(ctx)
+	go s.runCRM(ctx)
 	day := ""
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()

@@ -111,3 +111,16 @@ func TestHotdeskCodes(t *testing.T) {
 		t.Error("the PIN must not be an AGI argument")
 	}
 }
+
+func TestCRMDeskNameAGI(t *testing.T) {
+	s := sample()
+	d := Generate(s, Options{AGIAddr: "127.0.0.1:4573"})["extensions.conf"]
+	if strings.Contains(d, "/crmname") {
+		t.Fatal("CRM look-up without a CRM")
+	}
+	s.CRMDeskName = true
+	d = Generate(s, Options{AGIAddr: "127.0.0.1:4573"})["extensions.conf"]
+	if !strings.Contains(d, " same => n,AGI(agi://127.0.0.1:4573/crmname)\n same => n,Goto(kiestoon-did,${KT_DID},1)") {
+		t.Fatal("no CRM look-up on calls from trunks")
+	}
+}

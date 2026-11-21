@@ -34,6 +34,8 @@ type Snapshot struct {
 	Supervisors []string
 	// FraudLocked blocks international and premium calls after a fraud alert.
 	FraudLocked bool
+	// CRMDeskName asks the CRM for the caller's name on calls from trunks (desk phone display).
+	CRMDeskName bool
 	// Now decides which year's holidays go into the dialplan (it is regenerated every night).
 	Now time.Time
 }
@@ -72,6 +74,10 @@ func (r *Repo) Snapshot(ctx context.Context) (*Snapshot, error) {
 	if s.Phonebook, err = LoadPhonebookSettings(ctx, r.DB); err != nil {
 		return nil, err
 	}
+	var deskName string
+	_ = r.DB.QueryRowContext(ctx, `SELECT value FROM settings WHERE key = 'crm_desk_name'`).Scan(&deskName)
+	s.CRMDeskName = deskName == "1"
+
 	if s.RingGroups, err = r.RingGroups(ctx); err != nil {
 		return nil, err
 	}

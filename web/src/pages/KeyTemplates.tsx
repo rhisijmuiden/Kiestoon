@@ -89,8 +89,8 @@ function TemplateForm({ value, models, moduleTypes, exts, onClose, onSaved }: {
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label={t('keys.templateName')} value={x.name} onChange={(e) => setX({ ...x, name: e.target.value })} placeholder={t('keys.templatePlaceholder')} />
-        <Select label={t('phones.model')} value={`${x.vendor}/${x.model}`} disabled={!!x.id} hint={x.id ? t('keys.modelFixed') : undefined}
+        <Input name="name" label={t('keys.templateName')} value={x.name} onChange={(e) => setX({ ...x, name: e.target.value })} placeholder={t('keys.templatePlaceholder')} />
+        <Select name="model" label={t('phones.model')} value={`${x.vendor}/${x.model}`} disabled={!!x.id} hint={x.id ? t('keys.modelFixed') : undefined}
           onChange={(e) => { const [v, m] = e.target.value.split('/'); setX({ ...x, vendor: v as KeyTemplate['vendor'], model: m, keys: [], modules: [] }) }}>
           {vendors.map((v) => (
             <optgroup key={v} label={vendorName(v)}>

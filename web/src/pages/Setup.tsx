@@ -96,9 +96,9 @@ export function Setup() {
             <p className="mt-2 text-xs text-subtle">{t('setup.languageHint')}</p>
           </fieldset>
           {tokenRequired && (
-            <Input label={t('setup.tokenLabel')} hint={t('setup.tokenHint')} value={form.token} onChange={set('token')} required autoComplete="off" spellCheck={false} className="font-mono uppercase tracking-widest" placeholder="XXXX-XXXX-XXXX" />
+            <Input name="token" label={t('setup.tokenLabel')} hint={t('setup.tokenHint')} value={form.token} onChange={set('token')} required autoComplete="off" spellCheck={false} className="font-mono uppercase tracking-widest" placeholder="XXXX-XXXX-XXXX" />
           )}
-          <Input label={t('setup.organization')} hint={t('setup.organizationHint')} value={form.organization} onChange={set('organization')} required autoComplete="organization" />
+          <Input name="organization" label={t('setup.organization')} hint={t('setup.organizationHint')} value={form.organization} onChange={set('organization')} required autoComplete="organization" />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <button type="button" onClick={() => setStandby(true)} className="inline-flex items-center gap-2 text-sm text-muted hover:text-ink">
               <Server className="size-4" aria-hidden /> {t('setup.joinStandby')}
@@ -113,11 +113,11 @@ export function Setup() {
           <h1 className="font-display text-2xl font-semibold tracking-tight">{t('setup.steps.admin')}</h1>
           <ErrorMessage error={error} />
           <div className="grid gap-5 sm:grid-cols-2">
-            <Input label={t('setup.displayName')} value={form.displayName} onChange={set('displayName')} required autoComplete="name" />
-            <Input label={t('setup.username')} value={form.username} onChange={set('username')} required autoComplete="username" />
+            <Input name="displayName" label={t('setup.displayName')} value={form.displayName} onChange={set('displayName')} required autoComplete="name" />
+            <Input name="username" label={t('setup.username')} value={form.username} onChange={set('username')} required autoComplete="username" />
           </div>
-          <Input label={t('setup.password')} hint={t('setup.passwordHint')} type="password" value={form.password} onChange={set('password')} required minLength={12} autoComplete="new-password" />
-          <Input label={t('setup.passwordRepeat')} type="password" value={form.repeat} onChange={set('repeat')} required minLength={12} autoComplete="new-password" />
+          <Input name="password" label={t('setup.password')} hint={t('setup.passwordHint')} type="password" value={form.password} onChange={set('password')} required minLength={12} autoComplete="new-password" />
+          <Input name="repeat" label={t('setup.passwordRepeat')} type="password" value={form.repeat} onChange={set('repeat')} required minLength={12} autoComplete="new-password" />
           {mismatch && <Alert>{t('setup.passwordMismatch')}</Alert>}
           <div className="flex justify-between gap-2">
             <Button type="button" variant="ghost" onClick={() => setStep(0)}>{t('common.back')}</Button>
@@ -180,10 +180,10 @@ function JoinStandby({ tokenRequired, onBack }: { tokenRequired: boolean; onBack
         {done ? <Alert tone="ok">{t('setup.standbyDone', { name: done })}</Alert> : (
           <>
             {tokenRequired && (
-              <Input label={t('setup.tokenLabel')} hint={t('setup.tokenHint')} value={f.token} onChange={(e) => setF({ ...f, token: e.target.value })} required autoComplete="off" spellCheck={false} className="font-mono uppercase tracking-widest" placeholder="XXXX-XXXX-XXXX" />
+              <Input name="token" label={t('setup.tokenLabel')} hint={t('setup.tokenHint')} value={f.token} onChange={(e) => setF({ ...f, token: e.target.value })} required autoComplete="off" spellCheck={false} className="font-mono uppercase tracking-widest" placeholder="XXXX-XXXX-XXXX" />
             )}
-            <Input label={t('setup.standbyCode')} hint={t('setup.standbyCodeHint')} value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} required className="font-mono" placeholder="KT1-H-…" />
-            <Input label={t('cluster.address')} hint={t('setup.standbyAddressHint')} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} className="font-mono" />
+            <Input name="code" label={t('setup.standbyCode')} hint={t('setup.standbyCodeHint')} value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} required className="font-mono" placeholder="KT1-H-…" />
+            <Input name="address" label={t('cluster.address')} hint={t('setup.standbyAddressHint')} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} className="font-mono" />
             <div className="flex justify-between gap-2">
               <Button type="button" variant="ghost" onClick={onBack}>{t('common.back')}</Button>
               <Button type="submit" busy={busy}>{t('setup.standbyJoin')}</Button>

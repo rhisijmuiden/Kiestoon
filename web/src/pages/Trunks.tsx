@@ -118,52 +118,52 @@ function TrunkForm({ value, onClose, onSaved }: { value: Trunk; onClose: () => v
     <Modal wide title={x.id ? t('trunks.edit') : t('trunks.add')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Select label={t('trunks.provider')} value={x.provider} onChange={(e) => applyPreset(e.target.value)}>
+      <Select name="provider" label={t('trunks.provider')} value={x.provider} onChange={(e) => applyPreset(e.target.value)}>
         {presets.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
       </Select>
       {preset && <Alert tone="warn">{t(`trunks.notes.${preset.note}`)}</Alert>}
       {preset?.guide && <ProviderGuide guide={preset.guide} docsUrl={preset.docsUrl} open={!x.id} />}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label={t('trunks.name')} value={x.name} onChange={(e) => set('name', e.target.value)} />
-        <Select label={t('trunks.authMode')} value={x.authMode} onChange={(e) => set('authMode', e.target.value as Trunk['authMode'])}>
+        <Input name="name" label={t('trunks.name')} value={x.name} onChange={(e) => set('name', e.target.value)} />
+        <Select name="authMode" label={t('trunks.authMode')} value={x.authMode} onChange={(e) => set('authMode', e.target.value as Trunk['authMode'])}>
           <option value="register">{t('trunks.mode.register')}</option>
           <option value="ip">{t('trunks.mode.ip')}</option>
         </Select>
       </div>
       <div className="grid gap-4 sm:grid-cols-[1fr_110px_130px]">
-        <Input label={t('trunks.host')} value={x.host} onChange={(e) => set('host', e.target.value.trim())} className="font-mono" placeholder="sip.provider.nl" />
-        <Input label={t('trunks.port')} type="number" min={0} value={x.port} hint={x.port === 0 ? t('trunks.portSrv') : undefined} onChange={(e) => set('port', Number(e.target.value))} />
-        <Select label={t('trunks.transport')} value={x.transport} onChange={(e) => { const v = e.target.value as Trunk['transport']; setX((o) => ({ ...o, transport: v, srtp: v === 'tls' ? o.srtp : false, port: v === 'tls' && o.port === 5060 ? 5061 : v !== 'tls' && o.port === 5061 ? 5060 : o.port })) }}>
+        <Input name="host" label={t('trunks.host')} value={x.host} onChange={(e) => set('host', e.target.value.trim())} className="font-mono" placeholder="sip.provider.nl" />
+        <Input name="port" label={t('trunks.port')} type="number" min={0} value={x.port} hint={x.port === 0 ? t('trunks.portSrv') : undefined} onChange={(e) => set('port', Number(e.target.value))} />
+        <Select name="transport" label={t('trunks.transport')} value={x.transport} onChange={(e) => { const v = e.target.value as Trunk['transport']; setX((o) => ({ ...o, transport: v, srtp: v === 'tls' ? o.srtp : false, port: v === 'tls' && o.port === 5060 ? 5061 : v !== 'tls' && o.port === 5061 ? 5060 : o.port })) }}>
           <option value="udp">UDP</option><option value="tcp">TCP</option><option value="tls">TLS</option>
         </Select>
       </div>
       {x.authMode === 'register' && (
         <div className="grid gap-4 sm:grid-cols-3">
-          <Input label={t('trunks.username')} value={x.username} onChange={(e) => set('username', e.target.value.trim())} className="font-mono" />
-          <Input label={t('trunks.authUsername')} value={x.authUsername} onChange={(e) => set('authUsername', e.target.value.trim())} hint={t('trunks.authUsernameHint')} className="font-mono" />
-          <Input label={t('trunks.secret')} type="password" value={x.secret ?? ''} onChange={(e) => set('secret', e.target.value)} placeholder={x.secretSet ? '••••••••' : ''} hint={x.secretSet ? t('common.keepSecret') : undefined} autoComplete="new-password" />
+          <Input name="username" label={t('trunks.username')} value={x.username} onChange={(e) => set('username', e.target.value.trim())} className="font-mono" />
+          <Input name="authUsername" label={t('trunks.authUsername')} value={x.authUsername} onChange={(e) => set('authUsername', e.target.value.trim())} hint={t('trunks.authUsernameHint')} className="font-mono" />
+          <Input name="secret" label={t('trunks.secret')} type="password" value={x.secret ?? ''} onChange={(e) => set('secret', e.target.value)} placeholder={x.secretSet ? '••••••••' : ''} hint={x.secretSet ? t('common.keepSecret') : undefined} autoComplete="new-password" />
         </div>
       )}
-      <Textarea label={t('trunks.matchIps')} value={x.matchIps.split(',').filter(Boolean).join('\n')} onChange={(e) => set('matchIps', e.target.value.split(/\s+/).filter(Boolean).join(','))} hint={t('trunks.matchIpsHint')} />
+      <Textarea name="matchIps" label={t('trunks.matchIps')} value={x.matchIps.split(',').filter(Boolean).join('\n')} onChange={(e) => set('matchIps', e.target.value.split(/\s+/).filter(Boolean).join(','))} hint={t('trunks.matchIpsHint')} />
       <div className="grid gap-4 sm:grid-cols-3">
-        <Input label={t('trunks.callerId')} value={x.callerId} onChange={(e) => set('callerId', e.target.value.trim())} hint={t('trunks.callerIdHint')} className="font-mono" />
-        <Select label={t('trunks.didSource')} value={x.didSource} onChange={(e) => set('didSource', e.target.value as Trunk['didSource'])}>
+        <Input name="callerId" label={t('trunks.callerId')} value={x.callerId} onChange={(e) => set('callerId', e.target.value.trim())} hint={t('trunks.callerIdHint')} className="font-mono" />
+        <Select name="didSource" label={t('trunks.didSource')} value={x.didSource} onChange={(e) => set('didSource', e.target.value as Trunk['didSource'])}>
           <option value="to">{t('trunks.did.to')}</option>
           <option value="ruri">{t('trunks.did.ruri')}</option>
         </Select>
-        <Input label={t('trunks.maxChannels')} type="number" min={0} value={x.maxChannels} onChange={(e) => set('maxChannels', Number(e.target.value))} hint={t('trunks.maxChannelsHint')} />
+        <Input name="maxChannels" label={t('trunks.maxChannels')} type="number" min={0} value={x.maxChannels} onChange={(e) => set('maxChannels', Number(e.target.value))} hint={t('trunks.maxChannelsHint')} />
       </div>
       <details className="rounded-xl border border-line p-4">
         <summary className="cursor-pointer text-sm text-ink-2">{t('common.advanced')}</summary>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <Input label={t('trunks.fromUser')} value={x.fromUser} onChange={(e) => set('fromUser', e.target.value.trim())} className="font-mono" />
-          <Input label={t('trunks.fromDomain')} value={x.fromDomain} onChange={(e) => set('fromDomain', e.target.value.trim())} className="font-mono" />
-          <Input label={t('trunks.codecs')} value={x.codecs} onChange={(e) => set('codecs', e.target.value.replace(/\s/g, ''))} className="font-mono" hint="alaw,ulaw,g722" />
+          <Input name="fromUser" label={t('trunks.fromUser')} value={x.fromUser} onChange={(e) => set('fromUser', e.target.value.trim())} className="font-mono" />
+          <Input name="fromDomain" label={t('trunks.fromDomain')} value={x.fromDomain} onChange={(e) => set('fromDomain', e.target.value.trim())} className="font-mono" />
+          <Input name="codecs" label={t('trunks.codecs')} value={x.codecs} onChange={(e) => set('codecs', e.target.value.replace(/\s/g, ''))} className="font-mono" hint="alaw,ulaw,g722" />
         </div>
-        <div className="mt-4"><Toggle label={t('trunks.srtp')} checked={x.srtp} disabled={x.transport !== 'tls'} onChange={(v) => set('srtp', v)} /></div>
-        <div className="mt-3"><Toggle label={t('trunks.t38')} hint={t('trunks.t38Hint')} checked={x.t38} onChange={(v) => set('t38', v)} /></div>
+        <div className="mt-4"><Toggle name="srtp" label={t('trunks.srtp')} checked={x.srtp} disabled={x.transport !== 'tls'} onChange={(v) => set('srtp', v)} /></div>
+        <div className="mt-3"><Toggle name="t38" label={t('trunks.t38')} hint={t('trunks.t38Hint')} checked={x.t38} onChange={(v) => set('t38', v)} /></div>
       </details>
-      <Toggle label={t('common.enabled')} checked={x.enabled} onChange={(v) => set('enabled', v)} />
+      <Toggle name="enabled" label={t('common.enabled')} checked={x.enabled} onChange={(v) => set('enabled', v)} />
     </Modal>
   )
 }
@@ -273,12 +273,12 @@ function InboundForm({ value, onClose, onSaved }: { value: InboundRoute; onClose
     <Modal title={x.id ? t('routes.editInbound') : t('routes.addInbound')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('routes.name')} value={x.name} onChange={(e) => set('name', e.target.value)} />
-      <Input label={t('routes.did')} value={x.did} onChange={(e) => set('did', e.target.value)} hint={t('routes.didHint')} className="font-mono" placeholder="020 123 4567" />
+      <Input name="name" label={t('routes.name')} value={x.name} onChange={(e) => set('name', e.target.value)} />
+      <Input name="did" label={t('routes.did')} value={x.did} onChange={(e) => set('did', e.target.value)} hint={t('routes.didHint')} className="font-mono" placeholder="020 123 4567" />
       <DestinationPicker label={t('routes.destination')} value={{ type: x.destinationType, target: x.destination }}
         onChange={(d) => setX((o) => ({ ...o, destinationType: (d.type || 'hangup') as DestType, destination: d.target }))} />
-      <Input label={t('routes.cidPrefix')} value={x.cidPrefix} onChange={(e) => set('cidPrefix', e.target.value)} hint={t('routes.cidPrefixHint')} />
-      <Toggle label={t('common.enabled')} checked={x.enabled} onChange={(v) => set('enabled', v)} />
+      <Input name="cidPrefix" label={t('routes.cidPrefix')} value={x.cidPrefix} onChange={(e) => set('cidPrefix', e.target.value)} hint={t('routes.cidPrefixHint')} />
+      <Toggle name="enabled" label={t('common.enabled')} checked={x.enabled} onChange={(v) => set('enabled', v)} />
     </Modal>
   )
 }
@@ -362,8 +362,8 @@ function OutboundForm({ value, trunks, onClose, onSaved }: { value: OutboundRout
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label={t('routes.name')} value={x.name} onChange={(e) => setX({ ...x, name: e.target.value })} />
-        <Input label={t('routes.callerId')} value={x.callerId} onChange={(e) => setX({ ...x, callerId: e.target.value.trim() })} hint={t('routes.callerIdHint')} className="font-mono" />
+        <Input name="name" label={t('routes.name')} value={x.name} onChange={(e) => setX({ ...x, name: e.target.value })} />
+        <Input name="callerId" label={t('routes.callerId')} value={x.callerId} onChange={(e) => setX({ ...x, callerId: e.target.value.trim() })} hint={t('routes.callerIdHint')} className="font-mono" />
       </div>
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium text-ink-2">{t('routes.patterns')}</legend>
@@ -395,13 +395,13 @@ function OutboundForm({ value, trunks, onClose, onSaved }: { value: OutboundRout
           ))}
         </ol>
         {unused.length > 0 && (
-          <Select label={t('routes.addTrunk')} value="" onChange={(e) => e.target.value && setX({ ...x, trunkIds: [...x.trunkIds, Number(e.target.value)] })}>
+          <Select name="trunkIds" label={t('routes.addTrunk')} value="" onChange={(e) => e.target.value && setX({ ...x, trunkIds: [...x.trunkIds, Number(e.target.value)] })}>
             <option value="">–</option>
             {unused.map((tr) => <option key={tr.id} value={tr.id}>{tr.name}</option>)}
           </Select>
         )}
       </fieldset>
-      <Toggle label={t('common.enabled')} checked={x.enabled} onChange={(v) => setX({ ...x, enabled: v })} />
+      <Toggle name="enabled" label={t('common.enabled')} checked={x.enabled} onChange={(v) => setX({ ...x, enabled: v })} />
     </Modal>
   )
 }

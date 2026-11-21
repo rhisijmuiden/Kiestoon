@@ -74,31 +74,31 @@ export function Firewall() {
         <Card>
           <SectionTitle>{t('firewall.rules')}</SectionTitle>
           <div className="flex flex-col gap-3">
-            <Toggle label={t('firewall.enable')} hint={t('firewall.enableHint')} checked={c.enabled} onChange={(v) => set('enabled', v)} />
-            <Toggle label={t('firewall.sipOpen')} hint={t('firewall.sipOpenHint')} checked={c.sipOpen} onChange={(v) => set('sipOpen', v)} />
+            <Toggle name="enabled" label={t('firewall.enable')} hint={t('firewall.enableHint')} checked={c.enabled} onChange={(v) => set('enabled', v)} />
+            <Toggle name="sipOpen" label={t('firewall.sipOpen')} hint={t('firewall.sipOpenHint')} checked={c.sipOpen} onChange={(v) => set('sipOpen', v)} />
             {!c.sipOpen && (
               <>
-                <Toggle label={t('firewall.privateSip')} hint={t('firewall.privateSipHint')} checked={c.allowPrivateSip} onChange={(v) => set('allowPrivateSip', v)} />
-                <Textarea label={t('firewall.whitelist')} hint={t('firewall.whitelistHint')} value={lines(c.sipWhitelist)} onChange={(e) => set('sipWhitelist', parse(e.target.value))} />
+                <Toggle name="allowPrivateSip" label={t('firewall.privateSip')} hint={t('firewall.privateSipHint')} checked={c.allowPrivateSip} onChange={(v) => set('allowPrivateSip', v)} />
+                <Textarea name="sipWhitelist" label={t('firewall.whitelist')} hint={t('firewall.whitelistHint')} value={lines(c.sipWhitelist)} onChange={(e) => set('sipWhitelist', parse(e.target.value))} />
                 <div className="text-xs text-subtle">
                   {t('firewall.trunkIps')}: <span className="font-mono text-ink-2">{fw.data.trunkIps.join(', ') || '–'}</span>
                 </div>
               </>
             )}
-            <Textarea label={t('firewall.admin')} hint={t('firewall.adminHint', { ip: fw.data.clientIp })} value={lines(c.adminNetworks)} onChange={(e) => set('adminNetworks', parse(e.target.value))} />
+            <Textarea name="adminNetworks" label={t('firewall.admin')} hint={t('firewall.adminHint', { ip: fw.data.clientIp })} value={lines(c.adminNetworks)} onChange={(e) => set('adminNetworks', parse(e.target.value))} />
             {adminLocksMeOut && <Alert tone="warn">{t('firewall.lockout', { ip: fw.data.clientIp })}</Alert>}
           </div>
         </Card>
         <Card>
           <SectionTitle>fail2ban</SectionTitle>
           <div className="flex flex-col gap-3">
-            <Toggle label={t('firewall.f2b')} hint={t('firewall.f2bHint')} checked={c.fail2banEnabled} onChange={(v) => set('fail2banEnabled', v)} />
+            <Toggle name="fail2banEnabled" label={t('firewall.f2b')} hint={t('firewall.f2bHint')} checked={c.fail2banEnabled} onChange={(v) => set('fail2banEnabled', v)} />
             <div className="grid gap-3 sm:grid-cols-3">
-              <Input label={t('firewall.maxRetry')} type="number" min={1} value={c.maxRetry} onChange={(e) => set('maxRetry', Number(e.target.value))} />
-              <Input label={t('firewall.findMinutes')} type="number" min={1} value={c.findMinutes} onChange={(e) => set('findMinutes', Number(e.target.value))} />
-              <Input label={t('firewall.banMinutes')} type="number" min={1} value={c.banMinutes} onChange={(e) => set('banMinutes', Number(e.target.value))} />
+              <Input name="maxRetry" label={t('firewall.maxRetry')} type="number" min={1} value={c.maxRetry} onChange={(e) => set('maxRetry', Number(e.target.value))} />
+              <Input name="findMinutes" label={t('firewall.findMinutes')} type="number" min={1} value={c.findMinutes} onChange={(e) => set('findMinutes', Number(e.target.value))} />
+              <Input name="banMinutes" label={t('firewall.banMinutes')} type="number" min={1} value={c.banMinutes} onChange={(e) => set('banMinutes', Number(e.target.value))} />
             </div>
-            <Textarea label={t('firewall.ignore')} hint={t('firewall.ignoreHint')} value={lines(c.ignoreIps)} onChange={(e) => set('ignoreIps', parse(e.target.value))} />
+            <Textarea name="ignoreIps" label={t('firewall.ignore')} hint={t('firewall.ignoreHint')} value={lines(c.ignoreIps)} onChange={(e) => set('ignoreIps', parse(e.target.value))} />
           </div>
           <h3 className="mb-2 mt-6 text-sm font-medium text-ink-2">{t('firewall.bans')}</h3>
           <Table head={[t('firewall.ip'), t('firewall.jail'), '']}
@@ -194,7 +194,7 @@ function GeoCard({ c, set }: { c: FirewallConfig; set: <K extends keyof Firewall
               </div>
             </div>
             {mode === 'allow' && <Alert tone="warn">{t('firewall.geo.allowWarn')}</Alert>}
-            <Toggle label={t('firewall.geo.portal')} hint={t('firewall.geo.portalHint')} checked={c.geoPortal} onChange={(v) => set('geoPortal', v)} />
+            <Toggle name="geoPortal" label={t('firewall.geo.portal')} hint={t('firewall.geo.portalHint')} checked={c.geoPortal} onChange={(v) => set('geoPortal', v)} />
             <p className="text-xs text-subtle">{t('firewall.geo.exceptions')}</p>
           </>
         )}
@@ -245,7 +245,7 @@ function TrustedCard() {
       <p className="mb-4 max-w-3xl text-sm text-muted">{t('firewall.trusted.intro')}</p>
       <ErrorMessage error={error} />
       <div className="flex flex-col gap-4">
-        <Toggle label={t('firewall.trusted.enable')} hint={t('firewall.trusted.enableHint')} checked={c.enabled} onChange={(v) => set({ enabled: v })} />
+        <Toggle name="enabled" label={t('firewall.trusted.enable')} hint={t('firewall.trusted.enableHint')} checked={c.enabled} onChange={(v) => set({ enabled: v })} />
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium text-ink-2">{t('firewall.trusted.networks')}</span>
           {c.networks.length === 0 && <p className="text-sm text-subtle">{t('firewall.trusted.none')}</p>}

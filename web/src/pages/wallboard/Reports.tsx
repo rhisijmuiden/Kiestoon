@@ -92,20 +92,20 @@ function ReportEditor({ report, data, onClose, onSaved }: { report: Report; data
     <Modal title={r.id ? r.name : t('reports.new')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('common.name')} value={r.name} placeholder={t('reports.namePlaceholder')} onChange={(e) => set({ name: e.target.value })} />
+      <Input name="name" label={t('common.name')} value={r.name} placeholder={t('reports.namePlaceholder')} onChange={(e) => set({ name: e.target.value })} />
       <div className="grid gap-4 sm:grid-cols-3">
-        <Select label={t('reports.period')} value={r.period} onChange={(e) => set({ period: e.target.value as Report['period'] })}>
+        <Select name="period" label={t('reports.period')} value={r.period} onChange={(e) => set({ period: e.target.value as Report['period'] })}>
           {(['daily', 'weekly', 'monthly'] as const).map((p) => <option key={p} value={p}>{t(`reports.periods.${p}`)}</option>)}
         </Select>
         {r.period === 'weekly' && (
-          <Select label={t('reports.weekday')} value={r.weekday} onChange={(e) => set({ weekday: Number(e.target.value) })}>
+          <Select name="weekday" label={t('reports.weekday')} value={r.weekday} onChange={(e) => set({ weekday: Number(e.target.value) })}>
             {[1, 2, 3, 4, 5, 6, 7].map((d) => <option key={d} value={d}>{t(`reports.day.${d}`)}</option>)}
           </Select>
         )}
-        <Input label={t('reports.time')} type="time" value={r.time} onChange={(e) => set({ time: e.target.value })} />
+        <Input name="time" label={t('reports.time')} type="time" value={r.time} onChange={(e) => set({ time: e.target.value })} />
       </div>
       <p className="-mt-2 text-sm text-muted">{t(`reports.covers.${r.period}`)}</p>
-      {r.period === 'daily' && <Toggle label={t('reports.workdays')} checked={r.workdays} onChange={(v) => set({ workdays: v })} />}
+      {r.period === 'daily' && <Toggle name="workdays" label={t('reports.workdays')} checked={r.workdays} onChange={(v) => set({ workdays: v })} />}
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-sm font-medium text-ink-2">{t('wallboard.queues')}</legend>
         <div className="flex flex-wrap gap-2">
@@ -122,12 +122,12 @@ function ReportEditor({ report, data, onClose, onSaved }: { report: Report; data
       </fieldset>
       <Textarea label={t('reports.recipients')} hint={t('wallboard.recipientsHint')} rows={2} value={rcpt} onChange={(e) => setRcpt(e.target.value)} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Select label={t('reports.language')} value={r.language} onChange={(e) => set({ language: e.target.value as 'en' | 'nl' })}>
+        <Select name="language" label={t('reports.language')} value={r.language} onChange={(e) => set({ language: e.target.value as 'en' | 'nl' })}>
           <option value="en">English</option>
           <option value="nl">Nederlands</option>
         </Select>
       </div>
-      <Toggle label={t('reports.enabled')} checked={r.enabled} onChange={(v) => set({ enabled: v })} />
+      <Toggle name="enabled" label={t('reports.enabled')} checked={r.enabled} onChange={(v) => set({ enabled: v })} />
     </Modal>
   )
 }

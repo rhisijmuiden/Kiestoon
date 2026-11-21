@@ -75,7 +75,7 @@ export function MyPhone() {
             </div>
           </div>
           <div className="flex items-end gap-2">
-            <div className="flex-1"><Input label={t('portal.mobileNumber')} value={mobile} onChange={(e) => setMobile(clean(e.target.value))} inputMode="tel" className="font-mono" placeholder="0612345678" /></div>
+            <div className="flex-1"><Input name="mobile" label={t('portal.mobileNumber')} value={mobile} onChange={(e) => setMobile(clean(e.target.value))} inputMode="tel" className="font-mono" placeholder="0612345678" /></div>
             <Button variant={toMobile ? 'danger' : 'secondary'} disabled={!mobile || busy} onClick={() => forwardToMobile(!toMobile)}>{toMobile ? t('portal.stop') : t('portal.forwardNow')}</Button>
           </div>
         </div>
@@ -84,36 +84,36 @@ export function MyPhone() {
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card className="flex flex-col gap-4">
           <h2 className="flex items-center gap-2 font-display text-lg font-semibold"><PhoneForwarded className="size-5 text-accent" aria-hidden />{t('portal.forwarding')}</h2>
-          <Input label={t('portal.forwardAlways')} value={f.forwardAlways} onChange={(e) => set('forwardAlways', clean(e.target.value))} inputMode="tel" className="font-mono" hint={t('portal.forwardAlwaysHint')} />
-          <Input label={t('portal.forwardBusy')} value={f.forwardBusy} onChange={(e) => set('forwardBusy', clean(e.target.value))} inputMode="tel" className="font-mono" hint={t('portal.forwardBusyHint')} />
-          <Input label={t('portal.forwardNoAnswer')} value={f.forwardNoAnswer} onChange={(e) => set('forwardNoAnswer', clean(e.target.value))} inputMode="tel" className="font-mono" hint={t('portal.forwardNoAnswerHint')} />
+          <Input name="forwardAlways" label={t('portal.forwardAlways')} value={f.forwardAlways} onChange={(e) => set('forwardAlways', clean(e.target.value))} inputMode="tel" className="font-mono" hint={t('portal.forwardAlwaysHint')} />
+          <Input name="forwardBusy" label={t('portal.forwardBusy')} value={f.forwardBusy} onChange={(e) => set('forwardBusy', clean(e.target.value))} inputMode="tel" className="font-mono" hint={t('portal.forwardBusyHint')} />
+          <Input name="forwardNoAnswer" label={t('portal.forwardNoAnswer')} value={f.forwardNoAnswer} onChange={(e) => set('forwardNoAnswer', clean(e.target.value))} inputMode="tel" className="font-mono" hint={t('portal.forwardNoAnswerHint')} />
         </Card>
         <Card className="flex flex-col gap-4">
           <h2 className="font-display text-lg font-semibold">{t('portal.followMe')}</h2>
-          <Toggle label={t('portal.followMeOn')} hint={t('portal.followMeHint')} checked={fm.enabled} onChange={(v) => set('followMe', { ...fm, enabled: v })} />
+          <Toggle name="followMe" label={t('portal.followMeOn')} hint={t('portal.followMeHint')} checked={fm.enabled} onChange={(v) => set('followMe', { ...fm, enabled: v })} />
           {fm.enabled && (
             <>
               {fm.numbers.map((n, i) => (
                 <div key={i} className="flex items-end gap-2">
-                  <div className="flex-1"><Input label={t('portal.followMeNumber', { n: i + 1 })} value={n} inputMode="tel" className="font-mono"
+                  <div className="flex-1"><Input name="followMe" label={t('portal.followMeNumber', { n: i + 1 })} value={n} inputMode="tel" className="font-mono"
                     onChange={(e) => set('followMe', { ...fm, numbers: fm.numbers.map((x, j) => (j === i ? clean(e.target.value) : x)) })} /></div>
                   <IconButton label={t('common.remove')} danger onClick={() => set('followMe', { ...fm, numbers: fm.numbers.filter((_, j) => j !== i) })}><X className="size-4" aria-hidden /></IconButton>
                 </div>
               ))}
               {fm.numbers.length < 3 && <div><Button variant="ghost" onClick={() => set('followMe', { ...fm, numbers: [...fm.numbers, ''] })}>{t('portal.addNumber')}</Button></div>}
-              <Input label={t('portal.followMeDelay')} type="number" min={0} max={60} value={fm.delay} onChange={(e) => set('followMe', { ...fm, delay: Number(e.target.value) })} hint={t('portal.followMeDelayHint')} />
-              <Toggle label={t('portal.followMeConfirm')} hint={t('portal.followMeConfirmHint')} checked={fm.confirm} onChange={(v) => set('followMe', { ...fm, confirm: v })} />
+              <Input name="followMe" label={t('portal.followMeDelay')} type="number" min={0} max={60} value={fm.delay} onChange={(e) => set('followMe', { ...fm, delay: Number(e.target.value) })} hint={t('portal.followMeDelayHint')} />
+              <Toggle name="followMe" label={t('portal.followMeConfirm')} hint={t('portal.followMeConfirmHint')} checked={fm.confirm} onChange={(v) => set('followMe', { ...fm, confirm: v })} />
             </>
           )}
         </Card>
         <Card className="flex flex-col gap-4">
           <h2 className="flex items-center gap-2 font-display text-lg font-semibold"><CalendarClock className="size-5 text-accent" aria-hidden />{t('portal.schedule')}</h2>
           <p className="text-sm text-muted">{t('portal.scheduleHint')}</p>
-          <Select label={t('portal.scheduleSelect')} value={f.scheduleId} onChange={(e) => set('scheduleId', Number(e.target.value))}>
+          <Select name="scheduleId" label={t('portal.scheduleSelect')} value={f.scheduleId} onChange={(e) => set('scheduleId', Number(e.target.value))}>
             <option value={0}>{t('portal.noSchedule')}</option>
             {me.data.schedules.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </Select>
-          {f.scheduleId > 0 && <Input label={t('portal.closedForward')} value={f.closedForward} onChange={(e) => set('closedForward', clean(e.target.value))} inputMode="tel" className="font-mono" hint={t('portal.closedForwardHint')} />}
+          {f.scheduleId > 0 && <Input name="closedForward" label={t('portal.closedForward')} value={f.closedForward} onChange={(e) => set('closedForward', clean(e.target.value))} inputMode="tel" className="font-mono" hint={t('portal.closedForwardHint')} />}
         </Card>
         <Card>
           <h2 className="mb-3 font-display text-lg font-semibold">{t('features.codes')}</h2>

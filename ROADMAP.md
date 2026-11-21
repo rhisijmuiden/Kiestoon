@@ -338,6 +338,8 @@ the testing channel.
   Teams users with an E.164 number and optional extension (Teams only, or Teams + desk phone), internal dialling by
   extension, outside calls via the routes or one trunk, generated PowerShell script (gateway, voice route, policy,
   numbers)
+- [x] Form errors point at the field (`v0.7.0-rc.23`): red border, message under the field, focus on it, banner names
+  the field; conference rooms explain that "Wait for the host" needs a host PIN
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

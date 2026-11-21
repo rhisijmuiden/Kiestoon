@@ -58,6 +58,7 @@
     "mail_failed": "The mail could not be sent.",
     "invalid": "This value is not valid.",
     "required": "This field is required.",
+    "host_pin_needed": "Set a host PIN, or turn off \"Wait for the host\".",
     "duplicate": "This value is already in use.",
     "invalid_number_length": "The number does not fit the number plan.",
     "reserved_number": "This number is reserved for emergency calls.",

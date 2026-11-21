@@ -103,10 +103,10 @@ export function Settings() {
       <Title>{t('desktop.nav.settings')}</Title>
       <div className="flex flex-col gap-3 px-3.5">
         <Section title={t('desktop.settings.audio')}>
-          <Select label={t('desktop.settings.mic')} value={prefs.mic} onChange={(e) => set('mic', e.target.value)}>{opts(inputs)}</Select>
-          <Select label={t('desktop.settings.speaker')} value={prefs.speaker} onChange={(e) => set('speaker', e.target.value)}>{opts(outputs)}</Select>
+          <Select name="mic" label={t('desktop.settings.mic')} value={prefs.mic} onChange={(e) => set('mic', e.target.value)}>{opts(inputs)}</Select>
+          <Select name="speaker" label={t('desktop.settings.speaker')} value={prefs.speaker} onChange={(e) => set('speaker', e.target.value)}>{opts(outputs)}</Select>
           <div className="flex items-end gap-2">
-            <div className="min-w-0 flex-1"><Select label={t('desktop.settings.ringer')} value={prefs.ringer} onChange={(e) => set('ringer', e.target.value)}>{opts(outputs)}</Select></div>
+            <div className="min-w-0 flex-1"><Select name="ringer" label={t('desktop.settings.ringer')} value={prefs.ringer} onChange={(e) => set('ringer', e.target.value)}>{opts(outputs)}</Select></div>
             <Button variant="ghost" onClick={() => testRing(prefs.ringer)} aria-label={t('desktop.settings.testRing')} title={t('desktop.settings.testRing')}><BellRing className="size-4" aria-hidden /></Button>
           </div>
           <p className="text-xs text-subtle">{t('desktop.settings.audioHint')}</p>

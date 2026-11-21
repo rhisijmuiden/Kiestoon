@@ -107,7 +107,7 @@ function ScreenEditor({ screen, data, onClose, onSaved }: { screen: WallScreen; 
     <Modal title={s.id ? s.name : t('wallboard.newScreen')} subtitle={t('wallboard.screenHint')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('common.name')} value={s.name} onChange={(e) => set({ name: e.target.value })} placeholder={t('wallboard.namePlaceholder')} />
+      <Input name="name" label={t('common.name')} value={s.name} onChange={(e) => set({ name: e.target.value })} placeholder={t('wallboard.namePlaceholder')} />
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-sm font-medium text-ink-2">{t('wallboard.queues')}</legend>
         <div className="flex flex-wrap gap-2">
@@ -129,16 +129,16 @@ function ScreenEditor({ screen, data, onClose, onSaved }: { screen: WallScreen; 
         </div>
       </fieldset>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Select label={t('wallboard.rotate')} value={s.rotate} onChange={(e) => set({ rotate: Number(e.target.value) })}>
+        <Select name="rotate" label={t('wallboard.rotate')} value={s.rotate} onChange={(e) => set({ rotate: Number(e.target.value) })}>
           <option value={0}>{t('wallboard.noRotate')}</option>
           {[15, 30, 60, 120].map((n) => <option key={n} value={n}>{t('wallboard.rotateEvery', { s: n })}</option>)}
         </Select>
-        <Select label={t('wallboard.theme')} value={s.theme} onChange={(e) => set({ theme: e.target.value as 'dark' | 'light' })}>
+        <Select name="theme" label={t('wallboard.theme')} value={s.theme} onChange={(e) => set({ theme: e.target.value as 'dark' | 'light' })}>
           <option value="dark">{t('wallboard.themeDark')}</option>
           <option value="light">{t('wallboard.themeLight')}</option>
         </Select>
       </div>
-      <Toggle label={t('wallboard.hideNames')} hint={t('wallboard.hideNamesHint')} checked={s.hideNames} onChange={(v) => set({ hideNames: v })} />
+      <Toggle name="hideNames" label={t('wallboard.hideNames')} hint={t('wallboard.hideNamesHint')} checked={s.hideNames} onChange={(v) => set({ hideNames: v })} />
     </Modal>
   )
 }
@@ -172,18 +172,18 @@ function AlertsCard({ data, onSaved }: { data: WallSettings; onSaved: () => void
       {saved && <Alert tone="ok">{t('common.saved')}</Alert>}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-3">
-          <Toggle label={t('wallboard.alertScreens')} hint={t('wallboard.alertScreensHint')} checked={a.screens} onChange={(v) => set({ screens: v })} />
-          <Toggle label={t('wallboard.alertEmail')} checked={a.email} onChange={(v) => set({ email: v })} />
+          <Toggle name="screens" label={t('wallboard.alertScreens')} hint={t('wallboard.alertScreensHint')} checked={a.screens} onChange={(v) => set({ screens: v })} />
+          <Toggle name="email" label={t('wallboard.alertEmail')} checked={a.email} onChange={(v) => set({ email: v })} />
           {a.email && <Textarea label={t('wallboard.recipients')} hint={t('wallboard.recipientsHint')} rows={2} value={rcpt} onChange={(e) => { setSaved(false); setRcpt(e.target.value) }} />}
           <Toggle label={t('wallboard.alertPush')} hint={t('wallboard.alertPushHint')} checked={false} onChange={() => undefined} disabled />
         </div>
         <div className="flex flex-col gap-3">
-          <Input label={t('wallboard.quiet')} hint={t('wallboard.quietHint')} type="number" min={1} max={1440} value={a.quiet} onChange={(e) => set({ quiet: Number(e.target.value) })} />
-          <Select label={t('wallboard.onlyDuring')} value={a.timeCondition} onChange={(e) => set({ timeCondition: Number(e.target.value) })}>
+          <Input name="quiet" label={t('wallboard.quiet')} hint={t('wallboard.quietHint')} type="number" min={1} max={1440} value={a.quiet} onChange={(e) => set({ quiet: Number(e.target.value) })} />
+          <Select name="timeCondition" label={t('wallboard.onlyDuring')} value={a.timeCondition} onChange={(e) => set({ timeCondition: Number(e.target.value) })}>
             <option value={0}>{t('wallboard.always')}</option>
             {data.timeConditions.map((tc) => <option key={tc.id} value={tc.id}>{t('wallboard.openHoursOf', { name: tc.name })}</option>)}
           </Select>
-          <Toggle label={t('wallboard.recovered')} checked={a.recovered} onChange={(v) => set({ recovered: v })} />
+          <Toggle name="recovered" label={t('wallboard.recovered')} checked={a.recovered} onChange={(v) => set({ recovered: v })} />
         </div>
       </div>
       <div className="mt-4 flex justify-end"><Button busy={busy} onClick={save}>{t('common.save')}</Button></div>

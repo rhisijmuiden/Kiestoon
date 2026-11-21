@@ -82,7 +82,7 @@ function SunForm({ value, onClose, onSaved }: { value: SunRoute; onClose: () => 
     <Modal wide title={r.id ? t('sun.edit', { name: value.name }) : t('sun.add')} subtitle={t('sun.formHint')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={() => save(r)}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('common.name')} value={r.name} onChange={(e) => setR({ ...r, name: e.target.value })} placeholder={t('sun.namePlaceholder')} autoFocus />
+      <Input name="name" label={t('common.name')} value={r.name} onChange={(e) => setR({ ...r, name: e.target.value })} placeholder={t('sun.namePlaceholder')} autoFocus />
       {r.rules.map((x, i) => (
         <div key={i} className="flex flex-col gap-3 rounded-xl border border-line p-4">
           <div className="flex items-start gap-3">
@@ -115,7 +115,7 @@ function SunForm({ value, onClose, onSaved }: { value: SunRoute; onClose: () => 
       <div><Button variant="ghost" onClick={() => setR({ ...r, rules: [...r.rules, newRule(r.rules[r.rules.length - 1]?.timezone ?? localZone)] })}><Plus className="size-4" aria-hidden /> {t('sun.addRule')}</Button></div>
       <p className="text-xs text-subtle">{t('sun.orderHint')}</p>
       <DestinationPicker label={t('sun.fallback')} value={r.fallback} onChange={(d) => setR({ ...r, fallback: d })} exclude={exclude} />
-      <Toggle label={t('common.enabled')} checked={r.enabled} onChange={(v) => setR({ ...r, enabled: v })} />
+      <Toggle name="enabled" label={t('common.enabled')} checked={r.enabled} onChange={(v) => setR({ ...r, enabled: v })} />
     </Modal>
   )
 }

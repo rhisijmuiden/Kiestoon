@@ -102,10 +102,10 @@ export function FirmwarePanel({ models }: { models: PhoneModel[] }) {
         <SectionTitle><span className="inline-flex items-center gap-2"><HardDriveDownload className="size-5 text-accent" aria-hidden />{t('firmware.title')}</span></SectionTitle>
         <p className="mb-4 max-w-3xl text-sm text-muted">{t('firmware.intro')}</p>
         <div className="grid items-end gap-3 lg:grid-cols-[180px_1fr_auto_auto]">
-          <Select label={t('firmware.vendor')} value={vendor} onChange={(e) => setVendor(e.target.value)}>
+          <Select name="vendor" label={t('firmware.vendor')} value={vendor} onChange={(e) => setVendor(e.target.value)}>
             {(list.data?.vendors ?? ['yealink']).map((v) => <option key={v} value={v}>{vendorName(v)}</option>)}
           </Select>
-          <Input label={t('firmware.url')} value={url} onChange={(e) => setUrl(e.target.value.trim())} placeholder="https://…/T54W-96.86.0.70.rom" className="font-mono" />
+          <Input name="url" label={t('firmware.url')} value={url} onChange={(e) => setUrl(e.target.value.trim())} placeholder="https://…/T54W-96.86.0.70.rom" className="font-mono" />
           <Button variant="secondary" busy={busy === 'fetch'} disabled={!url || !!busy} onClick={fetchUrl}><CloudDownload className="size-4" aria-hidden />{t('firmware.fetch')}</Button>
           <label className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-gradient-to-br from-accent to-accent-2 px-4 text-sm font-semibold text-on-accent shadow-[0_8px_30px_-10px_rgb(34_211_238_/_0.6)] hover:brightness-110 focus-within:ring-2 focus-within:ring-accent/40 ${busy ? 'pointer-events-none opacity-60' : ''}`}>
             <Upload className="size-4" aria-hidden />{busy === 'upload' ? `${t('firmware.uploading')} ${progress}%` : t('firmware.upload')}
@@ -262,10 +262,10 @@ function WatchSettings({ value, onClose, onSaved }: { value: FirmwareLatest; onC
     <Modal title={t('firmware.latest.settings')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Select label={t('firmware.latest.mode')} value={mode} onChange={(e) => setMode(e.target.value as FirmwareLatest['mode'])} hint={t(`firmware.latest.modeHint_${mode}`)}>
+      <Select name="mode" label={t('firmware.latest.mode')} value={mode} onChange={(e) => setMode(e.target.value as FirmwareLatest['mode'])} hint={t(`firmware.latest.modeHint_${mode}`)}>
         {(['off', 'notify', 'auto'] as const).map((m) => <option key={m} value={m}>{t(`firmware.latest.mode_${m}`)}</option>)}
       </Select>
-      <Input label={t('firmware.latest.catalogUrl')} value={catalogUrl} onChange={(e) => setCatalogUrl(e.target.value.trim())} placeholder={value.defaultCatalogUrl} className="font-mono" hint={t('firmware.latest.catalogHint')} />
+      <Input name="catalogUrl" label={t('firmware.latest.catalogUrl')} value={catalogUrl} onChange={(e) => setCatalogUrl(e.target.value.trim())} placeholder={value.defaultCatalogUrl} className="font-mono" hint={t('firmware.latest.catalogHint')} />
     </Modal>
   )
 }
@@ -292,7 +292,7 @@ function FirmwareForm({ value, models, onClose, onSaved }: { value: Firmware; mo
     <Modal title={t('firmware.edit')} subtitle={`${vendorName(f.vendor)} · ${f.filename}`} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('firmware.version')} value={f.version} onChange={(e) => setF({ ...f, version: e.target.value })} placeholder="96.86.0.70" className="font-mono" hint={t('firmware.versionHint')} />
+      <Input name="version" label={t('firmware.version')} value={f.version} onChange={(e) => setF({ ...f, version: e.target.value })} placeholder="96.86.0.70" className="font-mono" hint={t('firmware.versionHint')} />
       <div>
         <h3 className="mb-1 text-sm font-medium text-ink-2">{t('firmware.models')}</h3>
         <p className="mb-3 text-xs text-subtle">{t('firmware.modelsHint')}</p>
@@ -304,7 +304,7 @@ function FirmwareForm({ value, models, onClose, onSaved }: { value: Firmware; mo
           ))}
         </div>
       </div>
-      <Toggle label={t('firmware.activate')} hint={t('firmware.activateHint')} checked={f.active} onChange={(v) => setF({ ...f, active: v })} />
+      <Toggle name="active" label={t('firmware.activate')} hint={t('firmware.activateHint')} checked={f.active} onChange={(v) => setF({ ...f, active: v })} />
       <p className="break-all font-mono text-[11px] text-subtle">SHA-256 {f.sha256}</p>
     </Modal>
   )
@@ -395,14 +395,14 @@ function ZtpForm({ value, onClose, onSaved }: { value: ZtpSettings; onClose: () 
     <Modal title={t('ztp.settings')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('ztp.serverUrlOverride')} value={x.serverUrl} onChange={(e) => setX({ ...x, serverUrl: e.target.value.trim() })} placeholder="https://pbx.example.com/prov/" className="font-mono" hint={t('ztp.serverUrlHint')} />
-      <Toggle label={t('ztp.yealinkEnable')} hint={t('ztp.yealinkEnableHint')} checked={y.enabled} onChange={(v) => setY({ enabled: v })} />
+      <Input name="serverUrl" label={t('ztp.serverUrlOverride')} value={x.serverUrl} onChange={(e) => setX({ ...x, serverUrl: e.target.value.trim() })} placeholder="https://pbx.example.com/prov/" className="font-mono" hint={t('ztp.serverUrlHint')} />
+      <Toggle name="enabled" label={t('ztp.yealinkEnable')} hint={t('ztp.yealinkEnableHint')} checked={y.enabled} onChange={(v) => setY({ enabled: v })} />
       {y.enabled && <>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label={t('ztp.accessKey')} value={y.accessKey} onChange={(e) => setY({ accessKey: e.target.value.trim() })} className="font-mono" autoComplete="off" />
-          <Input label={t('ztp.secret')} type="password" value={y.secret ?? ''} onChange={(e) => setY({ secret: e.target.value.trim() })} placeholder={y.secretSet ? t('common.keepSecret') : ''} autoComplete="new-password" />
+          <Input name="accessKey" label={t('ztp.accessKey')} value={y.accessKey} onChange={(e) => setY({ accessKey: e.target.value.trim() })} className="font-mono" autoComplete="off" />
+          <Input name="secret" label={t('ztp.secret')} type="password" value={y.secret ?? ''} onChange={(e) => setY({ secret: e.target.value.trim() })} placeholder={y.secretSet ? t('common.keepSecret') : ''} autoComplete="new-password" />
         </div>
-        <Input label={t('ztp.api')} value={y.api} onChange={(e) => setY({ api: e.target.value.trim() })} placeholder="https://api-dm.yealink.com:8443" className="font-mono" hint={t('ztp.apiHint')} />
+        <Input name="api" label={t('ztp.api')} value={y.api} onChange={(e) => setY({ api: e.target.value.trim() })} placeholder="https://api-dm.yealink.com:8443" className="font-mono" hint={t('ztp.apiHint')} />
       </>}
     </Modal>
   )

@@ -86,13 +86,13 @@ export function AI() {
           <SectionTitle><span className="inline-flex items-center gap-2"><Sparkles className="size-5 text-accent" aria-hidden />{t('ai.what')}</span></SectionTitle>
           <div className="flex flex-col gap-4">
             <p className="text-sm text-muted">{t('ai.intro')}</p>
-            <Toggle label={t('ai.calls')} hint={t('ai.callsHint')} checked={s.calls} onChange={(v) => set({ calls: v })} />
-            <Toggle label={t('ai.voicemail')} hint={t('ai.voicemailHint')} checked={s.voicemail} onChange={(v) => set({ voicemail: v })} />
+            <Toggle name="calls" label={t('ai.calls')} hint={t('ai.callsHint')} checked={s.calls} onChange={(v) => set({ calls: v })} />
+            <Toggle name="voicemail" label={t('ai.voicemail')} hint={t('ai.voicemailHint')} checked={s.voicemail} onChange={(v) => set({ voicemail: v })} />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Select label={t('ai.language')} value={s.language} onChange={(e) => set({ language: e.target.value as AISettings['language'] })}>
+              <Select name="language" label={t('ai.language')} value={s.language} onChange={(e) => set({ language: e.target.value as AISettings['language'] })}>
                 <option value="auto">{t('ai.languageAuto')}</option><option value="nl">Nederlands</option><option value="en">English</option>
               </Select>
-              <Input label={t('ai.keepDays')} type="number" min={0} max={3650} value={s.keepDays} hint={t('ai.keepDaysHint')}
+              <Input name="keepDays" label={t('ai.keepDays')} type="number" min={0} max={3650} value={s.keepDays} hint={t('ai.keepDaysHint')}
                 onChange={(e) => set({ keepDays: Math.max(0, Number(e.target.value) || 0) })} />
             </div>
           </div>
@@ -114,7 +114,7 @@ export function AI() {
             {s.engine === 'local' ? (
               <>
                 {!data.llmInstalled && <Alert tone="warn">{t('ai.notInstalled')}</Alert>}
-                <Select label={t('ai.llm')} value={s.llm} onChange={(e) => set({ llm: e.target.value })}
+                <Select name="llm" label={t('ai.llm')} value={s.llm} onChange={(e) => set({ llm: e.target.value })}
                   hint={llm ? t('ai.ram', { gb: Math.round(llm.ram / 2 ** 30) }) : undefined}>
                   {data.llms.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </Select>
@@ -123,7 +123,7 @@ export function AI() {
               </>
             ) : (
               <>
-                <Select label={t('ai.cloudModel')} value={s.cloudModel} onChange={(e) => set({ cloudModel: e.target.value })}>
+                <Select name="cloudModel" label={t('ai.cloudModel')} value={s.cloudModel} onChange={(e) => set({ cloudModel: e.target.value })}>
                   {data.cloudModels.map((m) => <option key={m} value={m}>{t(`ai.models.${m}`, { defaultValue: m })}</option>)}
                 </Select>
                 <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface-2/60 p-4">

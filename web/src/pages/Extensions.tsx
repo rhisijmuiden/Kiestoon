@@ -141,10 +141,10 @@ function ExtensionForm({ value, onClose, onSaved }: { value: Extension; onClose:
     >
       <ErrorMessage error={error} />
       <div className="grid gap-4 sm:grid-cols-[140px_1fr]">
-        <Input label={t('extensions.number')} value={e.number} onChange={(x) => set('number', x.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" />
-        <Input label={t('extensions.name')} value={e.name} onChange={(x) => set('name', x.target.value)} autoFocus />
+        <Input name="number" label={t('extensions.number')} value={e.number} onChange={(x) => set('number', x.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" />
+        <Input name="name" label={t('extensions.name')} value={e.name} onChange={(x) => set('name', x.target.value)} autoFocus />
       </div>
-      <Input label={t('extensions.email')} type="email" value={e.email} onChange={(x) => set('email', x.target.value)} hint={t('extensions.emailHint')} />
+      <Input name="email" label={t('extensions.email')} type="email" value={e.email} onChange={(x) => set('email', x.target.value)} hint={t('extensions.emailHint')} />
       {!e.id && (
         <div className="grid gap-3 rounded-xl border border-accent/30 bg-accent/5 p-4">
           <Toggle label={t('welcome.toggle')} hint={e.email ? t('welcome.toggleHint') : t('welcome.needsEmail')} checked={welcome && !!e.email} disabled={!e.email} onChange={setWelcome} />
@@ -157,38 +157,38 @@ function ExtensionForm({ value, onClose, onSaved }: { value: Extension; onClose:
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Select label={t('extensions.transport')} value={e.transport} onChange={(x) => { const v = x.target.value as Extension['transport']; setE((o) => ({ ...o, transport: v, srtp: v === 'tls' ? o.srtp : false })) }}>
+        <Select name="transport" label={t('extensions.transport')} value={e.transport} onChange={(x) => { const v = x.target.value as Extension['transport']; setE((o) => ({ ...o, transport: v, srtp: v === 'tls' ? o.srtp : false })) }}>
           <option value="udp">UDP</option>
           <option value="tcp">TCP</option>
           <option value="tls">TLS ({t('extensions.encrypted')})</option>
         </Select>
-        <Input label={t('extensions.ringSeconds')} type="number" min={5} max={300} value={e.ringSeconds} onChange={(x) => set('ringSeconds', Number(x.target.value))} />
+        <Input name="ringSeconds" label={t('extensions.ringSeconds')} type="number" min={5} max={300} value={e.ringSeconds} onChange={(x) => set('ringSeconds', Number(x.target.value))} />
       </div>
-      <Toggle label={t('extensions.srtp')} hint={t('extensions.srtpHint')} checked={e.srtp} disabled={e.transport !== 'tls'} onChange={(v) => set('srtp', v)} />
+      <Toggle name="srtp" label={t('extensions.srtp')} hint={t('extensions.srtpHint')} checked={e.srtp} disabled={e.transport !== 'tls'} onChange={(v) => set('srtp', v)} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label={t('extensions.outboundCid')} value={e.outboundCallerId} onChange={(x) => set('outboundCallerId', x.target.value)} hint={t('extensions.outboundCidHint')} className="font-mono" />
-        <Input label={t('extensions.maxContacts')} type="number" min={1} max={10} value={e.maxContacts} onChange={(x) => set('maxContacts', Number(x.target.value))} hint={t('extensions.maxContactsHint')} />
+        <Input name="outboundCallerId" label={t('extensions.outboundCid')} value={e.outboundCallerId} onChange={(x) => set('outboundCallerId', x.target.value)} hint={t('extensions.outboundCidHint')} className="font-mono" />
+        <Input name="maxContacts" label={t('extensions.maxContacts')} type="number" min={1} max={10} value={e.maxContacts} onChange={(x) => set('maxContacts', Number(x.target.value))} hint={t('extensions.maxContactsHint')} />
       </div>
-      <Toggle label={t('extensions.voicemail')} checked={e.voicemail} onChange={(v) => set('voicemail', v)} />
+      <Toggle name="voicemail" label={t('extensions.voicemail')} checked={e.voicemail} onChange={(v) => set('voicemail', v)} />
       {e.voicemail && (
         <div className="grid gap-3 rounded-xl border border-line p-4">
-          <Input label={t('extensions.pin')} value={e.voicemailPin ?? ''} onChange={(x) => set('voicemailPin', x.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" hint={t('extensions.pinHint')} />
-          <Toggle label={t('extensions.vmToEmail')} hint={e.email ? e.email : t('extensions.vmNeedsEmail')} checked={e.voicemailEmail && !!e.email} disabled={!e.email} onChange={(v) => set('voicemailEmail', v)} />
-          <Toggle label={t('extensions.vmDelete')} hint={t('extensions.vmDeleteHint')} checked={e.voicemailDelete} disabled={!e.voicemailEmail} onChange={(v) => set('voicemailDelete', v)} />
+          <Input name="voicemailPin" label={t('extensions.pin')} value={e.voicemailPin ?? ''} onChange={(x) => set('voicemailPin', x.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" hint={t('extensions.pinHint')} />
+          <Toggle name="voicemailEmail" label={t('extensions.vmToEmail')} hint={e.email ? e.email : t('extensions.vmNeedsEmail')} checked={e.voicemailEmail && !!e.email} disabled={!e.email} onChange={(v) => set('voicemailEmail', v)} />
+          <Toggle name="voicemailDelete" label={t('extensions.vmDelete')} hint={t('extensions.vmDeleteHint')} checked={e.voicemailDelete} disabled={!e.voicemailEmail} onChange={(v) => set('voicemailDelete', v)} />
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Select label={t('extensions.outboundClass')} value={e.outboundClass} onChange={(x) => set('outboundClass', x.target.value as Extension['outboundClass'])} hint={t('extensions.outboundClassHint')}>
+        <Select name="outboundClass" label={t('extensions.outboundClass')} value={e.outboundClass} onChange={(x) => set('outboundClass', x.target.value as Extension['outboundClass'])} hint={t('extensions.outboundClassHint')}>
           {(['internal', 'national', 'international'] as const).map((c) => <option key={c} value={c}>{t(`extensions.classes.${c}`)}</option>)}
         </Select>
-        <Select label={t('extensions.recordMode')} value={e.recordMode} onChange={(x) => set('recordMode', x.target.value as Extension['recordMode'])} hint={t('extensions.recordModeHint')}>
+        <Select name="recordMode" label={t('extensions.recordMode')} value={e.recordMode} onChange={(x) => set('recordMode', x.target.value as Extension['recordMode'])} hint={t('extensions.recordModeHint')}>
           {(['never', 'ondemand', 'always'] as const).map((c) => <option key={c} value={c}>{t(`extensions.recordModes.${c}`)}</option>)}
         </Select>
-        <Input label={t('extensions.pickupGroup')} value={e.pickupGroup} onChange={(x) => set('pickupGroup', x.target.value.replace(/[^0-9,]/g, ''))} className="font-mono" hint={t('extensions.pickupGroupHint')} />
+        <Input name="pickupGroup" label={t('extensions.pickupGroup')} value={e.pickupGroup} onChange={(x) => set('pickupGroup', x.target.value.replace(/[^0-9,]/g, ''))} className="font-mono" hint={t('extensions.pickupGroupHint')} />
       </div>
-      <Toggle label={t('extensions.allowPremium')} hint={t('extensions.allowPremiumHint')} checked={e.allowPremium} onChange={(v) => set('allowPremium', v)} />
-      <Toggle label={t('extensions.webrtc')} hint={t('extensions.webrtcHint')} checked={e.webrtc} onChange={(v) => set('webrtc', v)} />
-      <Toggle label={t('common.enabled')} checked={e.enabled} onChange={(v) => set('enabled', v)} />
+      <Toggle name="allowPremium" label={t('extensions.allowPremium')} hint={t('extensions.allowPremiumHint')} checked={e.allowPremium} onChange={(v) => set('allowPremium', v)} />
+      <Toggle name="webrtc" label={t('extensions.webrtc')} hint={t('extensions.webrtcHint')} checked={e.webrtc} onChange={(v) => set('webrtc', v)} />
+      <Toggle name="enabled" label={t('common.enabled')} checked={e.enabled} onChange={(v) => set('enabled', v)} />
     </Modal>
   )
 }

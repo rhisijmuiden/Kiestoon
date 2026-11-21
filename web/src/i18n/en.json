@@ -160,7 +160,12 @@
     "file_too_large": "The file is larger than 1 GB.",
     "checksum_mismatch": "The downloaded file does not match the checksum in the catalog and was removed.",
     "no_firmware_source": "No newer firmware is known for this model.",
-    "admin_password_shared": "Every phone uses the same password now: change it under Provisioning settings."
+    "admin_password_shared": "Every phone uses the same password now: change it under Provisioning settings.",
+    "elevenlabs_no_key": "No ElevenLabs API key is saved. Add one under Speech.",
+    "elevenlabs_key": "ElevenLabs refused the API key. Check the key and its permissions under Speech.",
+    "elevenlabs_quota": "The ElevenLabs characters of this period are used up. Wait for the next period or upgrade the plan.",
+    "elevenlabs_failed": "ElevenLabs could not speak the text.",
+    "elevenlabs_unreachable": "ElevenLabs cannot be reached from this server. Check the internet connection."
   },
   "setup": {
     "title": "Welcome to Kiestoon",
@@ -504,7 +509,7 @@
     "boxId": "Fax box",
     "pdf": "PDF document",
     "file": "File",
-    "text": "Text",
+    "text": "text",
     "voiceEn": "English voice",
     "voiceNl": "Dutch voice",
     "serverUrl": "Server address",
@@ -548,7 +553,10 @@
     "rotate": "Switch layout",
     "quiet": "Quiet period",
     "timeCondition": "Time condition",
-    "queues": "Queues"
+    "queues": "Queues",
+    "defaultEngine": "engine",
+    "stability": "stability",
+    "speed": "speed"
   },
   "extensions": {
     "title": "Extensions",
@@ -1580,7 +1588,7 @@
   },
   "prompts": {
     "title": "Voice prompts",
-    "subtitle": "Announcements for IVR menus and queues. Upload a file or record one in the browser.",
+    "subtitle": "Announcements for IVR menus and queues. Type the text and have it spoken, upload a file or record one in the browser.",
     "add": "New prompt",
     "edit": "Edit {{name}}",
     "emptyTitle": "No prompts yet",
@@ -1593,7 +1601,19 @@
     "ttsOff": "Tip: turn on text-to-speech under Speech to create prompts from typed text.",
     "ttsLabel": "Type the text",
     "ttsPlaceholder": "Welcome to our company. Press 1 for sales…",
-    "ttsGenerate": "Generate audio"
+    "ttsGenerate": "Generate audio",
+    "source": "Source",
+    "recorded": "Recorded or uploaded",
+    "select": "Select {{name}}",
+    "selectAll": "Select all spoken prompts",
+    "selected_one": "{{count}} prompt selected",
+    "selected_other": "{{count}} prompts selected",
+    "regenTitle": "Another voice for your prompts",
+    "regenHint": "Tick the prompts that were made from text to speak them again with another voice.",
+    "regenChars": "About {{n}} ElevenLabs characters. Prompts already spoken with this voice cost nothing.",
+    "regenFree": "Spoken by the local voice, free.",
+    "regenerate": "Generate again with this voice",
+    "regenResult": "{{done}} spoken again, {{failed}} failed."
   },
   "recordings": {
     "title": "Recordings",
@@ -2382,7 +2402,7 @@
   },
   "speech": {
     "title": "Speech",
-    "subtitle": "Text-to-speech and speech-to-text on this server. No audio leaves the phone system.",
+    "subtitle": "Text-to-speech and speech-to-text. Piper and Whisper run on this server; ElevenLabs adds optional studio-quality cloud voices.",
     "notInstalled": "The kiestoon-speech package is not installed. Install it with apt install kiestoon-speech, or run the installer again.",
     "saved": "Speech settings saved.",
     "tts": "Text-to-speech (Piper)",
@@ -3323,5 +3343,147 @@
     "uniqueNote": "New password: the phone gets it on its next check.",
     "audit": "Viewing a password is written to the audit log.",
     "confirmNew": "Make a new password for this phone? It gets the new one on its next check."
+  },
+  "tts": {
+    "text": "Text",
+    "placeholder": "Welcome. For sales, press 1. For support, press 2.",
+    "characters": "{{n}} characters",
+    "credits": "≈ {{n}} credits",
+    "creditsLeft": "≈ {{n}} credits · {{left}} left",
+    "engine": "Engine",
+    "language": "Language",
+    "engines": {
+      "piper": "Local (Piper)",
+      "elevenlabs": "ElevenLabs"
+    },
+    "engineHints": {
+      "piper": "Free, local",
+      "elevenlabs": "Studio quality"
+    },
+    "engineOff": "Not switched on under Speech",
+    "voice": "Voice",
+    "noPiperVoice": "No voice downloaded for this language",
+    "generate": "Generate audio",
+    "regenerate": "Generate new audio",
+    "done": "Generated with {{engine}} · {{voice}}.",
+    "cached": "Same text and voice as before: reused, no new credits ({{voice}}).",
+    "fellBack": "ElevenLabs could not be reached, so the local Piper voice spoke this text. Generate again later for the ElevenLabs voice.",
+    "hintEleven": "Converted to 8 kHz WAV for Asterisk and stored under Voice prompts. The same text with the same voice is reused and costs no new credits.",
+    "hintPiper": "Spoken by the local speech module on this server. The audio is stored under Voice prompts.",
+    "off": "Text-to-speech is off, or no voice is ready. Switch it on under"
+  },
+  "voices": {
+    "title": "Choose a voice",
+    "subtitle": "Listen to the samples and pick the voice for your menus and announcements.",
+    "library": "Voice library",
+    "mine": "My voices",
+    "searchPlaceholder": "Name or style, e.g. calm",
+    "gender": "Gender",
+    "any": "Any",
+    "female": "Female",
+    "male": "Male",
+    "neutral": "Neutral",
+    "useCase": "Suited for",
+    "accent": "Accent",
+    "language": "Language",
+    "allLanguages": "All languages",
+    "pbxLanguage": "PBX language",
+    "lang": {
+      "nl": "Dutch",
+      "en": "English",
+      "de": "German",
+      "fr": "French"
+    },
+    "loading": "Loading voices…",
+    "empty": "No voices match these filters.",
+    "more": "Show more voices",
+    "preview": "Play the sample of {{name}}",
+    "choose": "Choose",
+    "chosen": "Chosen",
+    "change": "Change",
+    "none": "No voice chosen yet",
+    "use": "Use {{name}}",
+    "inAccount": "in your account",
+    "footHint": "A library voice is added to your ElevenLabs account when you use it. Library voices do not use voice slots.",
+    "ownText": "Hear {{name}} with your own text",
+    "ownTextSample": "Welcome. For sales, press 1. For support, press 2.",
+    "listen": "Listen",
+    "ownTextHint": "Costs about {{n}} characters. The samples on the cards are free.",
+    "useCases": {
+      "conversational": "Conversational",
+      "narrative_story": "Narration",
+      "informative_educational": "Informative",
+      "advertisement": "Advertising",
+      "characters_animation": "Characters",
+      "social_media": "Social media",
+      "entertainment_tv": "Entertainment",
+      "customer_service": "Customer service"
+    },
+    "accents": {
+      "standard": "Standard",
+      "flemish": "Flemish",
+      "belgian": "Belgian",
+      "netherlands": "Netherlands",
+      "dutch": "Dutch",
+      "british": "British",
+      "american": "American",
+      "australian": "Australian"
+    },
+    "ages": {
+      "young": "Young",
+      "middle_aged": "Middle-aged",
+      "middle aged": "Middle-aged",
+      "old": "Older"
+    },
+    "descriptives": {
+      "calm": "Calm",
+      "professional": "Professional",
+      "warm": "Warm",
+      "confident": "Confident",
+      "casual": "Casual",
+      "friendly": "Friendly",
+      "deep": "Deep",
+      "soft": "Soft"
+    }
+  },
+  "eleven": {
+    "cloud": "Cloud",
+    "connected": "Connected",
+    "intro": "Type the text of a menu or announcement and Kiestoon has ElevenLabs speak it. The audio is converted to phone quality and stored on this server.",
+    "enable": "Use ElevenLabs",
+    "enableHint": "Off by default. Prompts made earlier keep working when you switch it off.",
+    "apiKey": "API key",
+    "replace": "Replace",
+    "saveKey": "Check and save key",
+    "apiKeyHint": "Stored encrypted on this server and never shown again. Create a key at elevenlabs.io under Developers > API keys, with access to text-to-speech and voices.",
+    "test": "Test connection",
+    "testResult": "{{tier}} plan · checked {{time}}",
+    "usage": "Characters used this period",
+    "usageHint": "Starts again on {{date}}. The admins get a mail at 80%.",
+    "usageHintNoDate": "The admins get a mail at 80%.",
+    "model": "Model",
+    "modelHint": "Multilingual v2 sounds the most natural in Dutch on the phone.",
+    "models": {
+      "eleven_multilingual_v2": "Multilingual v2 — best quality (recommended)",
+      "eleven_flash_v2_5": "Flash v2.5 — fastest, half the credits",
+      "eleven_v3": "Eleven v3 — most expressive"
+    },
+    "defaults": "Defaults for new prompts",
+    "defaultEngine": "Engine",
+    "engineHints": {
+      "piper": "Free, nothing leaves the server",
+      "elevenlabs": "Studio quality, uses credits"
+    },
+    "voiceNl": "Dutch voice",
+    "voiceEn": "English voice",
+    "keyFirst": "Save an API key first to choose a voice.",
+    "voiceSettings": "Voice settings",
+    "stability": "Stability",
+    "stabilityHint": "Higher sounds steadier; lower sounds livelier.",
+    "speed": "Speed",
+    "speedHint": "95% is a little slower than normal, which works well for menu choices.",
+    "fallback": "Use Piper when ElevenLabs cannot be reached",
+    "fallbackHint": "Generating keeps working when the key, the credits or the internet are gone. Playback never depends on ElevenLabs.",
+    "privacy": "Only the typed text goes to ElevenLabs. Callers, recordings and voicemail never leave the server. Generated audio is kept here, so a call never waits for the internet."
   }
 }

@@ -1,6 +1,7 @@
 // Package speech runs local text-to-speech (Piper) and speech-to-text (whisper.cpp). The programs
 // come with the kiestoon-speech package in /opt/kiestoon-speech; voices and models are downloaded on
-// request into <data>/speech with pinned checksums. Nothing is sent to a cloud service.
+// request into <data>/speech with pinned checksums. Nothing is sent to a cloud service here; the
+// optional ElevenLabs voices live in package elevenlabs.
 package speech
 
 import (
@@ -364,13 +365,45 @@ func (e *Engine) Speak(ctx context.Context, voiceID, text string) ([]byte, error
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("piper: %v: %s", err, lastLine(out))
 	}
-	// The same telephone treatment as the Dutch system prompts (packaging/sounds-nl/build.sh).
-	sox := exec.CommandContext(cctx, "sox", "-q", raw, "-r", "8000", "-c", "1", "-b", "16", tel,
+	return telephone(cctx, []string{raw}, tel)
+}
+
+// telephone converts the input (sox input arguments) to telephone audio in out and returns it:
+// the same treatment as the Dutch system prompts (packaging/sounds-nl/build.sh).
+func telephone(ctx context.Context, in []string, out string) ([]byte, error) {
+	args := append([]string{"-q"}, in...)
+	args = append(args, "-r", "8000", "-c", "1", "-b", "16", out,
 		"gain", "-3", "highpass", "120", "lowpass", "3400", "compand", "0.02,0.2", "-60,-60,-30,-15,0,-6", "-6", "0", "0.05", "pad", "0.1", "0.3", "norm", "-1")
-	if out, err := sox.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("sox: %v: %s", err, lastLine(out))
+	if b, err := exec.CommandContext(ctx, "sox", args...).CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("sox: %v: %s", err, lastLine(b))
 	}
-	return os.ReadFile(tel)
+	return os.ReadFile(out)
+}
+
+// TelephonePCM converts raw PCM (mono, signed 16-bit little endian, at rate Hz) from a cloud voice
+// to the same 8 kHz WAV as a Piper prompt.
+func TelephonePCM(ctx context.Context, pcm []byte, rate int) ([]byte, error) {
+	tmp, err := os.MkdirTemp("", "kt-tts-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(tmp)
+	raw, tel := filepath.Join(tmp, "in.raw"), filepath.Join(tmp, "tel.wav")
+	if err := os.WriteFile(raw, pcm, 0o600); err != nil {
+		return nil, err
+	}
+	cctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	return telephone(cctx, []string{"-t", "raw", "-r", strconv.Itoa(rate), "-e", "signed-integer", "-b", "16", "-c", "1", "-L", raw}, tel)
+}
+
+// CheckText cleans text to speak and checks its length.
+func CheckText(text string) (string, error) {
+	text = strings.TrimSpace(strings.ReplaceAll(text, "\r", ""))
+	if text == "" || utf8.RuneCountInString(text) > MaxText || !utf8.ValidString(text) {
+		return "", errors.New("text")
+	}
+	return text, nil
 }
 
 // Transcribe returns the text spoken in an audio file (any format sox reads).

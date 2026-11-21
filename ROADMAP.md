@@ -332,6 +332,10 @@ the testing channel.
 - [x] Phone admin password (`v0.7.0-rc.18`): provisioning replaces the factory web interface password with a unique
   generated password per phone (default) or one shared password; key icon in the phone list shows and copies it,
   shows whether the phone has it, makes a new one; every look is audit-logged
+- [x] ElevenLabs voices (`RCVER`): optional cloud text-to-speech next to Piper; API key checked and stored encrypted,
+  usage meter with an 80% mail, voice picker with free samples filtered on the PBX language, engine and voice per
+  prompt in the IVR builder and Voice prompts, audio converted to 8 kHz and cached on the server (same text costs no
+  credits), fallback to Piper, prompts remember text and voice so they can be spoken again with another voice
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

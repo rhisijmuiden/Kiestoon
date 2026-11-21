@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AudioLines, CloudDownload, Loader2, MessageSquareText, Play, Trash2 } from 'lucide-react'
+import { AudioLines, Check, Cloud, CloudDownload, KeyRound, Loader2, MessageSquareText, Play, ShieldCheck, Trash2 } from 'lucide-react'
 import { Badge, SectionTitle, Select, Table, Textarea, Toggle, formatBytes, td, useApi } from '../components/kit'
 import { IconButton } from '../components/pbx'
-import { Alert, Button, Card, ErrorMessage, PageHeader } from '../components/ui'
+import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
 import { wavFromBase64 } from '../lib/audio'
-import type { SpeechData, SpeechItem, SpeechSettings } from '../lib/types'
+import type { ElevenData, ElevenSettings, ElevenUsage, SpeechData, SpeechItem, SpeechSettings } from '../lib/types'
+import { VoiceBox } from '../components/Voices'
 
 /** Local text-to-speech (Piper) and speech-to-text (whisper.cpp). Nothing leaves the server. */
 export function Speech() {
@@ -17,6 +18,7 @@ export function Speech() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const [saved, setSaved] = useState(false)
+  const elSave = useRef<(() => Promise<void>) | null>(null)
   useEffect(() => { if (d.data && !s) setS(d.data.settings) }, [d.data, s])
   useEffect(() => {
     const items = [...(d.data?.voices ?? []), ...(d.data?.models ?? [])]
@@ -30,6 +32,7 @@ export function Speech() {
     setError(null)
     setSaved(false)
     try {
+      await elSave.current?.()
       const r = await api<SpeechData>('PUT', '/speech', s)
       d.setData(r)
       setS(r.settings)
@@ -67,6 +70,7 @@ export function Speech() {
       {(!data.ttsInstalled || !data.sttInstalled) && <Alert tone="warn">{t('speech.notInstalled')}</Alert>}
       {saved && <Alert tone="ok">{t('speech.saved')}</Alert>}
       <ErrorMessage error={error} />
+      <ElevenLabs saveRef={elSave} onChange={() => setSaved(false)} />
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
           <SectionTitle><span className="inline-flex items-center gap-2"><AudioLines className="size-5 text-accent" aria-hidden />{t('speech.tts')}</span></SectionTitle>
@@ -175,6 +179,168 @@ function TryVoice() {
         {url && <audio controls autoPlay src={url} className="h-9 max-w-full" />}
       </div>
       <ErrorMessage error={error} />
+    </div>
+  )
+}
+
+/** ElevenLabs: switch, API key (sealed on the server), usage, model and the default voices. */
+function ElevenLabs({ saveRef, onChange }: { saveRef: RefObject<(() => Promise<void>) | null>; onChange: () => void }) {
+  const { t, i18n } = useTranslation()
+  const d = useApi<ElevenData>('/speech/elevenlabs')
+  const [s, setS] = useState<ElevenSettings | null>(null)
+  const [key, setKey] = useState('')
+  const [editKey, setEditKey] = useState(false)
+  const [busy, setBusy] = useState<'' | 'key' | 'test'>('')
+  const [error, setError] = useState<unknown>(null)
+  const [usage, setUsage] = useState<ElevenUsage | null>(null)
+  const [checked, setChecked] = useState('')
+  useEffect(() => { if (d.data && !s) setS(d.data.settings) }, [d.data, s])
+  useEffect(() => {
+    saveRef.current = s ? async () => { const r = await api<ElevenData>('PUT', '/speech/elevenlabs', s); d.setData(r); setS(r.settings) } : null
+  })
+  async function test() {
+    setBusy('test')
+    setError(null)
+    try {
+      setUsage(await api<ElevenUsage>('GET', '/speech/elevenlabs/usage'))
+      setChecked(new Date().toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' }))
+    } catch (e) {
+      setError(e)
+      setUsage(null)
+    } finally {
+      setBusy('')
+    }
+  }
+  useEffect(() => { if (d.data?.keySet) void test() }, [d.data?.keySet]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (!s || !d.data) return <ErrorMessage error={d.error} />
+  const data = d.data
+  const set = (p: Partial<ElevenSettings>) => { onChange(); setS({ ...s, ...p }) }
+  async function saveKey(k: string) {
+    setBusy('key')
+    setError(null)
+    try {
+      const r = await api<ElevenData>('PUT', '/speech/elevenlabs/key', { key: k })
+      d.setData({ ...r, settings: s! })
+      setKey('')
+      setEditKey(false)
+      if (!r.keySet) { setUsage(null); setChecked('') }
+    } catch (e) {
+      setError(e)
+    } finally {
+      setBusy('')
+    }
+  }
+  const pct = usage && usage.characterLimit > 0 ? Math.min(100, Math.round((usage.characterCount / usage.characterLimit) * 100)) : 0
+  const nf = (n: number) => n.toLocaleString(i18n.language.startsWith('nl') ? 'nl-NL' : 'en-GB')
+  const reset = usage?.resetUnix ? new Date(usage.resetUnix * 1000).toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }) : ''
+
+  return (
+    <div className="mb-4 grid gap-4 xl:grid-cols-2">
+      <Card>
+        <SectionTitle>
+          <span className="inline-flex flex-wrap items-center gap-2"><Cloud className="size-5 text-accent" aria-hidden />ElevenLabs
+            <Badge tone="accent">{t('eleven.cloud')}</Badge>{usage && <Badge tone="ok" dot>{t('eleven.connected')}</Badge>}</span>
+        </SectionTitle>
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-muted">{t('eleven.intro')}</p>
+          <Toggle label={t('eleven.enable')} hint={t('eleven.enableHint')} checked={s.enabled} onChange={(v) => set({ enabled: v, defaultEngine: v ? s.defaultEngine : 'piper' })} />
+          <div className="flex flex-col gap-1.5">
+            {data.keySet && !editKey ? (
+              <>
+                <span className="text-sm font-medium text-ink-2">{t('eleven.apiKey')}</span>
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-[10px] border border-line bg-field px-3.5 font-mono text-sm text-ink-2">
+                    <KeyRound className="size-4 text-accent" aria-hidden />sk_••••••••••••{data.keyHint.replace('…', '')}
+                  </span>
+                  <Button variant="secondary" onClick={() => setEditKey(true)}>{t('eleven.replace')}</Button>
+                  <Button variant="ghost" busy={busy === 'key'} onClick={() => saveKey('')}>{t('common.remove')}</Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Input label={t('eleven.apiKey')} type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} placeholder="sk_…" />
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="secondary" busy={busy === 'key'} disabled={!key.trim()} onClick={() => saveKey(key)}><Check className="size-4" aria-hidden />{t('eleven.saveKey')}</Button>
+                  {data.keySet && <Button variant="ghost" onClick={() => { setEditKey(false); setKey('') }}>{t('common.cancel')}</Button>}
+                </div>
+              </>
+            )}
+            <p className="text-xs text-subtle">{t('eleven.apiKeyHint')}</p>
+          </div>
+          {data.keySet && (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button variant="secondary" busy={busy === 'test'} onClick={test}><Check className="size-4" aria-hidden />{t('eleven.test')}</Button>
+              {usage && checked && <span className="text-xs text-subtle">{t('eleven.testResult', { tier: usage.tier.charAt(0).toUpperCase() + usage.tier.slice(1), time: checked })}</span>}
+            </div>
+          )}
+          <ErrorMessage error={error} />
+          {usage && usage.characterLimit > 0 && (
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap justify-between gap-2 text-sm"><span className="font-medium text-ink">{t('eleven.usage')}</span>
+                <span className="font-mono text-muted tabular-nums">{nf(usage.characterCount)} / {nf(usage.characterLimit)}</span></div>
+              <div className="h-2 overflow-hidden rounded-full bg-tint/8" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={t('eleven.usage')}>
+                <div className={`h-full rounded-full ${pct >= 80 ? 'bg-warn' : 'bg-gradient-to-r from-accent to-accent-2'}`} style={{ width: `${pct}%` }} />
+              </div>
+              <span className="text-xs text-subtle">{reset ? t('eleven.usageHint', { date: reset }) : t('eleven.usageHintNoDate')}</span>
+            </div>
+          )}
+          <Select label={t('eleven.model')} hint={t('eleven.modelHint')} value={s.model} onChange={(e) => set({ model: e.target.value })}>
+            {data.models.map((m) => <option key={m.id} value={m.id}>{t(`eleven.models.${m.id}`, { defaultValue: m.name })}</option>)}
+          </Select>
+        </div>
+      </Card>
+      <div className="flex flex-col gap-4">
+        <Card>
+          <SectionTitle>{t('eleven.defaults')}</SectionTitle>
+          <div className="flex flex-col gap-4">
+            <div role="radiogroup" aria-label={t('eleven.defaultEngine')} className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-ink-2">{t('eleven.defaultEngine')}</span>
+              <div className="grid grid-cols-2 gap-2">
+                {(['piper', 'elevenlabs'] as const).map((e) => {
+                  const on = s.defaultEngine === e
+                  const avail = e === 'piper' || (s.enabled && data.keySet)
+                  return (
+                    <button key={e} type="button" role="radio" aria-checked={on} disabled={!avail} onClick={() => set({ defaultEngine: e })}
+                      className={`rounded-xl border px-3 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-45 ${on ? 'border-accent bg-accent/8 shadow-[inset_0_0_0_1px_var(--color-accent)]' : 'border-line bg-field hover:border-accent/40'}`}>
+                      <span className="block text-sm font-semibold text-ink">{t(`tts.engines.${e}`)}</span>
+                      <span className="block text-xs text-subtle">{t(`eleven.engineHints.${e}`)}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            {(['nl', 'en'] as const).map((l) => (
+              <div key={l} className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-ink-2">{t(l === 'nl' ? 'eleven.voiceNl' : 'eleven.voiceEn')}{l === data.pbxLanguage && <span className="ml-2 text-[11px] font-semibold uppercase tracking-wide text-accent">{t('voices.pbxLanguage')}</span>}</span>
+                {data.keySet ? <VoiceBox voice={l === 'nl' ? s.voiceNl : s.voiceEn} language={l} onChange={(v) => set(l === 'nl' ? { voiceNl: v } : { voiceEn: v })} />
+                  : <p className="rounded-xl border border-line bg-inset px-3 py-2.5 text-sm text-muted">{t('eleven.keyFirst')}</p>}
+              </div>
+            ))}
+            <details className="group">
+              <summary className="cursor-pointer text-sm font-medium text-accent-ink">{t('eleven.voiceSettings')}</summary>
+              <div className="mt-3 flex flex-col gap-4">
+                <Range label={t('eleven.stability')} hint={t('eleven.stabilityHint')} min={0} max={100} value={s.stability} unit="%" onChange={(v) => set({ stability: v })} />
+                <Range label={t('eleven.speed')} hint={t('eleven.speedHint')} min={70} max={120} value={s.speed} unit="%" onChange={(v) => set({ speed: v })} />
+              </div>
+            </details>
+            <Toggle label={t('eleven.fallback')} hint={t('eleven.fallbackHint')} checked={s.fallback} onChange={(v) => set({ fallback: v })} />
+          </div>
+        </Card>
+        <div className="flex gap-3 rounded-2xl border border-dashed border-accent/40 bg-accent/6 p-4 text-sm text-ink-2">
+          <ShieldCheck className="mt-0.5 size-5 flex-none text-accent" aria-hidden /><p>{t('eleven.privacy')}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Range({ label, hint, min, max, value, unit, onChange }: { label: string; hint: string; min: number; max: number; value: number; unit: string; onChange: (v: number) => void }) {
+  const id = label.replace(/\W/g, '')
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex justify-between text-sm"><label htmlFor={id} className="font-medium text-ink-2">{label}</label><span className="font-mono text-muted tabular-nums">{value}{unit}</span></div>
+      <input id={id} type="range" min={min} max={max} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-[var(--color-accent)]" />
+      <p className="text-xs text-subtle">{hint}</p>
     </div>
   )
 }

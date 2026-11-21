@@ -737,6 +737,8 @@ var migrations = []string{
 	`ALTER TABLE phones ADD COLUMN admin_password TEXT NOT NULL DEFAULT '';
 	ALTER TABLE phones ADD COLUMN admin_password_at TEXT NOT NULL DEFAULT '';
 	ALTER TABLE phones ADD COLUMN admin_password_sent TEXT NOT NULL DEFAULT '';`,
+	// How a prompt was made from text (engine, voice, text), so it can be spoken again with another voice.
+	`ALTER TABLE prompts ADD COLUMN source TEXT NOT NULL DEFAULT '{}';`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

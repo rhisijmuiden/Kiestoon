@@ -19,12 +19,22 @@ fs.writeFileSync(path.join(dataDir, '..', 'mfa-secret'), enr.secret)
 await c.put('/api/account/theme', { theme: 'light' })
 await c.put('/api/system/channel', { channel: 'testing' })
 
+// ElevenLabs voices (a fake API in demo.sh): key, settings, and prompts that remember their text and voice.
+await c.put('/api/speech/elevenlabs/key', { key: 'sk_demo_0000000000000000000000003f9a' })
+await c.put('/api/speech/elevenlabs', { enabled: true, model: 'eleven_multilingual_v2', defaultEngine: 'elevenlabs', voiceNl: { id: 'ruthNL01', name: 'Ruth' },
+  voiceEn: { id: 'graceEN7', name: 'Grace' }, stability: 55, speed: 95, fallback: true })
+const eleven = (voice, voiceName, language, text) => ({ engine: 'elevenlabs', voice, voiceName, model: 'eleven_multilingual_v2', language, text })
+const sources = {
+  welcome: eleven('graceEN7', 'Grace', 'en', 'Welcome to Noordkade Installatietechniek. For sales, press 1. For service and support, press 2. Or stay on the line for the operator.'),
+  closed: eleven('graceEN7', 'Grace', 'en', 'You are calling outside our office hours. We are open Monday to Friday from half past eight to half past five.'),
+  queue: { engine: 'piper', voice: 'en_GB-cori-medium', voiceName: 'Cori (British English)', language: 'en', text: 'All our colleagues are busy. Please hold, you will be helped shortly.' },
+}
 const prompts = {}
 for (const [i, [key, name, secs]] of [
   ['welcome', 'Welcome - main menu', 9], ['closed', 'Closed - outside office hours', 7], ['holiday', 'Holiday message', 6],
   ['queue', 'Support queue - please hold', 5], ['sales', 'Sales - one moment please', 4],
 ].entries()) {
-  const r = await c.post('/api/pbx/prompts', { name, audio: wav(secs, 7 + i * 13) })
+  const r = await c.post('/api/pbx/prompts', { name, audio: wav(secs, 7 + i * 13), source: sources[key] })
   prompts[key] = r.data.id
 }
 

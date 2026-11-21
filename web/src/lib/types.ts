@@ -264,7 +264,10 @@ export type IvrLive = {
   open: Record<string, boolean>
   dests: Record<string, { state?: string; members?: number; online?: number; waiting?: number }>
 }
-export type Prompt = { id: number; name: string; durationMs: number; createdAt: string }
+export type Prompt = { id: number; name: string; durationMs: number; createdAt: string; source?: PromptSource }
+/** How a prompt was spoken from text, so it can be spoken again with another voice. */
+export type PromptSource = { engine: 'piper' | 'elevenlabs'; voice: string; voiceName?: string; model?: string; language?: string; text: string }
+export type TTSResult = { audio: string; source: PromptSource; cached: boolean; fellBack: boolean; characters: number }
 
 export type FraudSettings = {
   premiumPrefixes: string[]; blockedCountries: string[]; maxOutbound: number; alertEmail: string; alertOutboundPerHour: number
@@ -373,6 +376,20 @@ export type AIData = {
 }
 export type AIResult = { status: 'none' | 'done' | 'failed'; transcript?: string; summary?: AISummary; engine?: string; error?: string; at?: string }
 export type SpeechData = { settings: SpeechSettings; ttsInstalled: boolean; sttInstalled: boolean; voices: SpeechItem[]; models: SpeechItem[] }
+
+/** ElevenLabs cloud voices (System > Speech). */
+export type VoiceRef = { id: string; name: string }
+export type ElevenSettings = {
+  enabled: boolean; model: string; defaultEngine: 'piper' | 'elevenlabs'; voiceNl: VoiceRef; voiceEn: VoiceRef; stability: number; speed: number; fallback: boolean
+}
+export type ElevenData = {
+  settings: ElevenSettings; keySet: boolean; keyHint: string; models: { id: string; name: string; maxChars: number }[]; pbxLanguage: 'en' | 'nl'; maxText: number
+}
+export type ElevenUsage = { tier: string; status: string; characterCount: number; characterLimit: number; resetUnix: number }
+export type ElevenVoice = {
+  id: string; ownerId?: string; name: string; language?: string; languages?: string[]; gender?: string; age?: string; accent?: string
+  useCase?: string; descriptive?: string; description?: string; category?: string; mine: boolean
+}
 
 export type FaxJob = {
   id: number; boxId: number | null; boxName: string; userId: number | null; source: 'portal' | 'email'; sender: string; number: string

@@ -22,6 +22,8 @@ func (s *Server) onAMIEvent(m asterisk.Message) {
 	switch m.Get("Event") {
 	case "QueueCallerJoin", "AgentConnect", "AgentComplete", "QueueCallerAbandon", "QueueCallerLeave":
 		s.queueStatEvent(m)
+	case "RTCPSent", "RTCPReceived", "Hangup":
+		s.qualityEvent(m)
 	}
 	switch m.Get("Event") {
 	case "Cdr":
@@ -159,6 +161,7 @@ func (s *Server) RunMaintenance(ctx context.Context) {
 	go s.runFirmwareWatch(ctx)
 	go s.runSLA(ctx)
 	go s.runReports(ctx)
+	go s.runQuality(ctx)
 	day := ""
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()
@@ -181,6 +184,7 @@ func (s *Server) RunMaintenance(ctx context.Context) {
 			}
 			s.purgeJourneys(ctx)
 			s.purgeQueueStats(ctx)
+			s.purgeQuality(ctx)
 			day = today
 		}
 		s.syncDeviceStates(ctx)

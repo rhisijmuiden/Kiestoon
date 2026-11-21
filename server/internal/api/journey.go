@@ -139,6 +139,9 @@ func (s *Server) cdrJourney(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "not_found")
 		return
 	}
+	if q := s.qualityForCall(r.Context(), j.LinkedID); q != nil {
+		j.Quality = q
+	}
 	writeJSON(w, http.StatusOK, j)
 }
 
@@ -162,6 +165,9 @@ func (s *Server) portalJourney(w http.ResponseWriter, r *http.Request) {
 	if err != nil || j == nil {
 		writeErr(w, http.StatusNotFound, "not_found")
 		return
+	}
+	if q := s.qualityForCall(r.Context(), j.LinkedID); q != nil {
+		j.Quality = q
 	}
 	writeJSON(w, http.StatusOK, j)
 }

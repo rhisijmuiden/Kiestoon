@@ -163,7 +163,12 @@
     "no_firmware_source": "Voor dit model is geen nieuwere firmware bekend.",
     "admin_password_shared": "Alle toestellen gebruiken nu hetzelfde wachtwoord: wijzig het bij Provisioning-instellingen.",
     "crm_failed": "Het CRM weigerde het verzoek: {{field}}. Controleer de gegevens en probeer het opnieuw.",
-    "crm_not_connected": "Dit CRM is niet gekoppeld."
+    "crm_not_connected": "Dit CRM is niet gekoppeld.",
+    "elevenlabs_no_key": "Er is geen ElevenLabs-API-sleutel opgeslagen. Voeg er een toe onder Spraak.",
+    "elevenlabs_key": "ElevenLabs weigert de API-sleutel. Controleer de sleutel en de rechten onder Spraak.",
+    "elevenlabs_quota": "De ElevenLabs-tekens van deze periode zijn op. Wacht op de volgende periode of kies een groter abonnement.",
+    "elevenlabs_failed": "ElevenLabs kon de tekst niet inspreken.",
+    "elevenlabs_unreachable": "ElevenLabs is niet bereikbaar vanaf deze server. Controleer de internetverbinding."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -570,7 +575,10 @@
     "trunkMinutes": "Minuten (trunk)",
     "trunkCount": "Aantal gesprekken (trunk)",
     "phoneMinutes": "Minuten (toestel)",
-    "phoneCount": "Slechte gesprekken (toestel)"
+    "phoneCount": "Slechte gesprekken (toestel)",
+    "defaultEngine": "engine",
+    "stability": "stabiliteit",
+    "speed": "snelheid"
   },
   "extensions": {
     "title": "Toestellen",
@@ -1706,7 +1714,7 @@
   },
   "prompts": {
     "title": "Gesproken teksten",
-    "subtitle": "Aankondigingen voor keuzemenu's en wachtrijen. Upload een bestand of neem op in de browser.",
+    "subtitle": "Mededelingen voor keuzemenu's en wachtrijen. Typ de tekst en laat die inspreken, upload een bestand of neem er een op in de browser.",
     "add": "Nieuwe tekst",
     "edit": "{{name}} bewerken",
     "emptyTitle": "Nog geen teksten",
@@ -1719,7 +1727,19 @@
     "ttsOff": "Tip: zet tekst-naar-spraak aan onder Spraak om prompts van getypte tekst te maken.",
     "ttsLabel": "Typ de tekst",
     "ttsPlaceholder": "Welkom bij ons bedrijf. Druk 1 voor verkoop…",
-    "ttsGenerate": "Audio maken"
+    "ttsGenerate": "Audio maken",
+    "source": "Bron",
+    "recorded": "Opgenomen of geüpload",
+    "select": "{{name}} selecteren",
+    "selectAll": "Alle ingesproken teksten selecteren",
+    "selected_one": "{{count}} tekst geselecteerd",
+    "selected_other": "{{count}} teksten geselecteerd",
+    "regenTitle": "Een andere stem voor je teksten",
+    "regenHint": "Vink de teksten aan die van tekst zijn gemaakt om ze opnieuw in te spreken met een andere stem.",
+    "regenChars": "Ongeveer {{n}} ElevenLabs-tekens. Teksten die al met deze stem zijn ingesproken kosten niets.",
+    "regenFree": "Ingesproken door de lokale stem, gratis.",
+    "regenerate": "Opnieuw genereren met deze stem",
+    "regenResult": "{{done}} opnieuw ingesproken, {{failed}} mislukt."
   },
   "recordings": {
     "title": "Opnames",
@@ -2509,7 +2529,7 @@
   },
   "speech": {
     "title": "Spraak",
-    "subtitle": "Tekst-naar-spraak en spraak-naar-tekst op deze server. Geen audio verlaat de telefooncentrale.",
+    "subtitle": "Tekst-naar-spraak en spraak-naar-tekst. Piper en Whisper draaien op deze server; ElevenLabs voegt optioneel cloudstemmen in studiokwaliteit toe.",
     "notInstalled": "Het pakket kiestoon-speech is niet geïnstalleerd. Installeer het met apt install kiestoon-speech, of draai de installer opnieuw.",
     "saved": "Spraakinstellingen opgeslagen.",
     "tts": "Tekst-naar-spraak (Piper)",
@@ -3918,5 +3938,147 @@
       "extension": "toestel (onbekend of dubbel gekoppeld)",
       "ring": "gaat over op"
     }
+  },
+  "tts": {
+    "text": "Tekst",
+    "placeholder": "Welkom. Voor verkoop, druk 1. Voor support, druk 2.",
+    "characters": "{{n}} tekens",
+    "credits": "≈ {{n}} tekens tegoed",
+    "creditsLeft": "≈ {{n}} tekens tegoed · nog {{left}}",
+    "engine": "Engine",
+    "language": "Taal",
+    "engines": {
+      "piper": "Lokaal (Piper)",
+      "elevenlabs": "ElevenLabs"
+    },
+    "engineHints": {
+      "piper": "Gratis, lokaal",
+      "elevenlabs": "Studiokwaliteit"
+    },
+    "engineOff": "Niet aangezet onder Spraak",
+    "voice": "Stem",
+    "noPiperVoice": "Geen stem gedownload voor deze taal",
+    "generate": "Audio genereren",
+    "regenerate": "Nieuwe audio genereren",
+    "done": "Gegenereerd met {{engine}} · {{voice}}.",
+    "cached": "Zelfde tekst en stem als eerder: hergebruikt, geen nieuwe tekens ({{voice}}).",
+    "fellBack": "ElevenLabs was niet bereikbaar, daarom heeft de lokale Piper-stem deze tekst ingesproken. Genereer later opnieuw voor de ElevenLabs-stem.",
+    "hintEleven": "Omgezet naar 8 kHz WAV voor Asterisk en bewaard bij Gesproken teksten. Dezelfde tekst met dezelfde stem wordt hergebruikt en kost geen nieuwe tekens.",
+    "hintPiper": "Uitgesproken door de lokale spraakmodule op deze server. De audio wordt bewaard bij Gesproken teksten.",
+    "off": "Tekst-naar-spraak staat uit of er is geen stem klaar. Zet het aan bij"
+  },
+  "voices": {
+    "title": "Kies een stem",
+    "subtitle": "Beluister de voorbeelden en kies de stem voor je keuzemenu's en mededelingen.",
+    "library": "Stemmenbibliotheek",
+    "mine": "Mijn stemmen",
+    "searchPlaceholder": "Naam of stijl, bijv. calm",
+    "gender": "Geslacht",
+    "any": "Alle",
+    "female": "Vrouw",
+    "male": "Man",
+    "neutral": "Neutraal",
+    "useCase": "Geschikt voor",
+    "accent": "Accent",
+    "language": "Taal",
+    "allLanguages": "Alle talen",
+    "pbxLanguage": "taal centrale",
+    "lang": {
+      "nl": "Nederlands",
+      "en": "Engels",
+      "de": "Duits",
+      "fr": "Frans"
+    },
+    "loading": "Stemmen laden…",
+    "empty": "Geen stemmen gevonden met deze filters.",
+    "more": "Meer stemmen tonen",
+    "preview": "Voorbeeld van {{name}} afspelen",
+    "choose": "Kiezen",
+    "chosen": "Gekozen",
+    "change": "Wijzigen",
+    "none": "Nog geen stem gekozen",
+    "use": "{{name}} gebruiken",
+    "inAccount": "in je account",
+    "footHint": "Een stem uit de bibliotheek wordt aan je ElevenLabs-account toegevoegd als je hem gebruikt. Bibliotheekstemmen tellen niet mee voor je stemplaatsen.",
+    "ownText": "Beluister {{name}} met je eigen tekst",
+    "ownTextSample": "Welkom. Voor verkoop, druk 1. Voor support, druk 2.",
+    "listen": "Beluisteren",
+    "ownTextHint": "Kost ongeveer {{n}} tekens. De voorbeelden op de kaarten zijn gratis.",
+    "useCases": {
+      "conversational": "Gesprek",
+      "narrative_story": "Vertellen",
+      "informative_educational": "Informatief",
+      "advertisement": "Reclame",
+      "characters_animation": "Personages",
+      "social_media": "Social media",
+      "entertainment_tv": "Entertainment",
+      "customer_service": "Klantenservice"
+    },
+    "accents": {
+      "standard": "Standaard",
+      "flemish": "Vlaams",
+      "belgian": "Belgisch",
+      "netherlands": "Nederland",
+      "dutch": "Nederlands",
+      "british": "Brits",
+      "american": "Amerikaans",
+      "australian": "Australisch"
+    },
+    "ages": {
+      "young": "Jong",
+      "middle_aged": "Middelbaar",
+      "middle aged": "Middelbaar",
+      "old": "Ouder"
+    },
+    "descriptives": {
+      "calm": "Rustig",
+      "professional": "Professioneel",
+      "warm": "Warm",
+      "confident": "Zelfverzekerd",
+      "casual": "Informeel",
+      "friendly": "Vriendelijk",
+      "deep": "Diep",
+      "soft": "Zacht"
+    }
+  },
+  "eleven": {
+    "cloud": "Cloud",
+    "connected": "Verbonden",
+    "intro": "Typ de tekst van een keuzemenu of mededeling en Kiestoon laat ElevenLabs die inspreken. De audio wordt omgezet naar telefoonkwaliteit en op deze server bewaard.",
+    "enable": "ElevenLabs gebruiken",
+    "enableHint": "Standaard uit. Eerder gemaakte teksten blijven werken als je het uitzet.",
+    "apiKey": "API-sleutel",
+    "replace": "Vervangen",
+    "saveKey": "Sleutel controleren en opslaan",
+    "apiKeyHint": "Versleuteld opgeslagen op deze server en daarna nooit meer zichtbaar. Maak een sleutel aan op elevenlabs.io onder Developers > API keys, met toegang tot text-to-speech en voices.",
+    "test": "Verbinding testen",
+    "testResult": "{{tier}}-abonnement · gecontroleerd {{time}}",
+    "usage": "Tekens gebruikt deze periode",
+    "usageHint": "Begint opnieuw op {{date}}. Bij 80% krijgen de beheerders een mail.",
+    "usageHintNoDate": "Bij 80% krijgen de beheerders een mail.",
+    "model": "Model",
+    "modelHint": "Multilingual v2 klinkt in het Nederlands het natuurlijkst aan de telefoon.",
+    "models": {
+      "eleven_multilingual_v2": "Multilingual v2 — beste kwaliteit (aanbevolen)",
+      "eleven_flash_v2_5": "Flash v2.5 — snelst, de helft van de tekens",
+      "eleven_v3": "Eleven v3 — meest expressief"
+    },
+    "defaults": "Standaard voor nieuwe teksten",
+    "defaultEngine": "Engine",
+    "engineHints": {
+      "piper": "Gratis, niets verlaat de server",
+      "elevenlabs": "Studiokwaliteit, kost tekens"
+    },
+    "voiceNl": "Nederlandse stem",
+    "voiceEn": "Engelse stem",
+    "keyFirst": "Sla eerst een API-sleutel op om een stem te kiezen.",
+    "voiceSettings": "Steminstellingen",
+    "stability": "Stabiliteit",
+    "stabilityHint": "Hoger klinkt rustiger en gelijkmatiger; lager klinkt levendiger.",
+    "speed": "Snelheid",
+    "speedHint": "95% is iets trager dan normaal, prettig voor menukeuzes.",
+    "fallback": "Piper gebruiken als ElevenLabs niet bereikbaar is",
+    "fallbackHint": "Genereren blijft werken als de sleutel, het tegoed of internet wegvalt. Afspelen hangt nooit van ElevenLabs af.",
+    "privacy": "Alleen de getypte tekst gaat naar ElevenLabs. Bellers, opnames en voicemail verlaten de server nooit. De audio wordt hier bewaard, dus een gesprek wacht nooit op internet."
   }
 }

@@ -27,6 +27,7 @@ func (s *Server) extensionRoutes(mux *http.ServeMux, admin, recep, full func(htt
 	mux.Handle("POST /api/speech/download", admin(s.speechDownload))
 	mux.Handle("DELETE /api/speech/files/{id}", admin(s.speechRemove))
 	mux.Handle("POST /api/speech/tts", admin(s.speechTTS))
+	s.elevenRoutes(mux, admin)
 
 	mux.Handle("GET /api/fax/send/boxes", recep(s.faxSendBoxes))
 	mux.Handle("POST /api/fax/send", recep(s.faxSend))

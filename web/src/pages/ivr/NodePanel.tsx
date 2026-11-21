@@ -1,14 +1,14 @@
 import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
 import { Ban, ChevronDown, Copy, Library, Loader2, Mic, Plus, Sparkles, Square, Trash2, Upload, X } from 'lucide-react'
-import { Select, Textarea, Toggle, useApi } from '../../components/kit'
+import { Select, Toggle } from '../../components/kit'
 import { DestinationPicker } from '../../components/pbx'
 import { Button, ErrorMessage, Input } from '../../components/ui'
 import { WavePlayer, promptSrc } from '../../components/WavePlayer'
+import { SpeakFromText } from '../../components/SpeakFromText'
 import { ApiError, api } from '../../lib/api'
 import { startRecording, toTelephoneWav } from '../../lib/audio'
-import type { IVR, Prompt, SpeechData, SpeechIntent, TimeCondition } from '../../lib/types'
+import type { IVR, Prompt, PromptSource, SpeechIntent, TimeCondition } from '../../lib/types'
 import { KEYS, hasAudio, toneOf, tones, type StepData, type StepNode } from './flow'
 import { NodeTitle, iconOf, toneClass } from './nodes'
 
@@ -32,31 +32,27 @@ function Section({ title, children, aside }: { title: string; children: ReactNod
 function AudioSource({ promptId, onPrompt, promptName, prompts, onPromptsChanged, tone }: {
   promptId: number; onPrompt: (id: number) => void; promptName: string; prompts: Prompt[]; onPromptsChanged: () => void; tone: string
 }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const [mode, setMode] = useState<Mode>(promptId ? 'library' : 'generate')
-  const speech = useApi<SpeechData>('/speech')
-  const nl = i18n.language.startsWith('nl')
-  const [text, setText] = useState('')
-  const [voice, setVoice] = useState('')
-  const [busy, setBusy] = useState<'' | 'tts' | 'convert' | 'save'>('')
+  const [busy, setBusy] = useState<'' | 'convert' | 'save'>('')
   const [recording, setRecording] = useState(false)
   const [drag, setDrag] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const rec = useRef<{ stop: () => Promise<Blob> } | null>(null)
   const file = useRef<HTMLInputElement>(null)
 
-  const voices = (speech.data?.voices ?? []).filter((v) => v.downloaded)
-  const defVoice = speech.data ? (nl ? speech.data.settings.tts.voiceNl : speech.data.settings.tts.voiceEn) : ''
-  const chosenVoice = voice || (voices.some((v) => v.id === defVoice) ? defVoice : voices[0]?.id ?? '')
-  const ttsReady = !!speech.data?.settings.tts.enabled && speech.data.ttsInstalled && voices.length > 0
 
-  async function store(base64: string) {
+  async function store(base64: string, source?: PromptSource) {
     setBusy('save')
-    const p = await api<Prompt>('POST', '/pbx/prompts', { name: promptName.slice(0, 60), audio: base64 })
-    onPromptsChanged()
-    onPrompt(p.id)
+    try {
+      const p = await api<Prompt>('POST', '/pbx/prompts', { name: promptName.slice(0, 60), audio: base64, source })
+      onPromptsChanged()
+      onPrompt(p.id)
+    } finally {
+      setBusy('')
+    }
   }
-  async function run(kind: 'tts' | 'convert', fn: () => Promise<void>) {
+  async function run(kind: 'convert', fn: () => Promise<void>) {
     setBusy(kind)
     setError(null)
     try {
@@ -67,10 +63,6 @@ function AudioSource({ promptId, onPrompt, promptName, prompts, onPromptsChanged
       setBusy('')
     }
   }
-  const generate = () => run('tts', async () => {
-    const r = await api<{ audio: string }>('POST', '/speech/tts', { text, voice: chosenVoice, language: nl ? 'nl' : 'en' })
-    await store(r.audio)
-  })
   const convert = (b: Blob) => run('convert', async () => {
     if (b.size > MAX_UPLOAD) throw new Error(t('ivr.panel.tooLarge'))
     let w
@@ -126,22 +118,9 @@ function AudioSource({ promptId, onPrompt, promptName, prompts, onPromptsChanged
         ))}
       </div>
 
-      {mode === 'generate' && (ttsReady ? (
-        <>
-          <Textarea name="text" label={t('ivr.panel.text')} value={text} onChange={(e) => setText(e.target.value)} rows={3} maxLength={2000} placeholder={t('ivr.panel.textPlaceholder')} />
-          <Select name="voice" label={t('ivr.panel.voice')} value={chosenVoice} onChange={(e) => setVoice(e.target.value)}>
-            {voices.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-          </Select>
-          <Button busy={busy === 'tts' || busy === 'save'} disabled={!text.trim() || !!busy} onClick={generate}>
-            <Sparkles className="size-4" aria-hidden />{promptId ? t('ivr.panel.regenerate') : t('ivr.panel.generate')}
-          </Button>
-          <p className="text-[11px] text-subtle">{t('ivr.panel.generateHint')}</p>
-        </>
-      ) : speech.data ? (
-        <p className="rounded-xl border border-line bg-inset p-3 text-xs text-muted">
-          {t('ivr.panel.ttsOff')} <Link to="/speech" className="text-accent underline">{t('nav.speech')}</Link>
-        </p>
-      ) : null)}
+      {mode === 'generate' && (
+        <SpeakFromText compact initial={current?.source} regenerate={promptId > 0} onAudio={(r) => store(r.audio, r.source)} />
+      )}
 
       {mode === 'record' && (
         <div className="flex flex-wrap items-center gap-3">

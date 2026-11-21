@@ -102,7 +102,7 @@ function alertValue(kind: string, v: number) {
   return String(Math.round(v))
 }
 
-function AlertBanner({ list }: { list: SLAAlert[] }) {
+export function AlertBanner({ list }: { list: SLAAlert[] }) {
   const { t, i18n } = useTranslation()
   const first = list.reduce((a, b) => (a.since < b.since ? a : b))
   return (
@@ -124,7 +124,7 @@ function Big({ value, label, t: tn = 'ink' }: { value: ReactNode; label: string;
 }
 
 /** The service level as a ring: the share answered within the target time. */
-function Gauge({ q, size = 7 }: { q: WallQueue; size?: number }) {
+export function Gauge({ q, size = 7 }: { q: WallQueue; size?: number }) {
   const { t } = useTranslation()
   const sl = q.today.serviceLevel
   const tn = levelTone(sl, norm(q))

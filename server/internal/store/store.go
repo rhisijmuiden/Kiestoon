@@ -833,6 +833,16 @@ var migrations = []string{
 	CREATE INDEX crm_log_at ON crm_log(at);`,
 	// How a prompt was made from text (engine, voice, text), so it can be spoken again with another voice.
 	`ALTER TABLE prompts ADD COLUMN source TEXT NOT NULL DEFAULT '{}';`,
+	// Wallboard designer: a screen's own address, who may open it, and its design (draft + published).
+	`ALTER TABLE wallboard_screens ADD COLUMN slug TEXT;
+	ALTER TABLE wallboard_screens ADD COLUMN access TEXT NOT NULL DEFAULT 'link';
+	ALTER TABLE wallboard_screens ADD COLUMN pin_hash TEXT NOT NULL DEFAULT '';
+	ALTER TABLE wallboard_screens ADD COLUMN networks TEXT NOT NULL DEFAULT '[]';
+	ALTER TABLE wallboard_screens ADD COLUMN design TEXT NOT NULL DEFAULT '';
+	ALTER TABLE wallboard_screens ADD COLUMN published TEXT NOT NULL DEFAULT '';
+	ALTER TABLE wallboard_screens ADD COLUMN published_at TEXT NOT NULL DEFAULT '';
+	UPDATE wallboard_screens SET slug = 'screen-' || id;
+	CREATE UNIQUE INDEX wallboard_screens_slug ON wallboard_screens(slug);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

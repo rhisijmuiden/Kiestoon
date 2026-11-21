@@ -18,6 +18,7 @@ import { Internet } from './pages/Internet'
 import { Phonebook } from './pages/Phonebook'
 import { Wallboard } from './pages/Wallboard'
 import { WallboardSettings } from './pages/WallboardSettings'
+import { WallDesigner } from './pages/wallboard/Designer'
 import { Quality } from './pages/Quality'
 import { QualitySettings } from './pages/QualitySettings'
 import { WallScreen } from './pages/WallScreen'
@@ -139,6 +140,7 @@ export function App() {
         <Route index element={home} />
         <Route path="account" element={<Account />} />
         {roleRank(role) >= roleRank('admin') && <Route path="wallboard/settings" element={<WallboardSettings />} />}
+        {roleRank(role) >= roleRank('admin') && <Route path="wallboard/designer/:id" element={<WallDesigner />} />}
         {roleRank(role) >= roleRank('admin') && <Route path="quality/settings" element={<QualitySettings />} />}
         {items.map((i) => <Route key={i.key} path={i.path.slice(1)} element={pages[i.key]} />)}
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -64,6 +64,30 @@ removes the link. *Last shown* tells you when a screen last fetched the figures.
 !!! tip "Keep the screen on"
     The TV page asks the browser to keep the screen awake. Set the TV or stick itself not to go to sleep as well.
 
+## Design your own screen
+
+Every TV link can get a design of its own in the **wallboard designer**: go to *Wallboard → Settings* and click **Design** on a screen.
+
+**Layout.** Drag tiles from the list on the left onto the grid (12 × 8 for a landscape screen, 6 × 12 for portrait), or click a tile to place it on the first free spot. Drag a tile to move it and pull its corner to resize it; with the keyboard, the arrow keys move the selected tile and Shift + arrows resize it. A screen can have several pages that rotate, each with its own time. Undo and redo keep the last 50 steps.
+
+There are 17 tiles: a number (KPI), a service level gauge, a trend, a queue tile, waiting callers, compare queues, callback requests, an agent list, agent tiles, a leaderboard, calls per hour, answered / abandoned, a clock, a text, a news ticker, a logo or image, and SLA alerts.
+
+**Per tile** you choose the title, the figure (live: waiting, longest wait, callbacks, agents free / on a call / paused; or over a period: offered, answered, abandoned, abandoned %, service level, average wait and talk time, longest wait), which queues it counts, the period (today, last hour, yesterday, last 7 days), and when it turns orange or red. *Take over from the queue SLA* uses the thresholds of the queue (see below). A red figure can blink, and a figure of today can show yesterday's value next to it.
+
+**House style & display.** Per screen: dark, light or automatic theme (light from 07:00 to 19:00), an accent colour, the Kiestoon logo or your own logo, background, tile style, text size, density, what the header shows, the language of the screen, and what happens on an SLA alarm (red banner, a sound on the TV, jump to the page with the alarm). Start quickly from a template: overview, one queue large, agents, reception compact, contact centre KPI or blank. *Powered by RHIS* always stays visible.
+
+**Draft and publish.** *Save* keeps your work as a draft. The TV only shows it after **Publish**. *Preview* shows the draft full screen with live figures. A screen without a published design keeps showing the classic layouts.
+
+## A screen's own address
+
+Besides the long secret link, every screen has an address you choose yourself, for example `https://pbx.example.com/wall/reception`. Set it under *Address & access* in the designer, and choose who may open it:
+
+- **Everyone who knows the address**: handy on your own network.
+- **With a pin code**: the TV asks for the pin code (4 to 10 digits) once and remembers it. *New key* logs out all TVs.
+- **Nobody**: the address is off; only the secret link works (the default for existing screens).
+
+Under *Only from these networks* you can limit a screen to networks such as `192.168.10.0/24`. That applies to both the own address and the secret link. The screen only ever receives figures of the queues you chose for it, and wrong addresses or pin codes count towards the same block as wrong provisioning requests.
+
 ## SLA thresholds
 
 Under **SLA thresholds per queue** you set per queue:

@@ -238,3 +238,74 @@ body {
 /* Palette tiles share the block look. */
 .kt-tile { background: linear-gradient(180deg, var(--kt-node-top), var(--kt-node-bot)); box-shadow: inset 0 1px 0 var(--kt-node-hi), 0 1px 2px var(--kt-sh-1); transition: transform .12s, box-shadow .12s, color .12s; }
 .kt-tile:not(:disabled):hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 var(--kt-node-hi), 0 6px 14px -6px var(--kt-sh-2); }
+
+/* Wallboard designer: a screen can have its own theme and accent, also inside the designer
+   (whatever the theme of the portal). The tokens are repeated here, scoped to the board. */
+.kt-wall-dark {
+  color-scheme: dark;
+  --color-bg: #070B14;
+  --color-surface: #0F172A;
+  --color-surface-2: #0B1120;
+  --color-field: #0A1224;
+  --color-inset: #070C18;
+  --color-line: rgb(148 163 184 / 0.14);
+  --color-ink: #E2E8F0;
+  --color-ink-2: #CBD5E1;
+  --color-nav: #A8B3C7;
+  --color-muted: #94A3B8;
+  --color-subtle: #7C8AA3;
+  --color-tint: #FFFFFF;
+  --color-grid-dot: rgb(255 255 255 / 0.05);
+  --color-accent: #22D3EE;
+  --color-accent-2: #818CF8;
+  --color-accent-ink: #A5F3FC;
+  --color-on-accent: #06121F;
+  --color-ok: #34D399;
+  --color-ok-ink: #A7F3D0;
+  --color-warn: #FBBF24;
+  --color-warn-ink: #FDE68A;
+  --color-danger: #F87171;
+  --color-danger-ink: #FECACA;
+  --card-top: rgb(15 23 42 / 0.92);
+  --card-bottom: rgb(11 17 32 / 0.92);
+  --card-shadow: none;
+  --page-glow: rgb(34 211 238 / 0.10);
+}
+.kt-wall-light {
+  color-scheme: light;
+  --color-bg: #F4F7FB;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #FFFFFF;
+  --color-field: #FFFFFF;
+  --color-inset: #EEF2F7;
+  --color-line: rgb(15 23 42 / 0.12);
+  --color-ink: #0F172A;
+  --color-ink-2: #334155;
+  --color-nav: #475569;
+  --color-muted: #526072;
+  --color-subtle: #64748B;
+  --color-tint: #0F172A;
+  --color-grid-dot: rgb(15 23 42 / 0.08);
+  --color-accent: #0891B2;
+  --color-accent-2: #6366F1;
+  --color-accent-ink: #0E7490;
+  --color-on-accent: #FFFFFF;
+  --color-ok: #059669;
+  --color-ok-ink: #047857;
+  --color-warn: #D97706;
+  --color-warn-ink: #92400E;
+  --color-danger: #DC2626;
+  --color-danger-ink: #B91C1C;
+  --card-top: #FFFFFF;
+  --card-bottom: #FBFCFE;
+  --card-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.12);
+  --page-glow: rgb(8 145 178 / 0.08);
+}
+.kt-wall-dark, .kt-wall-light { color: var(--color-ink); }
+.kt-wall-accent { --color-accent: var(--wall-accent); }
+@keyframes kt-wall-blink { 50% { opacity: 0.35; } }
+.kt-wall-blink { animation: kt-wall-blink 1.2s ease-in-out infinite; }
+@keyframes kt-wall-ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.kt-wall-ticker { animation: kt-wall-ticker var(--ticker-time, 30s) linear infinite; }
+@media (prefers-reduced-motion: reduce) { .kt-wall-blink, .kt-wall-ticker { animation: none; } }
+.kt-cq { container-type: size; }

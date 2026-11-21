@@ -1,22 +1,27 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
-import { ArrowLeft, BellRing, KeyRound, MonitorPlay, Pencil, Plus, Trash2, Tv } from 'lucide-react'
+import { Link, useNavigate } from 'react-router'
+import { ArrowLeft, BellRing, KeyRound, MonitorPlay, Palette, Pencil, Plus, Trash2, Tv } from 'lucide-react'
 import { Badge, CopyField, Empty, Modal, SectionTitle, Select, Table, Textarea, Toggle, td, useApi } from '../components/kit'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { IconButton } from '../components/pbx'
 import { api } from '../lib/api'
 import { ReportsCard } from './wallboard/Reports'
+import { wallAddress } from './wallboard/Designer'
 import type { AlertSettings, SLAOptions, WallLayout, WallScreen, WallSettings } from '../lib/types'
 
 const allLayouts: WallLayout[] = ['overview', 'queue', 'agents']
-const blank: WallScreen = { id: 0, name: '', key: '', queues: [], layouts: ['overview'], rotate: 30, theme: 'dark', hideNames: false, createdAt: '', lastSeen: '' }
+const blank: WallScreen = {
+  id: 0, name: '', key: '', queues: [], layouts: ['overview'], rotate: 30, theme: 'dark', hideNames: false, createdAt: '', lastSeen: '',
+  slug: '', access: 'link', hasPin: false, networks: [], design: null, published: null, publishedAt: '',
+}
 
 export const wallLink = (key: string) => `${window.location.origin}/wall/${key}`
 
 /** Wallboard settings: tv links, SLA thresholds per queue and who gets alerts. */
 export function WallboardSettings() {
   const { t } = useTranslation()
+  const nav = useNavigate()
   const d = useApi<WallSettings>('/wallboard/settings')
   const [edit, setEdit] = useState<WallScreen | null>(null)
   const [error, setError] = useState<unknown>(null)
@@ -58,17 +63,24 @@ export function WallboardSettings() {
                   <div className="text-xs text-subtle">{s.lastSeen ? t('wallboard.lastSeen', { time: new Date(s.lastSeen).toLocaleString() }) : t('wallboard.neverSeen')}</div>
                 </div>
                 <div className="flex">
+                  <Link to={`/wallboard/designer/${s.id}`} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-accent/45 bg-accent/10 px-3 text-sm font-medium text-accent-ink hover:bg-accent/15">
+                    <Palette className="size-4" aria-hidden />{t('wallDesign.design')}
+                  </Link>
                   <IconButton label={t('common.edit')} onClick={() => setEdit(s)}><Pencil className="size-4" aria-hidden /></IconButton>
                   <IconButton label={t('wallboard.newKey')} onClick={() => newKey(s)}><KeyRound className="size-4" aria-hidden /></IconButton>
                   <IconButton label={t('wallboard.revoke')} onClick={() => revoke(s)}><Trash2 className="size-4" aria-hidden /></IconButton>
                 </div>
               </div>
-              <CopyField label={t('wallboard.link')} value={wallLink(s.key)} />
+              {s.access !== 'link' && <CopyField label={t('wallDesign.yourAddress')} value={wallAddress(s.slug)} />}
+              <CopyField label={t('wallboard.link')} value={wallLink(s.key)} secret={s.access !== 'link'} />
               <div className="flex flex-wrap gap-1.5">
+                {s.published ? <Badge tone="accent">{t('wallDesign.designed', { count: s.published.pages.length })}</Badge> : null}
+                {s.access !== 'link' && <Badge tone={s.access === 'pin' ? 'ok' : 'warn'}>{t(`wallDesign.accessMode.${s.access}`)}</Badge>}
+                {s.networks.length > 0 && <Badge>{t('wallDesign.networksCount', { count: s.networks.length })}</Badge>}
                 {s.queues.length === 0 ? <Badge>{t('wallboard.allQueues')}</Badge> : s.queues.map((id) => <Badge key={id}>{queueName(id)}</Badge>)}
-                {s.layouts.map((l) => <Badge key={l} tone="accent">{t(`wallboard.layout.${l}`)}</Badge>)}
-                <Badge>{t(s.theme === 'light' ? 'wallboard.themeLight' : 'wallboard.themeDark')}</Badge>
-                {s.layouts.length > 1 || s.layouts.includes('queue') ? <Badge>{s.rotate ? t('wallboard.rotateEvery', { s: s.rotate }) : t('wallboard.noRotate')}</Badge> : null}
+                {!s.published && s.layouts.map((l) => <Badge key={l} tone="accent">{t(`wallboard.layout.${l}`)}</Badge>)}
+                {!s.published && <Badge>{t(s.theme === 'light' ? 'wallboard.themeLight' : 'wallboard.themeDark')}</Badge>}
+                {!s.published && (s.layouts.length > 1 || s.layouts.includes('queue')) ? <Badge>{s.rotate ? t('wallboard.rotateEvery', { s: s.rotate }) : t('wallboard.noRotate')}</Badge> : null}
                 {s.hideNames && <Badge tone="warn">{t('wallboard.namesHidden')}</Badge>}
               </div>
             </div>
@@ -78,12 +90,12 @@ export function WallboardSettings() {
       <AlertsCard data={data} onSaved={d.reload} />
       <ThresholdsCard data={data} onSaved={d.reload} />
       <ReportsCard data={data} />
-      {edit && <ScreenEditor screen={edit} data={data} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); d.reload() }} />}
+      {edit && <ScreenEditor screen={edit} data={data} onClose={() => setEdit(null)} onSaved={(sc) => { const isNew = !edit.id; setEdit(null); if (isNew && sc) nav(`/wallboard/designer/${sc.id}`); else d.reload() }} />}
     </>
   )
 }
 
-function ScreenEditor({ screen, data, onClose, onSaved }: { screen: WallScreen; data: WallSettings; onClose: () => void; onSaved: () => void }) {
+function ScreenEditor({ screen, data, onClose, onSaved }: { screen: WallScreen; data: WallSettings; onClose: () => void; onSaved: (s?: WallScreen) => void }) {
   const { t } = useTranslation()
   const [s, setS] = useState(screen)
   const [busy, setBusy] = useState(false)
@@ -94,8 +106,7 @@ function ScreenEditor({ screen, data, onClose, onSaved }: { screen: WallScreen; 
     setBusy(true)
     setError(null)
     try {
-      await api(s.id ? 'PUT' : 'POST', s.id ? `/wallboard/screens/${s.id}` : '/wallboard/screens', s)
-      onSaved()
+      onSaved(await api<WallScreen>(s.id ? 'PUT' : 'POST', s.id ? `/wallboard/screens/${s.id}` : '/wallboard/screens', s))
     } catch (e) {
       setError(e)
     } finally {
@@ -119,6 +130,7 @@ function ScreenEditor({ screen, data, onClose, onSaved }: { screen: WallScreen; 
           ))}
         </div>
       </fieldset>
+      {s.published ? <p className="rounded-xl border border-accent/35 bg-accent/[0.06] p-3 text-sm text-ink-2">{t('wallDesign.classicHidden')}</p> : <>
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-sm font-medium text-ink-2">{t('wallboard.layouts')}</legend>
         <div className="flex flex-wrap gap-2">
@@ -138,6 +150,7 @@ function ScreenEditor({ screen, data, onClose, onSaved }: { screen: WallScreen; 
           <option value="light">{t('wallboard.themeLight')}</option>
         </Select>
       </div>
+      </>}
       <Toggle name="hideNames" label={t('wallboard.hideNames')} hint={t('wallboard.hideNamesHint')} checked={s.hideNames} onChange={(v) => set({ hideNames: v })} />
     </Modal>
   )

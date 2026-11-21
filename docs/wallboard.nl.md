@@ -69,6 +69,30 @@ laatst de cijfers ophaalde.
     De tv-pagina vraagt de browser om het scherm wakker te houden. Zet ook de tv of stick zelf zo dat hij niet in
     slaap valt.
 
+## Je eigen scherm ontwerpen
+
+Elke tv-link kan een eigen ontwerp krijgen in de **wallboard-ontwerper**: ga naar *Wallboard → Instellingen* en klik bij een scherm op **Ontwerpen**.
+
+**Indeling.** Sleep tegels uit de lijst links op het raster (12 × 8 voor een liggend scherm, 6 × 12 voor staand), of klik op een tegel om hem op de eerste vrije plek te zetten. Sleep een tegel om hem te verplaatsen en trek aan de hoek om hem groter of kleiner te maken; met het toetsenbord verplaatsen de pijltjes de gekozen tegel en Shift + pijltjes veranderen de grootte. Een scherm kan meerdere pagina's hebben die rouleren, elk met een eigen tijd. Ongedaan maken en opnieuw onthouden de laatste 50 stappen.
+
+Er zijn 17 tegels: een getal (KPI), een service level-meter, een trend, een wachtrijtegel, wachtende bellers, wachtrijen vergelijken, terugbelverzoeken, een medewerkerslijst, medewerkertegels, een ranglijst, gesprekken per uur, beantwoord / afgebroken, een klok, een tekst, een lichtkrant, een logo of afbeelding en SLA-meldingen.
+
+**Per tegel** kies je de titel, de meetwaarde (nu: wachtend, langste wachttijd, terugbelverzoeken, medewerkers vrij / in gesprek / in pauze; of over een periode: aangeboden, beantwoord, afgebroken, afgebroken %, service level, gemiddelde wacht- en gespreksduur, langste wachttijd), welke wachtrijen meetellen, de periode (vandaag, laatste uur, gisteren, laatste 7 dagen) en wanneer hij oranje of rood wordt. *Overnemen uit de SLA van de wachtrij* gebruikt de drempels van de wachtrij (zie hieronder). Een rood getal kan knipperen, en een getal van vandaag kan de waarde van gisteren ernaast laten zien.
+
+**Huisstijl & weergave.** Per scherm: donker, licht of automatisch thema (licht van 07:00 tot 19:00), een accentkleur, het Kiestoon-logo of je eigen logo, achtergrond, tegelstijl, tekstgrootte, dichtheid, wat de kop laat zien, de taal van het scherm en wat er gebeurt bij een SLA-alarm (rode banner, geluid op de tv, naar de pagina met het alarm springen). Begin snel vanuit een sjabloon: overzicht, één wachtrij groot, medewerkers, receptie compact, callcenter KPI of leeg. *Powered by RHIS* blijft altijd zichtbaar.
+
+**Concept en publiceren.** *Opslaan* bewaart je werk als concept. De tv laat het pas zien na **Publiceren**. *Voorbeeld* toont het concept schermvullend met live cijfers. Een scherm zonder gepubliceerd ontwerp blijft de klassieke layouts tonen.
+
+## Een eigen adres per scherm
+
+Naast de lange geheime link heeft elk scherm een adres dat je zelf kiest, bijvoorbeeld `https://pbx.voorbeeld.nl/wall/receptie`. Stel het in bij *Adres & toegang* in de ontwerper, en kies wie het mag openen:
+
+- **Iedereen die het adres kent**: handig op je eigen netwerk.
+- **Met een pincode**: de tv vraagt één keer om de pincode (4 tot 10 cijfers) en onthoudt hem. *Nieuwe sleutel* meldt alle tv's af.
+- **Niemand**: het adres staat uit; alleen de geheime link werkt (standaard voor bestaande schermen).
+
+Bij *Alleen vanaf deze netwerken* beperk je een scherm tot netwerken zoals `192.168.10.0/24`. Dat geldt voor zowel het eigen adres als de geheime link. Het scherm krijgt alleen cijfers van de wachtrijen die je ervoor gekozen hebt, en verkeerde adressen of pincodes tellen mee voor dezelfde blokkade als verkeerde provisioning-verzoeken.
+
 ## SLA-drempels
 
 Onder **SLA-drempels per wachtrij** stel je per wachtrij in:

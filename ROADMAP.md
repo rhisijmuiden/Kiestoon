@@ -350,6 +350,10 @@ the testing channel.
   credits), fallback to Piper, prompts remember text and voice so they can be spoken again with another voice
 - [x] Dutch trunk templates (`v0.7.0-rc.26`): Cheapconnect, Speakup, Vodafone Ziggo Zakelijk and an updated KPN
   template (standard SBCs, TCP), each with a step-by-step guide in the trunk form and a docs page (EN + NL)
+- [x] Wallboard designer (`v0.7.0-rc.27`): compose each TV screen from 17 tiles on a grid (drag, resize, rotating
+  pages, templates), per tile figure, queues, period and thresholds, per screen house style (theme, accent, own logo,
+  background, tile style, text size, language, alarm behaviour). Draft and publish. Every screen gets its own address
+  `/wall/<name>` with open, pin code or link-only access and an optional network limit
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

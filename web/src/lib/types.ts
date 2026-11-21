@@ -213,6 +213,7 @@ export type WallCaller = { position: number; number: string; name: string; wait:
 export type WallQueue = {
   id: number; name: string; number: string; sla: SLAOptions; supervision: boolean; live: boolean; waiting: number; callbacks: number
   longestWait: number; callers: WallCaller[]; free: number; busy: number; paused: number; today: WallTotals; hours: WallHour[]
+  lastHour: WallTotals; yesterday: WallTotals; week: WallTotals
 }
 export type WallAgentState = 'free' | 'ringing' | 'call' | 'internal' | 'paused' | 'offline'
 export type WallAgent = {
@@ -221,11 +222,31 @@ export type WallAgent = {
 export type WallLayout = 'overview' | 'queue' | 'agents'
 export type WallData = {
   now: string; live: boolean; queues: WallQueue[]; agents: WallAgent[]; alerts: SLAAlert[]
-  screen?: { name: string; layouts: WallLayout[]; rotate: number; theme: 'dark' | 'light' }
+  screen?: { name: string; layouts: WallLayout[]; rotate: number; theme: 'dark' | 'light'; design?: WallDesign }
 }
+export type WallTileType = 'kpi' | 'gauge' | 'trend' | 'queue' | 'callers' | 'compare' | 'callbacks' | 'agents' | 'agentTiles' | 'leaderboard'
+  | 'hourly' | 'donut' | 'clock' | 'text' | 'ticker' | 'image' | 'alerts'
+export type WallMetric = 'waiting' | 'longestWait' | 'callbacks' | 'free' | 'busy' | 'paused' | 'offered' | 'answered' | 'abandoned'
+  | 'abandonedPct' | 'serviceLevel' | 'avgWait' | 'avgTalk' | 'maxWait'
+export type WallPeriod = 'today' | 'hour' | 'yesterday' | 'week'
+export type WallTile = {
+  id: string; type: WallTileType; x: number; y: number; w: number; h: number; title: string; metric: WallMetric | ''; queues: number[]
+  period: WallPeriod; warn: number; alarm: number; fromSla: boolean; display: 'big' | 'trend' | 'gauge'; blink: boolean; hideLabel: boolean
+  compare: boolean; text: string; image: string
+}
+export type WallPage = { id: string; name: string; seconds: number; tiles: WallTile[] }
+export type WallStyle = {
+  theme: 'dark' | 'light' | 'auto'; accent: string; logo: 'kiestoon' | 'own' | 'none'; logoImage: string; background: 'glow' | 'grid' | 'plain'
+  tiles: 'glass' | 'solid' | 'outlined'; scale: number; density: 'roomy' | 'normal' | 'compact'; clock: boolean; date: boolean; name: boolean
+  dots: boolean; language: 'nl' | 'en' | 'browser'; alarmBanner: boolean; alarmSound: boolean; alarmJump: boolean
+}
+export type WallDesign = { format: 'landscape' | 'portrait'; pages: WallPage[]; style: WallStyle }
+export type WallAccess = 'link' | 'open' | 'pin'
 export type WallScreen = {
   id: number; name: string; key: string; queues: number[]; layouts: WallLayout[]; rotate: number; theme: 'dark' | 'light'
   hideNames: boolean; createdAt: string; lastSeen: string
+  slug: string; access: WallAccess; pin?: string; hasPin: boolean; networks: string[]
+  design: WallDesign | null; published: WallDesign | null; publishedAt: string
 }
 export type AlertSettings = { screens: boolean; email: boolean; recipients: string[]; quiet: number; timeCondition: number; recovered: boolean }
 export type WallSettings = {

@@ -99,7 +99,7 @@ export function QualitySettings() {
         <Card>
           <SectionTitle><span className="inline-flex items-center gap-2"><BellRing className="size-4 text-accent" aria-hidden />{t('quality.rulesTitle')}</span></SectionTitle>
           <div className="flex flex-col gap-3">
-            <Toggle label={t('quality.ruleTrunk')} hint={t('quality.ruleTrunkHint', { minutes: s.trunk.minutes, count: s.trunk.count })}
+            <Toggle name="trunk" label={t('quality.ruleTrunk')} hint={t('quality.ruleTrunkHint', { minutes: s.trunk.minutes, count: s.trunk.count })}
               checked={s.trunk.enabled} onChange={(v) => set({ trunk: { ...s.trunk, enabled: v } })} />
             {s.trunk.enabled && (
               <div className="grid gap-3 sm:grid-cols-2">
@@ -107,7 +107,7 @@ export function QualitySettings() {
                 {ruleNum('trunk', 'count', t('quality.minCalls'))}
               </div>
             )}
-            <Toggle label={t('quality.rulePhone')} hint={t('quality.rulePhoneHint', { minutes: s.phone.minutes, count: s.phone.count })}
+            <Toggle name="phone" label={t('quality.rulePhone')} hint={t('quality.rulePhoneHint', { minutes: s.phone.minutes, count: s.phone.count })}
               checked={s.phone.enabled} onChange={(v) => set({ phone: { ...s.phone, enabled: v } })} />
             {s.phone.enabled && (
               <div className="grid gap-3 sm:grid-cols-2">
@@ -115,14 +115,14 @@ export function QualitySettings() {
                 {ruleNum('phone', 'minutes', t('quality.minutes'))}
               </div>
             )}
-            <Toggle label={t('quality.ruleEach')} hint={t('quality.ruleEachHint')} checked={s.eachCall} onChange={(v) => set({ eachCall: v })} />
-            <Toggle label={t('quality.ruleRecovered')} hint={t('quality.ruleRecoveredHint')} checked={s.recovered} onChange={(v) => set({ recovered: v })} />
+            <Toggle name="eachCall" label={t('quality.ruleEach')} hint={t('quality.ruleEachHint')} checked={s.eachCall} onChange={(v) => set({ eachCall: v })} />
+            <Toggle name="recovered" label={t('quality.ruleRecovered')} hint={t('quality.ruleRecoveredHint')} checked={s.recovered} onChange={(v) => set({ recovered: v })} />
           </div>
         </Card>
         <Card>
           <SectionTitle>{t('quality.notifyTitle')}</SectionTitle>
           <div className="flex flex-col gap-4">
-            <Toggle label={t('quality.email')} hint={t('quality.emailHint')} checked={s.email} onChange={(v) => set({ email: v })} />
+            <Toggle name="email" label={t('quality.email')} hint={t('quality.emailHint')} checked={s.email} onChange={(v) => set({ email: v })} />
             <Input name="recipients" label={t('quality.recipients')} value={rcpt} onChange={(e) => { setDone(''); setRcpt(e.target.value) }}
               placeholder="it@example.com, beheer@example.com" hint={t('quality.recipientsHint')} />
             <div className="grid gap-4 sm:grid-cols-2">

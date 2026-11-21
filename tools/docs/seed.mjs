@@ -1,6 +1,7 @@
 // Fills a fresh Kiestoon with a fictional office ("Noordkade Installatietechniek") for the documentation screenshots.
 // Usage: node seed.mjs <base-url> <data-dir>   (run by demo.sh)
 // Creates the first admin (admin / Kiestoon-docs-2026) and writes the TOTP secret to <data-dir>/../mfa-secret.
+import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { Client, totp } from './lib.mjs'
@@ -237,6 +238,25 @@ await c.put('/api/firewall/trusted', {
 await c.post('/api/tokens', { name: 'CRM integration', role: 'reception', readOnly: true, expiresDays: 365 })
 await c.post('/api/webhooks', { name: 'CRM - incoming calls', url: 'https://crm.noordkade.example/hooks/kiestoon', events: ['call.ringing', 'call.answered', 'call.ended'], secret: '', enabled: true })
 await c.put('/api/internet', { enabled: true, domain: 'pbx.noordkade.example', email: 'it@noordkade.example', staging: false, useForSip: true })
+// A public-looking RSA certificate for SIP over TLS (internet mode copies Let's Encrypt there), so
+// Microsoft Teams Direct Routing shows as active. Needs openssl; skipped without it.
+try {
+  const tls = path.join(dataDir, 'pbx', 'tls')
+  fs.mkdirSync(tls, { recursive: true })
+  execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '71', '-subj', '/CN=pbx.noordkade.example',
+    '-addext', 'subjectAltName=DNS:pbx.noordkade.example', '-keyout', path.join(tls, 'public.key'), '-out', path.join(tls, 'public.crt')], { stdio: 'ignore' })
+} catch {
+  console.warn('openssl missing: no demo certificate for Teams')
+}
+await c.put('/api/teams', {
+  enabled: true, fqdn: 'pbx.noordkade.example', port: 5067, trunkId: 0, callerId: 'own', maxSessions: 30, ringBoth: true,
+  users: [
+    { name: 'Thomas Jansen', upn: 'thomas.jansen@noordkade.example', number: '+31 50 799 0202', extension: '202', ring: 'both' },
+    { name: 'Lotte Smit', upn: 'lotte.smit@noordkade.example', number: '+31 50 799 0207', extension: '207', ring: 'teams' },
+    { name: 'Jesse Meijer', upn: 'jesse.meijer@noordkade.example', number: '+31 50 799 0208', extension: '208', ring: 'both' },
+    { name: 'Field sales', upn: 'sales.field@noordkade.example', number: '+31 50 799 0290', extension: '', ring: 'teams' },
+  ],
+})
 
 // ---- multi-site ----
 await c.put('/api/sites/hub', { enabled: true, listenPort: 51820, host: 'pbx.noordkade.example' })

@@ -19,6 +19,10 @@ type Options struct {
 	AMISecret string
 	TLSCert   string
 	TLSKey    string
+	// PublicCert and PublicKey are the public (Let's Encrypt) certificate, when there is a valid
+	// one. Microsoft Teams Direct Routing needs it.
+	PublicCert string
+	PublicKey  string
 	// MailFrom is the sender address of voicemail e-mails.
 	MailFrom string
 	// MailCmd is the program app_voicemail pipes e-mails into.
@@ -40,6 +44,11 @@ type Files map[string]string
 
 // Generate builds all generated configuration files.
 func Generate(s *pbx.Snapshot, o Options) Files {
+	if !teamsActive(s, o) {
+		c := *s
+		c.Extensions = withoutTeams(s.Extensions)
+		s = &c
+	}
 	return Files{
 		"pjsip.conf":         genPJSIP(s, o),
 		"extensions.conf":    genDialplan(s, o),
@@ -298,6 +307,7 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 		x.nl()
 	}
 	genFederationPJSIP(&x, s)
+	genTeamsPJSIP(&x, s, o)
 	return x.b.String()
 }
 
@@ -467,6 +477,7 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 	genAllowed(&x, s)
 	genFederationDialplan(&x, s)
 	genSunRoutes(&x, s)
+	genTeamsDialplan(&x, s, o)
 
 	// Outbound: one context per route, included in the order of the routes, so the first
 	// matching route wins regardless of how specific its pattern is.
@@ -579,6 +590,7 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 			x.f("exten => %s,1,Goto(kiestoon-in-%d,s,1)", v, r.ID)
 		}
 	}
+	genTeamsDIDs(&x, s, o, done)
 	for _, p := range []string{"_X.", "_+X.", "i"} {
 		if catchAll != nil {
 			x.f("exten => %s,1,Goto(kiestoon-in-%d,s,1)", p, catchAll.ID)

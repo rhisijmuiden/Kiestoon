@@ -12,12 +12,14 @@ func TestRuleset(t *testing.T) {
 	c.Enabled = true
 	c.SIPWhitelist = []string{"198.51.100.7", "2001:db8::/32", "203.0.113.0/24"}
 	c.AdminNetworks = []string{"192.168.1.0/24"}
-	rs, err := Ruleset(c, Ports{Portal: []int{8080, 8443}, SIP: 5060, SIPTLS: 5061, RTPStart: 10000, RTPEnd: 20000}, []string{"192.0.2.10"}, nil)
+	rs, err := Ruleset(c, Ports{Portal: []int{8080, 8443}, SIP: 5060, SIPTLS: 5061, RTPStart: 10000, RTPEnd: 20000,
+		Teams: 5067, TeamsNets: []string{"52.112.0.0/14", "52.122.0.0/15"}}, []string{"192.0.2.10"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, want := range []string{"policy drop", "192.0.2.10", "198.51.100.7", "2001:db8::/32", "10.0.0.0/8",
-		"ip saddr @admin_allow_v4 tcp dport { 22, 8080, 8443 } accept", "udp dport 10000-20000 accept"} {
+		"ip saddr @admin_allow_v4 tcp dport { 22, 8080, 8443 } accept", "udp dport 10000-20000 accept",
+		"ip saddr { 52.112.0.0/14, 52.122.0.0/15 } tcp dport 5067 accept"} {
 		if !strings.Contains(rs, want) {
 			t.Errorf("ruleset misses %q:\n%s", want, rs)
 		}

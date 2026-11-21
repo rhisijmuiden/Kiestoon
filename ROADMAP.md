@@ -332,7 +332,13 @@ the testing channel.
 - [x] Phone admin password (`v0.7.0-rc.18`): provisioning replaces the factory web interface password with a unique
   generated password per phone (default) or one shared password; key icon in the phone list shows and copies it,
   shows whether the phone has it, makes a new one; every look is audit-logged
-- [x] Form errors point at the field (`v0.7.0-rc.21`): red border, message under the field, focus on it, banner names
+- [x] Microsoft Teams Direct Routing (`v0.7.0-rc.22`): Kiestoon as SBC for a Microsoft 365 tenant. Own TLS transport
+  with the FQDN in Contact/Via (Asterisk `external_signaling_hostname`), public RSA certificate from internet mode,
+  SRTP, failover over Microsoft's three SIP proxies with health per proxy, firewall opens Microsoft 365 ranges only.
+  Teams users with an E.164 number and optional extension (Teams only, or Teams + desk phone), internal dialling by
+  extension, outside calls via the routes or one trunk, generated PowerShell script (gateway, voice route, policy,
+  numbers)
+- [x] Form errors point at the field (`v0.7.0-rc.23`): red border, message under the field, focus on it, banner names
   the field; conference rooms explain that "Wait for the host" needs a host PIN
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),

@@ -43,10 +43,12 @@ fail() {
 }
 for _ in $(seq 1 30); do ct 'curl -fsS http://127.0.0.1:8080/api/health' >/dev/null 2>&1 && break; sleep 1; done
 ct 'curl -fsS http://127.0.0.1:8080/api/health' || fail "portal health"
-ct 'curl -fsS http://127.0.0.1:8080/api/setup/status | grep -q "\"setupRequired\":true"' || fail "setup status"
+for _ in $(seq 1 15); do ct 'test -s /var/lib/kiestoon/initial-admin' && break; sleep 1; done
+ct 'curl -fsS http://127.0.0.1:8080/api/setup/status | grep -q "\"initialAdmin\":true"' || fail "setup status"
 for _ in $(seq 1 15); do ct 'curl -fsSk https://127.0.0.1:8443/ | grep -q "<div id=\"root\">"' && break; sleep 1; done
 ct 'curl -fsSk https://127.0.0.1:8443/ | grep -q "<div id=\"root\">"' || fail "portal over https"
-ct 'kiestoon setup-token' >/dev/null || fail "setup token"
+ct 'kiestoon initial-admin | grep -q "^Username: admin"' || fail "initial admin"
+ct 'grep -q "Password:" /etc/issue.d/kiestoon.issue' || fail "console shows the password"
 for unit in kiestoon kiestoon-helper asterisk fail2ban; do
   ct "systemctl is-active -q $unit" || fail "$unit not active"
 done

@@ -9,10 +9,10 @@ standby-node kopieert continu de database en bestanden en neemt het over als de 
 
 1. Installeer Kiestoon twee keer, met **dezelfde versie** (twee LXC-containers op verschillende Proxmox-hosts, of
    twee machines).
-2. Op het eerste systeem (rond de installatiewizard af): **Hoge beschikbaarheid**, kies de failovermodus en klik op
+2. Op het eerste systeem (rond de eerste aanmelding af): **Hoge beschikbaarheid**, kies de failovermodus en klik op
    **Hoge beschikbaarheid aanzetten**. Kiestoon toont een aansluitcode.
-3. Open het portaal van het tweede systeem. Kies in de installatiewizard **Aansluiten bij een bestaande Kiestoon als
-   standby-node** en plak de code (en het setup-token van het tweede systeem).
+3. Open het portaal van het tweede systeem. Meld je aan met de gebruikersnaam en het wachtwoord van het tweede
+   systeem, kies **Aansluiten bij een bestaande Kiestoon als standby-node** en plak de code.
 
 Het tweede systeem start opnieuw als standby. Het portaal toont de replicatiestatus en een formulier om te
 **promoveren**; al het andere beheer je op de primaire node.

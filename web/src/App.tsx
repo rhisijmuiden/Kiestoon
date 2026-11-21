@@ -45,7 +45,7 @@ import { Reception } from './pages/Reception'
 import { Recordings } from './pages/Recordings'
 import { RingGroups } from './pages/RingGroups'
 import { Settings } from './pages/Settings'
-import { Setup } from './pages/Setup'
+import { FirstRun, Setup } from './pages/Setup'
 import { SetPassword } from './pages/SetPassword'
 import { Sso } from './pages/Sso'
 import { TimeConditions } from './pages/TimeConditions'
@@ -123,6 +123,8 @@ export function App() {
       return <Login mfa={false} />
     case 'mfa':
       return <Login mfa />
+    case 'firstRun':
+      return <FirstRun />
     case 'enroll':
       return <MfaEnroll />
   }

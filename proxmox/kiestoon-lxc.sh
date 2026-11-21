@@ -205,17 +205,19 @@ if [ -n "$EDGE" ]; then
   echo "  Status page: http://${ADDR:-<container address>}/"
   echo "  Pair it with the code from Sites > Branch offices > Add branch office on the central Kiestoon."
 else
-  TOKEN=""
+  CREDS=""
   for _ in $(seq 60); do
-    TOKEN="$(pct exec "$CTID" -- kiestoon setup-token 2>/dev/null | tr -d '[:space:]' || true)"
-    [ -n "$TOKEN" ] && break
+    CREDS="$(pct exec "$CTID" -- kiestoon initial-admin 2>/dev/null || true)"
+    [ -n "$CREDS" ] && break
     sleep 2
   done
   bold "Kiestoon is running in container $CTID."
-  echo "  Portal:      http://${ADDR:-<container address>}:8080"
-  [ -n "$TOKEN" ] && echo "  Setup token: $TOKEN"
-  [ -n "$TOKEN" ] || echo "  Setup token: pct exec $CTID -- kiestoon setup-token"
-  echo "  Manual:      https://rhisijmuiden.github.io/Kiestoon/first-setup/"
+  echo "  URL:      http://${ADDR:-<container address>}:8080"
+  if [ -n "$CREDS" ]; then
+    sed 's/^/  /' <<<"$CREDS"
+  else
+    echo "  Username and password: pct exec $CTID -- kiestoon initial-admin"
+  fi
 fi
 [ "$IP" = "dhcp" ] && echo "  Tip: give the container a fixed address (DHCP reservation) so phones keep finding it."
 exit 0

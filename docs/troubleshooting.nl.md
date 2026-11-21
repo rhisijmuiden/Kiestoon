@@ -84,7 +84,7 @@ telefoons geregistreerd zijn en elke waarschuwing die aandacht nodig heeft.
 | Firewall | `nft list ruleset` |
 | fail2ban | `fail2ban-client status` |
 | Versie | `kiestoon version` |
-| Setup-token | `sudo kiestoon setup-token` |
+| Eerste gebruikersnaam en wachtwoord | `sudo kiestoon initial-admin` |
 
 Kom je er niet uit? Open een [issue op GitHub](https://github.com/rhisijmuiden/Kiestoon/issues) met de versie en wat
 je in de logs ziet. Haal er eerst wachtwoorden en telefoonnummers uit.

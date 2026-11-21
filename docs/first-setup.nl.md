@@ -1,24 +1,24 @@
 # Eerste inrichting
 
-Deze handleiding brengt een verse Kiestoon van de setup-token naar het eerste echte telefoongesprek. Reken op
+Deze handleiding brengt een verse Kiestoon van de eerste aanmelding naar het eerste echte telefoongesprek. Reken op
 ongeveer een half uur. Elke stap verwijst naar het volledige hoofdstuk.
 
-## 1. De eerste beheerder aanmaken
+## 1. De eerste keer aanmelden
 
-Open het portaal (`http://<server>:8080`). De installatiewizard vraagt om:
+Open de URL uit het installatiescript of van de console (`http://<server>:8080`) en meld je aan met de gebruikersnaam
+`admin` en het aangemaakte wachtwoord (opnieuw te tonen met `sudo kiestoon initial-admin`). Het portaal vraagt dan om:
 
-- **Taal** voor de wizard. Elke gebruiker kiest later zijn eigen taal.
-- **Setup-token**: staat op de console en aan het eind van het installatiescript (`sudo kiestoon setup-token`).
+- **Taal**. Elke gebruiker kiest later zijn eigen taal.
 - **Naam van de organisatie**: zichtbaar in het portaal en later op de displays van telefoons.
-- **Gebruikersnaam, volledige naam en wachtwoord** (minstens 12 tekens; een zinnetje van een paar woorden werkt
-  goed).
+- **Je naam en je eigen wachtwoord** (minstens 12 tekens; een zinnetje van een paar woorden werkt goed). Het
+  aangemaakte wachtwoord werkt daarna niet meer.
 
-Beheerders gebruiken altijd **tweestapsverificatie**. Scan direct na het aanmaken de QR-code met een
+Beheerders gebruiken altijd **tweestapsverificatie**. Scan direct na het kiezen van je wachtwoord de QR-code met een
 authenticator-app (Microsoft Authenticator, Google Authenticator, 1Password …), vul de 6-cijferige code in en
 bewaar de **herstelcodes**. Elke herstelcode werkt één keer, voor als je je telefoon kwijt bent.
 
 !!! tip "Aansluiten als standby-node"
-    De wizard heeft ook *Aansluiten bij een bestaande Kiestoon als standby-node*. Gebruik dat alleen voor de tweede
+    Het eerste scherm heeft ook *Aansluiten bij een bestaande Kiestoon als standby-node*. Gebruik dat alleen voor de tweede
     machine van een [HA-paar](high-availability.md).
 
 ## 2. Basisinstellingen

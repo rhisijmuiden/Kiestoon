@@ -3,9 +3,7 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/tls"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -13,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -41,8 +38,8 @@ func main() {
 		err = serve(log)
 	case "version", "--version", "-v":
 		fmt.Printf("kiestoon %s (commit %s, built %s)\n", version.Version, version.Commit, version.BuildDate)
-	case "setup-token":
-		err = printSetupToken()
+	case "initial-admin", "setup-token":
+		err = printInitialAdmin()
 	case "helper":
 		err = runHelper(log)
 	case "sendmail":
@@ -50,7 +47,7 @@ func main() {
 	case "cluster-notify":
 		err = clusterNotify()
 	default:
-		fmt.Fprintf(os.Stderr, "usage: kiestoon [serve|version|setup-token|helper|sendmail|cluster-notify]\n")
+		fmt.Fprintf(os.Stderr, "usage: kiestoon [serve|version|initial-admin|helper|sendmail|cluster-notify]\n")
 		os.Exit(2)
 	}
 	if err != nil {
@@ -59,35 +56,14 @@ func main() {
 	}
 }
 
-// ensureSetupToken creates the one-time token the setup wizard asks for while no admin exists.
-func ensureSetupToken(ctx context.Context, cfg config.Config, srv *api.Server, log *slog.Logger) {
-	n, err := srv.Auth.UserCount(ctx)
-	if err != nil || n > 0 {
-		return
-	}
-	path := api.SetupTokenPath(cfg.DataDir)
-	if b, err := os.ReadFile(path); err == nil && len(strings.TrimSpace(string(b))) > 0 {
-		log.Info("setup required: open the portal and enter the setup token (kiestoon setup-token)")
-		return
-	}
-	b := make([]byte, 6)
-	_, _ = rand.Read(b)
-	tok := strings.ToUpper(hex.EncodeToString(b))
-	tok = tok[:4] + "-" + tok[4:8] + "-" + tok[8:]
-	if err := os.WriteFile(path, []byte(tok+"\n"), 0o600); err != nil {
-		log.Warn("could not write setup token", "err", err)
-		return
-	}
-	log.Info("setup required", "setup_token", tok)
-}
-
-func printSetupToken() error {
+// printInitialAdmin shows the generated first administrator while the first-run wizard is pending.
+func printInitialAdmin() error {
 	cfg := config.Load()
-	b, err := os.ReadFile(api.SetupTokenPath(cfg.DataDir))
-	if err != nil {
-		return errors.New("no setup token: setup is already done, or the service has not started yet")
+	a, ok := api.LoadInitialAdmin(cfg.DataDir)
+	if !ok {
+		return errors.New("no initial password: the first sign-in is already done (or the service has not started yet)")
 	}
-	fmt.Print(string(b))
+	fmt.Printf("Username: %s\nPassword: %s\n", a.Username, a.Password)
 	return nil
 }
 
@@ -106,7 +82,9 @@ func serve(log *slog.Logger) error {
 	defer db.Close()
 
 	srv := api.New(cfg, db, log)
-	ensureSetupToken(ctx, cfg, srv, log)
+	if err := srv.EnsureInitialAdmin(ctx); err != nil {
+		log.Warn("first administrator", "err", err)
+	}
 	srv.LoadProxySettings(ctx)
 	srv.LoadTrustedNetworks(ctx)
 

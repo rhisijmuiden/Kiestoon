@@ -9,6 +9,7 @@ export type SessionState =
   | { kind: 'standby' }
   | { kind: 'signedOut' }
   | { kind: 'mfa' }
+  | { kind: 'firstRun'; me: Me }
   | { kind: 'enroll'; me: Me }
   | { kind: 'ready'; me: Me }
 
@@ -26,7 +27,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const me = await api<Me>('GET', '/me')
       if (me.user.language && me.user.language !== i18n.language) i18n.changeLanguage(me.user.language)
       if (isThemePref(me.user.theme) && me.user.theme !== getThemePref()) setThemePref(me.user.theme)
-      setState(me.mfaEnrollmentRequired ? { kind: 'enroll', me } : { kind: 'ready', me })
+      setState(me.firstRunRequired ? { kind: 'firstRun', me } : me.mfaEnrollmentRequired ? { kind: 'enroll', me } : { kind: 'ready', me })
     } catch (e) {
       if (e instanceof ApiError && e.code === 'mfa_required') return setState({ kind: 'mfa' })
       setState({ kind: 'signedOut' })

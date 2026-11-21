@@ -269,6 +269,8 @@ func (s *Server) dispatch(ctx context.Context, req Request) (any, error) {
 	case "cluster.release":
 		go func() { _ = s.demote(context.Background(), "switch-over", true) }()
 		return map[string]string{"state": "releasing"}, nil
+	case "console.issue":
+		return nil, s.consoleIssue()
 	case "portal.restart":
 		go func() {
 			time.Sleep(500 * time.Millisecond)
@@ -586,4 +588,38 @@ func (s *Server) restore(a BackupArgs) {
 	s.writeRestoreStatus(RestoreStatus{State: "success", Snapshot: snap, Message: "previous data kept in " + old})
 	_, _ = runCmd(ctx, "systemctl", "start", "asterisk.service", "kiestoon.service")
 	s.Log.Info("restore finished", "snapshot", snap)
+}
+
+// consoleIssue writes the text that the console shows above the login prompt: the address of the
+// portal and, until the first sign-in is done, the generated user name and password. agetty
+// replaces \4 with the IPv4 address of the machine.
+func (s *Server) consoleIssue() error {
+	const path = "/etc/issue.d/kiestoon.issue"
+	if _, err := os.Stat("/etc/issue.d"); err != nil {
+		if err := os.MkdirAll("/etc/issue.d", 0o755); err != nil {
+			return err
+		}
+	}
+	var b strings.Builder
+	b.WriteString("\n  Kiestoon portal: http://\\4:8080\n")
+	if raw, err := os.ReadFile(filepath.Join(s.DataDir, "initial-admin")); err == nil {
+		var user, pass string
+		for _, line := range strings.Split(string(raw), "\n") {
+			k, v, _ := strings.Cut(strings.TrimSpace(line), "=")
+			switch k {
+			case "username":
+				user = v
+			case "password":
+				pass = v
+			}
+		}
+		// Only plain characters: a backslash would be read as an agetty escape.
+		if user != "" && pass != "" && !strings.ContainsAny(user+pass, "\\") {
+			b.WriteString("  Username:        " + user + "\n")
+			b.WriteString("  Password:        " + pass + "\n")
+			b.WriteString("  (Shown until the first sign-in is done. Again later: kiestoon initial-admin)\n")
+		}
+	}
+	b.WriteString("\n")
+	return os.WriteFile(path, []byte(b.String()), 0o644)
 }

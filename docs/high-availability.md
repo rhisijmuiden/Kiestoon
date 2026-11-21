@@ -8,10 +8,10 @@ copies its database and files continuously and takes over when the primary fails
 ## Set up
 
 1. Install Kiestoon twice, with the **same version** (two LXC containers on different Proxmox hosts, or two machines).
-2. On the first system (finish its setup wizard): **Sites → High availability**, choose the failover mode and click
+2. On the first system (finish its first sign-in): **Sites → High availability**, choose the failover mode and click
    **Switch on high availability**. Kiestoon shows a join code.
-3. Open the portal of the second system. In the setup wizard choose **Join an existing Kiestoon as standby node** and
-   paste the code (and the setup token of the second system).
+3. Open the portal of the second system. Sign in with the user name and password of the second system, choose
+   **Join an existing Kiestoon as standby node** and paste the code.
 
 The second system restarts as standby. Its portal shows the replication state and a **Promote** form; everything else
 is managed on the primary.

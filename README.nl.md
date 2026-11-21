@@ -106,17 +106,23 @@ actief/passief-paar dat het binnen enkele seconden overneemt. [Lees meer](https:
 
 ### Proxmox LXC-template
 
-Voer dit uit in de shell van de Proxmox-host. Het downloadt het template, maakt de container en toont de setup-token
-(voeg `-- --download-only` toe om alleen het template te downloaden, of `-- --edge` voor Kiestoon Edge):
+Open in Proxmox *opslag › CT Templates › **Download from URL***, plak deze URL en klik op *Query URL* en *Download*:
+
+```text
+https://github.com/rhisijmuiden/Kiestoon/releases/latest/download/kiestoon-debian-13-amd64.tar.zst
+```
+
+(Tot de eerste stabiele release gebruik je dezelfde bestandsnaam van de nieuwste
+[release candidate](https://github.com/rhisijmuiden/Kiestoon/releases) in plaats van `latest`.) Maak een container van
+het template (unprivileged, nesting aan; 1 CPU, 1 GB RAM, 8 GB schijf om mee te beginnen) en start hem. De console
+toont de URL, gebruikersnaam en het wachtwoord.
+
+Of doe alles met één commando in de shell van de Proxmox-host (voeg `-- --download-only` toe om alleen het template te
+downloaden, of `-- --edge` voor Kiestoon Edge):
 
 ```sh
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/proxmox/kiestoon-lxc.sh)"
 ```
-
-Of met de hand: download `kiestoon-<versie>-debian-13-amd64.tar.zst` van de [releases](https://github.com/rhisijmuiden/Kiestoon/releases),
-upload hem in Proxmox (*storage › CT Templates › Upload*) en maak er een container van (unprivileged is prima; 1 CPU,
-1 GB RAM, 8 GB schijf om mee te beginnen). Log op de console in als root: het adres van het portaal en het eenmalige
-setup-token staan daar.
 
 ### Debian 13-server of VM
 
@@ -128,9 +134,10 @@ curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/insta
 
 Tot de eerste stabiele release heeft alleen het testkanaal releases, dus gebruik voorlopig `--channel testing`.
 
-Open `http://<server>:8080` (of `https://<server>:8443` met een zelfondertekend certificaat), vul het setup-token in
-en maak de eerste beheerder aan. Beheerders stellen bij de eerste keer inloggen tweestapsverificatie in. Toon het
-setup-token opnieuw met `sudo kiestoon setup-token`.
+Het script werkt op een kale Debian 13, op hardware, in een VM of in een container. Aan het eind toont het alleen de
+URL, de gebruikersnaam (`admin`) en een aangemaakt wachtwoord. Meld je daarmee aan op `http://<server>:8080`: je kiest
+dan je eigen wachtwoord en de naam van je organisatie, stelt tweestapsverificatie in, en richt de rest in het portaal
+in. Toon de gegevens opnieuw met `sudo kiestoon initial-admin`.
 
 Volg daarna [Eerste inrichting](https://rhisijmuiden.github.io/Kiestoon/nl/first-setup/) in de handleiding: een trunk, toestellen, telefoons en een
 inkomende route, en het eerste gesprek werkt.

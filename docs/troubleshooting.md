@@ -81,7 +81,7 @@ registered and any warning that needs attention.
 | Firewall | `nft list ruleset` |
 | fail2ban | `fail2ban-client status` |
 | Version | `kiestoon version` |
-| Setup token | `sudo kiestoon setup-token` |
+| First user name and password | `sudo kiestoon initial-admin` |
 
 Still stuck? Open an [issue on GitHub](https://github.com/rhisijmuiden/Kiestoon/issues) with the version and what
 you see in the logs. Remove passwords and phone numbers first.

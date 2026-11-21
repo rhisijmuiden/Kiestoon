@@ -262,6 +262,11 @@ jobs:
         run: |
           cd dist
           cp ../build/softphone/*.msi .
+          # Copies without the version, so releases/latest/download/<name> is a fixed address for
+          # "Download from URL" under CT Templates in Proxmox.
+          for f in kiestoon-*-debian-13-amd64.tar.zst; do
+            ln "$f" "$(sed -E 's/-[0-9][^-]*(-rc\.[0-9]+)?-debian-13/-debian-13/' <<<"$f")"
+          done
           sha256sum -- *.deb *.tar.zst *.img.xz *.msi > SHA256SUMS
           cat SHA256SUMS
 

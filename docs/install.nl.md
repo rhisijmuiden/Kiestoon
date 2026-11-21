@@ -2,7 +2,7 @@
 
 Kiestoon draait op **Debian 13 "Trixie"** (amd64 of arm64). Kies een van twee manieren: het kant-en-klare
 Proxmox LXC-template, of het installatiescript op een Debian 13-server of virtuele machine. Beide eindigen op
-hetzelfde: een draaiend portaal en een eenmalige **setup-token** voor de eerste beheerder.
+hetzelfde: een draaiend portaal, en het adres, de gebruikersnaam en het wachtwoord om mee in te loggen. De rest richt je in het portaal in.
 
 ## Wat heb je nodig
 
@@ -15,7 +15,38 @@ hetzelfde: een draaiend portaal en een eenmalige **setup-token** voor de eerste 
 
 ## Optie 1: Proxmox LXC-template
 
-### De makkelijke manier: één commando op de Proxmox-host
+### Downloaden via URL in Proxmox
+
+De eigen templatelijst van Proxmox (*CT Templates › Templates*) toont alleen de officiële Proxmox- en
+TurnKey-appliances, en je kunt daar geen andere bronnen aan toevoegen. Proxmox kan wel elk template van een URL
+downloaden:
+
+1. Open in Proxmox *je opslag (bijvoorbeeld `local`) › CT Templates › **Download from URL***.
+2. Plak deze URL, klik op **Query URL** en daarna op **Download**:
+
+    ```text
+    https://github.com/rhisijmuiden/Kiestoon/releases/latest/download/kiestoon-debian-13-amd64.tar.zst
+    ```
+
+    !!! note "Tot de eerste stabiele release"
+        `latest` wijst alleen naar stabiele releases. Zolang die er nog niet is, gebruik je de URL van de nieuwste
+        release candidate, bijvoorbeeld `https://github.com/rhisijmuiden/Kiestoon/releases/download/v0.7.0-rc.28/kiestoon-debian-13-amd64.tar.zst` (kopieer op de pagina
+        [releases](https://github.com/rhisijmuiden/Kiestoon/releases) de link van `kiestoon-debian-13-amd64.tar.zst`).
+        Kiestoon Edge: `kiestoon-edge-debian-13-amd64.tar.zst`.
+
+3. Klik op **Create CT**. Kies het template, laat *Unprivileged container* en *Nesting* aan, en begin met 1 CPU,
+   1 GB RAM en 8 GB schijf. Geef hem een vast IP-adres (of een DHCP-reservering).
+4. Start de container en open de **Console**. Boven de loginprompt staat alleen wat je nodig hebt:
+
+    ```text
+      Kiestoon portal: http://192.168.1.20:8080
+      Username:        admin
+      Password:        k7Rm-Xq4T-9fwP-Lh2c
+    ```
+
+5. Open de URL, meld je aan en [ga verder in het portaal](first-setup.md).
+
+### Met één commando op de Proxmox-host
 
 Open een shell op de Proxmox-host (*node › Shell*) en voer uit:
 
@@ -25,7 +56,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/te
 
 Het script zoekt de nieuwste release, downloadt het LXC-template naar de template-opslag (standaard `local`) en
 controleert de SHA-256-checksum. Daarna toont het een overzicht, maakt een unprivileged container (1 CPU, 1 GB RAM,
-8 GB schijf, DHCP op `vmbr0`), start hem en toont het adres van het portaal en de setup-token.
+8 GB schijf, DHCP op `vmbr0`), start hem en toont de URL, gebruikersnaam en het wachtwoord.
 
 Handige opties:
 
@@ -55,8 +86,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/te
 2. Open in Proxmox *je opslag › CT Templates › Upload* en upload het bestand.
 3. Maak een container van het template. Unprivileged is prima. Begin met 1 CPU, 1 GB RAM en 8 GB schijf, en geef
    hem een vast IP-adres (of een DHCP-reservering).
-4. Start de container en log op de console in als `root`. De console toont het adres van het portaal en de
-   setup-token.
+4. Start de container. De console toont de URL, gebruikersnaam en het wachtwoord.
 
 !!! note "Testkanaal"
     Release candidates (`vX.Y.Z-rc.N`) hebben ook een template. Een container van een rc-template volgt het
@@ -90,8 +120,15 @@ Opties van het script:
 
 Het script installeert de pakketten `kiestoon` (portaal en API), `kiestoon-asterisk` (Asterisk 22 LTS, gebouwd
 voor Kiestoon), `kiestoon-sounds-nl` (Nederlandse gesproken teksten) en de diensten `kiestoon-helper` (een kleine
-root-helper voor firewall, back-ups en tunnels) en `kiestoon-updater`. Aan het eind toont het het adres van het
-portaal en de setup-token.
+root-helper voor firewall, back-ups en tunnels) en `kiestoon-updater`. Het werkt hetzelfde op hardware, in een
+virtuele machine of in een container. Aan het eind toont het alleen wat je nodig hebt:
+
+```text
+Kiestoon v0.7.0 is installed.
+  URL:      http://192.168.1.20:8080
+  Username: admin
+  Password: k7Rm-Xq4T-9fwP-Lh2c
+```
 
 ## Het portaal openen
 
@@ -101,11 +138,14 @@ portaal en de setup-token.
 | `https://<server>:8443` | Hetzelfde portaal via HTTPS met een zelfondertekend certificaat. Nodig voor de browser-softphone (microfoon) |
 | `https://<jouw domein>` | Nadat je [internettoegang](internet.md) aanzet (Let's Encrypt op poort 443) |
 
-Setup-token kwijt? Toon hem opnieuw op de server:
+Het wachtwoord wordt per installatie aangemaakt. Kwijt voor je de eerste keer inlogt? Toon het opnieuw op de server:
 
 ```sh
-sudo kiestoon setup-token
+sudo kiestoon initial-admin
 ```
+
+Bij de eerste aanmelding kies je je eigen wachtwoord; het aangemaakte wachtwoord werkt daarna niet meer en wordt niet
+meer getoond.
 
 ## Poorten
 

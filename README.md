@@ -105,17 +105,23 @@ active/passive pair that takes over within seconds. [Read more](https://rhisijmu
 
 ### Proxmox LXC template
 
-Run this in the shell of the Proxmox host. It downloads the template, creates the container and shows the setup token
-(add `-- --download-only` to only download the template, or `-- --edge` for Kiestoon Edge):
+In Proxmox, open *storage › CT Templates › **Download from URL***, paste this URL and click *Query URL* and *Download*:
+
+```text
+https://github.com/rhisijmuiden/Kiestoon/releases/latest/download/kiestoon-debian-13-amd64.tar.zst
+```
+
+(Until the first stable release, use the same file name from the newest
+[release candidate](https://github.com/rhisijmuiden/Kiestoon/releases) instead of `latest`.) Create a container from
+the template (unprivileged, nesting on; 1 CPU, 1 GB RAM, 8 GB disk to start) and start it. Its console shows the URL,
+user name and password.
+
+Or do it all in one command in the shell of the Proxmox host (add `-- --download-only` to only download the template,
+or `-- --edge` for Kiestoon Edge):
 
 ```sh
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/proxmox/kiestoon-lxc.sh)"
 ```
-
-Or by hand: download `kiestoon-<version>-debian-13-amd64.tar.zst` from the [releases](https://github.com/rhisijmuiden/Kiestoon/releases),
-upload it to Proxmox (*storage › CT Templates › Upload*) and create a container from it
-(unprivileged is fine; 1 CPU, 1 GB RAM, 8 GB disk to start). Log in on the console as root:
-the address of the portal and the one-time setup token are shown.
 
 ### Debian 13 server or VM
 
@@ -127,9 +133,10 @@ curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/insta
 
 Until the first stable release, only the testing channel has releases, so use `--channel testing` for now.
 
-Open `http://<server>:8080` (or `https://<server>:8443` with a self-signed certificate), enter the setup token and
-create the first administrator. Administrators must set up two-factor authentication on first sign-in. Show the
-setup token again with `sudo kiestoon setup-token`.
+The installer works on a bare Debian 13, on hardware, in a VM or in a container. At the end it shows only the URL,
+the user name (`admin`) and a generated password. Sign in with those at `http://<server>:8080`: you choose your own
+password and the name of your organization, set up two-factor authentication, and do the rest in the portal. Show
+the details again with `sudo kiestoon initial-admin`.
 
 Then follow [First setup](https://rhisijmuiden.github.io/Kiestoon/first-setup/) in the manual: a trunk, extensions, phones and an inbound route, and the
 first call works.

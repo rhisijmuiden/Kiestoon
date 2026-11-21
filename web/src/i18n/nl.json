@@ -168,7 +168,8 @@
     "elevenlabs_key": "ElevenLabs weigert de API-sleutel. Controleer de sleutel en de rechten onder Spraak.",
     "elevenlabs_quota": "De ElevenLabs-tekens van deze periode zijn op. Wacht op de volgende periode of kies een groter abonnement.",
     "elevenlabs_failed": "ElevenLabs kon de tekst niet inspreken.",
-    "elevenlabs_unreachable": "ElevenLabs is niet bereikbaar vanaf deze server. Controleer de internetverbinding."
+    "elevenlabs_unreachable": "ElevenLabs is niet bereikbaar vanaf deze server. Controleer de internetverbinding.",
+    "first_run_required": "Rond eerst de eerste inrichting af: kies je eigen wachtwoord."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -200,7 +201,11 @@
     "standbyCodeHint": "Uit Hoge beschikbaarheid op de primaire node. 24 uur geldig.",
     "standbyAddressHint": "Het adres van dit systeem in het netwerk van de primaire node. Laat leeg om het te bepalen.",
     "standbyJoin": "Aansluiten",
-    "standbyDone": "Aangesloten bij {{name}}. Het portaal start opnieuw als standby-node…"
+    "standbyDone": "Aangesloten bij {{name}}. Het portaal start opnieuw als standby-node…",
+    "firstRunSubtitle": "Je bent aangemeld met de aangemaakte beheerder. Kies de taal en de naam van je organisatie; daarna kies je je eigen wachtwoord.",
+    "newPasswordText": "Het aangemaakte wachtwoord werkt daarna niet meer. Kies je eigen wachtwoord; je meldt je aan met de gebruikersnaam admin.",
+    "newPassword": "Nieuw wachtwoord",
+    "finish": "Opslaan en verder"
   },
   "login": {
     "title": "Aanmelden",
@@ -214,7 +219,8 @@
     "verify": "Controleren",
     "ssoWith": "Inloggen met {{name}}",
     "or": "of met je gebruikersnaam",
-    "passkey": "Inloggen met een passkey"
+    "passkey": "Inloggen met een passkey",
+    "initialAdmin": "Eerste keer aanmelden: gebruik de gebruikersnaam en het wachtwoord die aan het eind van de installatie en op de console van de server staan (of voer kiestoon initial-admin uit)."
   },
   "mfa": {
     "title": "Tweestapsverificatie instellen",

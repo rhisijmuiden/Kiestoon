@@ -165,6 +165,8 @@ func (s *Server) Routes() http.Handler {
 	recep := func(h http.HandlerFunc) http.Handler { return s.signedIn(s.mfaEnrolled(s.receptionOnly(h)), true) }
 
 	mux.Handle("GET /api/me", enroll(s.me))
+	mux.Handle("POST /api/setup/first-run", enroll(s.firstRun))
+	mux.Handle("POST /api/setup/first-run/cluster-join", enroll(s.firstRunClusterJoin))
 	mux.Handle("POST /api/account/mfa/enroll", enroll(s.mfaEnroll))
 	mux.Handle("POST /api/account/mfa/confirm", enroll(s.mfaConfirm))
 	mux.Handle("PUT /api/account/language", enroll(s.setLanguage))
@@ -318,6 +320,11 @@ func (s *Server) mfaEnrolled(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sess := sessionFrom(r)
 		u := sess.User
+		// The generated first administrator chooses its own password before anything else.
+		if s.firstRunPending(u) {
+			writeErr(w, http.StatusForbidden, "first_run_required")
+			return
+		}
 		// The identity provider already asked for a second factor.
 		// API tokens are created by a signed-in (and so enrolled) user.
 		if u.IsAdmin() && !u.TOTPEnabled && sess.Method != "sso-mfa" && !strings.HasPrefix(sess.Method, "token") && sess.Method != "passkey" {
@@ -425,7 +432,8 @@ func (s *Server) setupStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, statErr := os.Stat(SetupTokenPath(s.Cfg.DataDir))
-	writeJSON(w, http.StatusOK, map[string]any{"setupRequired": needed, "tokenRequired": needed && statErr == nil})
+	_, initial := LoadInitialAdmin(s.Cfg.DataDir)
+	writeJSON(w, http.StatusOK, map[string]any{"setupRequired": needed, "tokenRequired": needed && statErr == nil, "initialAdmin": initial})
 }
 
 type setupReq struct {
@@ -607,6 +615,7 @@ func (s *Server) meBodyMethod(r *http.Request, u *auth.User, mfaPassed bool, met
 		"user":                  u,
 		"mfaPassed":             mfaPassed,
 		"mfaEnrollmentRequired": u.IsAdmin() && !u.TOTPEnabled && method != "sso-mfa" && method != "passkey",
+		"firstRunRequired":      s.firstRunPending(u),
 		"organization":          org,
 		"extension":             ext,
 		"signInMethod":          method,

@@ -16,10 +16,12 @@ export function Login({ mfa }: { mfa: boolean }) {
   const [error, setError] = useState<unknown>(null)
   const [busy, setBusy] = useState(false)
   const [providers, setProviders] = useState<{ id: number; name: string; kind: string }[]>([])
+  const [initialAdmin, setInitialAdmin] = useState(false)
   const [ssoError] = useState(() => new URLSearchParams(window.location.search).get('sso_error') ?? '')
   useEffect(() => {
     if (ssoError) window.history.replaceState(null, '', window.location.pathname)
     api<{ id: number; name: string; kind: string }[]>('GET', '/auth/sso/providers').then(setProviders).catch(() => undefined)
+    api<{ initialAdmin?: boolean }>('GET', '/setup/status').then((s) => setInitialAdmin(!!s.initialAdmin)).catch(() => undefined)
   }, [ssoError])
 
   async function passkey() {
@@ -86,6 +88,7 @@ export function Login({ mfa }: { mfa: boolean }) {
             <h1 className="font-display text-2xl font-semibold tracking-tight">{t('login.title')}</h1>
             <p className="mt-1.5 text-sm text-muted">{t('login.subtitle')}</p>
           </div>
+          {initialAdmin && <p className="rounded-xl border border-accent/30 bg-accent/10 px-3.5 py-3 text-sm text-ink-2">{t('login.initialAdmin')}</p>}
           {ssoError && <Alert>{t(`errors.${ssoError}`, { defaultValue: t('errors.sso_failed') })}</Alert>}
           <ErrorMessage error={error} />
           {providers.length > 0 && (

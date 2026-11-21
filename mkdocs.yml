@@ -80,6 +80,7 @@ plugins:
           site_description: Handleiding voor Kiestoon, de open source telefooncentrale voor Debian 13. Powered by RHIS.
           nav_translations:
             Home: Home
+            Features: Functies
             Getting started: Aan de slag
             Install: Installeren
             First setup: Eerste inrichting
@@ -138,6 +139,7 @@ plugins:
 
 nav:
   - Home: index.md
+  - Features: features.md
   - Getting started:
       - Install: install.md
       - First setup: first-setup.md

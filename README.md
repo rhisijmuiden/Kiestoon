@@ -101,6 +101,133 @@ active/passive pair that takes over within seconds. [Read more](https://rhisijmu
 | **Security** | Roles, MFA, passkeys, single sign-on (Entra ID, Google, Keycloak, authentik, OIDC, SAML), nftables firewall with safe mode, fail2ban, geo-blocking, toll-fraud protection, audit log |
 | **System** | Let's Encrypt with Caddy or your own reverse proxy, encrypted backups (FTP, FTPS, SFTP, SCP, S3, WebDAV, SMB, OneDrive) with full and incremental runs and restore, own SMTP server with OAuth2, REST API, webhooks, Prometheus metrics, updates from the portal with a production and a testing channel |
 
+## All features
+
+Every part of Kiestoon with a screenshot from the real app (light or dark, following your GitHub theme). Click a picture for its chapter in the [manual](https://rhisijmuiden.github.io/Kiestoon/features/).
+
+<!-- features:start -->
+
+#### Telephony
+
+<table>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/dashboard.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/dashboard.png" alt="Live dashboard"></picture></a><br><b>Live dashboard</b><br>Calls in progress, registered phones, trunks and queues at a glance.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/extensions/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/extensions.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/extensions.png" alt="Extensions"></picture></a><br><b>Extensions</b><br>One page per extension: phones, voicemail, forwarding, recording and the linked user.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/ring-groups/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/ring-groups.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/ring-groups.png" alt="Ring groups"></picture></a><br><b>Ring groups</b><br>Ring several phones at once or one after the other, with a fallback when nobody answers.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/queues/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/queues.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/queues.png" alt="Call queues"></picture></a><br><b>Call queues</b><br>Agents, strategies, hold music, position announcements and a callback instead of waiting.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/ivr/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/ivr-canvas.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/ivr-canvas.png" alt="Visual IVR builder"></picture></a><br><b>Visual IVR builder</b><br>Draw the call flow on a canvas and connect the blocks by dragging lines.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/ivr/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/ivr-speech.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/ivr-speech.png" alt="Spoken menus and speech input"></picture></a><br><b>Spoken menus and speech input</b><br>Type the text of a menu and let it be spoken; callers can also say what they want.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/time-conditions/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/time-conditions.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/time-conditions.png" alt="Time conditions and holidays"></picture></a><br><b>Time conditions and holidays</b><br>Office hours per route, with Dutch public holidays filled in for you.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/conferences/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/conferences.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/conferences.png" alt="Conference rooms"></picture></a><br><b>Conference rooms</b><br>Dial-in rooms with a PIN, a moderator and an optional recording.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/prompts/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/voice-picker.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/voice-picker.png" alt="Voice prompts and ElevenLabs voices"></picture></a><br><b>Voice prompts and ElevenLabs voices</b><br>Record, upload or generate prompts with a local voice or an ElevenLabs voice.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/fax/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/fax.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/fax.png" alt="Voicemail and fax to e-mail"></picture></a><br><b>Voicemail and fax to e-mail</b><br>Voicemail with transcription and incoming faxes as PDF in your mailbox.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/call-journey/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/call-journey.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/call-journey.png" alt="Call history and call journey"></picture></a><br><b>Call history and call journey</b><br>Search every call and see its route step by step: menu, queue, who answered.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/ai/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/recording-ai.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/recording-ai.png" alt="Recordings with AI summaries"></picture></a><br><b>Recordings with AI summaries</b><br>Listen back, read the transcript and a short summary, locally or with Claude.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/call-quality/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/call-quality.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/call-quality.png" alt="Call quality"></picture></a><br><b>Call quality</b><br>MOS, jitter and packet loss per call, with alerts when quality drops.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/feature-codes/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/features.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/features.png" alt="Feature codes"></picture></a><br><b>Feature codes</b><br>Codes for parking, pickup, do not disturb, hot desks and more, all adjustable.</td>
+</tr>
+</table>
+
+#### Providers and Teams
+
+<table>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/trunks/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/trunk-edit.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/trunk-edit.png" alt="Trunks with provider templates"></picture></a><br><b>Trunks with provider templates</b><br>Ready-made templates for Voys, Cheapconnect, Speakup, KPN and Vodafone Ziggo, with a guide for each.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/teams/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/teams-users.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/teams-users.png" alt="Microsoft Teams Direct Routing"></picture></a><br><b>Microsoft Teams Direct Routing</b><br>Teams users call and are called through Kiestoon, as an extension like any other.</td>
+</tr>
+</table>
+
+#### Phones
+
+<table>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/phones/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/phones.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/phones.png" alt="Automatic provisioning"></picture></a><br><b>Automatic provisioning</b><br>Yealink, Snom, Fanvil, Grandstream, Gigaset, Poly, Htek, Akuvox and Cisco: plug in, link, done.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/phone-keys/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/phone-keys.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/phone-keys.png" alt="Phone keys and expansion modules"></picture></a><br><b>Phone keys and expansion modules</b><br>A visual key editor with modules, key templates and intercom.</td>
+</tr>
+</table>
+
+#### Reception
+
+<table>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/switchboard/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/switchboard.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/switchboard.png" alt="Switchboard"></picture></a><br><b>Switchboard</b><br>Every call and colleague on one screen; transfer by dragging.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/wallboard/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/wallboard-tv.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/wallboard-tv.png" alt="Wallboard and TV screens"></picture></a><br><b>Wallboard and TV screens</b><br>Queue figures and agents live on a TV, with a designer and its own address per screen.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/wallboard/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/report-preview.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/report-preview.png" alt="Alerts and scheduled reports"></picture></a><br><b>Alerts and scheduled reports</b><br>Alerts when the service level drops, and reports by e-mail.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/phonebook/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/phonebook.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/phonebook.png" alt="Phone book"></picture></a><br><b>Phone book</b><br>Shared contacts on every phone, in the softphone and for caller names.</td>
+</tr>
+</table>
+
+#### For every employee
+
+<table>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/portal/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/my-phone.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/my-phone.png" alt="User portal"></picture></a><br><b>User portal</b><br>Do not disturb, forwarding, follow me, own hours and voicemail, all in one place.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/portal/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/colleagues.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/colleagues.png" alt="Colleagues and drag-and-drop transfer"></picture></a><br><b>Colleagues and drag-and-drop transfer</b><br>See who is available and transfer a call by dragging it onto a colleague.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/softphone/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/softphone-contacts.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/softphone-contacts.png" alt="Windows softphone"></picture></a><br><b>Windows softphone</b><br>Tray app with contacts, presence, queues and headset buttons.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/mobile-app/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/mobile-app.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/mobile-app.png" alt="Mobile app"></picture></a><br><b>Mobile app</b><br>Calls on your phone with push notifications, linked with a QR code.</td>
+</tr>
+</table>
+
+#### Multi-site and high availability
+
+<table>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/edge/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/sites.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/sites.png" alt="Branch offices with Kiestoon Edge"></picture></a><br><b>Branch offices with Kiestoon Edge</b><br>A Raspberry Pi connects a branch office through WireGuard, without port forwarding.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/multi-site/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/follow-the-sun.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/follow-the-sun.png" alt="Linked systems and follow the sun"></picture></a><br><b>Linked systems and follow the sun</b><br>One phone book across countries, and calls follow the office that is open.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/high-availability/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/cluster.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/cluster.png" alt="High availability"></picture></a><br><b>High availability</b><br>An active/passive pair that takes over within seconds.</td>
+<td width="50%"></td>
+</tr>
+</table>
+
+#### Security
+
+<table>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/users/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/sso.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/sso.png" alt="Users, roles, MFA and single sign-on"></picture></a><br><b>Users, roles, MFA and single sign-on</b><br>Mandatory MFA for administrators, passkeys, and sign-in with Entra ID, Google or OIDC/SAML.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/firewall/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/firewall.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/firewall.png" alt="Firewall and fraud protection"></picture></a><br><b>Firewall and fraud protection</b><br>nftables firewall with safe mode, fail2ban, geo-blocking and trusted networks.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/internet/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/internet.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/internet.png" alt="Internet access and SSL"></picture></a><br><b>Internet access and SSL</b><br>Let's Encrypt with the built-in Caddy, or your own reverse proxy.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/users/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/audit.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/audit.png" alt="Audit log"></picture></a><br><b>Audit log</b><br>Who changed what and when.</td>
+</tr>
+</table>
+
+#### System and integrations
+
+<table>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/crm/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/crm.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/crm.png" alt="CRM integrations and call pop-up"></picture></a><br><b>CRM integrations and call pop-up</b><br>See the customer from your CRM as the phone rings, and log calls automatically.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/api/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/integrations.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/integrations.png" alt="API, webhooks and metrics"></picture></a><br><b>API, webhooks and metrics</b><br>REST API with tokens, signed webhooks and Prometheus metrics.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/backups/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/backups.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/backups.png" alt="Backups and restore"></picture></a><br><b>Backups and restore</b><br>Full and incremental backups to FTP, FTPS, SFTP, SCP and more, and restore from there.</td>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/mail/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/mail.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/mail.png" alt="Own mail server"></picture></a><br><b>Own mail server</b><br>Your own SMTP server with TLS and OAuth2 for all mail Kiestoon sends.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="https://rhisijmuiden.github.io/Kiestoon/updates/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/dark/info.png"><img src="https://rhisijmuiden.github.io/Kiestoon/assets/screenshots/en/light/info.png" alt="Updates from the portal"></picture></a><br><b>Updates from the portal</b><br>Version info, check for updates and update, on a production or testing channel.</td>
+<td width="50%"></td>
+</tr>
+</table>
+<!-- features:end -->
+
 ## Install
 
 ### Proxmox LXC template

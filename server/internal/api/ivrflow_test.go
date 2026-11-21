@@ -152,3 +152,26 @@ func TestIVRFlow(t *testing.T) {
 		}
 	}
 }
+
+func TestIVRLive(t *testing.T) {
+	c, _ := adminClient(t)
+	mustDo(t, c, "POST", "/api/pbx/extensions", map[string]any{"number": "201", "name": "Anna", "enabled": true}, 200)
+	open := mustDo(t, c, "POST", "/api/pbx/timeconditions", map[string]any{"name": "Always open", "mode": "open",
+		"open": map[string]string{"type": "extension", "target": "201"}, "closed": map[string]string{"type": "hangup"}}, 200)
+	closed := mustDo(t, c, "POST", "/api/pbx/timeconditions", map[string]any{"name": "Always closed", "mode": "closed",
+		"open": map[string]string{"type": "extension", "target": "201"}, "closed": map[string]string{"type": "hangup"}}, 200)
+	rg := mustDo(t, c, "POST", "/api/pbx/ringgroups", map[string]any{"number": "601", "name": "Sales", "strategy": "simultaneous", "ringSeconds": 20, "members": []string{"201"}, "enabled": true}, 200)
+
+	live := mustDo(t, c, "GET", "/api/pbx/ivrs/live", nil, 200)
+	o := live["open"].(map[string]any)
+	if o[fmt.Sprint(open["id"])] != true || o[fmt.Sprint(closed["id"])] != false {
+		t.Fatalf("open = %v", o)
+	}
+	d := live["dests"].(map[string]any)
+	if _, ok := d["extension:201"]; !ok {
+		t.Fatalf("extension missing: %v", d)
+	}
+	if g := d["ringgroup:"+fmt.Sprint(rg["id"])].(map[string]any); g["members"] != float64(1) {
+		t.Fatalf("ring group = %v", g)
+	}
+}

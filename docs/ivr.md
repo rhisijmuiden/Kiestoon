@@ -17,6 +17,10 @@ audio.
 4. Drag building blocks from the bar above the canvas (or click them to add), and connect them.
 5. Click **Save**, then **Test call**.
 
+Blocks show live details: whether a time condition is open right now, how many agents of a queue are online and
+whether an extension is available. The buttons at the right of the bar switch between flowing and angular lines and
+turn the moving dots on the lines (the direction of the call) on or off.
+
 ![The list of IVR menus](shot:ivr-list)
 
 ## Building blocks

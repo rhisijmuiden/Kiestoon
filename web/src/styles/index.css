@@ -38,6 +38,25 @@
   --card-bottom: rgb(11 17 32 / 0.92);
   --card-shadow: none;
   --page-glow: rgb(34 211 238 / 0.10);
+  /* IVR canvas: blocks with depth, recessed wells, keycaps */
+  --kt-canvas: #060A13;
+  --kt-canvas-dot: rgb(148 163 184 / 0.13);
+  --kt-canvas-grid: rgb(148 163 184 / 0.045);
+  --kt-node-top: #141E33;
+  --kt-node-bot: #0C1424;
+  --kt-node-hi: rgb(255 255 255 / 0.07);
+  --kt-node-floor: rgb(0 0 0 / 0.55);
+  --kt-sh-1: rgb(0 0 0 / 0.45);
+  --kt-sh-2: rgb(0 0 0 / 0.6);
+  --kt-well: #070D19;
+  --kt-well-in: rgb(0 0 0 / 0.5);
+  --kt-cap-top: #2A3753;
+  --kt-cap-bot: #1A2438;
+  --kt-cap-edge: #0A101D;
+  --kt-cap-ink: #F1F5F9;
+  --kt-flow-dot: rgb(255 255 255 / 0.85);
+  --kt-edge-glow: 0.16;
+  --kt-glass: rgb(15 23 42 / 0.72);
 }
 
 /* Light theme: same house style, daylight palette. Darker cyan and indigo keep the accent
@@ -71,6 +90,24 @@
   --card-bottom: #FBFCFE;
   --card-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.12);
   --page-glow: rgb(8 145 178 / 0.08);
+  --kt-canvas: #EDF2F8;
+  --kt-canvas-dot: rgb(15 23 42 / 0.13);
+  --kt-canvas-grid: rgb(15 23 42 / 0.035);
+  --kt-node-top: #FFFFFF;
+  --kt-node-bot: #F6F8FC;
+  --kt-node-hi: rgb(255 255 255 / 1);
+  --kt-node-floor: rgb(15 23 42 / 0.10);
+  --kt-sh-1: rgb(15 23 42 / 0.08);
+  --kt-sh-2: rgb(15 23 42 / 0.16);
+  --kt-well: #EEF2F8;
+  --kt-well-in: rgb(15 23 42 / 0.10);
+  --kt-cap-top: #FFFFFF;
+  --kt-cap-bot: #E6EBF3;
+  --kt-cap-edge: #B9C3D3;
+  --kt-cap-ink: #0F172A;
+  --kt-flow-dot: rgb(255 255 255 / 0.95);
+  --kt-edge-glow: 0.12;
+  --kt-glass: rgb(255 255 255 / 0.78);
 }
 
 html, body, #root { min-height: 100%; }
@@ -131,3 +168,72 @@ body {
 }
 .kt-flow .react-flow__minimap-mask { fill: rgb(from var(--color-bg) r g b / 0.55); }
 .kt-flow .react-flow__minimap-node { stroke: none; }
+
+
+/* ---- IVR builder: blocks with depth, glossy ports, flowing lines (on top of .kt-flow) ---- */
+.kt-tone-accent { --tone: var(--color-accent); }
+.kt-tone-accent2 { --tone: var(--color-accent-2); }
+.kt-tone-ok { --tone: var(--color-ok); }
+.kt-tone-warn { --tone: var(--color-warn); }
+.kt-tone-danger { --tone: var(--color-danger); }
+
+.kt-ivr { position: relative; background:
+  radial-gradient(900px 420px at 50% 40%, var(--page-glow), transparent 70%),
+  linear-gradient(var(--kt-canvas-grid) 1px, transparent 1px) 0 0 / 110px 110px,
+  linear-gradient(90deg, var(--kt-canvas-grid) 1px, transparent 1px) 0 0 / 110px 110px,
+  var(--kt-canvas); }
+.kt-ivr::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4;
+  box-shadow: inset 0 0 120px 10px color-mix(in srgb, var(--kt-canvas) 70%, transparent); }
+
+.kt-node {
+  --tone: var(--color-accent);
+  position: relative; border-radius: 18px; border: 1px solid transparent; text-align: left;
+  background:
+    radial-gradient(140px 60px at 18% 0%, color-mix(in srgb, var(--tone) 16%, transparent), transparent 70%) padding-box,
+    linear-gradient(180deg, var(--kt-node-top), var(--kt-node-bot)) padding-box,
+    linear-gradient(180deg, color-mix(in srgb, var(--tone) 60%, transparent), color-mix(in srgb, var(--tone) 10%, var(--color-line)) 55%, var(--color-line) 100%) border-box;
+  box-shadow: inset 0 1px 0 var(--kt-node-hi), 0 1px 0 var(--kt-node-floor), 0 3px 6px var(--kt-sh-1),
+    0 16px 30px -14px var(--kt-sh-2), 0 26px 50px -30px color-mix(in srgb, var(--tone) 70%, transparent);
+  transition: box-shadow .16s, transform .16s;
+}
+.kt-node:hover { box-shadow: inset 0 1px 0 var(--kt-node-hi), 0 1px 0 var(--kt-node-floor), 0 4px 8px var(--kt-sh-1),
+  0 22px 40px -16px var(--kt-sh-2), 0 30px 60px -28px color-mix(in srgb, var(--tone) 85%, transparent); }
+.kt-node.is-selected { box-shadow: 0 0 0 1.5px var(--tone), 0 0 0 6px color-mix(in srgb, var(--tone) 18%, transparent), inset 0 1px 0 var(--kt-node-hi),
+  0 22px 44px -16px var(--kt-sh-2), 0 0 46px -8px color-mix(in srgb, var(--tone) 60%, transparent); }
+.kt-flow .react-flow__node.dragging .kt-node { transform: scale(1.015); box-shadow: inset 0 1px 0 var(--kt-node-hi), 0 30px 60px -18px var(--kt-sh-2),
+  0 0 0 1.5px color-mix(in srgb, var(--tone) 50%, transparent); }
+
+.kt-kind { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: color-mix(in srgb, var(--tone) 70%, var(--color-muted)); }
+.kt-chip { flex: none; display: inline-grid; place-items: center; color: var(--color-on-accent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--tone) 70%, white) 0%, var(--tone) 42%, color-mix(in srgb, var(--tone) 68%, black) 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .5), inset 0 -2px 0 rgb(0 0 0 / .22), 0 1px 1px rgb(0 0 0 / .25), 0 8px 16px -6px color-mix(in srgb, var(--tone) 75%, transparent); }
+.kt-chip svg { stroke-width: 2.2; filter: drop-shadow(0 1px 0 rgb(0 0 0 / .18)); }
+.kt-keycap { flex: none; display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 8px;
+  font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: var(--kt-cap-ink); transform: translateY(-1px);
+  background: linear-gradient(180deg, var(--kt-cap-top), var(--kt-cap-bot));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .18), 0 0 0 1px var(--color-line), 0 3px 0 var(--kt-cap-edge), 0 5px 8px -2px var(--kt-sh-1); }
+.kt-well { border-radius: 12px; background: var(--kt-well); box-shadow: inset 0 1px 3px var(--kt-well-in), inset 0 0 0 1px var(--color-line); }
+.kt-avatar { flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 999px; font-size: 11px; font-weight: 700; color: var(--color-ink);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--tone) 35%, var(--kt-cap-top)), var(--kt-cap-bot)); box-shadow: inset 0 1px 0 rgb(255 255 255 / .2), 0 0 0 1px var(--color-line); }
+.kt-play { background: radial-gradient(circle at 35% 28%, color-mix(in srgb, currentColor 50%, white), currentColor 55%, color-mix(in srgb, currentColor 70%, black)) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .45), 0 4px 10px -3px color-mix(in srgb, currentColor 80%, transparent); }
+
+.kt-ivr .react-flow__handle.kt-port { width: 14px; height: 14px; border: 0; border-radius: 999px;
+  background: radial-gradient(circle at 34% 30%, rgb(255 255 255 / .95) 0 14%, var(--pt, var(--tone)) 42%, color-mix(in srgb, var(--pt, var(--tone)) 65%, black) 100%);
+  box-shadow: 0 0 0 3px var(--kt-canvas), 0 0 0 4px color-mix(in srgb, var(--pt, var(--tone)) 45%, transparent), 0 0 12px color-mix(in srgb, var(--pt, var(--tone)) 70%, transparent); }
+
+.kt-ivr .kt-edge-glow { fill: none; stroke-width: 10; stroke-opacity: var(--kt-edge-glow); stroke-linecap: round; pointer-events: none; }
+.kt-ivr .kt-edge-flow { fill: none; stroke: var(--kt-flow-dot); stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 0 22; opacity: .85; pointer-events: none;
+  animation: kt-flow 1.3s linear infinite; }
+.kt-ivr.no-motion .kt-edge-flow { display: none; }
+@keyframes kt-flow { to { stroke-dashoffset: -44; } }
+@media (prefers-reduced-motion: reduce) { .kt-ivr .kt-edge-flow { display: none; } }
+.kt-ivr .react-flow__edge .react-flow__edge-path.kt-edge-main { stroke-width: 2.6; stroke-linecap: round; }
+.kt-ivr .react-flow__edge:hover .react-flow__edge-path.kt-edge-main,
+.kt-ivr .react-flow__edge.selected .react-flow__edge-path.kt-edge-main { stroke-width: 4 !important; filter: none; }
+.kt-ivr .react-flow__edge:hover .kt-edge-glow, .kt-ivr .react-flow__edge.selected .kt-edge-glow { stroke-opacity: calc(var(--kt-edge-glow) * 2.2); }
+.kt-ivr .react-flow__controls, .kt-ivr .react-flow__minimap { background: var(--kt-glass); backdrop-filter: blur(10px); box-shadow: 0 10px 24px -12px var(--kt-sh-2); z-index: 6; }
+
+/* Palette tiles share the block look. */
+.kt-tile { background: linear-gradient(180deg, var(--kt-node-top), var(--kt-node-bot)); box-shadow: inset 0 1px 0 var(--kt-node-hi), 0 1px 2px var(--kt-sh-1); transition: transform .12s, box-shadow .12s, color .12s; }
+.kt-tile:not(:disabled):hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 var(--kt-node-hi), 0 6px 14px -6px var(--kt-sh-2); }

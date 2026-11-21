@@ -29,6 +29,7 @@ func (s *Server) businessRoutes(mux *http.ServeMux, admin, recep func(http.Handl
 	mux.Handle("DELETE /api/pbx/queues/{id}", admin(s.deleter("queue", s.PBX.DeleteQueue)))
 
 	mux.Handle("GET /api/pbx/ivrs", admin(list(s, s.PBX.IVRs)))
+	mux.Handle("GET /api/pbx/ivrs/live", admin(s.ivrLive))
 	mux.Handle("POST /api/pbx/ivrs", admin(s.saveIVR))
 	mux.Handle("PUT /api/pbx/ivrs/{id}", admin(s.saveIVR))
 	mux.Handle("DELETE /api/pbx/ivrs/{id}", admin(s.deleter("ivr", s.PBX.DeleteIVR)))

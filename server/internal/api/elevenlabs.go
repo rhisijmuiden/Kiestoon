@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -233,21 +234,12 @@ func filterMine(vs []elevenlabs.Voice, lang, gender string) []elevenlabs.Voice {
 		if gender != "" && v.Gender != "" && v.Gender != gender {
 			continue
 		}
-		if lang != "" && (v.Language != "" || len(v.Languages) > 0) && v.Language != lang && !contains(v.Languages, lang) {
+		if lang != "" && (v.Language != "" || len(v.Languages) > 0) && v.Language != lang && !slices.Contains(v.Languages, lang) {
 			continue
 		}
 		out = append(out, v)
 	}
 	return out
-}
-
-func contains(list []string, s string) bool {
-	for _, v := range list {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }
 
 // elAddVoice adds a library voice to the account, so it can be used for prompts.

@@ -92,6 +92,7 @@ export type Live = {
   extensions: number
   registered: number
   stats: { today: number; answered: number; missed: number; inbound: number; outbound: number }
+  quality?: { calls: Record<string, number>; alerts: QualityAlert[]; limits: QualityLimits }
 }
 
 export type Cdr = {
@@ -481,6 +482,7 @@ export type Journey = {
   direction: 'inbound' | 'outbound' | 'internal'; from: JourneyParty; to: string
   result: 'answered' | 'voicemail' | 'abandoned' | 'missed' | 'busy' | 'failed'; complete: boolean; partial: boolean
   steps: JourneyStep[]; recordings: { name: string; durationMs: number; from: string; to: string }[]
+  quality?: QualityCall
 }
 
 export type ReportPeriod = 'daily' | 'weekly' | 'monthly'
@@ -495,3 +497,36 @@ export type MobileDevice = {
   platform: 'apns' | 'fcm'; createdAt: string; lastSeen: string; lastPush: string
 }
 export type MobileAdmin = { enabled: boolean; relayURL: string; defaultRelayURL: string; publicKey: string; devices: MobileDevice[] }
+
+// ---- call quality ----
+
+export type QualityLimits = { good: number; poor: number; jitter: number; loss: number; rtt: number }
+export type QualityCause = 'ok' | 'lossTo' | 'lossFrom' | 'jitterTo' | 'jitterFrom' | 'rtt' | 'mixed'
+export type QualityDirection = { mos: number; jitter: number; jitterMax: number; loss: number; reports: number }
+export type QualityLeg = {
+  linkedId: string; uniqueId: string; channel: string; endpoint: string; kind: 'trunk' | 'extension' | 'other'; trunkId?: number; ext?: string
+  codec: string; remote: string; start: string; end: string; rx: QualityDirection; tx: QualityDirection; rtt: number; rttMax: number
+  mos: number; mosMin: number; samples: number[]; name: string; rating: 'good' | 'fair' | 'poor'
+}
+export type QualityCall = { mos: number; rating: 'good' | 'fair' | 'poor'; cause: QualityCause; where: string; legs: QualityLeg[]; limits: QualityLimits }
+export type QualityFigures = {
+  legs: number; calls: number; mos: number; poor: number; poorPct: number; rxJitter: number; txJitter: number; rxLoss: number; txLoss: number
+  rtt: number; jitter: number; loss: number; cause: QualityCause
+}
+export type QualityGroup = QualityFigures & { key: string; name: string; remote: string; buckets: number[] }
+export type QualityAlert = {
+  id: number; key: string; kind: 'trunk' | 'phone'; ref: string; name: string; calls: number; poor: number; mos: number; jitter: number
+  loss: number; rtt: number; cause: QualityCause; started: string; ended?: string; mailed?: string
+}
+export type QualityLive = {
+  id: string; from: string; fromName: string; to: string; direction: string; route: string; codec: string; duration: number
+  mos: number; jitter: number; loss: number; rtt: number
+}
+export type QualityOverview = {
+  overview: { from: string; bucket: number; total: QualityFigures; trunks: QualityGroup[]; phones: QualityGroup[]; buckets: number[] }
+  live: QualityLive[]; alerts: QualityAlert[]; lastCleared: string; limits: QualityLimits; connected: boolean
+}
+export type QualityRule = { enabled: boolean; minutes: number; count: number }
+export type QualitySettings = QualityLimits & {
+  trunk: QualityRule; phone: QualityRule; eachCall: boolean; recovered: boolean; email: boolean; recipients: string[]; quiet: number; keepDays: number
+}

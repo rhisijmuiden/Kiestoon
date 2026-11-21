@@ -14,7 +14,8 @@ import {
 import { Badge, formatDate, useApi } from '../../components/kit'
 import { Button, Card, ErrorMessage } from '../../components/ui'
 import { useTheme } from '../../lib/theme'
-import type { Journey, JourneyParty, JourneyStep, JourneySub } from '../../lib/types'
+import type { Journey, JourneyParty, JourneyStep, JourneySub, QualityCall, QualityDirection, QualityLeg, QualityLimits } from '../../lib/types'
+import { MosPill, Strip, num, rating, ratingText } from '../../components/quality'
 import { tones, type Tone } from '../ivr/flow'
 
 // The call journey: how a call went, step by step, drawn as a flow in the style of the IVR
@@ -383,6 +384,7 @@ export function CallJourney({ id, base, recordingBase, onBack }: { id: string; b
                 </div>
               </Card>
               <div className="flex min-w-0 flex-col gap-5">
+                {d.quality && <QualityCard q={d.quality} />}
                 <Card>
                   <h2 className="mb-3 text-sm font-semibold text-ink">{t('journey.steps')}</h2>
                   <ol className="relative flex flex-col gap-3 border-l border-line pl-4">
@@ -445,5 +447,70 @@ function TimelineItem({ s, lang }: { s: JourneyStep; lang: string }) {
         </ul>
       )}
     </li>
+  )
+}
+
+/** The measured audio quality of the call: a diagnosis and both directions of every leg. */
+function QualityCard({ q }: { q: QualityCall }) {
+  const { t } = useTranslation()
+  const worst = q.legs.reduce((a, l) => (l.mos < a.mos ? l : a), q.legs[0])
+  const side = worst.kind === 'trunk' ? 'trunk' : 'phone'
+  return (
+    <Card>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-ink">{t('quality.callTitle')}</h2>
+        <MosPill mos={q.mos} limits={q.limits} label="MOS" />
+      </div>
+      <p className="mb-3 rounded-r-lg border-l-[3px] border-accent bg-accent/[0.07] px-3 py-2 text-[13px] leading-relaxed text-ink-2">
+        {q.rating === 'good' || q.cause === 'ok'
+          ? t('quality.diagGood')
+          : t(`quality.diag.${q.cause}`, { where: q.where, side: t(`quality.side.${side}`) })}
+      </p>
+      <div className="flex flex-col gap-3">
+        {q.legs.map((l) => <LegView key={l.uniqueId} l={l} limits={q.limits} />)}
+      </div>
+      <p className="mt-3 text-[12px] text-subtle">{t('quality.stripHint')}</p>
+    </Card>
+  )
+}
+
+function LegView({ l, limits }: { l: QualityLeg; limits: QualityLimits }) {
+  const { t } = useTranslation()
+  const secs = Math.max(1, (new Date(l.end).getTime() - new Date(l.start).getTime()) / 1000)
+  const other = l.kind === 'trunk' ? 'provider' : 'phone'
+  return (
+    <div className="rounded-xl border border-line bg-inset p-3">
+      <div className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[13px]">
+        <span className="font-semibold text-ink">{t(l.kind === 'trunk' ? 'quality.legTrunk' : 'quality.legPhone', { name: l.name })}</span>
+        <span className="font-mono text-[11.5px] text-muted">{[l.codec.toUpperCase(), l.remote].filter(Boolean).join(' · ')}</span>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+        <DirView title={t('quality.rx')} d={l.rx} limits={limits} />
+        <DirView title={t(`quality.tx.${other}`)} d={l.tx} limits={limits} />
+      </div>
+      {l.rtt > 0 && (
+        <div className="mt-2 flex justify-between text-[12px] text-muted"><span>{t('quality.rttAvgMax')}</span><span className="font-mono text-ink-2">{Math.round(l.rtt)} / {Math.round(l.rttMax)} ms</span></div>
+      )}
+      <Strip samples={l.samples} limits={limits} seconds={secs} />
+    </div>
+  )
+}
+
+function DirView({ title, d, limits }: { title: string; d: QualityDirection; limits: QualityLimits }) {
+  const { t, i18n } = useTranslation()
+  const lang = i18n.language
+  if (!d.reports) {
+    return <div className="rounded-lg border border-line bg-surface p-2.5"><div className="mb-1 text-[11.5px] text-subtle">{title}</div><p className="text-[12px] text-muted">{t('quality.noReports')}</p></div>
+  }
+  const bad = (v: number, lim: number) => (v >= lim ? 'text-danger-ink' : 'text-ink-2')
+  return (
+    <div className="rounded-lg border border-line bg-surface p-2.5">
+      <div className="mb-1 text-[11.5px] text-subtle">{title}</div>
+      <dl className="grid grid-cols-[auto_auto] justify-between gap-x-3 gap-y-0.5 whitespace-nowrap text-[12px]">
+        <dt className="text-muted">MOS</dt><dd className={`text-right font-mono ${ratingText[rating(d.mos, limits)]}`}>{num(d.mos, 2, lang)}</dd>
+        <dt className="text-muted">{t('quality.jitterAvgMax')}</dt><dd className={`text-right font-mono ${bad(d.jitter, limits.jitter)}`}>{Math.round(d.jitter)} / {Math.round(d.jitterMax)} ms</dd>
+        <dt className="text-muted">{t('quality.loss')}</dt><dd className={`text-right font-mono ${bad(d.loss, limits.loss)}`}>{num(d.loss, 1, lang)}%</dd>
+      </dl>
+    </div>
   )
 }

@@ -28,6 +28,8 @@ export const shots = [
   { name: 'prompts', path: '/prompts' },
   { name: 'trunks', path: '/trunks' },
   { name: 'trunk-edit', path: '/trunks', run: (p) => editRow(p, 'Voys'), selector: dialog },
+  { name: 'call-quality', path: '/quality', full: true, wait: 2500 },
+  { name: 'call-quality-settings', path: '/quality/settings', full: true },
   { name: 'phones', path: '/phones', full: true },
   { name: 'phone-keys', path: '/phones', run: (p) => editRow(p, 'Reception desk'), wait: 800 },
   { name: 'switchboard', path: '/reception', wait: 1200 },

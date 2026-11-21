@@ -36,9 +36,11 @@ for c in "$HUB" "$NAME"; do
 done
 
 HUB_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$HUB")"
-TOKEN="$(hub 'kiestoon setup-token' | tr -d '[:space:]')"
+for _ in $(seq 1 30); do hub 'test -s /var/lib/kiestoon/initial-admin' && break; sleep 1; done
+INITIAL="$(hub 'kiestoon initial-admin' | sed -n 's/^Password: //p')"
 J='-H Content-Type:application/json -b /root/c -c /root/c'
-hub "curl -fsS $J -d '{\"token\":\"$TOKEN\",\"organization\":\"Test\",\"username\":\"admin\",\"displayName\":\"Admin\",\"password\":\"Edge-test-pass-123\",\"language\":\"en\"}' http://127.0.0.1:8080/api/setup" >/dev/null || fail "setup"
+hub "curl -fsS $J -d '{\"username\":\"admin\",\"password\":\"$INITIAL\"}' http://127.0.0.1:8080/api/auth/login" >/dev/null || fail "first sign-in"
+hub "curl -fsS $J -d '{\"organization\":\"Test\",\"displayName\":\"Admin\",\"password\":\"Edge-test-pass-123\",\"language\":\"en\"}' http://127.0.0.1:8080/api/setup/first-run" >/dev/null || fail "first run"
 # Administrators must set up a second factor before they can change anything.
 hub 'command -v oathtool >/dev/null || (apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq oathtool >/dev/null)'
 SECRET="$(hub "curl -fsS $J -X POST -d '{}' http://127.0.0.1:8080/api/account/mfa/enroll" | sed -n 's/.*"secret":"\([^"]*\)".*/\1/p')"

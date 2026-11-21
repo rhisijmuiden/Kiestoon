@@ -1,23 +1,24 @@
 # First setup
 
-This guide takes a fresh Kiestoon from the setup token to the first real phone call. Plan about half an hour. Each
+This guide takes a fresh Kiestoon from the first sign-in to the first real phone call. Plan about half an hour. Each
 step links to the full chapter.
 
-## 1. Create the first administrator
+## 1. Sign in for the first time
 
-Open the portal (`http://<server>:8080`). The setup wizard asks for:
+Open the URL from the installer or the console (`http://<server>:8080`) and sign in with the user name `admin` and the
+generated password (shown again with `sudo kiestoon initial-admin`). The portal then asks for:
 
-- **Language** for the wizard. Every user picks their own language later.
-- **Setup token**: shown on the console and at the end of the installer (`sudo kiestoon setup-token`).
+- **Language**. Every user picks their own language later.
 - **Organization name**: shown in the portal and later on phone displays.
-- **Username, full name and password** (at least 12 characters; a sentence of a few words works well).
+- **Your name and your own password** (at least 12 characters; a sentence of a few words works well). The generated
+  password stops working.
 
-Administrators always use **two-factor authentication**. Right after creating the account, scan the QR code with an
+Administrators always use **two-factor authentication**. Right after choosing your password, scan the QR code with an
 authenticator app (Microsoft Authenticator, Google Authenticator, 1Password …), enter the 6-digit code and save the
 **recovery codes**. Each recovery code works once, if you lose your phone.
 
 !!! tip "Joining as a standby node"
-    The wizard also has *Join an existing Kiestoon as standby node*. Use that only for the second machine of a
+    The first screen also has *Join an existing Kiestoon as standby node*. Use that only for the second machine of a
     [high-availability pair](high-availability.md).
 
 ## 2. Basic settings

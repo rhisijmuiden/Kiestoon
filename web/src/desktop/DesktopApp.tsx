@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Loader2, LogOut, PhoneOff } from 'lucide-react'
 import { MfaEnroll } from '../pages/MfaEnroll'
+import { FirstRun } from '../pages/Setup'
 import { Login } from '../pages/Login'
 import { Button, ErrorMessage } from '../components/ui'
 import { Mark } from '../components/brand'
@@ -85,6 +86,8 @@ export function DesktopApp() {
           )}
         </>
       )
+    case 'firstRun':
+      return <FirstRun />
     case 'enroll':
       return <MfaEnroll />
   }

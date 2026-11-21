@@ -50,6 +50,8 @@ export type Me = {
   user: User
   mfaPassed: boolean
   mfaEnrollmentRequired: boolean
+  /** The generated first administrator still has to choose its own password. */
+  firstRunRequired?: boolean
   organization: string
   extension: { number: string; name: string } | null
   signInMethod: string

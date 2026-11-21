@@ -336,23 +336,29 @@ func (s *Server) clusterJoin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	code, err := multisite.Decode(req.Code, multisite.KindCluster)
+	s.joinAsStandby(w, r, req.Code, req.Address)
+}
+
+// joinAsStandby pairs this fresh node with the primary of the code and restarts it as standby.
+func (s *Server) joinAsStandby(w http.ResponseWriter, r *http.Request, rawCode, address string) bool {
+	ip := clientIP(r)
+	code, err := multisite.Decode(rawCode, multisite.KindCluster)
 	if err != nil {
 		fieldErr(w, "code")
-		return
+		return false
 	}
-	addr := strings.TrimSpace(req.Address)
+	addr := strings.TrimSpace(address)
 	if addr == "" {
 		addr = addressTowards(code.URL)
 	}
 	if a, err := netip.ParseAddr(addr); err != nil || !a.Is4() {
 		fieldErr(w, "address")
-		return
+		return false
 	}
 	priv, pub, err := wg.NewKey()
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "internal")
-		return
+		return false
 	}
 	var resp multisite.ClusterJoinResponse
 	cctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
@@ -363,30 +369,31 @@ func (s *Server) clusterJoin(w http.ResponseWriter, r *http.Request) {
 		var ae *multisite.APIError
 		if errors.As(err, &ae) && ae.Code != "" {
 			writeErr(w, http.StatusBadGateway, ae.Code)
-			return
+			return false
 		}
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "remote_unreachable", "message": err.Error()})
-		return
+		return false
 	}
 	if !wg.ValidKey(resp.PeerPublicKey) || resp.Secret == "" {
 		writeErr(w, http.StatusBadGateway, "remote_invalid")
-		return
+		return false
 	}
 	n := cluster.Node{Enabled: true, Mode: resp.Mode, Name: hostname(), Address: addr, VIP: resp.VIP, RouterID: resp.RouterID, Priority: 100,
 		Secret: resp.Secret, PrivateKey: priv, PublicKey: pub, Tunnel: resp.Tunnel, Port: resp.Port,
 		Peer: &cluster.Peer{Name: resp.PeerName, Address: resp.PeerAddress, PublicKey: resp.PeerPublicKey, Tunnel: resp.PeerTunnel}}
 	if err := cluster.SaveNode(s.Cfg.DataDir, n); err != nil {
 		writeErr(w, http.StatusInternalServerError, "internal")
-		return
+		return false
 	}
 	if err := cluster.SaveRole(s.Cfg.DataDir, cluster.Role{Role: cluster.RoleStandby, Epoch: 0, Reason: "joined"}); err != nil {
 		writeErr(w, http.StatusInternalServerError, "internal")
-		return
+		return false
 	}
 	store.Audit(r.Context(), s.DB, 0, "cluster.joined_as_standby", resp.PeerName, ip)
 	// The portal restarts as standby.
 	_ = s.Helper.Call(r.Context(), "portal.restart", nil, nil)
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "primary": resp.PeerName})
+	return true
 }
 
 // addressTowards is the local address used to reach the host of u.

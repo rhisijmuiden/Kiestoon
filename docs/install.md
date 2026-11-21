@@ -2,7 +2,7 @@
 
 Kiestoon runs on **Debian 13 "Trixie"** (amd64 or arm64). Pick one of two ways: the ready-made Proxmox LXC
 template, or the installer on a Debian 13 server or virtual machine. Both end with the same result: a running
-portal and a one-time **setup token** for the first administrator.
+portal, and the address, user name and password to sign in with. Everything else you set up in the portal.
 
 ## What you need
 
@@ -15,7 +15,36 @@ portal and a one-time **setup token** for the first administrator.
 
 ## Option 1: Proxmox LXC template
 
-### The easy way: one command on the Proxmox host
+### Download from URL in Proxmox
+
+Proxmox's own template list (*CT Templates › Templates*) only shows the official Proxmox and TurnKey appliances, and you
+cannot add other sources to it. Proxmox can download any template from a URL, though:
+
+1. In Proxmox, open *your storage (for example `local`) › CT Templates › **Download from URL***.
+2. Paste this URL, click **Query URL** and then **Download**:
+
+    ```text
+    https://github.com/rhisijmuiden/Kiestoon/releases/latest/download/kiestoon-debian-13-amd64.tar.zst
+    ```
+
+    !!! note "Until the first stable release"
+        `latest` only points to stable releases. Until there is one, use the URL of the newest release candidate,
+        for example `https://github.com/rhisijmuiden/Kiestoon/releases/download/v0.7.0-rc.28/kiestoon-debian-13-amd64.tar.zst` (on the [releases](https://github.com/rhisijmuiden/Kiestoon/releases) page, copy the link
+        of `kiestoon-debian-13-amd64.tar.zst`). Kiestoon Edge: `kiestoon-edge-debian-13-amd64.tar.zst`.
+
+3. Click **Create CT**. Pick the template, keep *Unprivileged container* and *Nesting* on, and start with 1 CPU,
+   1 GB RAM and 8 GB disk. Give it a fixed IP address (or a DHCP reservation).
+4. Start the container and open its **Console**. Above the login prompt it shows only what you need:
+
+    ```text
+      Kiestoon portal: http://192.168.1.20:8080
+      Username:        admin
+      Password:        k7Rm-Xq4T-9fwP-Lh2c
+    ```
+
+5. Open the URL, sign in, and [continue in the portal](first-setup.md).
+
+### In one command on the Proxmox host
 
 Open a shell on the Proxmox host (*node › Shell*) and run:
 
@@ -25,7 +54,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/te
 
 The script finds the newest release, downloads the LXC template to the template storage (`local` by default) and
 checks its SHA-256 checksum. It then shows a summary, creates an unprivileged container (1 CPU, 1 GB RAM, 8 GB disk,
-DHCP on `vmbr0`), starts it and prints the address of the portal and the setup token.
+DHCP on `vmbr0`), starts it and prints the URL, user name and password.
 
 Useful options:
 
@@ -55,8 +84,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/te
 2. In Proxmox, open *your storage › CT Templates › Upload* and upload the file.
 3. Create a container from the template. Unprivileged is fine. Start with 1 CPU, 1 GB RAM and 8 GB disk, and give
    it a fixed IP address (or a DHCP reservation).
-4. Start the container and log in on the console as `root`. The console shows the address of the portal and the
-   setup token.
+4. Start the container. The console shows the URL, user name and password.
 
 !!! note "Testing channel"
     Release candidates (`vX.Y.Z-rc.N`) come with a template too. A container made from an rc template follows the
@@ -90,8 +118,15 @@ Installer options:
 
 The installer adds the packages `kiestoon` (portal and API), `kiestoon-asterisk` (Asterisk 22 LTS, built for
 Kiestoon), `kiestoon-sounds-nl` (Dutch voice prompts) and the services `kiestoon-helper` (a small root helper for
-the firewall, backups and tunnels) and `kiestoon-updater`. At the end it prints the portal address and the setup
-token.
+the firewall, backups and tunnels) and `kiestoon-updater`. It works the same on hardware, in a virtual machine or in
+a container. At the end it prints only what you need:
+
+```text
+Kiestoon v0.7.0 is installed.
+  URL:      http://192.168.1.20:8080
+  Username: admin
+  Password: k7Rm-Xq4T-9fwP-Lh2c
+```
 
 ## Open the portal
 
@@ -101,11 +136,13 @@ token.
 | `https://<server>:8443` | Same portal over HTTPS with a self-signed certificate. Needed for the browser softphone (microphone) |
 | `https://<your domain>` | After you switch on [internet access](internet.md) (Let's Encrypt on port 443) |
 
-Lost the setup token? Show it again on the server:
+The password is generated for each installation. Lost it before the first sign-in? Show it again on the server:
 
 ```sh
-sudo kiestoon setup-token
+sudo kiestoon initial-admin
 ```
+
+At the first sign-in you choose your own password; the generated one then stops working and is no longer shown.
 
 ## Ports
 

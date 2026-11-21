@@ -140,18 +140,23 @@ apt-get install -y -qq --allow-downgrades "${PKGS[@]}" >/dev/null
 sed -i "s/^KIESTOON_CHANNEL=.*/KIESTOON_CHANNEL=$CHANNEL/" /etc/kiestoon/kiestoon.env
 systemctl restart kiestoon.service
 
-# Wait for the portal and, on a fresh install, for the one-time setup token.
+# Wait for the portal and, on a fresh install, for the generated first administrator.
 for _ in $(seq 1 30); do
   curl -fsS -o /dev/null http://127.0.0.1:8080/api/health 2>/dev/null && break
+  sleep 1
+done
+for _ in $(seq 1 10); do
+  [ -s /var/lib/kiestoon/initial-admin ] || ! curl -fsS http://127.0.0.1:8080/api/setup/status 2>/dev/null | grep -q '"setupRequired":true' && break
   sleep 1
 done
 IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 echo
 cyan "Kiestoon $(kiestoon version | awk '{print $2}') is installed."
-echo "  Open:        http://${IP:-<this-machine>}:8080"
-if [ -s /var/lib/kiestoon/setup-token ]; then
-  echo "  Setup token: $(cat /var/lib/kiestoon/setup-token)"
-  echo "  (Show it again later with: kiestoon setup-token)"
+echo "  URL:      http://${IP:-<this-machine>}:8080"
+if [ -s /var/lib/kiestoon/initial-admin ]; then
+  echo "  Username: $(sed -n 's/^username=//p' /var/lib/kiestoon/initial-admin)"
+  echo "  Password: $(sed -n 's/^password=//p' /var/lib/kiestoon/initial-admin)"
+  echo
+  echo "Sign in and do the rest of the setup in the portal. (Show these again: kiestoon initial-admin)"
 fi
-echo "  Channel:     $CHANNEL"
 echo

@@ -12,8 +12,10 @@ export const ADMIN = { username: 'admin', password: 'Kiestoon-docs-2026' }
 const c = new Client(base)
 
 // ---- first admin with MFA ----
-const token = fs.readFileSync(path.join(dataDir, 'setup-token'), 'utf8').trim()
-await c.post('/api/setup', { token, ...ADMIN, language: 'en', displayName: 'Anna de Vries' })
+// The service creates "admin" with a generated password; the first sign-in replaces it.
+const initial = fs.readFileSync(path.join(dataDir, 'initial-admin'), 'utf8').match(/^password=(.*)$/m)[1]
+await c.post('/api/auth/login', { username: ADMIN.username, password: initial })
+await c.post('/api/setup/first-run', { organization: 'Kiestoon', password: ADMIN.password, language: 'en', displayName: 'Anna de Vries' })
 const { data: enr } = await c.post('/api/account/mfa/enroll', {})
 await c.post('/api/account/mfa/confirm', { code: totp(enr.secret) })
 fs.writeFileSync(path.join(dataDir, '..', 'mfa-secret'), enr.secret)

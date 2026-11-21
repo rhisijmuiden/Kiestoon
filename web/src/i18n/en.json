@@ -168,7 +168,8 @@
     "elevenlabs_key": "ElevenLabs refused the API key. Check the key and its permissions under Speech.",
     "elevenlabs_quota": "The ElevenLabs characters of this period are used up. Wait for the next period or upgrade the plan.",
     "elevenlabs_failed": "ElevenLabs could not speak the text.",
-    "elevenlabs_unreachable": "ElevenLabs cannot be reached from this server. Check the internet connection."
+    "elevenlabs_unreachable": "ElevenLabs cannot be reached from this server. Check the internet connection.",
+    "first_run_required": "Finish the first setup first: choose your own password."
   },
   "setup": {
     "title": "Welcome to Kiestoon",
@@ -200,7 +201,11 @@
     "standbyCodeHint": "From High availability on the primary node. Valid for 24 hours.",
     "standbyAddressHint": "The address of this system in the network of the primary. Leave empty to detect it.",
     "standbyJoin": "Join",
-    "standbyDone": "Joined {{name}}. The portal restarts as standby node…"
+    "standbyDone": "Joined {{name}}. The portal restarts as standby node…",
+    "firstRunSubtitle": "You signed in with the generated administrator. Choose the language and the name of your organization; next you choose your own password.",
+    "newPasswordText": "The generated password stops working. Choose your own; you sign in with the user name admin.",
+    "newPassword": "New password",
+    "finish": "Save and continue"
   },
   "login": {
     "title": "Sign in",
@@ -214,7 +219,8 @@
     "verify": "Verify",
     "ssoWith": "Sign in with {{name}}",
     "or": "or with your username",
-    "passkey": "Sign in with a passkey"
+    "passkey": "Sign in with a passkey",
+    "initialAdmin": "First sign-in: use the user name and password shown at the end of the installation and on the console of the server (or run kiestoon initial-admin)."
   },
   "mfa": {
     "title": "Set up two-factor authentication",

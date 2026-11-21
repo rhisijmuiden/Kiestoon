@@ -202,6 +202,12 @@ func (s *Service) SetLanguage(ctx context.Context, userID int64, lang string) er
 	return err
 }
 
+// SetDisplayName changes the name shown for an account.
+func (s *Service) SetDisplayName(ctx context.Context, userID int64, name string) error {
+	_, err := s.DB.ExecContext(ctx, `UPDATE users SET display_name = ? WHERE id = ?`, strings.TrimSpace(name), userID)
+	return err
+}
+
 // SetTheme stores the user's preferred UI theme ("system", "dark" or "light").
 func (s *Service) SetTheme(ctx context.Context, userID int64, theme string) error {
 	if !ValidTheme(theme) {

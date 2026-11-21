@@ -338,6 +338,10 @@ the testing channel.
   Teams users with an E.164 number and optional extension (Teams only, or Teams + desk phone), internal dialling by
   extension, outside calls via the routes or one trunk, generated PowerShell script (gateway, voice route, policy,
   numbers)
+- [x] CRM integrations and call pop-up (`v0.7.0-rc.24`): HubSpot, Salesforce, Pipedrive and Exact Online. Pop-up on
+  incoming calls (web portal, Windows softphone, reception list) with deals, tickets, last activity and owner, note and
+  follow-up task after the call, create unknown numbers. Every call logged under the owner who answered, call-back task
+  for missed calls, recording link and AI summary, retries for 24 hours with a sync log; CRM name on desk phones
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

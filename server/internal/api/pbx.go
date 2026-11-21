@@ -14,6 +14,7 @@ import (
 	"github.com/rhisijmuiden/kiestoon/server/internal/certs"
 	"github.com/rhisijmuiden/kiestoon/server/internal/mail"
 	"github.com/rhisijmuiden/kiestoon/server/internal/pbx"
+	"github.com/rhisijmuiden/kiestoon/server/internal/quality"
 	"github.com/rhisijmuiden/kiestoon/server/internal/store"
 )
 
@@ -484,6 +485,7 @@ func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"connected": l.Connected, "calls": l.Calls, "contacts": l.Contacts, "trunks": ts,
 		"extensions": len(exts), "registered": registered, "stats": s.CDR.TodayStats(r.Context()), "at": l.At,
+		"quality": s.qualityLiveSummary(r.Context(), l),
 	})
 }
 
@@ -501,7 +503,13 @@ func (s *Server) cdrSearch(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "internal")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"records": recs, "total": total})
+	ids := make([]string, 0, len(recs))
+	for _, rec := range recs {
+		ids = append(ids, rec.LinkedID)
+	}
+	mos, _ := (&quality.Store{DB: s.DB}).CallMOS(r.Context(), ids)
+	writeJSON(w, http.StatusOK, map[string]any{"records": recs, "total": total, "quality": mos,
+		"qualityLimits": qualityLimits(quality.Load(r.Context(), s.DB))})
 }
 
 func (s *Server) cdrExport(w http.ResponseWriter, r *http.Request) {

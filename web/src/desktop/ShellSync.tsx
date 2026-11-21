@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { refreshHeadset, useSoftphone } from '../lib/softphone'
+import { useCrmLookup, useCrmStatus } from '../lib/crm'
 import { listen, shell, type TrayStatus } from './bridge'
 import { myQueues, useDesktop } from './data'
 
@@ -21,21 +22,26 @@ export function ShellSync() {
 
   const call = phone.call
   const ringing = call?.direction === 'incoming' && call.state === 'ringing'
-  const callerName = call ? call.remoteName || targets.data?.find((e) => e.number === call.remote)?.name || '' : ''
+  // A caller from outside gets the name (and company) the CRM knows.
+  const crmOn = !!useCrmStatus()?.active
+  const crm = useCrmLookup(ringing && call && call.remote.replace(/\D/g, '').length >= 7 ? call.remote : null, crmOn)
+  const crmContact = crm?.contacts?.[0]
+  const callerName = call ? crmContact?.name || call.remoteName || targets.data?.find((e) => e.number === call.remote)?.name || '' : ''
+  const callerVia = crmContact?.company && crmContact.company !== crmContact.name ? crmContact.company : ''
 
   // Incoming-call popup, and a notification when it was missed.
   const wasRinging = useRef<{ name: string; number: string } | null>(null)
   useEffect(() => {
     if (ringing && call) {
       wasRinging.current = { name: callerName, number: call.remote }
-      shell.incomingShow(callerName, call.remote, '', i18n.language).catch(() => undefined)
+      shell.incomingShow(callerName, call.remote, callerVia, i18n.language).catch(() => undefined)
       return
     }
     shell.incomingHide().catch(() => undefined)
     const r = wasRinging.current
     wasRinging.current = null
     if (r && !call) shell.notify(t('desktop.notify.missed'), r.name ? `${r.name} (${r.number})` : r.number || t('reception.unknownCaller')).catch(() => undefined)
-  }, [ringing, call, callerName, i18n.language, t])
+  }, [ringing, call, callerName, callerVia, i18n.language, t])
 
   // Device names only show after the microphone was opened once (the shell allows it without a
   // prompt). Open it briefly at start, so a plugged-in headset is known before the first call.

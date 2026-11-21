@@ -44,7 +44,7 @@ const topics: Record<string, Topic> = {
   '/features': { page: 'firewall', en: 'fraud-protection', nl: 'fraudebescherming' },
   '/firewall': { page: 'firewall' },
   '/internet': { page: 'internet' },
-  '/integrations': { page: 'api' },
+  '/integrations': { page: 'crm' },
   '/speech': { page: 'prompts', en: 'speech', nl: 'spraak' },
   '/ai': { page: 'ai' },
   '/mobile-app': { page: 'mobile-app' },

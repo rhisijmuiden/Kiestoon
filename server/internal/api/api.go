@@ -90,6 +90,8 @@ type Server struct {
 	// crm links to CRM systems: look-ups for the call pop-up and call logging.
 	crm     *crm.Service
 	crmLive *crmState
+	// quality follows the RTCP reports of the calls going on.
+	quality qualityState
 }
 
 // New wires up a server.
@@ -204,6 +206,7 @@ func (s *Server) Routes() http.Handler {
 	s.reportRoutes(mux, admin)
 	s.mobileRoutes(mux, admin, full)
 	s.crmRoutes(mux, admin, recep, full)
+	s.qualityRoutes(mux, admin)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)

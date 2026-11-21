@@ -205,6 +205,7 @@ func (s *Server) metricsText(ctx context.Context) string {
 			p.metric("kiestoon_trunk_up", "gauge", "1 when a trunk is registered (or uses IP authentication).", b2f(up), "trunk", t.Name)
 		}
 	}
+	s.qualityMetrics(ctx, &p)
 	for _, q := range s.States.Queues(ctx) {
 		name := q.Name
 		if qq, err := s.PBX.Queue(ctx, q.ID); err == nil {

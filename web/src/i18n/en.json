@@ -1398,7 +1398,19 @@
       "open": "open",
       "closed": "closed",
       "intentUnnamed": "Unnamed answer",
-      "notUnderstood": "Not understood"
+      "notUnderstood": "Not understood",
+      "openNow": "open now",
+      "closedNow": "closed now",
+      "mailbox": "Voicemail box",
+      "members_one": "{{count}} member",
+      "members_other": "{{count}} members",
+      "online": "{{online}} online · {{waiting}} waiting",
+      "state": {
+        "available": "Available",
+        "inCall": "In a call",
+        "ringing": "Ringing",
+        "offline": "Offline"
+      }
     },
     "problem": {
       "notInMenu": "Not part of the menu: draw a line from the incoming call to this step.",
@@ -1480,7 +1492,19 @@
       "call": "Call me",
       "extension": "Ring extension",
       "ringing": "Extension {{ext}} is ringing."
-    }
+    },
+    "group": {
+      "menu": "Menu",
+      "audio": "Audio",
+      "route": "Route to",
+      "logic": "Logic"
+    },
+    "lines": {
+      "label": "Line style",
+      "curve": "Flowing lines",
+      "step": "Angular lines"
+    },
+    "motion": "Show the call flowing along the lines"
   },
   "timeConditions": {
     "title": "Time conditions",

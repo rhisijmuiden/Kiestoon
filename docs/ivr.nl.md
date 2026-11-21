@@ -18,6 +18,10 @@ stap eigen audio.
 4. Sleep bouwstenen uit de balk boven het canvas (of klik erop om ze toe te voegen) en verbind ze.
 5. Klik **Opslaan** en daarna **Testgesprek**.
 
+Blokken tonen live gegevens: of een tijdconditie nu open is, hoeveel medewerkers van een wachtrij online zijn en of een
+toestel beschikbaar is. Met de knoppen rechts in de balk wissel je tussen vloeiende en hoekige lijnen en zet je de
+bewegende stipjes op de lijnen (de richting van het gesprek) aan of uit.
+
 ![De lijst met keuzemenu's](shot:ivr-list)
 
 ## Bouwstenen

@@ -92,6 +92,7 @@ plugins:
             Trunks: Trunks (SIP-providers)
             "Provider: Voys": "Provider: Voys"
             "Provider: Cheapconnect": "Provider: Cheapconnect"
+            Microsoft Teams: Microsoft Teams
             Inbound and outbound routes: Inkomende en uitgaande routes
             Ring groups: Belgroepen
             Call queues: Wachtrijen
@@ -144,6 +145,7 @@ nav:
       - Trunks: trunks.md
       - "Provider: Voys": providers/voys.md
       - "Provider: Cheapconnect": providers/cheapconnect.md
+      - Microsoft Teams: teams.md
       - Inbound and outbound routes: routes.md
       - Ring groups: ring-groups.md
       - Call queues: queues.md

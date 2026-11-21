@@ -204,6 +204,9 @@ func (s *Server) firewallPorts(ctx context.Context) firewall.Ports {
 		p.ClusterPeer = n.Peer.Address
 	}
 	p.Tunnels = len(s.tunnels(ctx)) > 0
+	if t, _ := pbx.LoadTeams(ctx, s.DB); t.Enabled {
+		p.Teams, p.TeamsNets = t.Port, pbx.TeamsSignalingNets
+	}
 	return p
 }
 

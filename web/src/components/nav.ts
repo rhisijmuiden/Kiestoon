@@ -1,7 +1,7 @@
 import {
   Sparkles,
   Activity, Archive, Building2, Network, ServerCog, Sun, AudioLines, AudioWaveform, BookUser, Globe, Monitor, MonitorPlay, Plug, Printer, Clock, Disc3, GitBranch, Headset, History, KeyRound, LayoutGrid, ListOrdered, Mail, MonitorSmartphone,
-  Phone, Presentation, ScrollText, Settings, Shield, ShieldAlert, Smartphone, TabletSmartphone, User, UserCog, UsersRound, Voicemail, Waypoints,
+  MessagesSquare, Phone, Presentation, ScrollText, Settings, Shield, ShieldAlert, Smartphone, TabletSmartphone, User, UserCog, UsersRound, Voicemail, Waypoints,
   type LucideIcon,
 } from 'lucide-react'
 import { roleRank, type Role } from '../lib/api'
@@ -45,6 +45,7 @@ export const nav: NavGroup[] = [
       { key: 'conferences', path: '/conferences', icon: Presentation },
       { key: 'prompts', path: '/prompts', icon: AudioLines },
       { key: 'trunks', path: '/trunks', icon: Waypoints },
+      { key: 'teams', path: '/teams', icon: MessagesSquare },
       { key: 'phones', path: '/phones', icon: Smartphone },
     ],
   },

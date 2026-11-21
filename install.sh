@@ -5,7 +5,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/install.sh | sudo bash -s -- --channel testing
 #
 # Options:
-#   --channel production|testing   Update channel to follow (default: production)
+#   --channel production|testing   Update channel to follow (default: production, or testing while there is no stable release)
 #   --version vX.Y.Z               Install this exact release instead of the newest one
 #   --deb /path/to/kiestoon.deb    Install a local package (for development)
 #   --asterisk-deb /path/to.deb    Local kiestoon-asterisk package to install with --deb
@@ -16,6 +16,7 @@ set -euo pipefail
 
 REPO="${KIESTOON_REPO:-rhisijmuiden/kiestoon}"
 CHANNEL="production"
+CHANNEL_SET=""
 VERSION=""
 LOCAL_DEB=""
 AST_PATH=""
@@ -28,7 +29,7 @@ die() { printf '\033[1;31mError:\033[0m %s\n' "$*" >&2; exit 1; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --channel) CHANNEL="${2:-}"; shift 2 ;;
+    --channel) CHANNEL="${2:-}"; CHANNEL_SET=1; shift 2 ;;
     --version) VERSION="${2:-}"; shift 2 ;;
     --deb) LOCAL_DEB="${2:-}"; shift 2 ;;
     --asterisk-deb) AST_PATH="$(readlink -f "${2:-}")"; shift 2 ;;
@@ -63,7 +64,13 @@ resolve_version() {
     echo "Looking up the newest release on the $CHANNEL channel…"
     FILTER='.[] | select(.draft | not)'
     [ "$CHANNEL" = "production" ] && FILTER="$FILTER | select(.prerelease | not)"
-    VERSION="$(curl -fsSL "https://api.github.com/repos/$REPO/releases?per_page=50" | jq -r "[$FILTER | .tag_name] | first // empty")"
+    RELEASES="$(curl -fsSL "https://api.github.com/repos/$REPO/releases?per_page=50")" || die "cannot reach GitHub."
+    VERSION="$(jq -r "[$FILTER | .tag_name] | first // empty" <<<"$RELEASES")"
+    if [ -z "$VERSION" ] && [ "$CHANNEL" = "production" ] && [ -z "$CHANNEL_SET" ]; then
+      echo "There is no stable release yet, so this follows the testing channel (release candidates)."
+      CHANNEL="testing"
+      VERSION="$(jq -r '[.[] | select(.draft | not) | .tag_name] | first // empty' <<<"$RELEASES")"
+    fi
     [ -n "$VERSION" ] || die "no release found on the $CHANNEL channel yet."
   fi
   [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || die "invalid version: $VERSION"

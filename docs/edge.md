@@ -29,6 +29,9 @@ Pick one:
 **Raspberry Pi:** write the image with Raspberry Pi Imager (*Use custom*). The Imager settings (user, SSH, Wi-Fi,
 host name) work as usual. A wired connection is recommended for phones.
 
+**Proxmox in one command:** run `bash -c "$(curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/proxmox/kiestoon-lxc.sh)" -- --edge` in the shell of the Proxmox host. It
+downloads the Edge template and creates the container (512 MB RAM, 4 GB disk). See [Installation](install.md).
+
 **LXC:** the WireGuard module must be available in the host kernel (Proxmox has it). Unprivileged containers work.
 Without the kernel module, `apt install wireguard-go` makes `wg-quick` use the (slower) userspace implementation.
 

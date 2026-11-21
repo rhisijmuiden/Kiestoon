@@ -15,6 +15,41 @@ portal and a one-time **setup token** for the first administrator.
 
 ## Option 1: Proxmox LXC template
 
+### The easy way: one command on the Proxmox host
+
+Open a shell on the Proxmox host (*node › Shell*) and run:
+
+```sh
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/proxmox/kiestoon-lxc.sh)"
+```
+
+The script finds the newest release, downloads the LXC template to the template storage (`local` by default) and
+checks its SHA-256 checksum. It then shows a summary, creates an unprivileged container (1 CPU, 1 GB RAM, 8 GB disk,
+DHCP on `vmbr0`), starts it and prints the address of the portal and the setup token.
+
+Useful options:
+
+| Option | What it does |
+|---|---|
+| `--download-only` | Only put the template in *CT Templates*; create the container yourself |
+| `--edge` | Use the [Kiestoon Edge](edge.md) template instead |
+| `--ip 192.168.1.20/24 --gateway 192.168.1.1` | Fixed IP address instead of DHCP |
+| `--id 120 --hostname pbx` | Container ID and host name |
+| `--storage local-zfs --disk 16` | Storage and size of the root disk |
+| `--cores 2 --memory 2048` | CPU and memory |
+| `--bridge vmbr1 --vlan 20` | Network bridge and VLAN tag |
+| `--channel testing` / `--version v0.7.0-rc.26` | Release channel or a fixed version |
+| `--ssh-key ~/.ssh/id_ed25519.pub` | Put an SSH key on the container |
+| `--yes` | Do not ask for confirmation |
+
+Pass options after `--`, for example:
+
+```sh
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/proxmox/kiestoon-lxc.sh)" -- --ip 192.168.1.20/24 --gateway 192.168.1.1
+```
+
+### By hand
+
 1. Download `kiestoon-<version>-debian-13-amd64.tar.zst` from the
    [releases](https://github.com/rhisijmuiden/Kiestoon/releases) on GitHub.
 2. In Proxmox, open *your storage › CT Templates › Upload* and upload the file.

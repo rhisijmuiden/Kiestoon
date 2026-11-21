@@ -6,6 +6,8 @@ import { Alert, Card, PageHeader } from '../components/ui'
 import type { SystemInfo } from '../lib/api'
 import type { Live, PbxStatus } from '../lib/types'
 import { useSession } from '../lib/session'
+import { MosPill } from '../components/quality'
+import { AlertBanner } from './Quality'
 
 const okTrunk = new Set(['registered', 'reachable', 'nonqualified'])
 
@@ -40,6 +42,7 @@ export function Dashboard() {
         <Alert tone="warn">{t('dashboard.restartNeeded')} <Link to="/settings" className="underline">{t('nav.settings')}</Link></Alert>
       )}
       {st?.lastError && <Alert>{t('settings.applyError', { error: st.lastError })}</Alert>}
+      {l?.quality && l.quality.alerts.map((a) => <AlertBanner key={a.id} a={a} limits={l.quality!.limits} />)}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label={t('dashboard.activeCalls')} value={l?.calls.length ?? '…'} tone={l?.calls.length ? 'ok' : undefined} sub={t('dashboard.liveHint')} />
@@ -50,7 +53,7 @@ export function Dashboard() {
 
       <Card>
         <SectionTitle>{t('dashboard.activeCalls')}</SectionTitle>
-        <Table head={[t('dashboard.direction'), t('dashboard.from'), t('dashboard.to'), t('dashboard.state'), t('dashboard.duration')]}
+        <Table head={[t('dashboard.direction'), t('dashboard.from'), t('dashboard.to'), t('dashboard.state'), t('dashboard.duration'), 'MOS']}
           empty={l && l.calls.length === 0 && <Empty icon={<PhoneOff className="size-7" />} title={t('dashboard.noCalls')} />}>
           {l?.calls.map((c) => (
             <tr key={c.id}>
@@ -63,6 +66,7 @@ export function Dashboard() {
               <td className={`${td} font-mono text-ink`}>{c.to}</td>
               <td className={td}><Badge tone={c.state === 'talking' ? 'ok' : c.state === 'ringing' ? 'accent' : 'muted'} dot>{c.state === 'talking' ? t('dashboard.connected') : c.state === 'ringing' ? t('dashboard.ringing') : c.state}</Badge></td>
               <td className={`${td} font-mono`}>{formatDuration(c.duration)}</td>
+              <td className={td}>{l.quality?.calls[c.id] ? <MosPill mos={l.quality.calls[c.id]} limits={l.quality.limits} /> : <span className="text-subtle">–</span>}</td>
             </tr>
           ))}
         </Table>

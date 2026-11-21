@@ -18,6 +18,8 @@ import { Internet } from './pages/Internet'
 import { Phonebook } from './pages/Phonebook'
 import { Wallboard } from './pages/Wallboard'
 import { WallboardSettings } from './pages/WallboardSettings'
+import { Quality } from './pages/Quality'
+import { QualitySettings } from './pages/QualitySettings'
 import { WallScreen } from './pages/WallScreen'
 import { Features } from './pages/Features'
 import { Firewall } from './pages/Firewall'
@@ -67,7 +69,7 @@ const pages: Record<string, ReactElement> = {
   conferences: <Conferences />, prompts: <Prompts />, trunks: <Trunks />, phones: <Phones />, users: <Users />, sso: <Sso />,
   features: <Features />, firewall: <Firewall />, backups: <Backups />, mail: <Mail />, audit: <Audit />, settings: <Settings />,
   phonebook: <Phonebook />, wallboard: <Wallboard />, fax: <Fax />, internet: <Internet />, integrations: <Integrations />, speech: <Speech />, ai: <AI />, mobileApp: <MobileApp />, windowsSoftphone: <Softphone />,
-  sites: <Sites />, federation: <Federation />, sunRoutes: <SunRoutes />, cluster: <Cluster />,
+  sites: <Sites />, federation: <Federation />, sunRoutes: <SunRoutes />, cluster: <Cluster />, quality: <Quality />,
 }
 
 function NoExtension() {
@@ -136,6 +138,7 @@ export function App() {
         <Route index element={home} />
         <Route path="account" element={<Account />} />
         {roleRank(role) >= roleRank('admin') && <Route path="wallboard/settings" element={<WallboardSettings />} />}
+        {roleRank(role) >= roleRank('admin') && <Route path="quality/settings" element={<QualitySettings />} />}
         {items.map((i) => <Route key={i.key} path={i.path.slice(1)} element={pages[i.key]} />)}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

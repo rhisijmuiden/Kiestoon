@@ -27,6 +27,8 @@ type Journey struct {
 	Partial    bool        `json:"partial"`
 	Steps      []*Step     `json:"steps"`
 	Recordings []Recording `json:"recordings"`
+	// Quality is the measured audio quality of the call (set by the API), nil when not measured.
+	Quality any `json:"quality,omitempty"`
 }
 
 // Recording is a recording that belongs to the call.

@@ -194,6 +194,84 @@ db.prepare(`INSERT INTO settings(key, value) VALUES ('mobile', ?) ON CONFLICT(ke
   })
 }
 
+// Call quality: a week of measured call legs. Voys is fine until the last two hours, when audio
+// from the provider starts to drop (an active alert); phone 204 on Wi-Fi loses audio towards the
+// phone and the softphone of 207 at home sends jittery audio. Today's calls of the call history
+// (linked ids 17316<i>.1, see fake-ami.mjs) get their own legs, call 44 with a full timeline.
+{
+  const qs = (d) => d.toISOString().replace(/\.\d+Z$/, 'Z')
+  let seed = 11
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
+  // The E-model of the portal (server/internal/quality/mos.go), so the figures agree with each other.
+  const mos = (jit, loss, rtt, codec) => {
+    const delay = rtt / 2 + jit * 2 + 10
+    let r = 93.2 - (delay < 160 ? delay / 40 : (delay - 120) / 10)
+    const bpl = codec === 'g729' ? 19 : 25.1
+    r -= 95 * loss / (loss + bpl)
+    const m = r <= 0 ? 1 : r >= 100 ? 4.5 : 1 + 0.035 * r + 0.000007 * r * (r - 60) * (100 - r)
+    return Math.round(Math.max(1, Math.min(4.5, m)) * 100) / 100
+  }
+  const ins = db.prepare(`INSERT INTO call_quality(linkedid, uniqueid, channel, endpoint, kind, trunk_id, ext, codec, remote, started_at, ended_at,
+    mos, mos_min, rx_mos, rx_jitter, rx_jitter_max, rx_loss, rx_reports, tx_mos, tx_jitter, tx_jitter_max, tx_loss, tx_reports, rtt, rtt_max, samples)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+  const leg = (linked, n, endpoint, end, secs, p) => {
+    const kind = endpoint.startsWith('trunk-') ? 'trunk' : 'extension'
+    const codec = kind === 'trunk' ? 'alaw' : 'g722'
+    const rtt = p.rtt * (0.8 + rnd() * 0.4)
+    const d = (jit, loss) => {
+      const j = jit * (0.7 + rnd() * 0.6), l = Math.max(0, loss * (0.6 + rnd() * 0.8))
+      return { jit: Math.round(j * 10) / 10, max: Math.round(j * (1.8 + rnd()) * 10) / 10, loss: Math.round(l * 100) / 100, mos: mos(j, l, rtt, codec) }
+    }
+    const rx = d(p.rx[0], p.rx[1]), tx = d(p.tx[0], p.tx[1])
+    const worst = Math.min(rx.mos, tx.mos)
+    const reports = Math.max(1, Math.round(secs / 5))
+    const samples = Array.from({ length: Math.min(reports, 120) }, (_, i) => {
+      const bad = p.bursts && ((i > reports * 0.25 && i < reports * 0.42) || (i > reports * 0.7 && i < reports * 0.8))
+      return Math.round(Math.min(4.41, Math.max(1.2, (bad ? worst - 0.7 - rnd() * 0.4 : worst + 0.25 - rnd() * 0.3))) * 100)
+    })
+    const start = new Date(end.getTime() - secs * 1000)
+    ins.run(linked, `${linked}.${n}`, `PJSIP/${endpoint}-0000${n}a`, endpoint, kind, kind === 'trunk' ? Number(endpoint.slice(6)) : 0,
+      kind === 'trunk' ? '' : endpoint.replace(/-(web|app)$/, ''), codec, kind === 'trunk' ? '185.103.76.21' : `192.168.10.${40 + Number(endpoint.slice(0, 3)) - 200}`,
+      qs(start), qs(end), worst, Math.min(...samples) / 100, rx.mos, rx.jit, rx.max, rx.loss, reports, tx.mos, tx.jit, tx.max, tx.loss, reports,
+      Math.round(rtt * 10) / 10, Math.round(rtt * 1.6 * 10) / 10, JSON.stringify(samples))
+  }
+  const phone = { '204': { rx: [6, 0.2], tx: [14, 9], rtt: 9 }, '207': { rx: [36, 0.6], tx: [8, 0.2], rtt: 38 } }
+  const good = { rx: [3, 0.05], tx: [4, 0.08], rtt: 6 }
+  const voys = (end) => (Date.now() - end.getTime() < 2 * 3600000 ? { rx: [8, 8], tx: [5, 0.2], rtt: 24 } : { rx: [4, 0.1], tx: [5, 0.1], rtt: 22 })
+  const exts = ['201', '202', '203', '204', '205', '207', '209']
+  const now = Date.now()
+  db.exec('BEGIN')
+  let k = 0
+  for (let back = 7 * 24 * 60; back > 12; back -= 6 + Math.floor(rnd() * 14)) {
+    const end = new Date(now - back * 60000)
+    const h = new Date(end).getHours()
+    if (h < 7 || h > 19) { back -= 60; continue }
+    const ext = exts[Math.floor(rnd() * exts.length)]
+    const secs = 40 + Math.floor(rnd() * 420)
+    const linked = `q${k++}.1`
+    if (rnd() < 0.82) leg(linked, 1, rnd() < 0.85 ? 'trunk-1' : 'trunk-2', end, secs, rnd() < 0.85 ? voys(end) : { rx: [6, 0.2], tx: [6, 0.2], rtt: 31 })
+    leg(linked, 2, ext === '204' ? '204-web' : ext, end, secs, phone[ext] ?? good)
+  }
+  // Today's calls of the call history; call 44 went from the trunk to 201 and was transferred to 204.
+  for (let i = 0; i < 44; i++) {
+    const end = new Date(now - (46 - i) * 10 * 60000)
+    const ext = exts[(i * 3) % exts.length]
+    if (i % 7 !== 3) leg(`17316${i}.1`, 1, 'trunk-1', end, 60 + i * 7, voys(end))
+    leg(`17316${i}.1`, 2, ext, end, 60 + i * 7, phone[ext] ?? good)
+  }
+  const end44 = new Date(now - 25 * 60000)
+  leg('1731644.1', 1, 'trunk-1', end44, 190, { rx: [4, 0.1], tx: [5, 0.1], rtt: 22 })
+  leg('1731644.1', 2, '201', new Date(end44.getTime() - 60000), 100, good)
+  leg('1731644.1', 3, '204-web', end44, 60, { ...phone['204'], bursts: true })
+  db.prepare(`INSERT INTO quality_alerts(key, kind, ref, name, calls, poor, mos, jitter, loss, rtt, cause, started_at, mailed_at)
+    VALUES ('trunk/1', 'trunk', '1', 'Voys', 6, 5, 3.52, 8, 8.1, 24, 'lossFrom', ?, ?)`).run(qs(new Date(now - 38 * 60000)), qs(new Date(now - 38 * 60000)))
+  db.prepare(`INSERT INTO quality_alerts(key, kind, ref, name, calls, poor, mos, jitter, loss, rtt, cause, started_at, ended_at, mailed_at)
+    VALUES ('phone/204', 'phone', '204', '204 Emma de Boer', 5, 3, 3.41, 14, 9, 9, 'lossTo', ?, ?, ?)`).run(qs(new Date(now - 26 * 3600000)), qs(new Date(now - 24 * 3600000)), qs(new Date(now - 26 * 3600000)))
+  db.exec('COMMIT')
+  setting('call_quality', JSON.stringify({ good: 4, poor: 3.6, jitter: 30, loss: 2, rtt: 300, trunk: { enabled: true, minutes: 15, count: 3 },
+    phone: { enabled: true, minutes: 60, count: 3 }, eachCall: false, recovered: true, email: true, recipients: ['it@noordkade.example'], quiet: 30, keepDays: 90 }))
+}
+
 // A backup history through the (fake) helper.
 const c = new Client(base)
 await loginAdmin(c, fs.readFileSync(path.join(dataDir, '..', 'mfa-secret'), 'utf8').trim())

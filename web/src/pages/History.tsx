@@ -4,9 +4,12 @@ import { useTranslation } from 'react-i18next'
 import { ChevronRight, Download, Loader2, PhoneIncoming, PhoneOutgoing, Repeat } from 'lucide-react'
 import { Badge, Select, Table, formatDate, formatDuration, td, useApi } from '../components/kit'
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
-import type { Cdr } from '../lib/types'
+import { MosPill } from '../components/quality'
+import type { Cdr, QualityLimits } from '../lib/types'
 
 const PAGE = 50
+
+const defaultLimits: QualityLimits = { good: 4, poor: 3.6, jitter: 30, loss: 2, rtt: 300 }
 
 const CallJourney = lazy(() => import('./history/CallJourney').then((m) => ({ default: m.CallJourney })))
 
@@ -38,7 +41,7 @@ export function History() {
   const [f, setF] = useState({ q: '', from: '', to: '', direction: '', disposition: '' })
   const [offset, setOffset] = useState(0)
   const params = new URLSearchParams({ ...f, limit: String(PAGE), offset: String(offset) })
-  const list = useApi<{ records: Cdr[]; total: number }>(`/cdr?${params}`)
+  const list = useApi<{ records: Cdr[]; total: number; quality?: Record<string, number>; qualityLimits?: QualityLimits }>(`/cdr?${params}`)
   const exportUrl = `/api/cdr/export?${new URLSearchParams(f)}`
   const set = (k: keyof typeof f, v: string) => { setOffset(0); setF({ ...f, [k]: v }) }
   const dispTone = (d: string) => (d === 'ANSWERED' ? 'ok' : d === 'NO ANSWER' || d === 'BUSY' ? 'warn' : 'danger') as 'ok' | 'warn' | 'danger'
@@ -73,7 +76,7 @@ export function History() {
       </Card>
       <ErrorMessage error={list.error} />
       <Card>
-        <Table head={[t('history.time'), '', t('history.caller'), t('history.called'), t('history.duration'), t('history.result'), t('history.trunk'), '']}
+        <Table head={[t('history.time'), '', t('history.caller'), t('history.called'), t('history.duration'), t('history.result'), t('history.trunk'), 'MOS', '']}
           empty={list.data?.records.length === 0 && <p className="py-10 text-center text-sm text-muted">{t('history.empty')}</p>}>
           {list.data?.records.map((r) => (
             <tr key={r.id} {...rowOpen(() => open(r.linkedId || r.uniqueId), t('journey.open', { time: formatDate(r.start, i18n.language) }))}>
@@ -86,6 +89,7 @@ export function History() {
               <td className={`${td} font-mono`}>{formatDuration(r.billsec)}</td>
               <td className={td}><Badge tone={dispTone(r.disposition)}>{t(`history.disp.${r.disposition.replace(' ', '_')}`, { defaultValue: r.disposition })}</Badge></td>
               <td className={td}>{r.trunk || '–'}</td>
+              <td className={td}>{list.data?.quality?.[r.linkedId] ? <MosPill mos={list.data.quality[r.linkedId]} limits={list.data.qualityLimits ?? defaultLimits} /> : <span className="text-subtle">–</span>}</td>
               <td className={`${td} text-right`}><ChevronRight className="inline size-4 text-subtle" aria-hidden /></td>
             </tr>
           ))}

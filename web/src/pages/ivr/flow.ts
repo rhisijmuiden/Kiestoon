@@ -125,13 +125,19 @@ export function fromFlow(f: Flow): { nodes: StepNode[]; edges: Edge[] } {
   return { nodes, edges }
 }
 
+/** A line between two steps. It is drawn by FlowEdge (edges.tsx) in the colour of the port it leaves. */
 export function makeEdge(from: string, port: FlowPort, to: string, src: StepData): Edge {
-  const tone = port === 'closed' || port === 'nomatch' ? 'warn' : toneOf(src)
   return {
     id: `${from}:${port}:${to}`, source: from, sourceHandle: port, target: to, targetHandle: 'in',
-    type: 'smoothstep', pathOptions: { borderRadius: 14 },
-    style: { stroke: tones[tone].stroke, strokeWidth: 2 },
-  } as Edge
+    type: 'flow', data: { tone: portTone(port, src) },
+  }
+}
+
+/** The colour of a line leaving a port: open is indigo, closed and "not understood" amber, else the step's own. */
+export function portTone(port: FlowPort, src: StepData): Tone {
+  if (port === 'open') return 'accent2'
+  if (port === 'closed' || port === 'nomatch') return 'warn'
+  return toneOf(src)
 }
 
 export function toFlow(nodes: StepNode[], edges: Edge[]): Flow {
@@ -176,7 +182,7 @@ export const blankIVR = (): IVR => ({
 
 export const NODE_W = 260
 const COL = NODE_W + 90
-const ROW = 128
+const ROW = 150
 
 /**
  * Tidy layout: columns by distance from the entry, rows in key order. Nodes nobody reaches go in a

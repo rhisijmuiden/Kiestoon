@@ -259,6 +259,11 @@ export type HolidaysView = { calendar: HolidayCalendar; year: number; days: { da
 export type Conference = {
   id: number; number: string; name: string; pin: string; adminPin: string; maxMembers: number; record: boolean; waitAdmin: boolean; enabled: boolean
 }
+/** Live state for the IVR canvas: time conditions open now, and destinations keyed "type:target". */
+export type IvrLive = {
+  open: Record<string, boolean>
+  dests: Record<string, { state?: string; members?: number; online?: number; waiting?: number }>
+}
 export type Prompt = { id: number; name: string; durationMs: number; createdAt: string }
 
 export type FraudSettings = {

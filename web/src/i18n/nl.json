@@ -1388,7 +1388,19 @@
       "open": "open",
       "closed": "dicht",
       "intentUnnamed": "Antwoord zonder naam",
-      "notUnderstood": "Niet begrepen"
+      "notUnderstood": "Niet begrepen",
+      "openNow": "nu open",
+      "closedNow": "nu dicht",
+      "mailbox": "Voicemailbox",
+      "members_one": "{{count}} lid",
+      "members_other": "{{count}} leden",
+      "online": "{{online}} online · {{waiting}} wachtend",
+      "state": {
+        "available": "Beschikbaar",
+        "inCall": "In gesprek",
+        "ringing": "Gaat over",
+        "offline": "Offline"
+      }
     },
     "problem": {
       "notInMenu": "Hoort niet bij het menu: trek een lijn van het binnenkomende gesprek naar deze stap.",
@@ -1470,7 +1482,19 @@
       "call": "Bel mij",
       "extension": "Toestel laten overgaan",
       "ringing": "Toestel {{ext}} gaat over."
-    }
+    },
+    "group": {
+      "menu": "Menu",
+      "audio": "Audio",
+      "route": "Doorsturen",
+      "logic": "Logica"
+    },
+    "lines": {
+      "label": "Lijnstijl",
+      "curve": "Vloeiende lijnen",
+      "step": "Hoekige lijnen"
+    },
+    "motion": "Laat het gesprek over de lijnen stromen"
   },
   "timeConditions": {
     "title": "Tijdcondities",

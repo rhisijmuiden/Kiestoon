@@ -180,6 +180,26 @@ function journeys() {
   return out.sort((a, b) => a.Timestamp - b.Timestamp)
 }
 
+// RTCP reports of the calls in progress, for the call quality page: Kiestoon receives these every
+// few seconds from Asterisk. Audio from Voys drops packets (the active alert of the demo), the leg to
+// 201 also loses audio towards the phone and 207 sends jittery audio.
+const rtcpProfile = {
+  'PJSIP/201-0000001b': { rx: [24, 0], tx: [56, 18] },
+  'PJSIP/207-0000003a': { rx: [330, 2], tx: [40, 0] },
+}
+function rtcp(sock) {
+  let k = 0
+  for (const c of channels()) {
+    if (c.ChannelStateDesc !== 'Up') continue
+    const p = rtcpProfile[c.Channel] ?? (c.Channel.includes('trunk') ? { rx: [60, 22], tx: [32, 0] } : { rx: [16, 0], tx: [32, 0] })
+    const wob = (v) => Math.max(0, Math.round(v * (0.7 + ((k++ * 37) % 60) / 100)))
+    const base = { Channel: c.Channel, Uniqueid: c.Uniqueid, Linkedid: c.Linkedid, ReportCount: 1 }
+    write(sock, { Event: 'RTCPSent', ...base, To: '192.168.10.44:16384', Report0IAJitter: wob(p.rx[0]), Report0FractionLost: wob(p.rx[1]) })
+    write(sock, { Event: 'RTCPReceived', ...base, From: c.Channel.includes('trunk') ? '185.103.76.21:31000' : '192.168.10.44:16385',
+      Report0IAJitter: wob(p.tx[0]), Report0FractionLost: wob(p.tx[1]), RTT: (c.Channel.includes('trunk') ? 0.024 : 0.006).toFixed(4) })
+  }
+}
+
 function write(sock, obj) {
   sock.write(Object.entries(obj).map(([k, v]) => `${k}: ${v}`).join('\r\n') + '\r\n\r\n')
 }
@@ -211,6 +231,7 @@ net.createServer((sock) => {
             { Event: 'AgentConnect', Queue: 'kiestoon-q-1', Uniqueid: 'demo.201', Interface: 'Local/201@kiestoon-ring/n', MemberName: 'Sanne Bakker', CallerIDNum: '0687123456', HoldTime: '14' },
             { Event: 'AgentConnect', Queue: 'kiestoon-q-2', Uniqueid: 'demo.203', Interface: 'Local/203@kiestoon-ring/n', MemberName: 'Daan Visser', CallerIDNum: '0402233445', HoldTime: '9' },
           ].forEach((e) => write(sock, e)), 300)
+          { const tick = setInterval(() => { if (sock.destroyed) clearInterval(tick); else rtcp(sock) }, 2500); setTimeout(() => rtcp(sock), 700) }
           if (!cdrsSent) { cdrsSent = true; setTimeout(() => [...cdrs(), ...journeys()].forEach((e) => write(sock, e)), 500) }
           break
         case 'coreshowchannels': list(sock, id, channels().map((c) => ({ Event: 'CoreShowChannel', ...c, Duration: new Date(c.Duration * 1000).toISOString().slice(11, 19) })), 'CoreShowChannelsComplete'); break
@@ -225,6 +246,7 @@ net.createServer((sock) => {
           break
         }
         case 'command': write(sock, { Response: 'Success', ActionID: id, Output: '' }); break
+        case 'getvar': write(sock, { Response: 'Success', ActionID: id, Variable: m.variable, Value: (m.channel || '').includes('trunk') ? 'alaw' : 'g722' }); break
         default: write(sock, { Response: 'Success', ActionID: id, Message: 'OK' })
       }
     }

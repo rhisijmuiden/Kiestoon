@@ -332,7 +332,7 @@ the testing channel.
 - [x] Phone admin password (`v0.7.0-rc.18`): provisioning replaces the factory web interface password with a unique
   generated password per phone (default) or one shared password; key icon in the phone list shows and copies it,
   shows whether the phone has it, makes a new one; every look is audit-logged
-- [x] Microsoft Teams Direct Routing (`v0.7.0-rc.20`): Kiestoon as SBC for a Microsoft 365 tenant. Own TLS transport
+- [x] Microsoft Teams Direct Routing (`v0.7.0-rc.22`): Kiestoon as SBC for a Microsoft 365 tenant. Own TLS transport
   with the FQDN in Contact/Via (Asterisk `external_signaling_hostname`), public RSA certificate from internet mode,
   SRTP, failover over Microsoft's three SIP proxies with health per proxy, firewall opens Microsoft 365 ranges only.
   Teams users with an E.164 number and optional extension (Teams only, or Teams + desk phone), internal dialling by

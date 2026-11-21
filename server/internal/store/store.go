@@ -737,6 +737,57 @@ var migrations = []string{
 	`ALTER TABLE phones ADD COLUMN admin_password TEXT NOT NULL DEFAULT '';
 	ALTER TABLE phones ADD COLUMN admin_password_at TEXT NOT NULL DEFAULT '';
 	ALTER TABLE phones ADD COLUMN admin_password_sent TEXT NOT NULL DEFAULT '';`,
+	// Call quality: one row per call leg with the RTCP figures of both directions, and the alerts
+	// of trunks and phones with poor quality.
+	`CREATE TABLE call_quality (
+		id            INTEGER PRIMARY KEY AUTOINCREMENT,
+		linkedid      TEXT NOT NULL,
+		uniqueid      TEXT NOT NULL,
+		channel       TEXT NOT NULL,
+		endpoint      TEXT NOT NULL,
+		kind          TEXT NOT NULL,
+		trunk_id      INTEGER NOT NULL DEFAULT 0,
+		ext           TEXT NOT NULL DEFAULT '',
+		codec         TEXT NOT NULL DEFAULT '',
+		remote        TEXT NOT NULL DEFAULT '',
+		started_at    TEXT NOT NULL,
+		ended_at      TEXT NOT NULL,
+		mos           REAL NOT NULL DEFAULT 0,
+		mos_min       REAL NOT NULL DEFAULT 0,
+		rx_mos        REAL NOT NULL DEFAULT 0,
+		rx_jitter     REAL NOT NULL DEFAULT 0,
+		rx_jitter_max REAL NOT NULL DEFAULT 0,
+		rx_loss       REAL NOT NULL DEFAULT 0,
+		rx_reports    INTEGER NOT NULL DEFAULT 0,
+		tx_mos        REAL NOT NULL DEFAULT 0,
+		tx_jitter     REAL NOT NULL DEFAULT 0,
+		tx_jitter_max REAL NOT NULL DEFAULT 0,
+		tx_loss       REAL NOT NULL DEFAULT 0,
+		tx_reports    INTEGER NOT NULL DEFAULT 0,
+		rtt           REAL NOT NULL DEFAULT 0,
+		rtt_max       REAL NOT NULL DEFAULT 0,
+		samples       TEXT NOT NULL DEFAULT '[]'
+	);
+	CREATE INDEX call_quality_linkedid ON call_quality(linkedid);
+	CREATE INDEX call_quality_ended ON call_quality(ended_at);
+	CREATE TABLE quality_alerts (
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		key        TEXT NOT NULL,
+		kind       TEXT NOT NULL,
+		ref        TEXT NOT NULL,
+		name       TEXT NOT NULL DEFAULT '',
+		calls      INTEGER NOT NULL DEFAULT 0,
+		poor       INTEGER NOT NULL DEFAULT 0,
+		mos        REAL NOT NULL DEFAULT 0,
+		jitter     REAL NOT NULL DEFAULT 0,
+		loss       REAL NOT NULL DEFAULT 0,
+		rtt        REAL NOT NULL DEFAULT 0,
+		cause      TEXT NOT NULL DEFAULT '',
+		started_at TEXT NOT NULL,
+		ended_at   TEXT NOT NULL DEFAULT '',
+		mailed_at  TEXT NOT NULL DEFAULT ''
+	);
+	CREATE INDEX quality_alerts_key ON quality_alerts(key);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

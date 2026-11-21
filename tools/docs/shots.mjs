@@ -30,6 +30,8 @@ export const shots = [
   { name: 'teams', path: '/teams', full: true, wait: 800 },
   { name: 'teams-users', path: '/teams', run: (p) => tab(p, 'Teams users', 'Teams-gebruikers'), full: true, wait: 600 },
   { name: 'teams-setup', path: '/teams', run: (p) => tab(p, 'Microsoft 365 setup', 'Microsoft 365 instellen'), full: true, wait: 800 },
+  { name: 'call-quality', path: '/quality', full: true, wait: 2500 },
+  { name: 'call-quality-settings', path: '/quality/settings', full: true },
   { name: 'phones', path: '/phones', full: true },
   { name: 'phone-keys', path: '/phones', run: (p) => editRow(p, 'Reception desk'), wait: 800 },
   { name: 'switchboard', path: '/reception', wait: 1200 },

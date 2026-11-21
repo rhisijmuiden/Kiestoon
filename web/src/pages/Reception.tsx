@@ -9,6 +9,7 @@ import type { BlfEntry, CallbackStatus, Live, QueueCallback, QueueView, TimeCond
 import { ActiveCalls, SwitchboardCalls, TransferNotice, TransferTargets } from '../components/Transfer'
 import { useSession } from '../lib/session'
 import { TransferProvider } from '../lib/transfer'
+import { CrmIncoming } from '../components/CrmIncoming'
 import { ModeSwitch } from './TimeConditions'
 
 /**
@@ -55,6 +56,7 @@ export function Reception() {
       )}
       <TransferProvider onDone={live.reload}>
         <TransferNotice />
+        <CrmIncoming />
         {hasExt && <ActiveCalls />}
         <SwitchboardCalls calls={live.data?.calls ?? []} />
         <TransferTargets path="/reception/targets" />

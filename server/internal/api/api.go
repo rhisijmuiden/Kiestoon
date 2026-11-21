@@ -20,6 +20,7 @@ import (
 	"github.com/rhisijmuiden/kiestoon/server/internal/auth"
 	"github.com/rhisijmuiden/kiestoon/server/internal/cdr"
 	"github.com/rhisijmuiden/kiestoon/server/internal/config"
+	"github.com/rhisijmuiden/kiestoon/server/internal/crm"
 	"github.com/rhisijmuiden/kiestoon/server/internal/firmware"
 	"github.com/rhisijmuiden/kiestoon/server/internal/helper"
 	"github.com/rhisijmuiden/kiestoon/server/internal/mail"
@@ -86,6 +87,9 @@ type Server struct {
 	wall wallState
 	// mobile is the mobile app: voicemail counters for its notifications.
 	mobile mobileState
+	// crm links to CRM systems: look-ups for the call pop-up and call logging.
+	crm     *crm.Service
+	crmLive *crmState
 	// quality follows the RTCP reports of the calls going on.
 	quality qualityState
 }
@@ -124,6 +128,7 @@ func New(cfg config.Config, db *sql.DB, log *slog.Logger) *Server {
 	s.Ast = &asterisk.Manager{Dir: cfg.PBXDir(), Repo: s.PBX, AMI: s.AMI, Log: log, Options: s.asteriskOptions}
 	s.loadHostnames(context.Background())
 	s.startJourneys()
+	s.startCRM()
 	return s
 }
 
@@ -201,6 +206,7 @@ func (s *Server) Routes() http.Handler {
 	s.wallboardRoutes(mux, admin, recep)
 	s.reportRoutes(mux, admin)
 	s.mobileRoutes(mux, admin, full)
+	s.crmRoutes(mux, admin, recep, full)
 	s.qualityRoutes(mux, admin)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })

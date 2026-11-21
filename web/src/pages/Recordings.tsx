@@ -61,7 +61,8 @@ export function Recordings() {
   const { t } = useTranslation()
   const { state } = useSession()
   const admin = isAdmin(state.kind === 'ready' ? state.me.user : undefined)
-  const [q, setQ] = useState('')
+  // A link from the CRM (?play=<file>) filters on the call's caller number.
+  const [q, setQ] = useState(() => new URLSearchParams(window.location.search).get('play')?.match(/-([0-9+]+)-[0-9+*#q]*\.wav$/)?.[1]?.replace(/\D/g, '') ?? '')
   return (
     <>
       <PageHeader title={t('recordings.title')} subtitle={t('recordings.subtitle')} />

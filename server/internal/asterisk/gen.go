@@ -564,6 +564,10 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 		if s.Phonebook.CallerIDLookup && len(s.Contacts) > 0 {
 			x.f(` same => n,ExecIf($[${DIALPLAN_EXISTS(kiestoon-cidname,${CALLERID(num)},1)}]?Gosub(kiestoon-cidname,${CALLERID(num)},1))`)
 		}
+		if s.CRMDeskName && o.AGIAddr != "" {
+			// The CRM name for the desk phone display; the server answers within 1.5 s.
+			x.f(" same => n,AGI(agi://%s/crmname)", o.AGIAddr)
+		}
 		x.f(" same => n,Goto(kiestoon-did,${KT_DID},1)")
 	}
 	x.nl()

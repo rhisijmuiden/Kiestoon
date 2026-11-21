@@ -788,6 +788,49 @@ var migrations = []string{
 		mailed_at  TEXT NOT NULL DEFAULT ''
 	);
 	CREATE INDEX quality_alerts_key ON quality_alerts(key);`,
+	// CRM integrations: every call with an outside number and what was written to the CRM, and a
+	// log of the requests (look-ups, writes) for the sync log.
+	`CREATE TABLE crm_calls (
+		id           INTEGER PRIMARY KEY AUTOINCREMENT,
+		linkedid     TEXT NOT NULL UNIQUE,
+		crm          TEXT NOT NULL DEFAULT '',
+		direction    TEXT NOT NULL,
+		number       TEXT NOT NULL,
+		line         TEXT NOT NULL DEFAULT '',
+		ext          TEXT NOT NULL DEFAULT '',
+		answered     INTEGER NOT NULL DEFAULT 0,
+		start_at     TEXT NOT NULL,
+		talk_sec     INTEGER NOT NULL DEFAULT 0,
+		contact      TEXT NOT NULL DEFAULT '',
+		body         TEXT NOT NULL DEFAULT '',
+		activity_id  TEXT NOT NULL DEFAULT '',
+		task_id      TEXT NOT NULL DEFAULT '',
+		want_task    INTEGER NOT NULL DEFAULT 0,
+		note         TEXT NOT NULL DEFAULT '',
+		note_task    INTEGER NOT NULL DEFAULT 0,
+		note_state   TEXT NOT NULL DEFAULT '',
+		recordings   TEXT NOT NULL DEFAULT '',
+		summary_done INTEGER NOT NULL DEFAULT 0,
+		state        TEXT NOT NULL,
+		attempts     INTEGER NOT NULL DEFAULT 0,
+		next_at      TEXT NOT NULL DEFAULT '',
+		error        TEXT NOT NULL DEFAULT '',
+		created_at   TEXT NOT NULL
+	);
+	CREATE INDEX crm_calls_state ON crm_calls(state, next_at);
+	CREATE INDEX crm_calls_start ON crm_calls(start_at);
+	CREATE TABLE crm_log (
+		id          INTEGER PRIMARY KEY AUTOINCREMENT,
+		at          TEXT NOT NULL,
+		crm         TEXT NOT NULL,
+		action      TEXT NOT NULL,
+		detail      TEXT NOT NULL DEFAULT '',
+		ok          INTEGER NOT NULL,
+		error       TEXT NOT NULL DEFAULT '',
+		duration_ms INTEGER NOT NULL DEFAULT 0,
+		call_id     INTEGER
+	);
+	CREATE INDEX crm_log_at ON crm_log(at);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

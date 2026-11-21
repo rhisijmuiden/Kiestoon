@@ -130,6 +130,12 @@ func (s *Server) serveAGI(ctx context.Context, c net.Conn) {
 		}
 		set("KT_HD", s.hotdeskAGI(hctx, env["agi_arg_1"], env["agi_arg_2"], env["agi_arg_3"], number, pin))
 		return
+	case "crmname":
+		// The caller's name from the CRM for the desk phone display (waits at most 1.5 s).
+		if name := s.crmDeskName(ctx, env["agi_callerid"]); name != "" {
+			set("CALLERID(name)", name)
+		}
+		return
 	case "speech":
 	default:
 		return

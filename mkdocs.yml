@@ -127,6 +127,7 @@ plugins:
             System: Systeem
             Backups and restore: Back-ups en herstellen
             Mail server: Mailserver
+            CRM integrations and call pop-up: CRM-koppelingen en belpop-up
             API, webhooks and metrics: API, webhooks en metrics
             Updates and channels: Updates en kanalen
             Settings: Instellingen
@@ -181,6 +182,7 @@ nav:
   - System:
       - Backups and restore: backups.md
       - Mail server: mail.md
+      - CRM integrations and call pop-up: crm.md
       - API, webhooks and metrics: api.md
       - Updates and channels: updates.md
       - Settings: settings.md

@@ -14,12 +14,15 @@ import './i18n'
 import './lib/theme'
 import { App } from './App'
 import { SessionProvider } from './lib/session'
+import { FieldErrorScope } from './components/fielderrors'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <SessionProvider>
-        <App />
+        <FieldErrorScope>
+          <App />
+        </FieldErrorScope>
       </SessionProvider>
     </BrowserRouter>
   </StrictMode>,

@@ -77,7 +77,7 @@ export function Settings() {
           <SectionTitle><span className="inline-flex items-center gap-2"><Siren className="size-5 text-danger" />{t('settings.emergency')}</span></SectionTitle>
           <div className="flex flex-col gap-3">
             <Alert tone="ok">{t('settings.emergencyAlways')}</Alert>
-            <Input label={t('settings.emergencyCid')} value={s.emergencyCallerId} onChange={(e) => set('emergencyCallerId', e.target.value)} placeholder="+31201234567" hint={t('settings.emergencyCidHint')} />
+            <Input name="emergencyCallerId" label={t('settings.emergencyCid')} value={s.emergencyCallerId} onChange={(e) => set('emergencyCallerId', e.target.value)} placeholder="+31201234567" hint={t('settings.emergencyCidHint')} />
             <div>
               <div className="mb-1.5 text-sm font-medium text-ink-2">{t('settings.emergencyTrunks')}</div>
               <p className="mb-2 text-xs text-subtle">{t('settings.emergencyTrunksHint')}</p>
@@ -108,13 +108,13 @@ export function Settings() {
         <Card>
           <SectionTitle><span className="inline-flex items-center gap-2"><Wifi className="size-5 text-accent" />{t('settings.network')}</span></SectionTitle>
           <div className="flex flex-col gap-3">
-            <Input label={t('settings.externalAddress')} value={s.externalAddress} onChange={(e) => set('externalAddress', e.target.value)} placeholder="203.0.113.10" hint={t('settings.externalAddressHint')} />
-            <Textarea label={t('settings.localNets')} value={s.localNets.join('\n')} onChange={(e) => set('localNets', e.target.value.split(/[\s,]+/).filter(Boolean))} hint={t('settings.localNetsHint')} />
+            <Input name="externalAddress" label={t('settings.externalAddress')} value={s.externalAddress} onChange={(e) => set('externalAddress', e.target.value)} placeholder="203.0.113.10" hint={t('settings.externalAddressHint')} />
+            <Textarea name="localNets" label={t('settings.localNets')} value={s.localNets.join('\n')} onChange={(e) => set('localNets', e.target.value.split(/[\s,]+/).filter(Boolean))} hint={t('settings.localNetsHint')} />
             <div className="grid gap-3 sm:grid-cols-2">
-              <Input label={t('settings.sipPort')} type="number" value={s.sipPort} onChange={(e) => set('sipPort', Number(e.target.value))} />
-              <Input label={t('settings.tlsPort')} type="number" value={s.tlsPort} onChange={(e) => set('tlsPort', Number(e.target.value))} />
-              <Input label={t('settings.rtpStart')} type="number" value={s.rtpStart} onChange={(e) => set('rtpStart', Number(e.target.value))} />
-              <Input label={t('settings.rtpEnd')} type="number" value={s.rtpEnd} onChange={(e) => set('rtpEnd', Number(e.target.value))} />
+              <Input name="sipPort" label={t('settings.sipPort')} type="number" value={s.sipPort} onChange={(e) => set('sipPort', Number(e.target.value))} />
+              <Input name="tlsPort" label={t('settings.tlsPort')} type="number" value={s.tlsPort} onChange={(e) => set('tlsPort', Number(e.target.value))} />
+              <Input name="rtpStart" label={t('settings.rtpStart')} type="number" value={s.rtpStart} onChange={(e) => set('rtpStart', Number(e.target.value))} />
+              <Input name="rtpEnd" label={t('settings.rtpEnd')} type="number" value={s.rtpEnd} onChange={(e) => set('rtpEnd', Number(e.target.value))} />
             </div>
             <p className="text-xs text-subtle">{t('settings.portsHint')}</p>
           </div>
@@ -124,15 +124,15 @@ export function Settings() {
           <SectionTitle><span className="inline-flex items-center gap-2"><PhoneCall className="size-5 text-accent" />{t('settings.calls')}</span></SectionTitle>
           <div className="flex flex-col gap-3">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Select label={t('settings.language')} value={s.language} onChange={(e) => set('language', e.target.value as PbxSettings['language'])} hint={t('settings.languageHint')}>
+              <Select name="language" label={t('settings.language')} value={s.language} onChange={(e) => set('language', e.target.value as PbxSettings['language'])} hint={t('settings.languageHint')}>
                 <option value="en">English</option>
                 <option value="nl">Nederlands</option>
               </Select>
-              <Input label={t('settings.timezone')} value={s.timezone} onChange={(e) => set('timezone', e.target.value)} placeholder="Europe/Amsterdam" />
-              <Input label={t('settings.countryCode')} value={s.countryCode} onChange={(e) => set('countryCode', e.target.value.replace(/\D/g, ''))} hint={t('settings.countryCodeHint')} />
-              <Input label={t('settings.codecs')} value={s.codecs} onChange={(e) => set('codecs', e.target.value)} hint={t('settings.codecsHint')} />
+              <Input name="timezone" label={t('settings.timezone')} value={s.timezone} onChange={(e) => set('timezone', e.target.value)} placeholder="Europe/Amsterdam" />
+              <Input name="countryCode" label={t('settings.countryCode')} value={s.countryCode} onChange={(e) => set('countryCode', e.target.value.replace(/\D/g, ''))} hint={t('settings.countryCodeHint')} />
+              <Input name="codecs" label={t('settings.codecs')} value={s.codecs} onChange={(e) => set('codecs', e.target.value)} hint={t('settings.codecsHint')} />
             </div>
-            <Toggle label={t('settings.nationalCid')} hint={t('settings.nationalCidHint')} checked={s.nationalCallerId} onChange={(v) => set('nationalCallerId', v)} />
+            <Toggle name="nationalCallerId" label={t('settings.nationalCid')} hint={t('settings.nationalCidHint')} checked={s.nationalCallerId} onChange={(v) => set('nationalCallerId', v)} />
           </div>
         </Card>
       </div>

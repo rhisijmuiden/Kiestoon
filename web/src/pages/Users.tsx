@@ -125,26 +125,26 @@ function UserForm({ value, self, superadmin, extensions, onClose, onSaved }: {
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label={t('users.username')} value={u.username} onChange={(e) => set('username', e.target.value.toLowerCase())} autoFocus autoComplete="off" />
-        <Input label={t('users.displayName')} value={u.displayName} onChange={(e) => set('displayName', e.target.value)} />
+        <Input name="username" label={t('users.username')} value={u.username} onChange={(e) => set('username', e.target.value.toLowerCase())} autoFocus autoComplete="off" />
+        <Input name="displayName" label={t('users.displayName')} value={u.displayName} onChange={(e) => set('displayName', e.target.value)} />
       </div>
-      <Input label={t('users.email')} type="email" value={u.email} onChange={(e) => set('email', e.target.value)} hint={t('users.emailHint')} />
+      <Input name="email" label={t('users.email')} type="email" value={u.email} onChange={(e) => set('email', e.target.value)} hint={t('users.emailHint')} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Select label={t('users.role')} value={u.role} disabled={self} onChange={(e) => set('role', e.target.value as Role)} hint={t(`roles.hints.${u.role}`)}>
+        <Select name="role" label={t('users.role')} value={u.role} disabled={self} onChange={(e) => set('role', e.target.value as Role)} hint={t(`roles.hints.${u.role}`)}>
           {roles.filter((r) => r !== 'superadmin' || superadmin).map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
         </Select>
-        <Select label={t('users.extension')} value={u.extensionId ?? 0} onChange={(e) => set('extensionId', Number(e.target.value) || null)} hint={t('users.extensionHint')}>
+        <Select name="extensionId" label={t('users.extension')} value={u.extensionId ?? 0} onChange={(e) => set('extensionId', Number(e.target.value) || null)} hint={t('users.extensionHint')}>
           <option value={0}>{t('users.noExtension')}</option>
           {extensions.map((e) => <option key={e.id} value={e.id}>{e.number} {e.name}</option>)}
         </Select>
       </div>
-      <Select label={t('account.language')} value={u.language} onChange={(e) => set('language', e.target.value as 'en' | 'nl')}>
+      <Select name="language" label={t('account.language')} value={u.language} onChange={(e) => set('language', e.target.value as 'en' | 'nl')}>
         <option value="en">English</option>
         <option value="nl">Nederlands</option>
       </Select>
-      <Input label={u.id ? t('users.newPassword') : t('users.password')} type="password" value={u.password} onChange={(e) => set('password', e.target.value)} autoComplete="new-password"
+      <Input name="password" label={u.id ? t('users.newPassword') : t('users.password')} type="password" value={u.password} onChange={(e) => set('password', e.target.value)} autoComplete="new-password"
         hint={u.id ? t('users.newPasswordHint') : t('users.passwordHint')} />
-      <Toggle label={t('common.enabled')} hint={t('users.enabledHint')} checked={u.enabled} disabled={self} onChange={(v) => set('enabled', v)} />
+      <Toggle name="enabled" label={t('common.enabled')} hint={t('users.enabledHint')} checked={u.enabled} disabled={self} onChange={(v) => set('enabled', v)} />
     </Modal>
   )
 }

@@ -120,10 +120,10 @@ function HubCard({ view, onSaved }: { view: SitesView; onSaved: () => void }) {
       <ErrorMessage error={error} />
       {saved && <Alert tone="ok">{t('common.saved')}</Alert>}
       <div className="space-y-4">
-        <Toggle label={t('sites.hubEnabled')} hint={t('sites.hubEnabledHint')} checked={h.enabled} onChange={(v) => setH({ ...h, enabled: v })} />
+        <Toggle name="enabled" label={t('sites.hubEnabled')} hint={t('sites.hubEnabledHint')} checked={h.enabled} onChange={(v) => setH({ ...h, enabled: v })} />
         <div className="grid gap-4 sm:grid-cols-[1fr_160px]">
-          <Input label={t('sites.publicHost')} hint={t('sites.publicHostHint')} value={h.host} onChange={(e) => setH({ ...h, host: e.target.value })} placeholder="pbx.example.com" />
-          <Input label={t('sites.udpPort')} type="number" min={1024} max={65535} value={h.listenPort} onChange={(e) => setH({ ...h, listenPort: Number(e.target.value) })} />
+          <Input name="host" label={t('sites.publicHost')} hint={t('sites.publicHostHint')} value={h.host} onChange={(e) => setH({ ...h, host: e.target.value })} placeholder="pbx.example.com" />
+          <Input name="listenPort" label={t('sites.udpPort')} type="number" min={1024} max={65535} value={h.listenPort} onChange={(e) => setH({ ...h, listenPort: Number(e.target.value) })} />
         </div>
         {view.hub.enabled && (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -160,8 +160,8 @@ function AddEdge({ portalUrl, onClose, onCreated }: { portalUrl: string; onClose
     <Modal title={t('sites.add')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={create}>{t('sites.createCode')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('common.name')} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('sites.namePlaceholder')} autoFocus />
-      <Input label={t('sites.portalUrl')} hint={t('sites.portalUrlHint', { url: portalUrl })} value={url} onChange={(e) => setUrl(e.target.value)} placeholder={portalUrl} />
+      <Input name="name" label={t('common.name')} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('sites.namePlaceholder')} autoFocus />
+      <Input name="portalUrl" label={t('sites.portalUrl')} hint={t('sites.portalUrlHint', { url: portalUrl })} value={url} onChange={(e) => setUrl(e.target.value)} placeholder={portalUrl} />
     </Modal>
   )
 }
@@ -193,7 +193,7 @@ function RenameEdge({ edge, onClose, onSaved }: { edge: EdgeSite; onClose: () =>
     <Modal title={t('common.edit')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button onClick={save}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
-      <Input label={t('common.name')} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      <Input name="name" label={t('common.name')} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
     </Modal>
   )
 }

@@ -76,12 +76,12 @@ export function Speech() {
           <SectionTitle><span className="inline-flex items-center gap-2"><AudioLines className="size-5 text-accent" aria-hidden />{t('speech.tts')}</span></SectionTitle>
           <div className="flex flex-col gap-4">
             <p className="text-sm text-muted">{t('speech.ttsIntro')}</p>
-            <Toggle label={t('speech.ttsEnable')} checked={s.tts.enabled} disabled={!data.ttsInstalled} onChange={(v) => setTTS({ enabled: v })} />
+            <Toggle name="enabled" label={t('speech.ttsEnable')} checked={s.tts.enabled} disabled={!data.ttsInstalled} onChange={(v) => setTTS({ enabled: v })} />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Select label={t('speech.voiceEn')} value={s.tts.voiceEn} onChange={(e) => setTTS({ voiceEn: e.target.value })}>
+              <Select name="voiceEn" label={t('speech.voiceEn')} value={s.tts.voiceEn} onChange={(e) => setTTS({ voiceEn: e.target.value })}>
                 {voices('en').map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
               </Select>
-              <Select label={t('speech.voiceNl')} value={s.tts.voiceNl} onChange={(e) => setTTS({ voiceNl: e.target.value })}>
+              <Select name="voiceNl" label={t('speech.voiceNl')} value={s.tts.voiceNl} onChange={(e) => setTTS({ voiceNl: e.target.value })}>
                 {voices('nl').map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
               </Select>
             </div>
@@ -93,16 +93,16 @@ export function Speech() {
           <SectionTitle><span className="inline-flex items-center gap-2"><MessageSquareText className="size-5 text-accent" aria-hidden />{t('speech.stt')}</span></SectionTitle>
           <div className="flex flex-col gap-4">
             <p className="text-sm text-muted">{t('speech.sttIntro')}</p>
-            <Toggle label={t('speech.sttEnable')} checked={s.stt.enabled} disabled={!data.sttInstalled} onChange={(v) => setSTT({ enabled: v })} />
+            <Toggle name="enabled" label={t('speech.sttEnable')} checked={s.stt.enabled} disabled={!data.sttInstalled} onChange={(v) => setSTT({ enabled: v })} />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Select label={t('speech.model')} value={s.stt.model} onChange={(e) => setSTT({ model: e.target.value })}>
+              <Select name="model" label={t('speech.model')} value={s.stt.model} onChange={(e) => setSTT({ model: e.target.value })}>
                 {data.models.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
               </Select>
-              <Select label={t('speech.language')} value={s.stt.language} onChange={(e) => setSTT({ language: e.target.value as SpeechSettings['stt']['language'] })}>
+              <Select name="language" label={t('speech.language')} value={s.stt.language} onChange={(e) => setSTT({ language: e.target.value as SpeechSettings['stt']['language'] })}>
                 <option value="auto">{t('speech.auto')}</option><option value="nl">Nederlands</option><option value="en">English</option>
               </Select>
             </div>
-            <Toggle label={t('speech.voicemail')} hint={t('speech.voicemailHint')} checked={s.stt.voicemail} onChange={(v) => setSTT({ voicemail: v })} />
+            <Toggle name="voicemail" label={t('speech.voicemail')} hint={t('speech.voicemailHint')} checked={s.stt.voicemail} onChange={(v) => setSTT({ voicemail: v })} />
             <Items items={data.models} onDownload={download} onRemove={remove} />
             <p className="text-xs text-subtle">{t('speech.sttHint')}</p>
           </div>

@@ -338,7 +338,9 @@ the testing channel.
   Teams users with an E.164 number and optional extension (Teams only, or Teams + desk phone), internal dialling by
   extension, outside calls via the routes or one trunk, generated PowerShell script (gateway, voice route, policy,
   numbers)
-- [x] ElevenLabs voices (`v0.7.0-rc.23`): optional cloud text-to-speech next to Piper; API key checked and stored encrypted,
+- [x] Form errors point at the field (`v0.7.0-rc.23`): red border, message under the field, focus on it, banner names
+  the field; conference rooms explain that "Wait for the host" needs a host PIN
+- [x] ElevenLabs voices (`v0.7.0-rc.24`): optional cloud text-to-speech next to Piper; API key checked and stored encrypted,
   usage meter with an 80% mail, voice picker with free samples filtered on the PBX language, engine and voice per
   prompt in the IVR builder and Voice prompts, audio converted to 8 kHz and cached on the server (same text costs no
   credits), fallback to Piper, prompts remember text and voice so they can be spoken again with another voice

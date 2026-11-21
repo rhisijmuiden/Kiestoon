@@ -72,17 +72,17 @@ function RingGroupForm({ value, onClose, onSaved }: { value: RingGroup; onClose:
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button busy={busy} onClick={() => save(g)}>{t('common.save')}</Button></>}>
       <ErrorMessage error={error} />
       <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
-        <Input label={t('common.number')} value={g.number} onChange={(e) => set('number', e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" />
-        <Input label={t('common.name')} value={g.name} onChange={(e) => set('name', e.target.value)} autoFocus />
+        <Input name="number" label={t('common.number')} value={g.number} onChange={(e) => set('number', e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" />
+        <Input name="name" label={t('common.name')} value={g.name} onChange={(e) => set('name', e.target.value)} autoFocus />
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
-        <Select label={t('ringGroups.strategy')} value={g.strategy} onChange={(e) => set('strategy', e.target.value as RingGroup['strategy'])}
+        <Select name="strategy" label={t('ringGroups.strategy')} value={g.strategy} onChange={(e) => set('strategy', e.target.value as RingGroup['strategy'])}
           hint={t(`ringGroups.strategyHints.${g.strategy}`)}>
           {(['simultaneous', 'sequential', 'rotating', 'paging'] as const).map((s) => <option key={s} value={s}>{t(`ringGroups.strategies.${s}`)}</option>)}
         </Select>
-        <Input label={t('ringGroups.ringSeconds')} type="number" min={5} max={300} value={g.ringSeconds} onChange={(e) => set('ringSeconds', Number(e.target.value))}
+        <Input name="ringSeconds" label={t('ringGroups.ringSeconds')} type="number" min={5} max={300} value={g.ringSeconds} onChange={(e) => set('ringSeconds', Number(e.target.value))}
           hint={g.strategy === 'sequential' || g.strategy === 'rotating' ? t('ringGroups.perMember') : undefined} />
-        <Input label={t('ringGroups.cidPrefix')} value={g.cidPrefix} onChange={(e) => set('cidPrefix', e.target.value)} placeholder={t('ringGroups.cidPrefixPlaceholder')} hint={t('ringGroups.cidPrefixHint')} />
+        <Input name="cidPrefix" label={t('ringGroups.cidPrefix')} value={g.cidPrefix} onChange={(e) => set('cidPrefix', e.target.value)} placeholder={t('ringGroups.cidPrefixPlaceholder')} hint={t('ringGroups.cidPrefixHint')} />
       </div>
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-ink-2">{t('ringGroups.members')}</span>
@@ -117,9 +117,9 @@ function RingGroupForm({ value, onClose, onSaved }: { value: RingGroup; onClose:
           </ol>
         )}
       </div>
-      <Toggle label={t('ringGroups.skipBusy')} hint={t('ringGroups.skipBusyHint')} checked={g.skipBusy} onChange={(v) => set('skipBusy', v)} />
+      <Toggle name="skipBusy" label={t('ringGroups.skipBusy')} hint={t('ringGroups.skipBusyHint')} checked={g.skipBusy} onChange={(v) => set('skipBusy', v)} />
       <DestinationPicker label={t('ringGroups.failover')} value={g.failover} onChange={(d) => set('failover', d)} exclude={{ type: 'ringgroup', target: String(g.id) }} />
-      <Toggle label={t('common.enabled')} checked={g.enabled} onChange={(v) => set('enabled', v)} />
+      <Toggle name="enabled" label={t('common.enabled')} checked={g.enabled} onChange={(v) => set('enabled', v)} />
     </Modal>
   )
 }

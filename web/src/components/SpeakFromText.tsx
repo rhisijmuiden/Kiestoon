@@ -78,7 +78,7 @@ export function SpeakFromText({ initial, onAudio, action, regenerate, compact }:
   return (
     <div className={`flex flex-col ${compact ? 'gap-3' : 'gap-3.5'}`}>
       <div className="flex flex-col gap-1">
-        <Textarea label={t('tts.text')} value={text} onChange={(e) => setText(e.target.value)} rows={compact ? 3 : 4} maxLength={max} placeholder={t('tts.placeholder')} />
+        <Textarea name="text" label={t('tts.text')} value={text} onChange={(e) => setText(e.target.value)} rows={compact ? 3 : 4} maxLength={max} placeholder={t('tts.placeholder')} />
         <div className="flex flex-wrap justify-between gap-2 text-[11px] tabular-nums text-subtle">
           <span>{t('tts.characters', { n: nf(n, i18n.language) })}</span>
           {eng === 'elevenlabs' && <span>{usage && usage.characterLimit > 0
@@ -107,7 +107,7 @@ export function SpeakFromText({ initial, onAudio, action, regenerate, compact }:
         })}
       </div>
       {eng === 'piper' ? (
-        <Select label={t('tts.voice')} value={pv} onChange={(e) => setPiperVoice(e.target.value)}>
+        <Select name="voice" label={t('tts.voice')} value={pv} onChange={(e) => setPiperVoice(e.target.value)}>
           {voices.length === 0 && <option value="">{t('tts.noPiperVoice')}</option>}
           {voices.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
         </Select>

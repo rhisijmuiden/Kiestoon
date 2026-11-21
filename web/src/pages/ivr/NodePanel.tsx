@@ -199,12 +199,12 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
         {d.type === 'entry' && (
           <Section title={t('ivr.panel.menu')}>
-            <Input label={t('common.name')} value={ivr.name} onChange={(e) => setIvr((v) => ({ ...v, name: e.target.value }))} maxLength={60} />
+            <Input name="name" label={t('common.name')} value={ivr.name} onChange={(e) => setIvr((v) => ({ ...v, name: e.target.value }))} maxLength={60} />
             <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
-              <Input label={t('ivr.timeout')} type="number" min={1} max={60} value={ivr.timeout} onChange={(e) => setIvr((v) => ({ ...v, timeout: Number(e.target.value) }))} hint={t('common.seconds')} />
-              <Input label={t('ivr.retries')} type="number" min={0} max={5} value={ivr.retries} onChange={(e) => setIvr((v) => ({ ...v, retries: Number(e.target.value) }))} hint={t('ivr.retriesHint')} />
+              <Input name="timeout" label={t('ivr.timeout')} type="number" min={1} max={60} value={ivr.timeout} onChange={(e) => setIvr((v) => ({ ...v, timeout: Number(e.target.value) }))} hint={t('common.seconds')} />
+              <Input name="retries" label={t('ivr.retries')} type="number" min={0} max={5} value={ivr.retries} onChange={(e) => setIvr((v) => ({ ...v, retries: Number(e.target.value) }))} hint={t('ivr.retriesHint')} />
             </div>
-            <Toggle label={t('ivr.directDial')} hint={t('ivr.directDialHint')} checked={ivr.directDial} onChange={(x) => setIvr((v) => ({ ...v, directDial: x }))} />
+            <Toggle name="directDial" label={t('ivr.directDial')} hint={t('ivr.directDialHint')} checked={ivr.directDial} onChange={(x) => setIvr((v) => ({ ...v, directDial: x }))} />
           </Section>
         )}
 
@@ -219,15 +219,15 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
           <Section title={t('ivr.panel.manage')}>
             {d.type === 'key' && (
               <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 [&>*]:min-w-0">
-                <Select label={t('ivr.panel.keypress')} value={d.digit} onChange={(e) => onChange({ digit: e.target.value })}>
+                <Select name="digit" label={t('ivr.panel.keypress')} value={d.digit} onChange={(e) => onChange({ digit: e.target.value })}>
                   {KEYS.map((k) => <option key={k} value={k} disabled={k !== d.digit && usedDigits.includes(k)}>{k}</option>)}
                 </Select>
-                <Input label={t('ivr.label')} value={d.label ?? ''} onChange={(e) => onChange({ label: e.target.value })} placeholder={t('ivr.labelPlaceholder')} maxLength={40} />
+                <Input name="label" label={t('ivr.label')} value={d.label ?? ''} onChange={(e) => onChange({ label: e.target.value })} placeholder={t('ivr.labelPlaceholder')} maxLength={40} />
               </div>
             )}
             {d.type === 'speech' && <SpeechIntents d={d} onChange={onChange} onRemoveIntent={onRemoveIntent} />}
             {(d.type === 'audio' || d.type === 'destination' || d.type === 'repeat' || d.type === 'time' || d.type === 'timeout' || d.type === 'speech') && (
-              <Input label={t('ivr.label')} value={d.label ?? ''} onChange={(e) => onChange({ label: e.target.value })} hint={t('ivr.labelHint')} maxLength={40} />
+              <Input name="label" label={t('ivr.label')} value={d.label ?? ''} onChange={(e) => onChange({ label: e.target.value })} hint={t('ivr.labelHint')} maxLength={40} />
             )}
             {d.type === 'destination' && (
               <DestinationPicker label={t('ivr.goTo')} value={d.destination ?? { type: 'hangup', target: '' }} onChange={(dest) => onChange({ destination: dest })}
@@ -235,7 +235,7 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
             )}
             {d.type === 'time' && (
               <>
-                <Select label={t('ivr.panel.timeCondition')} value={d.destination?.target ?? ''} onChange={(e) => onChange({ destination: { type: 'timecondition', target: e.target.value } })}>
+                <Select name="destination" label={t('ivr.panel.timeCondition')} value={d.destination?.target ?? ''} onChange={(e) => onChange({ destination: { type: 'timecondition', target: e.target.value } })}>
                   <option value="">{t('dest.choose')}</option>
                   {timeConditions.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
                 </Select>
@@ -285,7 +285,7 @@ function SpeechIntents({ d, onChange, onRemoveIntent }: { d: StepData; onChange:
         <Button variant="secondary" onClick={() => onChange({ intents: [...intents, { label: '', keywords: [] }] })}><Plus className="size-4" aria-hidden />{t('ivr.panel.addIntent')}</Button>
       )}
       <p className="text-xs text-subtle">{t('ivr.panel.keywordsHint')}</p>
-      <Toggle label={t('ivr.panel.speechAI')} hint={t('ivr.panel.speechAIHint')} checked={!!d.ai} onChange={(v) => onChange({ ai: v })} />
+      <Toggle name="ai" label={t('ivr.panel.speechAI')} hint={t('ivr.panel.speechAIHint')} checked={!!d.ai} onChange={(v) => onChange({ ai: v })} />
     </div>
   )
 }

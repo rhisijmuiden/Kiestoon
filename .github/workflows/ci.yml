@@ -142,7 +142,7 @@ jobs:
 
       - name: Shell scripts
         run: |
-          shellcheck -S warning install.sh lxc/build-lxc.sh packaging/kiestoon-updater packaging/fix-permissions \
+          shellcheck -S warning install.sh proxmox/kiestoon-lxc.sh lxc/build-lxc.sh packaging/kiestoon-updater packaging/fix-permissions \
             packaging/scripts/*.sh packaging/asterisk/*.sh packaging/ci/*.sh packaging/sounds-nl/*.sh packaging/speech/*.sh \
             packaging/edge/*.sh
           packaging/ci/install-sh-test.sh

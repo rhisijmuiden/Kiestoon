@@ -29,6 +29,9 @@ Kies er één:
 **Raspberry Pi:** schrijf het image met Raspberry Pi Imager (*Use custom*). De instellingen van de Imager
 (gebruiker, SSH, wifi, hostnaam) werken zoals altijd. Een bekabelde verbinding is aan te raden voor telefoons.
 
+**Proxmox in één commando:** voer `bash -c "$(curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/proxmox/kiestoon-lxc.sh)" -- --edge` uit in de shell van de Proxmox-host.
+Het downloadt het Edge-template en maakt de container (512 MB RAM, 4 GB schijf). Zie [Installatie](install.md).
+
 **LXC:** de WireGuard-module moet beschikbaar zijn in de kernel van de host (Proxmox heeft hem). Unprivileged
 containers werken. Zonder kernelmodule laat `apt install wireguard-go` `wg-quick` de (tragere) userspace-versie
 gebruiken.

@@ -15,6 +15,41 @@ hetzelfde: een draaiend portaal en een eenmalige **setup-token** voor de eerste 
 
 ## Optie 1: Proxmox LXC-template
 
+### De makkelijke manier: één commando op de Proxmox-host
+
+Open een shell op de Proxmox-host (*node › Shell*) en voer uit:
+
+```sh
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/proxmox/kiestoon-lxc.sh)"
+```
+
+Het script zoekt de nieuwste release, downloadt het LXC-template naar de template-opslag (standaard `local`) en
+controleert de SHA-256-checksum. Daarna toont het een overzicht, maakt een unprivileged container (1 CPU, 1 GB RAM,
+8 GB schijf, DHCP op `vmbr0`), start hem en toont het adres van het portaal en de setup-token.
+
+Handige opties:
+
+| Optie | Wat het doet |
+|---|---|
+| `--download-only` | Alleen het template in *CT Templates* zetten; de container maak je zelf |
+| `--edge` | Het [Kiestoon Edge](edge.md)-template gebruiken |
+| `--ip 192.168.1.20/24 --gateway 192.168.1.1` | Vast IP-adres in plaats van DHCP |
+| `--id 120 --hostname pbx` | Container-ID en hostnaam |
+| `--storage local-zfs --disk 16` | Opslag en grootte van de rootschijf |
+| `--cores 2 --memory 2048` | CPU en geheugen |
+| `--bridge vmbr1 --vlan 20` | Netwerkbridge en VLAN-tag |
+| `--channel testing` / `--version v0.7.0-rc.26` | Releasekanaal of een vaste versie |
+| `--ssh-key ~/.ssh/id_ed25519.pub` | Een SSH-sleutel op de container zetten |
+| `--yes` | Niet om bevestiging vragen |
+
+Geef opties mee na `--`, bijvoorbeeld:
+
+```sh
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/proxmox/kiestoon-lxc.sh)" -- --ip 192.168.1.20/24 --gateway 192.168.1.1
+```
+
+### Met de hand
+
 1. Download `kiestoon-<versie>-debian-13-amd64.tar.zst` bij de
    [releases](https://github.com/rhisijmuiden/Kiestoon/releases) op GitHub.
 2. Open in Proxmox *je opslag › CT Templates › Upload* en upload het bestand.

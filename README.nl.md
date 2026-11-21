@@ -106,7 +106,14 @@ actief/passief-paar dat het binnen enkele seconden overneemt. [Lees meer](https:
 
 ### Proxmox LXC-template
 
-Download `kiestoon-<versie>-debian-13-amd64.tar.zst` van de [releases](https://github.com/rhisijmuiden/Kiestoon/releases),
+Voer dit uit in de shell van de Proxmox-host. Het downloadt het template, maakt de container en toont de setup-token
+(voeg `-- --download-only` toe om alleen het template te downloaden, of `-- --edge` voor Kiestoon Edge):
+
+```sh
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/rhisijmuiden/Kiestoon/testing/proxmox/kiestoon-lxc.sh)"
+```
+
+Of met de hand: download `kiestoon-<versie>-debian-13-amd64.tar.zst` van de [releases](https://github.com/rhisijmuiden/Kiestoon/releases),
 upload hem in Proxmox (*storage › CT Templates › Upload*) en maak er een container van (unprivileged is prima; 1 CPU,
 1 GB RAM, 8 GB schijf om mee te beginnen). Log op de console in als root: het adres van het portaal en het eenmalige
 setup-token staan daar.

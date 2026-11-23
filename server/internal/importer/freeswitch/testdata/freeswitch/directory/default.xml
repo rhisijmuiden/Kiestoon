@@ -1,0 +1,8 @@
+<include>
+  <domain name="$${domain}">
+    <groups>
+      <group name="default"><users><X-PRE-PROCESS cmd="include" data="default/*.xml"/></users></group>
+      <group name="sales"><users><user id="1000" type="pointer"/><user id="1001" type="pointer"/></users></group>
+    </groups>
+  </domain>
+</include>

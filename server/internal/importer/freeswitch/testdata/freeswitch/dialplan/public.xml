@@ -1,0 +1,14 @@
+<include>
+  <context name="public">
+    <extension name="main_number">
+      <condition field="destination_number" expression="^(\+31201234567)$">
+        <action application="transfer" data="5555 XML default"/>
+      </condition>
+    </extension>
+    <extension name="direct_1001">
+      <condition field="destination_number" expression="^0201234568$">
+        <action application="transfer" data="1001 XML default"/>
+      </condition>
+    </extension>
+  </context>
+</include>

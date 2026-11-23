@@ -1,0 +1,6 @@
+<include>
+  <user id="1001">
+    <params><param name="password" value="$${default_password}"/><param name="vm-password" value="1001"/></params>
+    <variables><variable name="effective_caller_id_name" value="Extension 1001"/></variables>
+  </user>
+</include>

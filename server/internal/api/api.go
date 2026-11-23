@@ -93,6 +93,8 @@ type Server struct {
 	crmLive *crmState
 	// quality follows the RTCP reports of the calls going on.
 	quality qualityState
+	// imports are the uploads of other phone systems being imported.
+	imports importSessions
 }
 
 // New wires up a server.
@@ -214,6 +216,7 @@ func (s *Server) Routes() http.Handler {
 	s.crmRoutes(mux, admin, recep, full)
 	s.qualityRoutes(mux, admin)
 	s.onCallRoutes(mux, admin, full)
+	s.importRoutes(mux, admin)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)
@@ -235,7 +238,7 @@ func (s *Server) jsonOnly(next http.Handler) http.Handler {
 		}
 		// Firmware arrives as a binary upload. A cross-site page cannot send the custom header without a
 		// CORS preflight, which is never allowed, so the header blocks CSRF like the JSON rule does.
-		if r.Method == http.MethodPost && r.URL.Path == "/api/firmware/upload" {
+		if r.Method == http.MethodPost && (r.URL.Path == "/api/firmware/upload" || r.URL.Path == "/api/import/upload") {
 			if r.Header.Get("X-Kiestoon-Upload") != "1" {
 				writeErr(w, http.StatusForbidden, "upload_header_required")
 				return

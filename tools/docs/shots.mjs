@@ -40,6 +40,7 @@ export const shots = [
   { name: 'logs', path: '/logs', wait: 800 },
   { name: 'outbound-routes', path: '/trunks', run: (p) => tab(p, 'Outbound', 'Uitgaand'), wait: 600 },
   { name: 'outbound-route-groups', path: '/trunks', run: async (p) => { await tab(p, 'Outbound', 'Uitgaand'); await p.waitForTimeout(400); await editRow(p, 'Support line') }, selector: dialog, wait: 400 },
+  { name: 'import', path: '/import' },
   { name: 'inbound-numbers', path: '/trunks', run: (p) => tab(p, 'Inbound', 'Inkomend'), wait: 600 },
   { name: 'teams', path: '/teams', full: true, wait: 800 },
   { name: 'teams-users', path: '/teams', run: (p) => tab(p, 'Teams users', 'Teams-gebruikers'), full: true, wait: 600 },

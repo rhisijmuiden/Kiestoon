@@ -375,6 +375,9 @@ the testing channel.
   queues or external numbers at the same time (first to answer gets the call); a queue step in the IVR builder edits
   the queue itself (agents, timings, music, callback, overflow) or creates a new one; saving an unchanged queue no
   longer fails
+- [x] IVR copy/paste and phone numbers (`v0.7.0-rc.34`): copy steps or a whole choice menu with the steps after it
+  (right-click, side panel, Ctrl+C/V, multi-select); pasting a copied menu into another menu gives it the same keys;
+  the incoming-call step links trunk numbers to the menu, creating or moving the inbound route straight away
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

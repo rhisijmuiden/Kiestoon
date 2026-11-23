@@ -15,7 +15,7 @@ export type FlowInfo = {
   destLabel: (type: string, target: string) => string | undefined
   problems: Map<string, string>
   name: string
-  phone?: string
+  phones?: string[]
   live?: IvrLive | null
 }
 export const FlowInfoContext = createContext<FlowInfo>({ prompts: new Map(), destLabel: () => undefined, problems: new Map(), name: '' })
@@ -214,7 +214,7 @@ export function StepNodeView({ id, data, selected }: NodeProps<StepNode>) {
   } else if (data.type === 'entry') {
     body = (
       <div className="flex flex-col gap-1.5">
-        {info.phone && <span className="px-0.5 font-mono text-[11px] text-muted">{info.phone}</span>}
+        {!!info.phones?.length && <span className="truncate px-0.5 font-mono text-[11px] text-muted" title={info.phones.join(', ')}>{info.phones.join(' · ')}</span>}
         <AudioWell d={data} tone={tone.text} />
       </div>
     )

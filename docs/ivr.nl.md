@@ -71,6 +71,31 @@ Nieuwe toetsen uit het palet komen in het geselecteerde keuzemenu (of het menu v
 die aan **Binnenkomend gesprek** hangen terwijl dat een startstap heeft, worden overgeslagen; het canvas waarschuwt
 daarvoor.
 
+## Kopiëren en plakken
+
+Klik met rechts op een stap voor **Kopiëren**, **Kopiëren met de stappen erna**, **Plakken**, **Dupliceren** en
+**Verwijderen**; dezelfde knoppen staan onderaan het zijpaneel. Selecteer meerdere stappen met <kbd>Ctrl</kbd>-klik
+of door met <kbd>Shift</kbd> een kader te slepen, en gebruik dan <kbd>Ctrl</kbd>+<kbd>C</kbd> en
+<kbd>Ctrl</kbd>+<kbd>V</kbd>. Het klembord blijft in je browser, dus je kunt ook in een ander menu plakken.
+
+Waar de kopie terechtkomt hangt af van waar je hem op plakt:
+
+- **Een gekopieerd keuzemenu op een ander menu** (een keuzemenu of *Binnenkomend gesprek*): dat menu krijgt dezelfde
+  toetsen, geen-invoer-stap en alles daarna. Typisch: kopieer het menu voor kantoortijden met de stappen erna, klik
+  met rechts op het lege menu *Gesloten* en kies **Plakken in dit menu**, en pas daarna aan wat anders moet. Een
+  toets waarvan het menu het cijfer al heeft, blijft los staan en krijgt een waarschuwing.
+- **Gekopieerde toetsen op een menu**: die komen in dat menu.
+- **Eén gekopieerde stap op een stap met een vrij bolletje**: die wordt erachter gekoppeld.
+- **Op het lege canvas**: de kopie komt waar je klikte, zonder lijnen.
+
+## Telefoonnummers
+
+Klik op **Binnenkomend gesprek** om te zien welke telefoonnummers naar dit menu gaan. **Nummer toevoegen** toont de
+vrije nummers van je trunks (en nummers die nu elders heen gaan; die verhuizen dan naar dit menu), of typ een ander
+nummer. Dat maakt meteen de inkomende route aan, dezelfde die je ziet onder **Trunks & routes › Inkomende routes**;
+met het × haal je hem weer weg. De nummers staan op de stap *Binnenkomend gesprek*. Sla een nieuw menu eerst één
+keer op voordat je nummers koppelt.
+
 ## Meerdere bestemmingen tegelijk laten overgaan
 
 Een toetskeuze (of *Geen invoer*, *Audio afspelen*, een tijdconditie of spraakantwoord) kan tot vijf bestemmingen

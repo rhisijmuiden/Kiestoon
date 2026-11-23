@@ -1968,6 +1968,38 @@
       "saved": "Saved",
       "unsaved": "Not saved yet",
       "sharedHint": "These are the settings of the queue itself. They are saved straight away, apart from the menu, and apply everywhere this queue is used."
+    },
+    "clip": {
+      "copy": "Copy",
+      "copySelected": "Copy {{count}} steps",
+      "copyBranch": "Copy with the steps after it",
+      "pasteInto": "Paste into this menu",
+      "pasteAfter": "Paste after this step",
+      "pasteHere": "Paste here",
+      "deleteSelected": "Delete {{count}} steps",
+      "copied_one": "Copied 1 step",
+      "copied_other": "Copied {{count}} steps",
+      "pasted_one": "Pasted 1 step",
+      "pasted_other": "Pasted {{count}} steps",
+      "hint": "Right-click a step for copy and paste. Select several steps with Ctrl-click or Shift-drag, then Ctrl+C and Ctrl+V. A copied choice menu pasted into another menu gives it the same keys and steps."
+    },
+    "numbers": {
+      "title": "Phone numbers",
+      "aside": "inbound routes",
+      "none": "No number rings this menu yet.",
+      "add": "Add a number",
+      "choose": "Choose a number",
+      "noFree": "No free trunk numbers",
+      "free": "Free numbers",
+      "inUse": "Used elsewhere (moves here)",
+      "other": "Another number…",
+      "otherLabel": "Phone number",
+      "saveFirst": "Save the menu first, then link phone numbers to it here.",
+      "disabled": "route switched off",
+      "unlink": "Unlink {{number}}",
+      "unlinkConfirm": "Unlink {{number}}? Its inbound route is removed; the number then shows under numbers without a route.",
+      "moveConfirm": "{{number}} now goes to \"{{route}}\". Send it to this menu instead?",
+      "hint": "Saved straight away as an inbound route (Trunks & routes › Inbound routes), separately from the menu."
     }
   },
   "timeConditions": {

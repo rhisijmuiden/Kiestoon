@@ -9,6 +9,7 @@ import (
 // Feature codes the key types use (see pbx.FeatureCodes and the dialplan).
 const (
 	codeDND       = "*76"
+	codeForward   = "*74"
 	codeVoicemail = "*97"
 	codeIntercom  = "*80"
 	codePark      = "70"
@@ -47,6 +48,12 @@ func resolveKey(k pbx.Key) rkey {
 		r.Kind, r.Value = "speed", codeVoicemail
 	case "park":
 		r.Kind, r.Value = "park", codePark
+	case "forward":
+		// Value is "<ext>*<forward code>" (see forwardKeys): a BLF on *74<ext>*<code>, lit while
+		// the extension forwards; a press switches forwarding to that destination on or off.
+		if k.Value != "" {
+			r.Kind, r.Value = "blf", codeForward+k.Value
+		}
 	}
 	return r
 }
@@ -86,4 +93,41 @@ func simpleKeys(keys []pbx.Key) []pbx.Key {
 		out[i] = pbx.Key{Type: r.Kind, Value: r.Value, Label: k.Label}
 	}
 	return out
+}
+
+// forwardKeys gives the forward keys of the phone the code of its own extension: the dialplan
+// toggles forwarding of <ext> with *74<ext>*<number>. Without an extension they do nothing.
+func forwardKeys(in Input) Input {
+	ext := ""
+	if in.Ext != nil {
+		ext = in.Ext.Number
+	}
+	fix := func(keys []pbx.Key) []pbx.Key {
+		out := make([]pbx.Key, len(keys))
+		for i, k := range keys {
+			if k.Type == "forward" {
+				d, ok := pbx.ParseForwardKey(k.Value)
+				if ext == "" || !ok {
+					k = pbx.Key{Type: "none"}
+				} else {
+					if k.Label == "" {
+						k.Label = "Forward"
+						if d.Type == pbx.DestExternal {
+							k.Label = d.Target
+						}
+					}
+					k.Value = ext + "*" + pbx.ForwardCode(d)
+				}
+			}
+			out[i] = k
+		}
+		return out
+	}
+	in.Phone.Keys = fix(in.Phone.Keys)
+	mods := make([]pbx.Module, len(in.Phone.Modules))
+	for i, m := range in.Phone.Modules {
+		mods[i] = pbx.Module{Type: m.Type, Keys: fix(m.Keys)}
+	}
+	in.Phone.Modules = mods
+	return in
 }

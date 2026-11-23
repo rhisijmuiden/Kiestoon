@@ -382,6 +382,8 @@ the testing channel.
   block); after a Play audio step a Then list sends the caller back to a menu (the one they came from, the main menu
   or a choice menu), hangs up or goes on to a step; Back to menu can target a chosen menu; queues take external
   numbers as members (typed or from the phone book)
+- [x] Forward key (next release): key type Forward in the key editor and key templates; a press switches
+  unconditional forwarding to the key's external number on or off (`*74<ext>*<number>`), the lamp shows the state
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

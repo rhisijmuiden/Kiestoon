@@ -148,6 +148,11 @@ func forwardTo(x *w, num string) {
 	mark(x, "fwd", "num="+num)
 	x.f(" same => n,Set(KT_HOPS=$[${KT_HOPS} + 1])")
 	x.f(` same => n,GotoIf($[${KT_HOPS} > 5]?loop)`)
+	if d, ok := pbx.ParseForwardCode(num); ok {
+		// A forward key to a destination inside Kiestoon (IVR, queue, on-call team, ...).
+		x.f(" same => n,%s", destGoto(d))
+		return
+	}
 	x.f(" same => n,Goto(kiestoon-forward,%s,1)", num)
 }
 
@@ -1091,6 +1096,29 @@ func genFeatureCodes(x *w, s *pbx.Snapshot, o Options) {
 	x.f("exten => *73,1,Goto(kiestoon-fc-${KT_EXT},fwdoff,1)")
 	x.f("exten => _*72X.,1,Set(KT_TO=${FILTER(0-9+,${EXTEN:3})})")
 	x.f(" same => n,Goto(kiestoon-fc-${KT_EXT},fwdon,1)")
+	// *74<number> switches unconditional forwarding to <number> on, or off when it is on. A forward
+	// key on a phone dials *74<ext>*<number>: that exact code also carries a BLF hint, so the key
+	// is lit while the extension forwards (Custom:kt-fwd-<ext>, set by Kiestoon).
+	x.f("exten => _*74X.,1,Set(KT_TO=${EXTEN:3})")
+	x.f(` same => n,GotoIf($["${FILTER(0-9+,${KT_TO})}" != "${KT_TO}"]?bad)`)
+	x.f(" same => n,Goto(kiestoon-fc-${KT_EXT},fwdtoggle,1)")
+	x.f(" same => n(bad),Answer()")
+	x.f(" same => n,Playback(pbx-invalid)")
+	x.f(" same => n,Hangup()")
+	for _, e := range s.Extensions {
+		if !e.Enabled {
+			continue
+		}
+		for _, to := range s.ForwardTargets {
+			code := "*74" + e.Number + "*" + to
+			x.f("exten => %s,hint,Custom:kt-fwd-%s", code, e.Number)
+			x.f("exten => %s,1,Set(KT_TO=%s)", code, to)
+			x.f(` same => n,GotoIf($["${KT_EXT}" = "%s"]?kiestoon-fc-%s,fwdtoggle,1)`, e.Number, e.Number)
+			x.f(" same => n,Answer()")
+			x.f(" same => n,Playback(pbx-invalid)")
+			x.f(" same => n,Hangup()")
+		}
+	}
 	x.f("exten => *45,1,Goto(kiestoon-fc-${KT_EXT},queues,1)")
 	x.f("exten => _*45X.,1,Goto(kiestoon-fc-${KT_EXT},q${EXTEN:3},1)")
 	x.f("exten => *8,1,Pickup()")
@@ -1152,8 +1180,13 @@ func genFeatureCodes(x *w, s *pbx.Snapshot, o Options) {
 		x.f("exten => fwdon,1,Answer()")
 		x.f(" same => n,UserEvent(Kiestoon,Action: forward,Ext: %s,Value: ${KT_TO})", e.Number)
 		x.f(" same => n,Playback(call-fwd-unconditional)")
-		x.f(" same => n,SayDigits(${KT_TO})")
+		x.f(` same => n,ExecIf($["${KT_TO:0:2}" != "**"]?SayDigits(${KT_TO}))`)
 		x.f(" same => n,Hangup()")
+		if e.Features.ForwardAlways != "" {
+			x.f("exten => fwdtoggle,1,Goto(fwdoff,1)")
+		} else {
+			x.f("exten => fwdtoggle,1,Goto(fwdon,1)")
+		}
 		qs := queuesOf[e.ID]
 		anyIn := false
 		for _, q := range qs {

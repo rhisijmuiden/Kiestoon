@@ -257,3 +257,29 @@ func TestIntercomAutoAnswerPerVendor(t *testing.T) {
 		}
 	}
 }
+
+func TestForwardKeyYealink(t *testing.T) {
+	ext := &pbx.Extension{Number: "201", Name: "Anna", SIPSecret: "s"}
+	in := Input{Settings: Settings{AdminPassword: "adminpw12"}, PBX: pbx.Settings{SIPPort: 5060}, Ext: ext, Server: "pbx.local",
+		Phone: pbx.Phone{Vendor: "yealink", Model: "T54W",
+			Keys:    []pbx.Key{{Type: "forward", Value: "0612345678", Label: "Mobile"}, {Type: "forward", Value: "ivr:3", Label: "Storing"}},
+			Modules: []pbx.Module{{Type: "EXP50", Keys: []pbx.Key{{Type: "forward", Value: "+31201234567"}}}}}}
+	y, _ := Render(in)
+	for _, want := range []string{
+		"linekey.1.type = 16\nlinekey.1.line = 1\nlinekey.1.value = *74201*0612345678\nlinekey.1.extension = \nlinekey.1.label = Mobile",
+		"expansion_module.1.key.1.type = 16\nexpansion_module.1.key.1.line = 1\nexpansion_module.1.key.1.value = *74201*+31201234567",
+		"expansion_module.1.key.1.label = +31201234567",
+		"linekey.2.value = *74201***053",
+	} {
+		if !strings.Contains(y, want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+	if in.Phone.Keys[0].Value != "0612345678" {
+		t.Error("Render changed the caller's keys")
+	}
+	in.Ext = nil
+	if y, _ = Render(in); strings.Contains(y, "*74") {
+		t.Error("forward key without an extension")
+	}
+}

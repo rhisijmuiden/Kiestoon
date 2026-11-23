@@ -127,6 +127,7 @@ func New(cfg config.Config, db *sql.DB, log *slog.Logger) *Server {
 	s.Live = &asterisk.LiveCache{AMI: s.AMI}
 	s.States = &asterisk.StateCache{AMI: s.AMI}
 	s.Ast = &asterisk.Manager{Dir: cfg.PBXDir(), Repo: s.PBX, AMI: s.AMI, Log: log, Options: s.asteriskOptions}
+	s.Ast.Applied = s.syncDeviceStates
 	s.loadHostnames(context.Background())
 	s.startJourneys()
 	s.startCRM()

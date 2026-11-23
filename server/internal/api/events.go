@@ -204,10 +204,20 @@ func (s *Server) RunMaintenance(ctx context.Context) {
 	}
 }
 
-// syncDeviceStates lights the BLF of *28<id> while a time condition is switched by hand.
+// syncDeviceStates lights the BLF of *28<id> while a time condition is switched by hand, and the
+// forward keys (Custom:kt-fwd-<ext>) of extensions that forward all calls.
 func (s *Server) syncDeviceStates(ctx context.Context) {
 	if !s.AMI.Connected() {
 		return
+	}
+	if exts, err := s.PBX.Extensions(ctx); err == nil {
+		for _, e := range exts {
+			state := "NOT_INUSE"
+			if e.Features.ForwardAlways != "" {
+				state = "INUSE"
+			}
+			s.AMI.SetDeviceState(ctx, "Custom:kt-fwd-"+e.Number, state)
+		}
 	}
 	tcs, err := s.PBX.TimeConditions(ctx)
 	if err != nil {

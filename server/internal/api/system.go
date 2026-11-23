@@ -857,6 +857,9 @@ func (s *Server) savePhone(w http.ResponseWriter, r *http.Request) {
 		s.saveErr(w, err)
 		return
 	}
+	if p.HasForwardKey() {
+		s.Ast.Changed() // the dialplan holds the forward key codes
+	}
 	p.HotdeskExtensionID, p.HotdeskAt = nil, ""
 	if old != nil && old.HotdeskExtensionID != nil {
 		if p.Options.Hotdesk.Enabled {

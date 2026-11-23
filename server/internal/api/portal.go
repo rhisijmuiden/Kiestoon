@@ -584,6 +584,9 @@ func (s *Server) portalPhoneKeys(w http.ResponseWriter, r *http.Request) {
 		s.saveErr(w, err)
 		return
 	}
+	if p.HasForwardKey() {
+		s.Ast.Changed() // the dialplan holds the forward key codes
+	}
 	s.audit(r, "portal.phone_keys", p.MAC)
 	state, _ := s.notifyPhone(r.Context(), p, s.registeredAs(r.Context(), p))
 	writeJSON(w, http.StatusOK, struct {

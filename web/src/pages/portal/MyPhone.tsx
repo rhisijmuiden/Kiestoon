@@ -7,6 +7,7 @@ import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../../comp
 import { api } from '../../lib/api'
 import type { Features, PortalMe } from '../../lib/types'
 import { FeatureCodeTable } from '../Features'
+import { forwardCodeType } from '../../components/KeyLayout'
 
 const clean = (s: string) => s.replace(/[^0-9+]/g, '')
 
@@ -84,7 +85,14 @@ export function MyPhone() {
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card className="flex flex-col gap-4">
           <h2 className="flex items-center gap-2 font-display text-lg font-semibold"><PhoneForwarded className="size-5 text-accent" aria-hidden />{t('portal.forwarding')}</h2>
-          <Input name="forwardAlways" label={t('portal.forwardAlways')} value={f.forwardAlways} onChange={(e) => set('forwardAlways', clean(e.target.value))} inputMode="tel" className="font-mono" hint={t('portal.forwardAlwaysHint')} />
+          {forwardCodeType(f.forwardAlways) ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent/5 p-3">
+              <span className="text-sm">{t('portal.forwardByKey', { type: t(`dest.types.${forwardCodeType(f.forwardAlways)}`) })}</span>
+              <Button variant="secondary" onClick={() => save({ ...f, forwardAlways: '' })} disabled={busy}>{t('portal.forwardStop')}</Button>
+            </div>
+          ) : (
+            <Input name="forwardAlways" label={t('portal.forwardAlways')} value={f.forwardAlways} onChange={(e) => set('forwardAlways', clean(e.target.value))} inputMode="tel" className="font-mono" hint={t('portal.forwardAlwaysHint')} />
+          )}
           <Input name="forwardBusy" label={t('portal.forwardBusy')} value={f.forwardBusy} onChange={(e) => set('forwardBusy', clean(e.target.value))} inputMode="tel" className="font-mono" hint={t('portal.forwardBusyHint')} />
           <Input name="forwardNoAnswer" label={t('portal.forwardNoAnswer')} value={f.forwardNoAnswer} onChange={(e) => set('forwardNoAnswer', clean(e.target.value))} inputMode="tel" className="font-mono" hint={t('portal.forwardNoAnswerHint')} />
         </Card>

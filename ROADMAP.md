@@ -367,6 +367,9 @@ the testing channel.
   and the journal of the portal, helper and Asterisk service, with search, level filter, follow and download; a trunk
   that is rejected, not registered or unreachable shows the reason read from the log (401/403/404, no answer, DNS,
   TLS, transport) with what to check and the log lines about that trunk
+- [x] Locked ElevenLabs voice profile (`v0.7.0-rc.32`): Speech › Voice profile under the API key holds the voices
+  per language, model, stability, similarity, style, speed and speaker boost; locking it makes every Generate button
+  (IVR builder, prompts, regenerate) use the profile's voice, enforced by the server
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

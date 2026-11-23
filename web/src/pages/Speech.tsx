@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AudioLines, Check, Cloud, CloudDownload, KeyRound, Loader2, MessageSquareText, Play, ShieldCheck, Trash2 } from 'lucide-react'
+import { AudioLines, Check, Cloud, CloudDownload, KeyRound, Loader2, Lock, MessageSquareText, Play, ShieldCheck, Trash2 } from 'lucide-react'
 import { Badge, SectionTitle, Select, Table, Textarea, Toggle, formatBytes, td, useApi } from '../components/kit'
 import { IconButton } from '../components/pbx'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
@@ -234,102 +234,121 @@ function ElevenLabs({ saveRef, onChange }: { saveRef: RefObject<(() => Promise<v
   const nf = (n: number) => n.toLocaleString(i18n.language.startsWith('nl') ? 'nl-NL' : 'en-GB')
   const reset = usage?.resetUnix ? new Date(usage.resetUnix * 1000).toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }) : ''
 
+  const locked = s.locked && s.enabled
+  const lockable = s.enabled && data.keySet && !!(s.voiceNl.id || s.voiceEn.id)
+
   return (
-    <div className="mb-4 grid gap-4 xl:grid-cols-2">
+    <div className="mb-4 flex flex-col gap-4">
       <Card>
         <SectionTitle>
           <span className="inline-flex flex-wrap items-center gap-2"><Cloud className="size-5 text-accent" aria-hidden />ElevenLabs
             <Badge tone="accent">{t('eleven.cloud')}</Badge>{usage && <Badge tone="ok" dot>{t('eleven.connected')}</Badge>}</span>
         </SectionTitle>
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-muted">{t('eleven.intro')}</p>
-          <Toggle label={t('eleven.enable')} hint={t('eleven.enableHint')} checked={s.enabled} onChange={(v) => set({ enabled: v, defaultEngine: v ? s.defaultEngine : 'piper' })} />
-          <div className="flex flex-col gap-1.5">
-            {data.keySet && !editKey ? (
-              <>
-                <span className="text-sm font-medium text-ink-2">{t('eleven.apiKey')}</span>
-                <div className="flex flex-wrap gap-2">
-                  <span className="inline-flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-[10px] border border-line bg-field px-3.5 font-mono text-sm text-ink-2">
-                    <KeyRound className="size-4 text-accent" aria-hidden />sk_••••••••••••{data.keyHint.replace('…', '')}
-                  </span>
-                  <Button variant="secondary" onClick={() => setEditKey(true)}>{t('eleven.replace')}</Button>
-                  <Button variant="ghost" busy={busy === 'key'} onClick={() => saveKey('')}>{t('common.remove')}</Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <Input label={t('eleven.apiKey')} type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} placeholder="sk_…" />
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="secondary" busy={busy === 'key'} disabled={!key.trim()} onClick={() => saveKey(key)}><Check className="size-4" aria-hidden />{t('eleven.saveKey')}</Button>
-                  {data.keySet && <Button variant="ghost" onClick={() => { setEditKey(false); setKey('') }}>{t('common.cancel')}</Button>}
-                </div>
-              </>
-            )}
-            <p className="text-xs text-subtle">{t('eleven.apiKeyHint')}</p>
+        <div className="grid gap-x-6 gap-y-4 lg:grid-cols-2">
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-muted">{t('eleven.intro')}</p>
+            <Toggle label={t('eleven.enable')} hint={t('eleven.enableHint')} checked={s.enabled} onChange={(v) => set({ enabled: v, defaultEngine: v ? s.defaultEngine : 'piper', locked: v && s.locked })} />
+            <div className="flex gap-3 rounded-2xl border border-dashed border-accent/40 bg-accent/6 p-4 text-sm text-ink-2">
+              <ShieldCheck className="mt-0.5 size-5 flex-none text-accent" aria-hidden /><p>{t('eleven.privacy')}</p>
+            </div>
           </div>
-          {data.keySet && (
-            <div className="flex flex-wrap items-center gap-3">
-              <Button variant="secondary" busy={busy === 'test'} onClick={test}><Check className="size-4" aria-hidden />{t('eleven.test')}</Button>
-              {usage && checked && <span className="text-xs text-subtle">{t('eleven.testResult', { tier: usage.tier.charAt(0).toUpperCase() + usage.tier.slice(1), time: checked })}</span>}
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              {data.keySet && !editKey ? (
+                <>
+                  <span className="text-sm font-medium text-ink-2">{t('eleven.apiKey')}</span>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="inline-flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-[10px] border border-line bg-field px-3.5 font-mono text-sm text-ink-2">
+                      <KeyRound className="size-4 text-accent" aria-hidden />sk_••••••••••••{data.keyHint.replace('…', '')}
+                    </span>
+                    <Button variant="secondary" onClick={() => setEditKey(true)}>{t('eleven.replace')}</Button>
+                    <Button variant="ghost" busy={busy === 'key'} onClick={() => saveKey('')}>{t('common.remove')}</Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Input label={t('eleven.apiKey')} type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} placeholder="sk_…" />
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="secondary" busy={busy === 'key'} disabled={!key.trim()} onClick={() => saveKey(key)}><Check className="size-4" aria-hidden />{t('eleven.saveKey')}</Button>
+                    {data.keySet && <Button variant="ghost" onClick={() => { setEditKey(false); setKey('') }}>{t('common.cancel')}</Button>}
+                  </div>
+                </>
+              )}
+              <p className="text-xs text-subtle">{t('eleven.apiKeyHint')}</p>
             </div>
-          )}
-          <ErrorMessage error={error} />
-          {usage && usage.characterLimit > 0 && (
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap justify-between gap-2 text-sm"><span className="font-medium text-ink">{t('eleven.usage')}</span>
-                <span className="font-mono text-muted tabular-nums">{nf(usage.characterCount)} / {nf(usage.characterLimit)}</span></div>
-              <div className="h-2 overflow-hidden rounded-full bg-tint/8" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={t('eleven.usage')}>
-                <div className={`h-full rounded-full ${pct >= 80 ? 'bg-warn' : 'bg-gradient-to-r from-accent to-accent-2'}`} style={{ width: `${pct}%` }} />
+            {data.keySet && (
+              <div className="flex flex-wrap items-center gap-3">
+                <Button variant="secondary" busy={busy === 'test'} onClick={test}><Check className="size-4" aria-hidden />{t('eleven.test')}</Button>
+                {usage && checked && <span className="text-xs text-subtle">{t('eleven.testResult', { tier: usage.tier.charAt(0).toUpperCase() + usage.tier.slice(1), time: checked })}</span>}
               </div>
-              <span className="text-xs text-subtle">{reset ? t('eleven.usageHint', { date: reset }) : t('eleven.usageHintNoDate')}</span>
-            </div>
-          )}
-          <Select label={t('eleven.model')} hint={t('eleven.modelHint')} value={s.model} onChange={(e) => set({ model: e.target.value })}>
-            {data.models.map((m) => <option key={m.id} value={m.id}>{t(`eleven.models.${m.id}`, { defaultValue: m.name })}</option>)}
-          </Select>
+            )}
+            <ErrorMessage error={error} />
+            {usage && usage.characterLimit > 0 && (
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap justify-between gap-2 text-sm"><span className="font-medium text-ink">{t('eleven.usage')}</span>
+                  <span className="font-mono text-muted tabular-nums">{nf(usage.characterCount)} / {nf(usage.characterLimit)}</span></div>
+                <div className="h-2 overflow-hidden rounded-full bg-tint/8" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={t('eleven.usage')}>
+                  <div className={`h-full rounded-full ${pct >= 80 ? 'bg-warn' : 'bg-gradient-to-r from-accent to-accent-2'}`} style={{ width: `${pct}%` }} />
+                </div>
+                <span className="text-xs text-subtle">{reset ? t('eleven.usageHint', { date: reset }) : t('eleven.usageHintNoDate')}</span>
+              </div>
+            )}
+          </div>
         </div>
       </Card>
-      <div className="flex flex-col gap-4">
-        <Card>
-          <SectionTitle>{t('eleven.defaults')}</SectionTitle>
-          <div className="flex flex-col gap-4">
-            <div role="radiogroup" aria-label={t('eleven.defaultEngine')} className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium text-ink-2">{t('eleven.defaultEngine')}</span>
-              <div className="grid grid-cols-2 gap-2">
-                {(['piper', 'elevenlabs'] as const).map((e) => {
-                  const on = s.defaultEngine === e
-                  const avail = e === 'piper' || (s.enabled && data.keySet)
-                  return (
-                    <button key={e} type="button" role="radio" aria-checked={on} disabled={!avail} onClick={() => set({ defaultEngine: e })}
-                      className={`rounded-xl border px-3 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-45 ${on ? 'border-accent bg-accent/8 shadow-[inset_0_0_0_1px_var(--color-accent)]' : 'border-line bg-field hover:border-accent/40'}`}>
-                      <span className="block text-sm font-semibold text-ink">{t(`tts.engines.${e}`)}</span>
-                      <span className="block text-xs text-subtle">{t(`eleven.engineHints.${e}`)}</span>
-                    </button>
-                  )
-                })}
-              </div>
+      <Card>
+        <SectionTitle>
+          <span className="inline-flex flex-wrap items-center gap-2">{t('eleven.profile')}{locked && <Badge tone="accent"><Lock className="mr-1 inline size-3" aria-hidden />{t('eleven.lockedBadge')}</Badge>}</span>
+        </SectionTitle>
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-muted">{t('eleven.profileIntro')}</p>
+          <Toggle name="locked" label={t('eleven.lock')} hint={lockable || s.locked ? t('eleven.lockHint') : t('eleven.lockNeeds')} checked={s.locked}
+            disabled={!lockable && !s.locked} onChange={(v) => set({ locked: v, defaultEngine: v ? 'elevenlabs' : s.defaultEngine })} />
+          <div className="grid gap-x-6 gap-y-4 lg:grid-cols-2">
+            <div className="flex flex-col gap-4">
+              {(['nl', 'en'] as const).map((l) => (
+                <div key={l} className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium text-ink-2">{t(l === 'nl' ? 'eleven.voiceNl' : 'eleven.voiceEn')}{l === data.pbxLanguage && <span className="ml-2 text-[11px] font-semibold uppercase tracking-wide text-accent">{t('voices.pbxLanguage')}</span>}</span>
+                  {data.keySet ? <VoiceBox voice={l === 'nl' ? s.voiceNl : s.voiceEn} language={l} onChange={(v) => set(l === 'nl' ? { voiceNl: v } : { voiceEn: v })} />
+                    : <p className="rounded-xl border border-line bg-inset px-3 py-2.5 text-sm text-muted">{t('eleven.keyFirst')}</p>}
+                </div>
+              ))}
+              <Select label={t('eleven.model')} hint={t('eleven.modelHint')} value={s.model} onChange={(e) => set({ model: e.target.value })}>
+                {data.models.map((m) => <option key={m.id} value={m.id}>{t(`eleven.models.${m.id}`, { defaultValue: m.name })}</option>)}
+              </Select>
+              {locked ? (
+                <p className="rounded-xl border border-line bg-inset px-3 py-2.5 text-xs text-muted">{t('eleven.lockedEngine')}</p>
+              ) : (
+                <div role="radiogroup" aria-label={t('eleven.defaultEngine')} className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium text-ink-2">{t('eleven.defaultEngine')}</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['piper', 'elevenlabs'] as const).map((e) => {
+                      const on = s.defaultEngine === e
+                      const avail = e === 'piper' || (s.enabled && data.keySet)
+                      return (
+                        <button key={e} type="button" role="radio" aria-checked={on} disabled={!avail} onClick={() => set({ defaultEngine: e })}
+                          className={`rounded-xl border px-3 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-45 ${on ? 'border-accent bg-accent/8 shadow-[inset_0_0_0_1px_var(--color-accent)]' : 'border-line bg-field hover:border-accent/40'}`}>
+                          <span className="block text-sm font-semibold text-ink">{t(`tts.engines.${e}`)}</span>
+                          <span className="block text-xs text-subtle">{t(`eleven.engineHints.${e}`)}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
-            {(['nl', 'en'] as const).map((l) => (
-              <div key={l} className="flex flex-col gap-1.5">
-                <span className="text-sm font-medium text-ink-2">{t(l === 'nl' ? 'eleven.voiceNl' : 'eleven.voiceEn')}{l === data.pbxLanguage && <span className="ml-2 text-[11px] font-semibold uppercase tracking-wide text-accent">{t('voices.pbxLanguage')}</span>}</span>
-                {data.keySet ? <VoiceBox voice={l === 'nl' ? s.voiceNl : s.voiceEn} language={l} onChange={(v) => set(l === 'nl' ? { voiceNl: v } : { voiceEn: v })} />
-                  : <p className="rounded-xl border border-line bg-inset px-3 py-2.5 text-sm text-muted">{t('eleven.keyFirst')}</p>}
-              </div>
-            ))}
-            <details className="group">
-              <summary className="cursor-pointer text-sm font-medium text-accent-ink">{t('eleven.voiceSettings')}</summary>
-              <div className="mt-3 flex flex-col gap-4">
-                <Range label={t('eleven.stability')} hint={t('eleven.stabilityHint')} min={0} max={100} value={s.stability} unit="%" onChange={(v) => set({ stability: v })} />
-                <Range label={t('eleven.speed')} hint={t('eleven.speedHint')} min={70} max={120} value={s.speed} unit="%" onChange={(v) => set({ speed: v })} />
-              </div>
-            </details>
-            <Toggle label={t('eleven.fallback')} hint={t('eleven.fallbackHint')} checked={s.fallback} onChange={(v) => set({ fallback: v })} />
+            <div className="flex flex-col gap-4">
+              <span className="text-sm font-semibold text-ink">{t('eleven.voiceSettings')}</span>
+              <Range label={t('eleven.stability')} hint={t('eleven.stabilityHint')} min={0} max={100} value={s.stability} unit="%" onChange={(v) => set({ stability: v })} />
+              <Range label={t('eleven.similarity')} hint={t('eleven.similarityHint')} min={0} max={100} value={s.similarity} unit="%" onChange={(v) => set({ similarity: v })} />
+              <Range label={t('eleven.style')} hint={t('eleven.styleHint')} min={0} max={100} value={s.style} unit="%" onChange={(v) => set({ style: v })} />
+              <Range label={t('eleven.speed')} hint={t('eleven.speedHint')} min={70} max={120} value={s.speed} unit="%" onChange={(v) => set({ speed: v })} />
+              <Toggle label={t('eleven.speakerBoost')} hint={t('eleven.speakerBoostHint')} checked={s.speakerBoost} onChange={(v) => set({ speakerBoost: v })} />
+              <Toggle label={t('eleven.fallback')} hint={t('eleven.fallbackHint')} checked={s.fallback} onChange={(v) => set({ fallback: v })} />
+            </div>
           </div>
-        </Card>
-        <div className="flex gap-3 rounded-2xl border border-dashed border-accent/40 bg-accent/6 p-4 text-sm text-ink-2">
-          <ShieldCheck className="mt-0.5 size-5 flex-none text-accent" aria-hidden /><p>{t('eleven.privacy')}</p>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

@@ -5,7 +5,7 @@ import { Badge, Empty, Modal, Table, formatDate, td, useApi } from '../component
 import { AudioInput, IconButton } from '../components/pbx'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { SpeakFromText } from '../components/SpeakFromText'
-import { VoiceBox, useTTS } from '../components/Voices'
+import { LockedProfile, VoiceBox, useTTS } from '../components/Voices'
 import { api } from '../lib/api'
 import { wavFromBase64, type Wav } from '../lib/audio'
 import type { Prompt, PromptSource, VoiceRef } from '../lib/types'
@@ -116,8 +116,9 @@ function Regenerate({ prompts, onDone }: { prompts: Prompt[]; onDone: () => void
   const [error, setError] = useState<unknown>(null)
   const [result, setResult] = useState<{ done: number; failed: number } | null>(null)
   if (!tts.loaded || (!tts.piperReady && !tts.elevenReady)) return null
-  const eng = engine || (tts.elevenReady ? 'elevenlabs' : 'piper')
-  const ev = elVoice ?? (lang === 'nl' ? tts.el!.settings.voiceNl : tts.el!.settings.voiceEn)
+  const locked = tts.elevenReady && !!tts.el?.settings.locked
+  const eng = locked ? 'elevenlabs' : engine || (tts.elevenReady ? 'elevenlabs' : 'piper')
+  const ev = locked ? { id: 'profile', name: '' } : elVoice ?? (lang === 'nl' ? tts.el!.settings.voiceNl : tts.el!.settings.voiceEn)
   const pv = piperVoice || (tts.piperVoices.find((v) => v.language === lang)?.id ?? '')
   const chars = prompts.reduce((n, p) => n + [...(p.source?.text ?? '')].length, 0)
   async function go() {
@@ -126,7 +127,7 @@ function Regenerate({ prompts, onDone }: { prompts: Prompt[]; onDone: () => void
     setResult(null)
     try {
       const r = await api<{ done: number[]; failed: { id: number; error: string }[] }>('POST', '/pbx/prompts/regenerate', eng === 'elevenlabs'
-        ? { ids: prompts.map((p) => p.id), engine: eng, voice: ev.id, voiceName: ev.name }
+        ? { ids: prompts.map((p) => p.id), engine: eng, voice: locked ? '' : ev.id, voiceName: ev.name }
         : { ids: prompts.map((p) => p.id), engine: eng, voice: pv, voiceName: tts.piperVoices.find((v) => v.id === pv)?.name ?? pv })
       setResult({ done: r.done.length, failed: r.failed.length })
       onDone()
@@ -145,6 +146,7 @@ function Regenerate({ prompts, onDone }: { prompts: Prompt[]; onDone: () => void
         </div>
         {prompts.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
+            {locked ? <div className="min-w-72"><LockedProfile compact el={tts.el!} language={lang} /></div> : <>
             {tts.piperReady && tts.elevenReady && (
               <select aria-label={t('tts.engine')} value={eng} onChange={(e) => setEngine(e.target.value as 'piper' | 'elevenlabs')} className="min-h-10 rounded-lg border border-line bg-field px-2 text-sm">
                 <option value="elevenlabs">{t('tts.engines.elevenlabs')}</option><option value="piper">{t('tts.engines.piper')}</option>
@@ -155,6 +157,7 @@ function Regenerate({ prompts, onDone }: { prompts: Prompt[]; onDone: () => void
                 {tts.piperVoices.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
               </select>
             )}
+            </>}
             <Button busy={busy} disabled={eng === 'elevenlabs' ? !ev.id : !pv} onClick={go}><RefreshCw className="size-4" aria-hidden />{t('prompts.regenerate')}</Button>
           </div>
         )}

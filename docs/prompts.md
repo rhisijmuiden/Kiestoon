@@ -47,7 +47,8 @@ service with very natural voices. It is off by default and needs your own Eleven
 1. Create an API key at elevenlabs.io under **Developers › API keys**, with access to text-to-speech and voices.
 2. Open **Speech**, switch on **Use ElevenLabs**, paste the key and click **Check and save key**. The key is checked
    with ElevenLabs, stored encrypted on the server and never shown again.
-3. Choose the **Dutch voice** and **English voice**, and set **Engine** to **ElevenLabs** to use it by default.
+3. Under **Voice profile**, choose the **Dutch voice** and **English voice**, and set **Engine** to **ElevenLabs** to use
+   it by default. Switch on **Lock the voice profile** to fix the voice for every prompt (see below).
 
 ![ElevenLabs settings on the Speech page](shot:speech)
 
@@ -58,7 +59,8 @@ use it.
 
 ![Choosing a voice with samples](shot:voice-picker)
 
-In the [IVR builder](ivr.md) and on this page, **Generate** now lets you choose the engine and voice per prompt. The
+In the [IVR builder](ivr.md) and on this page, **Generate** starts with the voice of the profile and lets you choose
+another engine or voice for one prompt, unless the profile is locked. The
 counter under the text shows how many characters it costs and how many are left this period.
 
 ![Generating a menu prompt with ElevenLabs](shot:ivr-tts)
@@ -74,6 +76,27 @@ Good to know:
 - The admins get a mail (to the notification address of the [mail server](mail.md)) when 80% of the characters of the
   period are used.
 - **Model**: *Multilingual v2* sounds the most natural in Dutch; *Flash v2.5* is faster and costs half the characters.
+
+### Voice profile
+
+The **Voice profile** card on the **Speech** page, under the API key, holds everything ElevenLabs uses to speak a
+prompt: the **Dutch voice** and **English voice**, the **Model** and the voice settings.
+
+| Setting | What it does |
+| --- | --- |
+| **Stability** | Higher sounds steadier; lower sounds livelier. |
+| **Similarity** | How closely the result follows the original voice. 75% is a good start. |
+| **Style exaggeration** | Adds expression. Keep it at 0% for calm menu announcements. |
+| **Speed** | 95% is a little slower than normal, pleasant for menu choices. |
+| **Speaker boost** | Makes the voice a little clearer. Recommended on the phone. |
+
+Switch on **Lock the voice profile** so all prompts sound like the same speaker. Every **Generate** button (the
+IVR builder, this page and **Generate again with this voice**) then uses the profile's voice for the language of the
+text, with these settings; the engine and voice choice is replaced by the locked profile with a link back here. The
+lock needs ElevenLabs switched on, a saved key and at least one voice. When a language has no voice in the profile,
+the other voice speaks it. Switching ElevenLabs off releases the lock.
+
+![The voice profile, locked](shot:voice-profile)
 
 ### Another voice for all prompts
 

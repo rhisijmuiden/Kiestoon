@@ -65,7 +65,7 @@ audiobericht, met een golfvormspeler om het te beluisteren. Kies de bron in het 
 
 | Bron | Hoe |
 | --- | --- |
-| **Genereren** | Typ de tekst, kies de engine (**Lokaal (Piper)** of **ElevenLabs**) en een stem, en klik **Audio genereren**. Piper draait op de server; ElevenLabs geeft stemmen in studiokwaliteit (zie [ElevenLabs-stemmen](prompts.md#elevenlabs-stemmen)). Vereist dat [Spraak](prompts.md#spraak) aan staat |
+| **Genereren** | Typ de tekst, kies de engine (**Lokaal (Piper)** of **ElevenLabs**) en een stem, en klik **Audio genereren**. Met een [vastgezet stemprofiel](prompts.md#stemprofiel) ligt de stem vast en typ je alleen de tekst. Piper draait op de server; ElevenLabs geeft stemmen in studiokwaliteit (zie [ElevenLabs-stemmen](prompts.md#elevenlabs-stemmen)). Vereist dat [Spraak](prompts.md#spraak) aan staat |
 | **Opnemen** | Neem op met de microfoon in de browser (vereist https) |
 | **Uploaden** | Sleep een MP3-, WAV-, M4A- of OGG-bestand (max 10 MB). Wordt omgezet naar telefoonkwaliteit |
 | **Bibliotheek** | Kies een bestaande [gesproken tekst](prompts.md) |

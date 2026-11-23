@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { Sparkles } from 'lucide-react'
 import { Select, Textarea } from './kit'
 import { Button, ErrorMessage } from './ui'
-import { VoiceBox, useTTS } from './Voices'
+import { LockedProfile, VoiceBox, useTTS } from './Voices'
 import { api } from '../lib/api'
 import type { ElevenUsage, PromptSource, TTSResult, VoiceRef } from '../lib/types'
 
@@ -36,7 +36,8 @@ export function SpeakFromText({ initial, onAudio, action, regenerate, compact }:
   const [last, setLast] = useState<TTSResult | null>(null)
 
   const language = lang || tts.el?.pbxLanguage || (i18n.language.startsWith('nl') ? 'nl' : 'en')
-  const eng: Engine = engine || (tts.elevenReady && tts.el?.settings.defaultEngine === 'elevenlabs' ? 'elevenlabs' : tts.piperReady ? 'piper' : 'elevenlabs')
+  const locked = tts.elevenReady && !!tts.el?.settings.locked
+  const eng: Engine = locked ? 'elevenlabs' : engine || (tts.elevenReady && tts.el?.settings.defaultEngine === 'elevenlabs' ? 'elevenlabs' : tts.piperReady ? 'piper' : 'elevenlabs')
   useEffect(() => {
     if (!tts.elevenReady) return
     api<ElevenUsage>('GET', '/speech/elevenlabs/usage').then(setUsage).catch(() => setUsage(null))
@@ -54,7 +55,7 @@ export function SpeakFromText({ initial, onAudio, action, regenerate, compact }:
   const defPiper = language === 'nl' ? tts.speech?.settings.tts.voiceNl : tts.speech?.settings.tts.voiceEn
   const pv = piperVoice && voices.some((v) => v.id === piperVoice) ? piperVoice : voices.some((v) => v.id === defPiper) ? defPiper! : voices[0]?.id ?? ''
   const defEl = tts.el ? (language === 'nl' ? tts.el.settings.voiceNl : tts.el.settings.voiceEn) : { id: '', name: '' }
-  const ev = elVoice ?? defEl
+  const ev = locked ? (defEl.id ? defEl : language === 'nl' ? tts.el!.settings.voiceEn : tts.el!.settings.voiceNl) : elVoice ?? defEl
   const n = [...text.trim()].length
   const max = tts.el?.maxText ?? 2000
   const ready = eng === 'piper' ? !!pv : !!ev.id
@@ -87,11 +88,12 @@ export function SpeakFromText({ initial, onAudio, action, regenerate, compact }:
         </div>
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
-        <span className="text-sm font-medium text-ink-2">{t('tts.engine')}</span>
+        <span className="text-sm font-medium text-ink-2">{locked ? t('tts.voice') : t('tts.engine')}</span>
         <select aria-label={t('tts.language')} value={language} onChange={(e) => setLang(e.target.value as 'nl' | 'en')} className="min-h-8 rounded-lg border border-line bg-field px-2 text-xs text-ink-2">
           <option value="nl">Nederlands</option><option value="en">English</option>
         </select>
       </div>
+      {locked ? <div className="-mt-1.5"><LockedProfile el={tts.el!} language={language} compact={compact} /></div> : <>
       <div role="radiogroup" aria-label={t('tts.engine')} className="-mt-1.5 grid grid-cols-2 gap-2">
         {(['piper', 'elevenlabs'] as const).map((e) => {
           const avail = e === 'piper' ? tts.piperReady : tts.elevenReady
@@ -117,6 +119,7 @@ export function SpeakFromText({ initial, onAudio, action, regenerate, compact }:
           <VoiceBox voice={ev} language={language} onChange={setElVoice} compact={compact} />
         </div>
       )}
+      </>}
       <Button busy={busy} disabled={!text.trim() || n > max || !ready} onClick={generate}>
         <Sparkles className="size-4" aria-hidden />{action ?? (regenerate ? t('tts.regenerate') : t('tts.generate'))}
       </Button>

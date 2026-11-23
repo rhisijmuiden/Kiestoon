@@ -62,7 +62,7 @@ waveform player to listen to it. Choose the source in the side panel:
 
 | Source | How |
 | --- | --- |
-| **Generate** | Type the text, choose the engine (**Local (Piper)** or **ElevenLabs**) and a voice, and click **Generate audio**. Piper runs on the server; ElevenLabs gives studio-quality voices (see [ElevenLabs voices](prompts.md#elevenlabs-voices)). Needs [Speech](prompts.md#speech) switched on |
+| **Generate** | Type the text, choose the engine (**Local (Piper)** or **ElevenLabs**) and a voice, and click **Generate audio**. With a [locked voice profile](prompts.md#voice-profile) the voice is fixed and only the text is needed. Piper runs on the server; ElevenLabs gives studio-quality voices (see [ElevenLabs voices](prompts.md#elevenlabs-voices)). Needs [Speech](prompts.md#speech) switched on |
 | **Record** | Record with the microphone in the browser (needs https) |
 | **Upload** | Drop an MP3, WAV, M4A or OGG file (max 10 MB). Converted to telephone quality |
 | **Library** | Pick an existing [voice prompt](prompts.md) |

@@ -71,13 +71,21 @@ type Settings struct {
 	// Stability 0-100 and Speed 70-120 (percent of normal).
 	Stability int `json:"stability"`
 	Speed     int `json:"speed"`
+	// Similarity 0-100 (how close to the original voice), Style 0-100 (exaggeration) and
+	// SpeakerBoost (extra clarity).
+	Similarity   int  `json:"similarity"`
+	Style        int  `json:"style"`
+	SpeakerBoost bool `json:"speakerBoost"`
+	// Locked fixes the voice profile: every generated prompt uses ElevenLabs with the profile's
+	// voice for its language and these settings, so all prompts sound the same.
+	Locked bool `json:"locked"`
 	// Fallback uses the local Piper voice when ElevenLabs cannot be reached.
 	Fallback bool `json:"fallback"`
 }
 
 // Defaults are used until an admin saves the settings.
 func Defaults() Settings {
-	return Settings{Model: Models[0].ID, DefaultEngine: "piper", Stability: 55, Speed: 95, Fallback: true}
+	return Settings{Model: Models[0].ID, DefaultEngine: "piper", Stability: 55, Speed: 95, Similarity: 75, SpeakerBoost: true, Fallback: true}
 }
 
 // Validate checks the settings.
@@ -94,6 +102,12 @@ func (s *Settings) Validate() error {
 	if s.Speed < 70 || s.Speed > 120 {
 		return errors.New("speed")
 	}
+	if s.Similarity < 0 || s.Similarity > 100 {
+		return errors.New("similarity")
+	}
+	if s.Style < 0 || s.Style > 100 {
+		return errors.New("style")
+	}
 	for f, v := range map[string]*VoiceRef{"voiceNl": &s.VoiceNL, "voiceEn": &s.VoiceEN} {
 		v.Name = strings.TrimSpace(v.Name)
 		if len(v.Name) > 80 {
@@ -102,6 +116,9 @@ func (s *Settings) Validate() error {
 		if v.ID != "" && !ValidID(v.ID) {
 			return errors.New(f)
 		}
+	}
+	if s.Locked && s.VoiceNL.ID == "" && s.VoiceEN.ID == "" {
+		return errors.New("locked")
 	}
 	return nil
 }
@@ -476,6 +493,10 @@ type SpeakRequest struct {
 	Language  string // nl | en, sent to models that take it
 	Stability int    // 0-100
 	Speed     int    // 70-120
+	// Similarity and Style 0-100, SpeakerBoost on or off.
+	Similarity   int
+	Style        int
+	SpeakerBoost bool
 }
 
 // SampleRate of the PCM that Speak returns.
@@ -495,8 +516,9 @@ func (c *Client) Speak(ctx context.Context, r SpeakRequest) ([]byte, error) {
 		"model_id": m.ID,
 		"voice_settings": map[string]any{
 			"stability":         float64(r.Stability) / 100,
-			"similarity_boost":  0.75,
-			"use_speaker_boost": true,
+			"similarity_boost":  float64(r.Similarity) / 100,
+			"style":             float64(r.Style) / 100,
+			"use_speaker_boost": r.SpeakerBoost,
 			"speed":             float64(r.Speed) / 100,
 		},
 	}

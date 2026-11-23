@@ -35,6 +35,7 @@ export const shots = [
   { name: 'trunk-refresh', path: '/trunks', run: async (p) => { await p.getByRole('row').filter({ hasText: 'Voys' }).first().getByRole('button', { name: /^(Refresh registration|Registratie vernieuwen)$/ }).click(); await p.waitForTimeout(1500) } },
   { name: 'trunk-why', path: '/trunks', run: async (p) => { await p.getByRole('button', { name: /log ?(line|regel)/i }).first().click() }, selector: dialog, wait: 600 },
   { name: 'logs', path: '/logs', wait: 800 },
+  { name: 'import', path: '/import' },
   { name: 'inbound-numbers', path: '/trunks', run: (p) => tab(p, 'Inbound', 'Inkomend'), wait: 600 },
   { name: 'teams', path: '/teams', full: true, wait: 800 },
   { name: 'teams-users', path: '/teams', run: (p) => tab(p, 'Teams users', 'Teams-gebruikers'), full: true, wait: 600 },

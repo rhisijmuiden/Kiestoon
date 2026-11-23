@@ -264,7 +264,7 @@ export function Import() {
         {failed && <Alert>{t('import.failedItem', { item: label(failed.key) || failed.key, field: failed.field, code: t(`errors.${failed.code}`, { defaultValue: failed.code }) })}</Alert>}
         <Card>
           <SectionTitle><span className="inline-flex items-center gap-2"><CheckCircle2 className="size-5 text-ok" aria-hidden />{t('import.doneTitle')}</span></SectionTitle>
-          <div className="flex flex-wrap gap-2">
+          <div className="mb-4 flex flex-wrap gap-2">
             {Object.entries(counts).map(([k, n]) => <Badge key={k} tone="ok">{t(`import.kinds.${k}`, { count: n })}</Badge>)}
           </div>
           <Table head={[t('import.kind'), t('import.name'), t('import.number'), '']}>

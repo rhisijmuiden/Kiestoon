@@ -321,14 +321,6 @@ func (a *Archive) Bundle() *importer.Bundle {
 	if n := len(d.Table("public", "device").Rows); n > 0 {
 		b.Note("phones_not_imported", "count", strconv.Itoa(n))
 	}
-	if b.VoicemailGreeting != "" {
-		b.Note("greeting_as_prompt")
-	}
-	for _, q := range b.Queues {
-		if len(q.Messages) > 0 {
-			b.Note("queue_messages", "name", q.Name)
-		}
-	}
 	return b
 }
 

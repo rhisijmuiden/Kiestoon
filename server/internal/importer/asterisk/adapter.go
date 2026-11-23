@@ -347,3 +347,71 @@ func rank(ext string) int {
 	}
 	return len(formatRank)
 }
+
+// VoicemailBox is one mailbox of voicemail.conf.
+type VoicemailBox struct {
+	PIN, Name, Email string
+	Attach           bool
+}
+
+// Voicemail reads the mailboxes of voicemail.conf by number.
+func Voicemail(data []byte) map[string]VoicemailBox {
+	out := map[string]VoicemailBox{}
+	for k, b := range readVoicemail(Parse("voicemail.conf", Files{"voicemail.conf": data})) {
+		out[k] = VoicemailBox{PIN: b.pin, Name: b.name, Email: b.email, Attach: b.attach}
+	}
+	return out
+}
+
+// Sounds finds sound files in an upload by the name Asterisk uses ("custom/welcome").
+type Sounds struct {
+	idx  audioIndex
+	Used map[string]bool
+}
+
+// NewSounds indexes the audio files of an upload.
+func NewSounds(entries []importer.Entry) *Sounds {
+	return &Sounds{idx: indexAudio(entries), Used: map[string]bool{}}
+}
+
+// Find returns the best file for the reference, "" when absent, and remembers it.
+func (s *Sounds) Find(ref string) string {
+	f := s.idx.find(ref)
+	if f != "" {
+		s.Used[f] = true
+	}
+	return f
+}
+
+// Load reads the files that were found into the bundle.
+func (s *Sounds) Load(u *importer.Upload, b *importer.Bundle) error {
+	if len(s.Used) == 0 {
+		return nil
+	}
+	audio, err := u.Files(func(name string, _ int64) bool { return s.Used[name] }, importer.MaxAudioFile)
+	if err != nil {
+		return err
+	}
+	if b.Audio == nil {
+		b.Audio = map[string][]byte{}
+	}
+	for k, v := range audio {
+		b.Audio[k] = v
+	}
+	return nil
+}
+
+// ParseTimeSpec turns a GotoIfTime/time group spec ("08:00-17:00|mon-fri|*|*") into a time
+// range; ok is false for rules with dates or months.
+func ParseTimeSpec(spec string) (pbx.TimeRange, bool) {
+	f := splitArgs(strings.ReplaceAll(spec, "|", ","))
+	for len(f) < 4 {
+		f = append(f, "*")
+	}
+	from, to, ok := parseTimes(f[0])
+	days := parseDays(f[1])
+	if !ok || days == nil || (f[2] != "*" && f[2] != "") || (f[3] != "*" && f[3] != "") {
+		return pbx.TimeRange{}, false
+	}
+	return pbx.TimeRange{Days: days, From: from, To: to}, true
+}

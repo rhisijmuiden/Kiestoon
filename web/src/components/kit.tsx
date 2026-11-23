@@ -66,7 +66,7 @@ export function Modal({ title, subtitle, onClose, children, footer, wide }: {
 const fieldBase =
   'min-h-11 w-full rounded-[10px] border bg-field px-3.5 text-[15px] text-ink placeholder:text-subtle outline-none transition'
 const fieldOk = 'border-line focus:border-accent/60 focus:ring-2 focus:ring-accent/20'
-const fieldState = (invalid: boolean) => `${fieldBase} ${invalid ? invalidCls : fieldOk}`
+const fieldState = (invalid: boolean) => `${fieldBase} ${invalid ? invalidCls : fieldOk} disabled:cursor-not-allowed disabled:opacity-60`
 const labelCls = (invalid: boolean) => `text-sm font-medium ${invalid ? 'text-danger-ink' : 'text-ink-2'}`
 
 export function Select({ label, hint, children, onChange, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & { label: string; hint?: ReactNode }) {

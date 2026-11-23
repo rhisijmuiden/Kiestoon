@@ -16,6 +16,7 @@ type Snapshot struct {
 	Trunks         []Trunk
 	Inbound        []InboundRoute
 	Outbound       []OutboundRoute
+	ExtGroups      []ExtensionGroup
 	RingGroups     []RingGroup
 	Queues         []Queue
 	IVRs           []IVR
@@ -40,6 +41,8 @@ type Snapshot struct {
 	CRMDeskName bool
 	// OnCall is who every on-call team rings right now (regenerated when that changes).
 	OnCall []OnCallLive
+	// ForwardTargets are the numbers of the forward keys on phones (*74<ext>*<number> toggles).
+	ForwardTargets []string
 	// Now decides which year's holidays go into the dialplan (it is regenerated every night).
 	Now time.Time
 }
@@ -63,6 +66,9 @@ func (r *Repo) Snapshot(ctx context.Context) (*Snapshot, error) {
 	if s.Outbound, err = r.OutboundRoutes(ctx); err != nil {
 		return nil, err
 	}
+	if s.ExtGroups, err = r.ExtensionGroups(ctx); err != nil {
+		return nil, err
+	}
 	if s.Features, err = LoadFeatureSettings(ctx, r.DB); err != nil {
 		return nil, err
 	}
@@ -81,6 +87,12 @@ func (r *Repo) Snapshot(ctx context.Context) (*Snapshot, error) {
 	var deskName string
 	_ = r.DB.QueryRowContext(ctx, `SELECT value FROM settings WHERE key = 'crm_desk_name'`).Scan(&deskName)
 	s.CRMDeskName = deskName == "1"
+
+	phones, err := r.Phones(ctx)
+	if err != nil {
+		return nil, err
+	}
+	s.ForwardTargets = ForwardTargets(phones)
 
 	if s.RingGroups, err = r.RingGroups(ctx); err != nil {
 		return nil, err

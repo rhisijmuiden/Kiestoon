@@ -24,7 +24,7 @@ type Key struct {
 }
 
 // KeyTypes are the key functions the editor offers.
-var KeyTypes = []string{"none", "line", "blf", "speed", "park", "parkslot", "intercom", "dnd", "voicemail"}
+var KeyTypes = []string{"none", "line", "blf", "speed", "park", "parkslot", "intercom", "dnd", "voicemail", "forward"}
 
 // Module is an expansion module (sidecar) attached to a phone, such as a Yealink EXP50.
 type Module struct {
@@ -244,6 +244,8 @@ var (
 	reKeyNumber = regexp.MustCompile(`^[0-9*#+]{1,20}$`)
 	reKeyExt    = regexp.MustCompile(`^[0-9]{2,8}$`)
 	reParkSlot  = regexp.MustCompile(`^7[1-9]$`)
+	// reKeyForward is the external number a forward key forwards to.
+	reKeyForward = regexp.MustCompile(`^\+?[0-9]{2,20}$`)
 )
 
 // CleanKeys checks and normalises a key layout of at most max keys on a phone with lines accounts.
@@ -293,6 +295,20 @@ func CleanKeys(keys []Key, max, lines int) ([]Key, error) {
 		case "parkslot":
 			if !reParkSlot.MatchString(k.Value) {
 				return nil, invalid("invalid", "keys")
+			}
+		case "forward":
+			v := k.Value
+			if !strings.Contains(v, ":") {
+				v = strings.NewReplacer(" ", "", "-", "", ".", "", "(", "", ")", "").Replace(v)
+			}
+			d, ok := ParseForwardKey(v)
+			if !ok {
+				return nil, invalid("invalid", "keys")
+			}
+			if d.Type == DestExternal {
+				k.Value = d.Target
+			} else {
+				k.Value = d.Type + ":" + d.Target
 			}
 		default:
 			return nil, invalid("invalid", "keys")
@@ -505,4 +521,37 @@ func renumberPhoneKeys(ctx context.Context, tx *sql.Tx, changes []Renumber) erro
 func jsonMarshal(v any) (string, error) {
 	b, err := json.Marshal(v)
 	return string(b), err
+}
+
+// ForwardTargets lists the forward codes (see ForwardCode) of the forward keys on these phones,
+// sorted and without duplicates. The dialplan makes a toggle code with a BLF hint for each.
+func ForwardTargets(phones []Phone) []string {
+	seen := map[string]bool{}
+	add := func(keys []Key) {
+		for _, k := range keys {
+			if k.Type != "forward" {
+				continue
+			}
+			if d, ok := ParseForwardKey(k.Value); ok {
+				seen[ForwardCode(d)] = true
+			}
+		}
+	}
+	for _, p := range phones {
+		add(p.Keys)
+		for _, m := range p.Modules {
+			add(m.Keys)
+		}
+	}
+	out := make([]string, 0, len(seen))
+	for n := range seen {
+		out = append(out, n)
+	}
+	slices.Sort(out)
+	return out
+}
+
+// HasForwardKey reports whether the phone has a forward key (its targets go into the dialplan).
+func (p *Phone) HasForwardKey() bool {
+	return len(ForwardTargets([]Phone{*p})) > 0
 }

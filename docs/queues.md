@@ -23,7 +23,8 @@ are spread over the agents by a distribution strategy. Numbers are in the 700 ra
 3. Add **agents**. **Dynamic** agents sign in and out themselves (user portal, desktop softphone or `*45`); agents
    set to **Always on** are always signed in. A **penalty** puts an agent further back.
 4. Optional: a **greeting** (a [voice prompt](prompts.md) played once when the caller enters), **music on hold**
-   and **announce position** every N seconds.
+   and **announce position** every N seconds. Callers hear the announcements in the
+   [caller language](settings.md#caller-language); **Caller language** on the queue sets it apart.
 5. Set the timings and limits, and **when the queue is full or too slow**: the overflow destination.
 
 ![Editing the Support queue](shot:queue-edit)
@@ -83,6 +84,12 @@ joined, never other calls of the agent, and every use is written to the audit lo
 !!! warning "Privacy"
     Listening in on calls is processing of personal data. Tell your employees (and, where needed, callers) that
     calls in this queue can be listened to, for example in the greeting and in your privacy policy.
+
+## External numbers
+
+Under **Agents**, **External numbers** adds numbers outside the PBX that take calls like an agent, for example a mobile
+or another office. Type a name and number or pick one **From the phone book**. The queue rings them over the trunk, so
+every call uses an outside line. Untick a number to keep it in the list without ringing it. Up to 20 per queue.
 
 ## Agents on other sites
 

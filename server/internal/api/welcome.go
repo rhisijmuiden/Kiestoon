@@ -189,7 +189,8 @@ func (s *Server) sendWelcome(r *http.Request, u *auth.User, e *pbx.Extension) we
 // welcomeForExtension creates or links the portal account of a (new) extension and mails it.
 func (s *Server) welcomeForExtension(r *http.Request, e *pbx.Extension, lang string) welcomeResult {
 	if lang != "nl" && lang != "en" {
-		lang = sessionFrom(r).User.Language
+		// New users get the caller language of the phone system.
+		lang = s.defaultLanguage(r.Context())
 	}
 	u, created, err := s.ensurePortalUser(r.Context(), e, lang)
 	if err != nil {

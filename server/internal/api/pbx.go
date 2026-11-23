@@ -257,11 +257,15 @@ func (s *Server) saveExtension(w http.ResponseWriter, r *http.Request) {
 	}
 	e.ID = pathID(r)
 	created := e.ID == 0
+	oldGroup := int64(0)
 	if e.ID != 0 {
 		old, err := s.PBX.Extension(r.Context(), e.ID)
 		if err != nil {
 			s.saveErr(w, err)
 			return
+		}
+		if old.GroupID != nil {
+			oldGroup = *old.GroupID
 		}
 		if e.SIPSecret == "" {
 			e.SIPSecret = old.SIPSecret
@@ -276,6 +280,12 @@ func (s *Server) saveExtension(w http.ResponseWriter, r *http.Request) {
 	}
 	s.audit(r, "extension.saved", e.Number)
 	s.Ast.Changed()
+	// Moved into a group: its phones take the group's key templates.
+	if e.GroupID != nil && *e.GroupID != 0 && *e.GroupID != oldGroup {
+		if g, err := s.PBX.ExtensionGroup(r.Context(), *e.GroupID); err == nil {
+			s.applyGroupTemplates(r.Context(), &pbx.ExtensionGroup{KeyTemplateIDs: g.KeyTemplateIDs, Members: []int64{e.ID}})
+		}
+	}
 	// A new extension with an e-mail address gets a portal account and a welcome e-mail when the
 	// administrator asks for it (the form does by default).
 	if created && e.Email != "" && r.URL.Query().Get("welcome") == "1" {

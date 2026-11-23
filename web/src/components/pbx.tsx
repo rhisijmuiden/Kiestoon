@@ -119,12 +119,15 @@ export function NumberOptions({ id }: { id: string }) {
 }
 
 /** Picks where a call goes: a type and, depending on the type, an object or a phone number. */
-export function DestinationPicker({ label, value, onChange, allowNone, exclude }: {
+export function DestinationPicker({ label, value, onChange, allowNone, exclude, types: only }: {
   label: string; value: Destination; onChange: (d: Destination) => void; allowNone?: boolean; exclude?: { type: DestType; target: string }
+  /** Offer only these destination types (in this order, when the system has them). */
+  types?: DestType[]
 }) {
   const { t } = useTranslation()
   const d = useDestinations()
-  const types = d?.types ?? ['extension', 'voicemail', 'external', 'hangup']
+  const all: DestType[] = d?.types ?? ['extension', 'voicemail', 'external', 'hangup']
+  const types = only ? only.filter((ty) => all.includes(ty)) : all
   const options = (d?.options ?? []).filter((o) => o.type === value.type && !(exclude && o.type === exclude.type && o.target === exclude.target))
   const needsTarget = value.type !== '' && value.type !== 'hangup'
   return (

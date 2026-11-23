@@ -30,7 +30,8 @@ op de regel stuur je de welkomstmail later opnieuw.
 | --- | --- |
 | **Transport** | UDP (standaard), TCP of TLS. Met TLS kun je ook **audio versleutelen (SRTP)** |
 | **Apparaten tegelijk** | Hoeveel apparaten tegelijk mogen registreren, bijvoorbeeld bureautoestel, softphone en mobiele app (standaard 3) |
-| **Uitgaand nummer** | Het nummer dat anderen zien. Leeg: de uitgaande route of trunk bepaalt het |
+| **Toestelgroep** | De [toestelgroep](extension-groups.md) waar het toestel in zit. Instellingen die de groep vastzet staan in het formulier op slot |
+| **Uitgaand nummer** | Het nummer dat anderen zien. Leeg: het nummer van de groep, anders bepaalt de uitgaande route of trunk het |
 | **Belduur** | Seconden voordat het gesprek naar voicemail of de doorschakeling bij geen gehoor gaat (standaard 25) |
 | **Voicemail** | Aan of uit, met een **pincode** (4-8 cijfers, wordt gemaakt als je hem leeg laat) |
 | **Voicemail naar e-mail sturen** | Het bericht komt als audiobijlage; eventueel **verwijderen na versturen** |

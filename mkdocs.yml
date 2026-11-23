@@ -87,6 +87,7 @@ plugins:
             How Kiestoon works: Hoe Kiestoon werkt
             Telephony: Telefonie
             Extensions: Toestellen
+            Extension groups: Toestelgroepen
             Phones and provisioning: Telefoons en provisioning
             Phone keys and modules: Toetsen en uitbreidingsmodules
             Hot desks: Flexplekken
@@ -131,6 +132,8 @@ plugins:
             Separate host names: Eigen hostnamen
             System: Systeem
             Backups and restore: Back-ups en herstellen
+            Import from another system: Importeren uit een andere centrale
+            'Import: UniFi Talk': 'Importeren: UniFi Talk'
             Mail server: Mailserver
             CRM integrations and call pop-up: CRM-koppelingen en belpop-up
             API, webhooks and metrics: API, webhooks en metrics
@@ -148,6 +151,7 @@ nav:
       - How Kiestoon works: concepts.md
   - Telephony:
       - Extensions: extensions.md
+      - Extension groups: extension-groups.md
       - Phones and provisioning: phones.md
       - Phone keys and modules: phone-keys.md
       - Hot desks: hotdesk.md
@@ -192,6 +196,8 @@ nav:
       - Separate host names: hostnames.md
   - System:
       - Backups and restore: backups.md
+      - Import from another system: import.md
+      - 'Import: UniFi Talk': import/unifi-talk.md
       - Mail server: mail.md
       - CRM integrations and call pop-up: crm.md
       - API, webhooks and metrics: api.md

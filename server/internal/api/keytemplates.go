@@ -88,14 +88,13 @@ func (s *Server) applyKeyTemplate(w http.ResponseWriter, r *http.Request) {
 			fieldErr(w, "phoneIds")
 			return
 		}
-		p.Keys = append([]pbx.Key{}, t.Keys...)
-		p.Modules = []pbx.Module{}
-		for _, m := range t.Modules {
-			p.Modules = append(p.Modules, pbx.Module{Type: m.Type, Keys: append([]pbx.Key{}, m.Keys...)})
-		}
+		copyTemplate(t, p)
 		if err := s.PBX.SavePhone(r.Context(), p, lim); err != nil {
 			s.saveErr(w, err)
 			return
+		}
+		if p.HasForwardKey() {
+			s.Ast.Changed() // the dialplan holds the forward key codes
 		}
 		applied++
 		if req.Resync == nil || *req.Resync {

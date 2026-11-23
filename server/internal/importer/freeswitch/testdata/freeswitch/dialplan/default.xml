@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<include>
+  <context name="default">
+    <extension name="Local_Extension">
+      <condition field="destination_number" expression="^(10[01][0-9])$">
+        <action application="set" data="call_timeout=30"/>
+        <action application="bridge" data="user/$1@${domain_name}"/>
+        <action application="voicemail" data="default ${domain_name} $1"/>
+      </condition>
+    </extension>
+    <extension name="group_dial_sales">
+      <condition field="destination_number" expression="^2000$">
+        <action application="bridge" data="group/sales@${domain_name}"/>
+      </condition>
+    </extension>
+    <extension name="ivr_main">
+      <condition field="destination_number" expression="^5000$">
+        <action application="answer"/>
+        <action application="ivr" data="main_menu"/>
+        <action application="transfer" data="1000 XML default"/>
+      </condition>
+    </extension>
+    <extension name="support_queue">
+      <condition field="destination_number" expression="^7000$">
+        <action application="callcenter" data="support@default"/>
+      </condition>
+    </extension>
+    <extension name="office_hours">
+      <condition field="destination_number" expression="^5555$"/>
+      <condition wday="2-6" time-of-day="08:00-17:30">
+        <action application="transfer" data="5000 XML default"/>
+        <anti-action application="playback" data="custom/closed.wav"/>
+        <anti-action application="voicemail" data="default ${domain_name} 1000"/>
+      </condition>
+    </extension>
+  </context>
+</include>

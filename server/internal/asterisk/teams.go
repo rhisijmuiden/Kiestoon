@@ -152,6 +152,9 @@ func genTeamsDialplan(x *w, s *pbx.Snapshot, o Options) {
 		}
 		if e, ok := exts[u.Extension]; ok && e.Enabled {
 			x.f(" same => n,Set(KT_TEXT=%s)", e.Number)
+			if g := groupVar(s, e); g != "" {
+				x.f(" same => n,Set(KT_GROUP=%s)", g)
+			}
 			x.f(" same => n,Set(KT_CLASS=%s)", e.OutboundClass)
 			x.f(" same => n,Set(KT_PREMIUM=%d)", b2i(e.AllowPremium))
 			x.f(" same => n,Set(KT_TNAME=%s)", esc(strings.NewReplacer(",", " ", "(", "", ")", "", `"`, "").Replace(e.Name)))

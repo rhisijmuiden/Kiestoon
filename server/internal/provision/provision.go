@@ -33,7 +33,32 @@ type Settings struct {
 	// AdminPassword is the shared web interface password.
 	AdminPassword string `json:"adminPassword"`
 	NTPServer     string `json:"ntpServer"`
-	Language      string `json:"language"` // en | nl
+	// Language of the phone screens: system (the caller language of the phone system, the
+	// default), en or nl.
+	Language string `json:"language"`
+	// systemLanguage is the caller language of the phone system, filled in by Load.
+	systemLanguage string
+}
+
+// LangSystem lets the phone screens follow the caller language of the phone system.
+const LangSystem = "system"
+
+// Lang is the language the phones get: en or nl.
+func (s Settings) Lang() string {
+	if s.Language == "en" || s.Language == "nl" {
+		return s.Language
+	}
+	if s.systemLanguage == "nl" {
+		return "nl"
+	}
+	return "en"
+}
+
+// WithSystemLanguage returns the settings with the caller language of the phone system set (for
+// settings that were not read with Load).
+func (s Settings) WithSystemLanguage(lang string) Settings {
+	s.systemLanguage = lang
+	return s
 }
 
 // Admin password modes.
@@ -44,9 +69,12 @@ const (
 
 // Load reads the settings and creates credentials on first use.
 func Load(ctx context.Context, db *sql.DB) (Settings, error) {
-	s := Settings{Enabled: true, NTPServer: "pool.ntp.org", Language: "en"}
+	s := Settings{Enabled: true, NTPServer: "pool.ntp.org", Language: LangSystem}
 	if err := store.GetJSON(ctx, db, SettingsKey, &s); err != nil {
 		return s, err
+	}
+	if st, err := pbx.LoadSettings(ctx, db); err == nil {
+		s.systemLanguage = st.Language
 	}
 	if s.AdminPasswordMode == "" {
 		s.AdminPasswordMode = AdminPerPhone
@@ -90,7 +118,7 @@ func (s *Settings) Validate() error {
 	if s.NTPServer == "" || !regexp.MustCompile(`^[A-Za-z0-9.-]{1,255}$`).MatchString(s.NTPServer) {
 		return fmt.Errorf("ntpServer")
 	}
-	if s.Language != "en" && s.Language != "nl" {
+	if s.Language != "en" && s.Language != "nl" && s.Language != LangSystem {
 		return fmt.Errorf("language")
 	}
 	return nil
@@ -285,7 +313,7 @@ func Yealink(in Input) string {
 	w("local_time.summer_time", 2)
 	w("local_time.time_format", 1)
 	w("local_time.date_format", 5)
-	if in.Settings.Language == "nl" {
+	if in.Settings.Lang() == "nl" {
 		w("lang.gui", "Dutch")
 		w("lang.wui", "Dutch")
 	} else {
@@ -410,7 +438,7 @@ func Snom(in Input) string {
 	w("http_pass", in.Settings.AdminPassword)
 	w("ntp_server", in.Settings.NTPServer)
 	w("timezone", "NLD+1")
-	if in.Settings.Language == "nl" {
+	if in.Settings.Lang() == "nl" {
 		w("language", "Nederlands")
 		w("web_language", "Nederlands")
 	} else {
@@ -530,7 +558,7 @@ func Grandstream(in Input) string {
 	p(2, in.Settings.AdminPassword) // admin password
 	p(30, in.Settings.NTPServer)    // NTP server
 	p(64, "CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00")
-	if in.Settings.Language == "nl" {
+	if in.Settings.Lang() == "nl" {
 		p(1362, "nl")
 	} else {
 		p(1362, "en")
@@ -719,6 +747,7 @@ func (r Request) Matches(vendor string) bool {
 // Render builds the configuration for a phone. For Poly this is the file with the settings; the
 // master file that points to it is PolyMaster.
 func Render(in Input) (body, contentType string) {
+	in = forwardKeys(in)
 	switch in.Phone.Vendor {
 	case "snom":
 		return Snom(in), "application/xml; charset=utf-8"

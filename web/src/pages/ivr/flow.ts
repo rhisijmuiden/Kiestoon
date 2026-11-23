@@ -82,8 +82,8 @@ export const MAX_PARALLEL = 5
 export const canRingTogether = (d: StepData | undefined) => d?.type === 'destination' && RING_TYPES.includes(d.destination?.type ?? '')
 
 /** The building blocks offered in the palette. */
-export type Kind = 'menu' | 'key' | 'audio' | 'speech' | 'extension' | 'ringgroup' | 'queue' | 'voicemail' | 'ivr' | 'external' | 'time' | 'repeat' | 'hangup' | 'timeout'
-export const kinds: Kind[] = ['menu', 'key', 'audio', 'speech', 'extension', 'ringgroup', 'queue', 'voicemail', 'time', 'ivr', 'external', 'repeat', 'hangup', 'timeout']
+export type Kind = 'menu' | 'key' | 'audio' | 'speech' | 'extension' | 'ringgroup' | 'queue' | 'voicemail' | 'ivr' | 'external' | 'oncall' | 'time' | 'repeat' | 'hangup' | 'timeout'
+export const kinds: Kind[] = ['menu', 'key', 'audio', 'speech', 'extension', 'ringgroup', 'queue', 'voicemail', 'time', 'ivr', 'external', 'oncall', 'repeat', 'hangup', 'timeout']
 
 export function kindTone(k: Kind): Tone {
   switch (k) {
@@ -156,6 +156,7 @@ export function portTone(port: FlowPort, src: StepData): Tone {
 }
 
 export function toFlow(nodes: StepNode[], edges: Edge[]): Flow {
+  const menus = new Set(nodes.filter((n) => isMenu(n.data)).map((n) => n.id))
   return {
     nodes: nodes.map((n) => {
       const d = n.data
@@ -168,6 +169,8 @@ export function toFlow(nodes: StepNode[], edges: Edge[]): Flow {
         out.intents = (d.intents ?? []).map((i) => ({ label: i.label.trim(), keywords: i.keywords.map((k) => k.trim()).filter(Boolean) }))
         if (d.ai) out.ai = true
       }
+      // "Back to" a menu that was deleted (or not pasted along) goes back to where the caller came from.
+      if (d.type === 'repeat' && d.menu && menus.has(d.menu)) out.menu = d.menu
       return out
     }),
     edges: edges.map((e) => ({ from: e.source, port: (e.sourceHandle ?? 'out') as FlowPort, to: e.target })),

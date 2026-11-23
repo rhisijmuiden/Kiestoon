@@ -96,7 +96,28 @@ func (r *Repo) SaveKeyTemplate(ctx context.Context, t *KeyTemplate, lim PhoneLim
 	return nil
 }
 
-// DeleteKeyTemplate removes a template.
+// DeleteKeyTemplate removes a template, also from the extension groups that use it.
 func (r *Repo) DeleteKeyTemplate(ctx context.Context, id int64) error {
-	return deleteRow(ctx, r.DB, "key_templates", id)
+	if err := deleteRow(ctx, r.DB, "key_templates", id); err != nil {
+		return err
+	}
+	groups, err := r.ExtensionGroups(ctx)
+	if err != nil {
+		return err
+	}
+	for _, g := range groups {
+		keep := []int64{}
+		for _, t := range g.KeyTemplateIDs {
+			if t != id {
+				keep = append(keep, t)
+			}
+		}
+		if len(keep) != len(g.KeyTemplateIDs) {
+			b, _ := json.Marshal(keep)
+			if _, err := r.DB.ExecContext(ctx, `UPDATE extension_groups SET key_template_ids = ? WHERE id = ?`, string(b), g.ID); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

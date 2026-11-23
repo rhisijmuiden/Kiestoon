@@ -551,7 +551,27 @@ type QueueOptions struct {
 	Callback    CallbackOptions `json:"callback"`
 	// SLA are the service level thresholds for the wallboard and the SLA alerts.
 	SLA SLAOptions `json:"sla"`
+	// External are contacts outside the PBX (a mobile, another office) that take calls of this
+	// queue like an agent; the queue rings them over the trunk.
+	External []ExternalMember `json:"external"`
+	// Language callers of this queue hear (announcements, position, hold time): en or nl, or
+	// empty for the caller language of the phone system.
+	Language string `json:"language,omitempty"`
 }
+
+// ExternalMember is an external number that is a member of a queue.
+type ExternalMember struct {
+	Name    string `json:"name"`
+	Number  string `json:"number"`
+	Penalty int    `json:"penalty"`
+	// Active members get calls; an inactive one stays in the list but is not rung.
+	Active bool `json:"active"`
+}
+
+// MaxExternalMembers limits the external numbers of one queue.
+const MaxExternalMembers = 20
+
+var reExternalNumber = regexp.MustCompile(`^\+?[0-9]{3,20}$`)
 
 // CallbackOptions configure the queue callback: a waiting caller presses 1, hangs up and keeps their
 // place; when an agent is free the agent is connected first and then the caller is called back.
@@ -572,6 +592,31 @@ type CallbackOptions struct {
 func (o *QueueOptions) normalize() error {
 	if err := o.SLA.normalize(); err != nil {
 		return err
+	}
+	if o.External == nil {
+		o.External = []ExternalMember{}
+	}
+	if len(o.External) > MaxExternalMembers {
+		return invalid("invalid", "options.external")
+	}
+	seenNum := map[string]bool{}
+	for i := range o.External {
+		m := &o.External[i]
+		m.Name = cleanText(m.Name, 40)
+		m.Number = strings.NewReplacer(" ", "", "-", "", "(", "", ")", "", ".", "").Replace(strings.TrimSpace(m.Number))
+		if !reExternalNumber.MatchString(m.Number) {
+			return invalid("invalid", "options.external")
+		}
+		if seenNum[m.Number] {
+			return invalid("duplicate", "options.external")
+		}
+		seenNum[m.Number] = true
+		if m.Penalty < 0 || m.Penalty > 10 {
+			return invalid("invalid", "options.external")
+		}
+	}
+	if !ValidLanguageOverride(o.Language) {
+		return invalid("invalid", "options.language")
 	}
 	c := &o.Callback
 	def := func(v *int, d, min, max int, field string) error {
@@ -618,6 +663,9 @@ func scanQueue(row interface{ Scan(...any) error }) (*Queue, error) {
 		return nil, ErrNotFound
 	}
 	_ = json.Unmarshal([]byte(opts), &q.Options)
+	if q.Options.External == nil {
+		q.Options.External = []ExternalMember{}
+	}
 	_ = q.Options.normalize()
 	q.AnnouncePosition, q.JoinEmpty, q.Record, q.Enabled = ap == 1, je == 1, rec == 1, en == 1
 	q.Members = []QueueMember{}
@@ -1418,7 +1466,7 @@ type FeatureCode struct {
 // FeatureCodes are the star codes Kiestoon's dialplan understands.
 var FeatureCodes = []FeatureCode{
 	{"*97", "voicemail"}, {"*98", "voicemailAny"}, {"*43", "echo"},
-	{"*72<number>", "forwardOn"}, {"*73", "forwardOff"}, {"*76", "dndToggle"},
+	{"*72<number>", "forwardOn"}, {"*73", "forwardOff"}, {"*74<number>", "forwardToggle"}, {"*76", "dndToggle"},
 	{"*45", "queueToggle"}, {"*45<queue>", "queueToggleOne"},
 	{"*8", "groupPickup"}, {"**<extension>", "directedPickup"},
 	{"70", "park"}, {"71 … 79", "parkSlots"},

@@ -14,6 +14,9 @@ type ivrLiveDest struct {
 	Members int    `json:"members,omitempty"` // ring group or queue: configured members
 	Online  *int   `json:"online,omitempty"`  // queue: agents signed in and reachable (only when the PBX is connected)
 	Waiting int    `json:"waiting,omitempty"` // queue: callers waiting now
+	OnDuty  string `json:"onDuty,omitempty"`  // on-call team: who is on duty now (first line)
+	Backup  string `json:"backup,omitempty"`  // on-call team: the second line now
+	Off     bool   `json:"off,omitempty"`     // on-call team: switched off
 }
 
 // ivrLive answers GET /api/pbx/ivrs/live: whether each time condition is open now and the live state
@@ -57,7 +60,29 @@ func (s *Server) ivrLive(w http.ResponseWriter, r *http.Request) {
 		for _, q := range qs {
 			d := live[q.ID]
 			d.Members = len(q.Members)
+			for _, m := range q.Options.External {
+				if m.Active {
+					d.Members++
+				}
+			}
 			dests["queue:"+id(q.ID)] = d
+		}
+	}
+	if teams, err := s.PBX.OnCallTeams(ctx); err == nil {
+		for _, t := range teams {
+			dests["oncall:"+id(t.ID)] = ivrLiveDest{Off: !t.Enabled}
+		}
+		if live, err := s.PBX.OnCallLive(ctx, time.Now().In(s.loc(ctx))); err == nil {
+			for _, l := range live {
+				d := ivrLiveDest{}
+				if l.Primary != nil {
+					d.OnDuty = l.Primary.Name
+				}
+				if l.Backup != nil {
+					d.Backup = l.Backup.Name
+				}
+				dests["oncall:"+id(l.Team.ID)] = d
+			}
 		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"open": open, "dests": dests})

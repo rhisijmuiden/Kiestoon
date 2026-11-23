@@ -90,10 +90,12 @@ export function pasteClip(clip: Clip, target: StepNode | undefined, nodes: StepN
     dy = 60
   }
 
-  const newNodes: StepNode[] = clip.nodes.filter((n) => n.id !== skip).map((n) => ({
-    id: ids.get(n.id)!, type: 'step', position: { x: n.position.x + dx, y: n.position.y + dy },
-    data: structuredClone(n.data), selected: true,
-  }))
+  const newNodes: StepNode[] = clip.nodes.filter((n) => n.id !== skip).map((n) => {
+    const data = structuredClone(n.data)
+    // "Back to" a copied menu points to its copy (or to the menu it was merged into).
+    if (data.menu) data.menu = data.menu === skip && target ? target.id : ids.get(data.menu) ?? (nodes.some((x) => x.id === data.menu) ? data.menu : undefined)
+    return { id: ids.get(n.id)!, type: 'step', position: { x: n.position.x + dx, y: n.position.y + dy }, data, selected: true }
+  })
   const dataOf = (id: string) => newNodes.find((n) => n.id === id)?.data
   const newEdges: Edge[] = clip.edges.filter((e) => e.source !== skip)
     .map((e) => makeEdge(ids.get(e.source)!, e.port, ids.get(e.target)!, dataOf(ids.get(e.source)!)!))

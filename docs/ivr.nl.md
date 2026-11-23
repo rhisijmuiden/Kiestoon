@@ -13,7 +13,10 @@ stap eigen audio.
 2. Klik **Binnenkomend gesprek** en geef het menu een **naam** in het zijpaneel. Stel in:
     - **Wachten op een toets**: seconden dat het menu wacht na de aankondiging,
     - **Menu herhalen**: hoe vaak het menu opnieuw speelt voordat het stopt,
-    - **Toestelnummer intoetsen toestaan**: bellers die een toestelnummer kennen, kunnen het direct kiezen.
+    - **Toestelnummer intoetsen toestaan**: bellers die een toestelnummer kennen, kunnen het direct kiezen,
+    - **Taal voor bellers**: de taal van dit menu, als die afwijkt van de
+      [taal voor bellers](settings.md#taal-voor-bellers) van het systeem. Het is ook de standaardtaal van tekst die je
+      laat uitspreken.
 3. Geef het binnenkomende gesprek een **audiobericht** (de welkomsttekst), zie [Audio per stap](#audio-per-stap).
 4. Sleep bouwstenen uit de balk boven het canvas (of klik erop om ze toe te voegen) en verbind ze.
 5. Klik **Opslaan** en daarna **Testgesprek**.
@@ -32,13 +35,14 @@ bewegende stipjes op de lijnen (de richting van het gesprek) aan of uit.
 | **Keuzemenu** | Een volgend menu met een eigen tekst en toetsen, bijvoorbeeld één per tak van een tijdconditie | Naar zijn toetskeuzes en *Geen invoer* |
 | **Toetskeuze** | "Toets 1": de beller drukte deze toets | Eén, of meerdere bestemmingen die [tegelijk overgaan](#meerdere-bestemmingen-tegelijk-laten-overgaan) |
 | **Geen invoer** | De beller drukte niets of een ongebruikte toets, nadat het menu herhaald is | Eén |
-| **Audio afspelen** | Speelt een bericht en volgt dan de lijn | Eén |
+| **Audio afspelen** | Speelt een bericht en doet daarna wat je kiest onder [Na het bericht](#na-het-bericht) | Eén |
 | **Spraakvraag** | Vraagt waarvoor de beller belt en luistert naar het antwoord (zie [hieronder](#spraakvraag)) | Eén per antwoord, plus *Niet begrepen* |
 | **Toestel, Belgroep, Wachtrij, Voicemail** | Verbindt het gesprek daarheen door | Eindpunt |
 | **Submenu** | Een ander keuzemenu | Eindpunt |
 | **Extern nummer** | Schakelt door naar een nummer buiten | Eindpunt |
+| **Storingsdienst** | Belt wie op dit moment dienst heeft in een [storingsdienst](on-call.md) | Eindpunt |
 | **Tijdconditie** | Controleert de openingstijden en de dag/nachtschakelaar | Twee: *open* en *gesloten* |
-| **Herhaal menu** | Terug naar het begin van het menu | Eindpunt |
+| **Terug naar menu** | Terug naar het begin van een menu: het menu waar de beller vandaan kwam, het hoofdmenu of een keuzemenu dat je kiest | Eindpunt |
 | **Ophangen** | Beëindigt het gesprek | Eindpunt |
 
 Gekoppelde centrales voegen **Andere locatie** toe, en [follow-the-sun](multi-site.md#follow-the-sun)-routes kunnen
@@ -95,6 +99,28 @@ vrije nummers van je trunks (en nummers die nu elders heen gaan; die verhuizen d
 nummer. Dat maakt meteen de inkomende route aan, dezelfde die je ziet onder **Trunks & routes › Inkomende routes**;
 met het × haal je hem weer weg. De nummers staan op de stap *Binnenkomend gesprek*. Sla een nieuw menu eerst één
 keer op voordat je nummers koppelt.
+
+## Na het bericht
+
+Selecteer je een stap **Audio afspelen**, dan toont het zijpaneel **Na het bericht** met een lijst **Daarna**:
+
+- **Het menu waar de beller vandaan kwam**, het **hoofdmenu** of een **keuzemenu**: de beller hoort dat menu opnieuw en
+  kan nog een keer kiezen;
+- **Ophangen**;
+- **Verder naar een stap**: elke stap die al op het canvas staat, zoals een wachtrij of een ander bericht.
+
+Je keuze tekent de lijn op het canvas, zodat je altijd ziet wat er gebeurt. Een nieuwe audiostap gaat terug naar het
+menu waar de beller vandaan kwam, totdat je iets anders kiest. Je kunt de lijn ook zelf slepen; de lijst volgt die.
+
+Een stap **Terug naar menu** doet hetzelfde op zichzelf: kies in het zijpaneel naar welk menu hij teruggaat.
+
+## Storingsdienst buiten kantoortijden
+
+Gebruik de bouwsteen **Storingsdienst** voor gesprekken buiten kantoortijden, bijvoorbeeld onder een toets van het
+keuzemenu voor *gesloten* na een tijdcontrole. Kies de storingsdienst in het zijpaneel. De stap toont wie nu dienst
+heeft (en de reserve); het gesprek volgt daarna de escalatie van de dienst, zie [Storingsdienst](on-call.md). Een
+storingsdienst kan ook de overloop van een wachtrij zijn: kies *Storingsdienst* onder **Als de wachtrij vol of te traag is** in de
+wachtrij.
 
 ## Meerdere bestemmingen tegelijk laten overgaan
 

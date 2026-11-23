@@ -884,6 +884,24 @@ var migrations = []string{
 		position INTEGER NOT NULL DEFAULT 0
 	);
 	CREATE INDEX trunk_numbers_trunk ON trunk_numbers(trunk_id);`,
+	// Extension groups: a caller ID, enforced settings and key templates for all members, and
+	// outbound routes only some groups may use. An extension is in at most one group.
+	`CREATE TABLE extension_groups (
+		id         INTEGER PRIMARY KEY,
+		name       TEXT NOT NULL UNIQUE COLLATE NOCASE,
+		caller_id  TEXT NOT NULL DEFAULT '',
+		-- settings the group enforces on its members (JSON, unset keys stay per extension)
+		settings   TEXT NOT NULL DEFAULT '{}',
+		-- key templates (at most one per phone model) applied to the members' phones
+		key_template_ids TEXT NOT NULL DEFAULT '[]',
+		created_at TEXT NOT NULL
+	);
+	CREATE TABLE extension_group_members (
+		extension_id INTEGER PRIMARY KEY REFERENCES extensions(id) ON DELETE CASCADE,
+		group_id     INTEGER NOT NULL REFERENCES extension_groups(id) ON DELETE CASCADE
+	);
+	CREATE INDEX extension_group_members_group ON extension_group_members(group_id);
+	ALTER TABLE outbound_routes ADD COLUMN group_ids TEXT NOT NULL DEFAULT '[]';`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

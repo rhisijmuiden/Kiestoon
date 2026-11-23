@@ -91,6 +91,9 @@ type FlowNode struct {
 	// Intents of a speech step; AI lets the AI engine choose when no keyword matches.
 	Intents []SpeechIntent `json:"intents,omitempty"`
 	AI      bool           `json:"ai,omitempty"`
+	// Menu of a "back to menu" (repeat) step: the id of the entry or a menu step to go back to;
+	// empty goes back to the menu the caller came from.
+	Menu string `json:"menu,omitempty"`
 }
 
 // FlowEdge is a line from a node's port to another node.
@@ -104,6 +107,9 @@ type FlowEdge struct {
 type Flow struct {
 	Nodes []FlowNode `json:"nodes"`
 	Edges []FlowEdge `json:"edges"`
+	// Language callers of this IVR hear: en or nl, or empty for the caller language of the
+	// phone system.
+	Language string `json:"language,omitempty"`
 }
 
 // KeyOrder is the order in which key prompts are played and keys are listed.
@@ -317,6 +323,9 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 	if len(f.Nodes) > MaxFlowNodes || len(f.Edges) > MaxFlowNodes*3 {
 		return invalid("too_large", "flow")
 	}
+	if !ValidLanguageOverride(f.Language) {
+		return invalid("invalid", "flow.language")
+	}
 	ids := map[string]bool{}
 	var entries int
 	prompts := map[int64]bool{}
@@ -338,6 +347,9 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 		}
 		if n.Type != NodeSpeech {
 			n.Intents, n.AI = nil, false
+		}
+		if n.Type != NodeRepeat {
+			n.Menu = ""
 		}
 		switch n.Type {
 		case NodeEntry:
@@ -397,6 +409,11 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 	}
 	if entries != 1 {
 		return invalid("invalid", "flow")
+	}
+	for _, n := range f.Nodes {
+		if n.Menu != "" && !isMenu(f.Node(n.Menu)) {
+			return invalid("invalid_line", "flow")
+		}
 	}
 	// Lines: from a known node and port to a known node; one line per port, except a menu (a line
 	// to each key, its timeout and at most one start step) and destinations that ring together.

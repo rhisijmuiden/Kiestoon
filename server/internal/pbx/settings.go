@@ -37,7 +37,10 @@ type Settings struct {
 	RTPEnd    int      `json:"rtpEnd"`
 	// Codecs for phones, in order of preference.
 	Codecs string `json:"codecs"`
-	// Language of prompts and voicemail e-mails: en or nl.
+	// Language is the caller language: everything callers hear (Asterisk prompts, queue
+	// announcements, voicemail, numbers), the phone screens (unless set apart), the default
+	// language of spoken text and of new users, and system e-mails: en or nl. The language of
+	// the web interface is a choice per user.
 	Language string `json:"language"`
 	// NationalCallerID shows +31 20 … as 020 … on phones, so calling back works.
 	NationalCallerID bool `json:"nationalCallerId"`
@@ -641,6 +644,11 @@ func (r *Repo) validateOutbound(ctx context.Context, x *OutboundRoute) error {
 	if x.CallerID != "" && !reCallerID.MatchString(x.CallerID) {
 		return invalid("invalid", "callerId")
 	}
+	gids, err := r.validateGroupIDs(ctx, x.GroupIDs)
+	if err != nil {
+		return err
+	}
+	x.GroupIDs = gids
 	return nil
 }
 
@@ -651,4 +659,19 @@ func setJSONTx(ctx context.Context, tx *sql.Tx, key string, v any) error {
 	}
 	_, err = tx.ExecContext(ctx, `INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, b)
 	return err
+}
+
+// ValidLanguageOverride reports whether v is a language for one queue or IVR: en, nl, or empty
+// for the caller language of the phone system.
+func ValidLanguageOverride(v string) bool { return v == "" || v == "en" || v == "nl" }
+
+// CallerLanguage is the language callers hear in a queue or IVR with the override v.
+func (s Settings) CallerLanguage(v string) string {
+	if v == "en" || v == "nl" {
+		return v
+	}
+	if s.Language == "nl" {
+		return "nl"
+	}
+	return "en"
 }

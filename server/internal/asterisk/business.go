@@ -123,8 +123,10 @@ func genAppWake(x *w, s *pbx.Snapshot) {
 }
 
 // classVars makes forwarded and follow-me calls use the outbound rights of the extension that forwards.
-func classVars(x *w, e pbx.Extension) {
+// The forwarder's extension group decides which group-only outbound routes the call may take.
+func classVars(x *w, s *pbx.Snapshot, e pbx.Extension) {
 	x.f(" same => n,Set(__KT_CLASS=%s)", e.OutboundClass)
+	x.f(" same => n,Set(__KT_GROUP=%s)", groupVar(s, e))
 	x.f(" same => n,Set(__KT_PREMIUM=%d)", b2i(e.AllowPremium))
 	x.f(" same => n,Set(__KT_FWDBY=%s)", e.Number)
 }
@@ -148,6 +150,11 @@ func forwardTo(x *w, num string) {
 	mark(x, "fwd", "num="+num)
 	x.f(" same => n,Set(KT_HOPS=$[${KT_HOPS} + 1])")
 	x.f(` same => n,GotoIf($[${KT_HOPS} > 5]?loop)`)
+	if d, ok := pbx.ParseForwardCode(num); ok {
+		// A forward key to a destination inside Kiestoon (IVR, queue, on-call team, ...).
+		x.f(" same => n,%s", destGoto(d))
+		return
+	}
 	x.f(" same => n,Goto(kiestoon-forward,%s,1)", num)
 }
 
@@ -207,7 +214,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 			x.f(" same => n,Goto(busy)")
 		}
 		if f.ForwardAlways != "" {
-			classVars(x, e)
+			classVars(x, s, e)
 			forwardTo(x, f.ForwardAlways)
 		}
 		if f.ScheduleID != 0 && f.ClosedForward != "" && tcs[f.ScheduleID] {
@@ -223,7 +230,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		}
 		fm := f.FollowMe
 		if fm.Enabled && len(fm.Numbers) > 0 {
-			classVars(x, e)
+			classVars(x, s, e)
 			extra := ""
 			for _, n := range fm.Numbers {
 				extra += "&Local/" + n + "@kiestoon-followme/n"
@@ -247,7 +254,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		x.f(` same => n,GotoIf($["${DIALSTATUS}" = "ANSWER"]?done)`)
 		// Not answered or not reachable.
 		if f.ForwardNoAnswer != "" {
-			classVars(x, e)
+			classVars(x, s, e)
 			forwardTo(x, f.ForwardNoAnswer)
 		} else if e.Voicemail {
 			mark(x, "vm", "box="+e.Number, "reason=noanswer")
@@ -258,7 +265,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		x.f(" same => n(done),Hangup()")
 		x.f(" same => n(busy),NoOp(Busy)")
 		if f.ForwardBusy != "" {
-			classVars(x, e)
+			classVars(x, s, e)
 			forwardTo(x, f.ForwardBusy)
 		} else if e.Voicemail {
 			mark(x, "vm", "box="+e.Number, "reason=busy")
@@ -270,7 +277,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		if f.ScheduleID != 0 && f.ClosedForward != "" && tcs[f.ScheduleID] {
 			x.f(" same => n(closed),NoOp(Outside schedule)")
 			mark(x, "closed", "num="+e.Number)
-			classVars(x, e)
+			classVars(x, s, e)
 			forwardTo(x, f.ClosedForward)
 		}
 		x.f(" same => n(loop),NoOp(Forwarding loop)")
@@ -336,8 +343,11 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		x.f("exten => %s,1,Set(KT_EXT=%s)", e.Number, e.Number)
 		x.f(" same => n,Set(KT_CLASS=%s)", e.OutboundClass)
 		x.f(" same => n,Set(KT_PREMIUM=%d)", b2i(e.AllowPremium))
-		if e.OutboundCID != "" {
-			x.f(" same => n,Set(KT_OUTCID=%s)", esc(e.OutboundCID))
+		if cid := s.OutboundCallerID(e); cid != "" {
+			x.f(" same => n,Set(KT_OUTCID=%s)", esc(cid))
+		}
+		if g := groupVar(s, e); g != "" {
+			x.f(" same => n,Set(KT_GROUP=%s)", g)
 		}
 		x.f(" same => n,Set(CALLERID(all)=\"%s\" <%s>)", esc(strings.ReplaceAll(e.Name, `"`, "")), e.Number)
 		x.f(" same => n,Return()")
@@ -499,6 +509,9 @@ func genQueues(x *w, s *pbx.Snapshot, o Options) {
 		}
 		x.f("[kiestoon-queue-%d]", q.ID)
 		x.f("exten => s,1,NoOp(Queue %s %s)", q.Number, esc(q.Name))
+		// The caller hears the queue in its language, also when the call came in through a
+		// Local channel or from another system.
+		x.f(" same => n,Set(CHANNEL(language)=%s)", s.Settings.CallerLanguage(q.Options.Language))
 		mark(x, "queue", fmt.Sprintf("id=%d", q.ID))
 		if q.CIDPrefix != "" {
 			x.f(" same => n,Set(CALLERID(name)=%s${CALLERID(name)})", esc(q.CIDPrefix))
@@ -526,6 +539,7 @@ func genQueues(x *w, s *pbx.Snapshot, o Options) {
 		// "par": the queue as one of several destinations that ring at the same time (IVR). The
 		// call is not answered here: the agents ring, and the first to answer anywhere gets it.
 		x.f("exten => par,1,NoOp(Queue %s rings together with other destinations)", q.Number)
+		x.f(" same => n,Set(CHANNEL(language)=%s)", s.Settings.CallerLanguage(q.Options.Language))
 		mark(x, "queue", fmt.Sprintf("id=%d", q.ID))
 		if q.CIDPrefix != "" {
 			x.f(" same => n,Set(CALLERID(name)=%s${CALLERID(name)})", esc(q.CIDPrefix))
@@ -589,6 +603,17 @@ func genQueuesConf(s *pbx.Snapshot) string {
 			x.f("member => Local/%s@kiestoon-ring/n,%d,%s,hint:%s@kiestoon-extensions", m.Number, m.Penalty,
 				esc(strings.ReplaceAll(m.Name, ",", " ")), m.Number)
 		}
+		// External numbers ring over the trunk like any outside call.
+		for _, m := range q.Options.External {
+			if !m.Active {
+				continue
+			}
+			name := m.Name
+			if name == "" {
+				name = m.Number
+			}
+			x.f("member => Local/%s@kiestoon-external/n,%d,%s", m.Number, m.Penalty, esc(strings.ReplaceAll(name, ",", " ")))
+		}
 		remoteQueueMembers(&x, s, q)
 		x.nl()
 	}
@@ -643,6 +668,7 @@ func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 			x.f("include => kiestoon-direct")
 		}
 		x.f("exten => s,1,NoOp(IVR %s)", esc(v.Name))
+		x.f(" same => n,Set(CHANNEL(language)=%s)", s.Settings.CallerLanguage(f.Language))
 		x.f(" same => n,Answer()")
 		mark(x, "ivr", fmt.Sprintf("id=%d", v.ID))
 		if start != nil {
@@ -708,8 +734,22 @@ func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 			case pbx.NodeRepeat:
 				mark(x, "ivrrepeat", fmt.Sprintf("id=%d", v.ID))
 				x.f(" same => n,Set(KT_TRIES=0)")
-				x.f(` same => n,ExecIf($["${KT_MENU}" = ""]?Set(KT_MENU=%s))`, mainCtx)
-				x.f(" same => n,Goto(${KT_MENU},s,start)")
+				back := f.Node(n.Menu)
+				switch {
+				case back != nil && back.Type == pbx.NodeMenu:
+					x.f(" same => n,Goto(%s-m%d,s,start)", mainCtx, steps[back.ID])
+				case back != nil && start != nil:
+					// Back to the start: the welcome and the start step (for example the time check) again.
+					x.f(" same => n,Goto(%s,s,1)", mainCtx)
+				case back != nil:
+					x.f(" same => n,Goto(%s,s,start)", mainCtx)
+				case start != nil:
+					x.f(` same => n,GotoIf($["${KT_MENU}" = ""]?%s,s,1)`, mainCtx)
+					x.f(" same => n,Goto(${KT_MENU},s,start)")
+				default:
+					x.f(` same => n,ExecIf($["${KT_MENU}" = ""]?Set(KT_MENU=%s))`, mainCtx)
+					x.f(" same => n,Goto(${KT_MENU},s,start)")
+				}
 			}
 		}
 		// Destinations that ring at the same time: each in its own Local channel; the first to
@@ -1066,6 +1106,29 @@ func genFeatureCodes(x *w, s *pbx.Snapshot, o Options) {
 	x.f("exten => *73,1,Goto(kiestoon-fc-${KT_EXT},fwdoff,1)")
 	x.f("exten => _*72X.,1,Set(KT_TO=${FILTER(0-9+,${EXTEN:3})})")
 	x.f(" same => n,Goto(kiestoon-fc-${KT_EXT},fwdon,1)")
+	// *74<number> switches unconditional forwarding to <number> on, or off when it is on. A forward
+	// key on a phone dials *74<ext>*<number>: that exact code also carries a BLF hint, so the key
+	// is lit while the extension forwards (Custom:kt-fwd-<ext>, set by Kiestoon).
+	x.f("exten => _*74X.,1,Set(KT_TO=${EXTEN:3})")
+	x.f(` same => n,GotoIf($["${FILTER(0-9+,${KT_TO})}" != "${KT_TO}"]?bad)`)
+	x.f(" same => n,Goto(kiestoon-fc-${KT_EXT},fwdtoggle,1)")
+	x.f(" same => n(bad),Answer()")
+	x.f(" same => n,Playback(pbx-invalid)")
+	x.f(" same => n,Hangup()")
+	for _, e := range s.Extensions {
+		if !e.Enabled {
+			continue
+		}
+		for _, to := range s.ForwardTargets {
+			code := "*74" + e.Number + "*" + to
+			x.f("exten => %s,hint,Custom:kt-fwd-%s", code, e.Number)
+			x.f("exten => %s,1,Set(KT_TO=%s)", code, to)
+			x.f(` same => n,GotoIf($["${KT_EXT}" = "%s"]?kiestoon-fc-%s,fwdtoggle,1)`, e.Number, e.Number)
+			x.f(" same => n,Answer()")
+			x.f(" same => n,Playback(pbx-invalid)")
+			x.f(" same => n,Hangup()")
+		}
+	}
 	x.f("exten => *45,1,Goto(kiestoon-fc-${KT_EXT},queues,1)")
 	x.f("exten => _*45X.,1,Goto(kiestoon-fc-${KT_EXT},q${EXTEN:3},1)")
 	x.f("exten => *8,1,Pickup()")
@@ -1127,8 +1190,13 @@ func genFeatureCodes(x *w, s *pbx.Snapshot, o Options) {
 		x.f("exten => fwdon,1,Answer()")
 		x.f(" same => n,UserEvent(Kiestoon,Action: forward,Ext: %s,Value: ${KT_TO})", e.Number)
 		x.f(" same => n,Playback(call-fwd-unconditional)")
-		x.f(" same => n,SayDigits(${KT_TO})")
+		x.f(` same => n,ExecIf($["${KT_TO:0:2}" != "**"]?SayDigits(${KT_TO}))`)
 		x.f(" same => n,Hangup()")
+		if e.Features.ForwardAlways != "" {
+			x.f("exten => fwdtoggle,1,Goto(fwdoff,1)")
+		} else {
+			x.f("exten => fwdtoggle,1,Goto(fwdon,1)")
+		}
 		qs := queuesOf[e.ID]
 		anyIn := false
 		for _, q := range qs {

@@ -7,7 +7,8 @@ import { KeyLayout, fillKeys } from '../components/KeyLayout'
 import { KeyTemplatesPanel } from './KeyTemplates'
 import { FirmwarePanel, ZtpBadge, ZtpPanel, vendorName } from './PhoneExtras'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
-import { Segmented } from '../components/pbx'
+import { Segmented, useDestinations } from '../components/pbx'
+import { langName, useCallerLanguage } from '../components/CallerLanguage'
 import { api } from '../lib/api'
 import type { DiscoveredPhone, Extension, KeyTemplate, ModuleType, Phone, PhoneModel, ProvSettings, ResyncState } from '../lib/types'
 
@@ -144,6 +145,7 @@ function ProvisioningCard() {
 
 function ProvSettingsForm({ value, onClose, onSaved }: { value: ProvSettings; onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation()
+  const sys = useCallerLanguage()
   const [x, setX] = useState(value)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
@@ -171,7 +173,8 @@ function ProvSettingsForm({ value, onClose, onSaved }: { value: ProvSettings; on
       <AdminPasswordSettings value={x} onChange={(v) => setX({ ...x, ...v })} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Input name="ntpServer" label={t('phones.ntp')} value={x.ntpServer} onChange={(e) => setX({ ...x, ntpServer: e.target.value.trim() })} className="font-mono" />
-        <Select name="language" label={t('common.language')} value={x.language} onChange={(e) => setX({ ...x, language: e.target.value as 'en' | 'nl' })}>
+        <Select name="language" label={t('common.language')} value={x.language} onChange={(e) => setX({ ...x, language: e.target.value as ProvSettings['language'] })} hint={t('callerLanguage.phonesSelectHint')}>
+          <option value="system">{sys ? t('callerLanguage.follow', { language: langName[sys] }) : t('callerLanguage.followPlain')}</option>
           <option value="en">English</option><option value="nl">Nederlands</option>
         </Select>
       </div>
@@ -263,6 +266,7 @@ const icSupport: Record<string, ('tone' | 'mute' | 'barge')[]> = {
 }
 
 function PhoneForm({ value, models, moduleTypes, exts, onClose, onSaved }: { value: Phone; models: PhoneModel[]; moduleTypes: ModuleType[]; exts: Extension[]; onClose: () => void; onSaved: (resync?: ResyncState) => void }) {
+  const dests = useDestinations()
   const { t } = useTranslation()
   const [x, setX] = useState<Phone>({ ...value, modules: value.modules ?? [], options: value.options ?? { intercom: { allow: true, mute: false, tone: true, barge: false } } })
   const [busy, setBusy] = useState(false)
@@ -382,7 +386,7 @@ function PhoneForm({ value, models, moduleTypes, exts, onClose, onSaved }: { val
         {keyCount === 0 && fits.length === 0 ? (
           <p className="text-sm text-subtle">{t('phones.noKeys')}</p>
         ) : (
-          <KeyLayout key={`${x.vendor}/${x.model}`} vendor={x.vendor} perPage={model?.perPage} keys={keys} modules={modules} moduleTypes={fits} lines={Math.max(1, accountExts.length)} exts={exts}
+          <KeyLayout key={`${x.vendor}/${x.model}`} vendor={x.vendor} perPage={model?.perPage} keys={keys} modules={modules} moduleTypes={fits} lines={Math.max(1, accountExts.length)} exts={exts} dests={dests}
             onKeys={(k) => setX((o) => ({ ...o, keys: k }))} onModules={(m) => setX((o) => ({ ...o, modules: m }))} />
         )}
       </div>

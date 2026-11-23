@@ -28,7 +28,8 @@ can send the welcome e-mail again later with the **Send welcome e-mail** button 
 | --- | --- |
 | **Transport** | UDP (default), TCP or TLS. With TLS you can also **encrypt audio (SRTP)** |
 | **Devices at the same time** | How many devices may register at once, for example desk phone, softphone and mobile app (default 3) |
-| **Outbound caller ID** | The number others see. Empty: the outbound route or trunk decides |
+| **Extension group** | The [extension group](extension-groups.md) it belongs to. Settings the group enforces are locked in the form |
+| **Outbound caller ID** | The number others see. Empty: the group's number, else the outbound route or trunk decides |
 | **Ring time** | Seconds before the call goes to voicemail or the no-answer forward (default 25) |
 | **Voicemail** | On or off, with a **PIN** (4-8 digits, generated when empty) |
 | **Send voicemail to e-mail** | The message arrives as audio attachment; optionally **delete after sending** |

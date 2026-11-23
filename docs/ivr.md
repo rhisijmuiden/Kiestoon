@@ -12,7 +12,10 @@ audio.
 2. Click **Incoming call** and give the menu a **name** in the side panel. Set:
     - **Wait for a key**: seconds the menu waits after the announcement,
     - **Repeat menu**: how many times the menu plays again before giving up,
-    - **Allow dialing an extension**: callers who know an extension can dial it directly.
+    - **Allow dialing an extension**: callers who know an extension can dial it directly,
+    - **Caller language**: the language of this menu, when it differs from the
+      [caller language](settings.md#caller-language) of the system. It is also the default language of text you
+      have spoken.
 3. Give the incoming call its **audio message** (the welcome text), see [Audio per step](#audio-per-step).
 4. Drag building blocks from the bar above the canvas (or click them to add), and connect them.
 5. Click **Save**, then **Test call**.
@@ -31,13 +34,14 @@ turn the moving dots on the lines (the direction of the call) on or off.
 | **Choice menu** | A further menu with its own message and keys, for example one per branch of a time condition | To its keypresses and *No input* |
 | **Keypress** | "Press 1": the caller pressed this key | One, or several destinations that [ring together](#ring-several-destinations-at-once) |
 | **No input** | The caller pressed nothing or an unused key, after the menu repeated | One |
-| **Play audio** | Plays a message, then follows the line | One |
+| **Play audio** | Plays a message, then does what you chose under [After the message](#after-the-message) | One |
 | **Speech question** | Asks what the caller wants and listens to the answer (see [below](#speech-question)) | One per answer, plus *Not understood* |
 | **Extension, Ring group, Queue, Voicemail** | Transfers the call there | End point |
 | **Submenu** | Another IVR menu | End point |
 | **External number** | Forwards to a phone number outside | End point |
+| **On-call** | Rings whoever is on duty in an [on-call team](on-call.md) right now | End point |
 | **Time condition** | Checks the opening hours and the day/night switch | Two: *open* and *closed* |
-| **Repeat menu** | Back to the start of the menu | End point |
+| **Back to menu** | Back to the start of a menu: the one the caller came from, the main menu or a choice menu you pick | End point |
 | **Hang up** | Ends the call | End point |
 
 Linked systems add **Other site**, and [follow-the-sun](multi-site.md#follow-the-sun) routes can be a target too.
@@ -90,6 +94,27 @@ Click **Incoming call** to see which phone numbers ring this menu. **Add a numbe
 trunks (and numbers that go elsewhere now, which then move to this menu), or type another number. This creates the
 inbound route right away, the same one you see under **Trunks & routes › Inbound routes**; the × removes it again. The
 numbers show on the *Incoming call* step. Save a new menu once before linking numbers.
+
+## After the message
+
+When you select a **Play audio** step, the side panel shows **After the message** with a **Then** list:
+
+- **The menu the caller came from**, the **main menu** or any **choice menu**: the caller hears that menu again and can
+  choose once more;
+- **Hang up**;
+- **Go on to a step**: any step already on the canvas, such as a queue or another message.
+
+Your choice draws the line on the canvas, so you always see what happens. A new audio step goes back to the menu the
+caller came from until you choose something else. You can still drag the line yourself; the list follows it.
+
+A **Back to menu** step does the same on its own: pick in its side panel which menu it goes back to.
+
+## On-call after hours
+
+Use the **On-call** block for calls outside office hours, for example under a key of the *closed* choice menu after a
+time check. Pick the on-call team in the side panel. The block shows who is on duty now (and the backup); the call then
+follows the escalation of the team, see [On-call](on-call.md). An on-call team can also be the overflow of a queue:
+choose *On-call team* under **When the queue is full or too slow** in the queue.
 
 ## Ring several destinations at once
 

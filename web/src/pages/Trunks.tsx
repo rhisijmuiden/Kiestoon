@@ -4,7 +4,8 @@ import { ArrowDown, ArrowUp, BookOpen, ExternalLink, FileText, Hash, Pencil, Plu
 import { Badge, Empty, Modal, Select, Table, Tabs, Textarea, Toggle, td, useApi } from '../components/kit'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api, ApiError } from '../lib/api'
-import type { DestType, DialPattern, Extension, InboundRoute, Live, OutboundRoute, Trunk, TrunkPreset } from '../lib/types'
+import type { DestType, DialPattern, Extension, ExtensionGroup, InboundRoute, Live, OutboundRoute, Trunk, TrunkPreset } from '../lib/types'
+import { Precedence } from './ExtensionGroups'
 import { DestinationLabel, DestinationPicker, NumberOptions, Segmented, useNumbers } from '../components/pbx'
 import { expandBlock, formatNumber, MAX_BLOCK, parseNumbers } from '../lib/numbers'
 import { localDocsUrl } from '../components/help'
@@ -505,7 +506,9 @@ function OutboundList() {
   const { t } = useTranslation()
   const list = useApi<OutboundRoute[]>('/pbx/outbound')
   const trunks = useApi<Trunk[]>('/pbx/trunks')
+  const groups = useApi<ExtensionGroup[]>('/pbx/extension-groups')
   const [edit, setEdit] = useState<OutboundRoute | null>(null)
+  const groupName = (id: number) => groups.data?.find((g) => g.id === id)?.name ?? `#${id}`
   const name = (id: number) => trunks.data?.find((x) => x.id === id)?.name ?? `#${id}`
   async function move(i: number, d: number) {
     if (!list.data) return
@@ -525,13 +528,13 @@ function OutboundList() {
     <Card>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-2xl text-sm text-muted">{t('routes.outboundText')}</p>
-        <Button disabled={!trunks.data?.length} onClick={() => setEdit({ id: 0, name: '', position: 0, patterns: [{ prefix: '', match: '0[1-9]XXXXXXXX', prepend: '' }], trunkIds: trunks.data?.[0] ? [trunks.data[0].id] : [], callerId: '', enabled: true })}>
+        <Button disabled={!trunks.data?.length} onClick={() => setEdit({ id: 0, name: '', position: 0, patterns: [{ prefix: '', match: '0[1-9]XXXXXXXX', prepend: '' }], trunkIds: trunks.data?.[0] ? [trunks.data[0].id] : [], callerId: '', groupIds: [], enabled: true })}>
           <Plus className="size-4" aria-hidden /> {t('routes.addOutbound')}
         </Button>
       </div>
       {trunks.data?.length === 0 && <Alert tone="warn">{t('routes.needTrunk')}</Alert>}
       <ErrorMessage error={list.error} />
-      <Table head={['#', t('routes.name'), t('routes.patterns'), t('routes.trunks'), '']}
+      <Table head={['#', t('routes.name'), t('routes.patterns'), t('routes.trunks'), t('routes.who'), '']}
         empty={list.data?.length === 0 && <p className="py-8 text-center text-sm text-muted">{t('routes.emptyOutbound')}</p>}>
         {list.data?.map((x, i) => (
           <tr key={x.id} className={x.enabled ? '' : 'opacity-50'}>
@@ -539,6 +542,10 @@ function OutboundList() {
             <td className={`${td} text-ink`}>{x.name}</td>
             <td className={`${td} font-mono text-xs`}>{x.patterns.map((p) => `${p.prefix ? `${p.prefix}|` : ''}${p.match}`).join(', ')}</td>
             <td className={td}>{x.trunkIds.map(name).join(' → ')}</td>
+            <td className={td}>
+              {x.groupIds?.length ? <div className="flex flex-wrap gap-1">{x.groupIds.map((g) => <Badge key={g} tone="accent">{groupName(g)}</Badge>)}</div>
+                : <span className="text-subtle">{t('routes.everyone')}</span>}
+            </td>
             <td className={`${td} whitespace-nowrap text-right`}>
               <IconBtn label={t('routes.up')} onClick={() => move(i, -1)}><ArrowUp className="size-4" /></IconBtn>
               <IconBtn label={t('routes.down')} onClick={() => move(i, 1)}><ArrowDown className="size-4" /></IconBtn>
@@ -548,12 +555,12 @@ function OutboundList() {
           </tr>
         ))}
       </Table>
-      {edit && <OutboundForm value={edit} trunks={trunks.data ?? []} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); list.reload() }} />}
+      {edit && <OutboundForm value={{ ...edit, groupIds: edit.groupIds ?? [] }} trunks={trunks.data ?? []} groups={groups.data ?? []} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); list.reload() }} />}
     </Card>
   )
 }
 
-function OutboundForm({ value, trunks, onClose, onSaved }: { value: OutboundRoute; trunks: Trunk[]; onClose: () => void; onSaved: () => void }) {
+function OutboundForm({ value, trunks, groups, onClose, onSaved }: { value: OutboundRoute; trunks: Trunk[]; groups: ExtensionGroup[]; onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation()
   const [x, setX] = useState(value)
   const [busy, setBusy] = useState(false)
@@ -582,6 +589,28 @@ function OutboundForm({ value, trunks, onClose, onSaved }: { value: OutboundRout
         <Input name="callerId" label={t('routes.callerId')} value={x.callerId} onChange={(e) => setX({ ...x, callerId: e.target.value.trim() })} hint={t('routes.callerIdHint')} className="font-mono" list="outbound-numbers" />
         <NumberOptions id="outbound-numbers" />
       </div>
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-1 text-sm font-medium text-ink-2">{t('routes.who')}</legend>
+        <p className="text-xs text-subtle">{t('routes.whoHint')}</p>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" aria-pressed={x.groupIds.length === 0} onClick={() => setX({ ...x, groupIds: [] })}
+            className={`min-h-9 rounded-lg border px-3 text-sm transition ${x.groupIds.length === 0 ? 'border-accent/60 bg-accent/15 text-ink' : 'border-line text-muted hover:text-ink'}`}>
+            {t('routes.everyone')}
+          </button>
+          {groups.map((g) => {
+            const on = x.groupIds.includes(g.id)
+            return (
+              <button key={g.id} type="button" aria-pressed={on} onClick={() => setX({ ...x, groupIds: on ? x.groupIds.filter((y) => y !== g.id) : [...x.groupIds, g.id] })}
+                className={`min-h-9 rounded-lg border px-3 text-sm transition ${on ? 'border-accent/60 bg-accent/15 text-ink' : 'border-line text-muted hover:text-ink'}`}>
+                {g.name} <span className="text-xs text-subtle">· {g.members.length}</span>
+              </button>
+            )
+          })}
+          <Link to="/extensions?tab=groups" className="inline-flex min-h-9 items-center gap-1 px-2 text-sm text-accent hover:underline">{t('routes.manageGroups')}</Link>
+        </div>
+        {groups.length === 0 && <p className="text-xs text-subtle">{t('routes.noGroups')}</p>}
+      </fieldset>
+      <Precedence />
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium text-ink-2">{t('routes.patterns')}</legend>
         <p className="text-xs text-subtle">{t('routes.patternsHint')}</p>

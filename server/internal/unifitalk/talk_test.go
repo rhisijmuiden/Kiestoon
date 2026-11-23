@@ -7,11 +7,13 @@ import (
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/rhisijmuiden/kiestoon/server/internal/importer"
 	"github.com/rhisijmuiden/kiestoon/server/internal/pbx"
 	"github.com/rhisijmuiden/kiestoon/server/internal/pgdump"
 	"github.com/rhisijmuiden/kiestoon/server/internal/store"
@@ -104,14 +106,19 @@ func TestReadAndImport(t *testing.T) {
 	if a.Console != "UDMPRO" || a.TalkVersion != "5.4.8" || len(a.Audio) != 6 {
 		t.Fatalf("archive: %s %s %d", a.Console, a.TalkVersion, len(a.Audio))
 	}
-	talk := a.Parse()
-	if len(talk.Users) != 3 || len(talk.Attendants) != 2 || talk.Devices != 2 || talk.GlobalGreeting == "" {
+	talk := a.Bundle()
+	talk.Info.System = "unifi-talk"
+	if len(talk.Users) != 3 || len(talk.Menus) != 2 || talk.VoicemailGreeting == "" || talk.Info.Product != "UniFi Talk 5.4.8" {
 		t.Fatalf("talk: %+v", talk)
 	}
-	if g := talk.Groups[0]; g.Strategy != "sequential" || !slices.Equal(g.Members, []string{"ulp-a", "ulp-b", "ulp-x"}) {
+	if talk.Notes[0].Code != "phones_not_imported" || talk.Notes[0].Args["count"] != "2" {
+		t.Errorf("notes: %+v", talk.Notes)
+	}
+	// ulp-x is no user: left out.
+	if g := talk.Groups[0]; g.Strategy != "sequential" || !slices.Equal(g.Members, []string{"ulp-a", "ulp-b"}) || g.Failover == nil || g.Failover.Kind != "voicemail" {
 		t.Fatalf("group: %+v", g)
 	}
-	if q := talk.Queues[0]; !slices.Equal(q.Agents, []string{"ulp-a", "ulp-c"}) || len(q.Messages) != 1 {
+	if q := talk.Queues[0]; !slices.Equal(q.Agents, []string{"ulp-a", "ulp-c"}) || len(q.Messages) != 1 || q.Strategy != "ringall" {
 		t.Fatalf("queue: %+v", q)
 	}
 
@@ -128,14 +135,14 @@ func TestReadAndImport(t *testing.T) {
 	if err := r.SaveExtension(ctx, np, &anna); err != nil {
 		t.Fatal(err)
 	}
-	plan, err := Prepare(ctx, r, np, a, talk)
+	plan, err := importer.Prepare(ctx, r, np, talk)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(plan.Menus) != 1 {
 		t.Fatalf("the forwarding attendant should be folded away: %+v", plan.Menus)
 	}
-	ext := map[string]PlanExtension{}
+	ext := map[string]importer.PlanExtension{}
 	for _, e := range plan.Extensions {
 		ext[e.Key] = e
 	}
@@ -155,7 +162,7 @@ func TestReadAndImport(t *testing.T) {
 		t.Errorf("phone numbers: %+v", plan.Numbers)
 	}
 
-	c := Choice{Prompts: map[string]int64{}, NumberOf: map[string]string{"q:1": "701"}}
+	c := importer.Choice{Prompts: map[string]int64{}, NumberOf: map[string]string{"q:1": "701"}}
 	for _, e := range plan.Extensions {
 		c.Extensions = append(c.Extensions, e.Key)
 	}
@@ -170,11 +177,10 @@ func TestReadAndImport(t *testing.T) {
 		}
 		c.Prompts[au.File] = p.ID
 	}
-	res, err := Apply(ctx, r, np, talk, plan, c)
+	res, err := importer.Apply(ctx, r, np, talk, plan, c)
 	if err != nil {
 		t.Fatalf("%v %+v", err, res)
 	}
-	// ulp-x is not a user and is left out of the group.
 	if len(res.Warnings) != 0 {
 		t.Errorf("warnings: %+v", res.Warnings)
 	}
@@ -235,7 +241,7 @@ func TestReadAndImport(t *testing.T) {
 	}
 
 	// Again: everything is reused, nothing is made twice.
-	plan2, err := Prepare(ctx, r, np, a, talk)
+	plan2, err := importer.Prepare(ctx, r, np, talk)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,7 +250,7 @@ func TestReadAndImport(t *testing.T) {
 			t.Errorf("number should be routed already: %+v", n)
 		}
 	}
-	res2, err := Apply(ctx, r, np, talk, plan2, c)
+	res2, err := importer.Apply(ctx, r, np, talk, plan2, c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -272,5 +278,34 @@ func TestReadRejects(t *testing.T) {
 	gz.Close()
 	if _, err := Read(bytes.NewReader(tgz.Bytes())); err != ErrNoTalk {
 		t.Errorf("no talk: %v", err)
+	}
+}
+
+func TestAdapter(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "unifi_os_backup_for_talk.unifi")
+	if err := os.WriteFile(p, fixture(t), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	u, err := importer.NewUpload("unifi_os_backup_for_talk.unifi", p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a := importer.Detect(u); a == nil || a.ID() != "unifi-talk" {
+		t.Fatalf("detect: %v", a)
+	}
+	b, err := importer.Read(context.Background(), u, "auto")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b.Info.System != "unifi-talk" || len(b.Menus) != 2 || len(b.Audio) != 6 {
+		t.Errorf("bundle: %+v", b.Info)
+	}
+	// Another file with the same extension is refused with a clear error.
+	if err := os.WriteFile(p, bytes.Repeat([]byte{3}, 2048), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	u, _ = importer.NewUpload("other.unifi", p)
+	if _, err := importer.Read(context.Background(), u, "auto"); err != importer.ErrUnknownFormat {
+		t.Errorf("garbage: %v", err)
 	}
 }

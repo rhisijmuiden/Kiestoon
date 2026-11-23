@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowDown, ArrowUp, Hash, PhoneCall, Power, RotateCw, Siren, Wifi } from 'lucide-react'
-import { Badge, Modal, SectionTitle, Select, Table, Textarea, Toggle, td, useApi } from '../components/kit'
+import { ArrowDown, ArrowUp, Check, Hash, Languages, PhoneCall, Power, RotateCw, Siren, Wifi } from 'lucide-react'
+import { Link } from 'react-router'
+import { Badge, Modal, SectionTitle, Table, Textarea, Toggle, td, useApi } from '../components/kit'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
-import type { NumberPlan, PbxSettings, PbxStatus, Trunk } from '../lib/types'
+import type { NumberPlan, PbxSettings, PbxStatus, ProvSettings, Trunk } from '../lib/types'
+import { langName } from '../components/CallerLanguage'
 
 type Preview = { changes: { from: string; to: string }[]; conflicts: string[]; plan: NumberPlan }
 
@@ -13,7 +15,9 @@ export function Settings() {
   const st = useApi<PbxSettings>('/pbx/settings')
   const status = useApi<PbxStatus>('/pbx/status', 10000)
   const trunks = useApi<Trunk[]>('/pbx/trunks')
+  const provApi = useApi<ProvSettings>('/provisioning/settings')
   const [s, setS] = useState<PbxSettings | null>(null)
+  const [phonesFollow, setPhonesFollow] = useState<boolean | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const [saved, setSaved] = useState(false)
@@ -21,6 +25,7 @@ export function Settings() {
   const [restart, setRestart] = useState(false)
 
   useEffect(() => { if (st.data && !s) setS(st.data) }, [st.data, s])
+  useEffect(() => { if (provApi.data && phonesFollow === null) setPhonesFollow(provApi.data.language === 'system') }, [provApi.data, phonesFollow])
   if (!s) return <><PageHeader title={t('settings.title')} /><ErrorMessage error={st.error} /></>
   const set = <K extends keyof PbxSettings>(k: K, v: PbxSettings[K]) => { setSaved(false); setS({ ...s, [k]: v }) }
 
@@ -28,7 +33,14 @@ export function Settings() {
     setBusy(true)
     setError(null)
     try {
-      setS(await api<PbxSettings>('PUT', '/pbx/settings', s))
+      const next = await api<PbxSettings>('PUT', '/pbx/settings', s)
+      setS(next)
+      // Phone screens follow the caller language, or keep a language of their own.
+      const prov = provApi.data
+      if (prov && phonesFollow !== null && phonesFollow !== (prov.language === 'system')) {
+        await api('PUT', '/provisioning/settings', { ...prov, language: phonesFollow ? 'system' : next.language })
+        provApi.reload()
+      }
       setSaved(true)
       window.setTimeout(status.reload, 2500)
     } catch (e) {
@@ -66,6 +78,8 @@ export function Settings() {
       {status.data?.lastError && <Alert>{t('settings.applyError', { error: status.data.lastError })}</Alert>}
 
       <div className="grid gap-4 xl:grid-cols-2">
+        <CallerLanguageCard s={s} set={(v) => set('language', v)} phonesFollow={phonesFollow} setPhonesFollow={(v) => { setSaved(false); setPhonesFollow(v) }} phoneLanguage={provApi.data?.language} />
+
         <Card>
           <SectionTitle action={<Button variant="secondary" onClick={() => setPlan(true)}><Hash className="size-4" />{t('settings.changePlan')}</Button>}>
             {t('settings.numberPlan')}
@@ -124,10 +138,6 @@ export function Settings() {
           <SectionTitle><span className="inline-flex items-center gap-2"><PhoneCall className="size-5 text-accent" />{t('settings.calls')}</span></SectionTitle>
           <div className="flex flex-col gap-3">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Select name="language" label={t('settings.language')} value={s.language} onChange={(e) => set('language', e.target.value as PbxSettings['language'])} hint={t('settings.languageHint')}>
-                <option value="en">English</option>
-                <option value="nl">Nederlands</option>
-              </Select>
               <Input name="timezone" label={t('settings.timezone')} value={s.timezone} onChange={(e) => set('timezone', e.target.value)} placeholder="Europe/Amsterdam" />
               <Input name="countryCode" label={t('settings.countryCode')} value={s.countryCode} onChange={(e) => set('countryCode', e.target.value.replace(/\D/g, ''))} hint={t('settings.countryCodeHint')} />
               <Input name="codecs" label={t('settings.codecs')} value={s.codecs} onChange={(e) => set('codecs', e.target.value)} hint={t('settings.codecsHint')} />
@@ -146,6 +156,50 @@ export function Settings() {
       {plan && <PlanWizard current={s.digits} onClose={() => setPlan(false)} onApplied={(d) => { setPlan(false); setS({ ...s, digits: d }); status.reload() }} />}
       {restart && <RestartModal onClose={() => { setRestart(false); window.setTimeout(status.reload, 3000) }} />}
     </>
+  )
+}
+
+/** One setting for everything callers hear and phones show; the web interface stays per user. */
+function CallerLanguageCard({ s, set, phonesFollow, setPhonesFollow, phoneLanguage }: {
+  s: PbxSettings; set: (v: PbxSettings['language']) => void; phonesFollow: boolean | null; setPhonesFollow: (v: boolean) => void; phoneLanguage?: ProvSettings['language']
+}) {
+  const { t } = useTranslation()
+  const covers = ['queues', 'voicemail', 'prompts', 'numbers', 'speech', 'mails', 'users'] as const
+  return (
+    <Card className="xl:col-span-2">
+      <SectionTitle><span className="inline-flex items-center gap-2"><Languages className="size-5 text-accent" />{t('callerLanguage.title')}</span></SectionTitle>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-ink-2">{t('callerLanguage.intro')}</p>
+          <div role="radiogroup" aria-label={t('callerLanguage.title')} className="grid grid-cols-2 gap-2">
+            {(['nl', 'en'] as const).map((l) => (
+              <label key={l} className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border px-4 transition-colors ${s.language === l ? 'border-accent/60 bg-accent/10 text-ink' : 'border-line text-ink-2 hover:bg-tint/5'}`}>
+                <input type="radio" name="callerLanguage" value={l} checked={s.language === l} onChange={() => set(l)} className="sr-only" />
+                <span className="font-mono text-xs font-semibold uppercase text-subtle">{l}</span>
+                <span className="flex-1 font-medium">{langName[l]}</span>
+                {s.language === l && <Check className="size-4 text-accent" aria-hidden />}
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-subtle">
+            {t('callerLanguage.webHint')} <Link to="/account" className="text-accent underline">{t('callerLanguage.webLink')}</Link>
+          </p>
+        </div>
+        <div className="flex flex-col gap-3">
+          <span className="text-sm font-medium text-ink-2">{t('callerLanguage.covers')}</span>
+          <ul className="grid gap-1.5 sm:grid-cols-2">
+            {covers.map((c) => (
+              <li key={c} className="flex items-start gap-2 text-sm text-ink-2"><Check className="mt-0.5 size-4 flex-none text-ok" aria-hidden />{t(`callerLanguage.cover.${c}`)}</li>
+            ))}
+          </ul>
+          {phonesFollow !== null && (
+            <Toggle name="phonesFollow" label={t('callerLanguage.phones')} checked={phonesFollow} onChange={setPhonesFollow}
+              hint={phonesFollow ? t('callerLanguage.phonesHint') : t('callerLanguage.phonesApart', { language: langName[phoneLanguage === 'nl' || phoneLanguage === 'en' ? phoneLanguage : s.language] })} />
+          )}
+          <p className="text-xs text-subtle">{t('callerLanguage.overrideNote')}</p>
+        </div>
+      </div>
+    </Card>
   )
 }
 

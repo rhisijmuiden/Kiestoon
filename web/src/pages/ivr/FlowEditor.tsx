@@ -355,7 +355,7 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
   const sel = selected ? byId.get(selected) : undefined
 
   function doSave() {
-    save({ ...ivr, flow: toFlow(nodes, edges) })
+    save({ ...ivr, flow: { ...toFlow(nodes, edges), language: ivr.flow?.language } })
   }
   function back() {
     if (dirty && !window.confirm(t('ivr.leaveUnsaved'))) return

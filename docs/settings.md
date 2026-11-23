@@ -1,8 +1,31 @@
 # Settings
 
-**Settings** holds the system-wide choices: the number plan, emergency calls, network and the phone engine.
+**Settings** holds the system-wide choices: the caller language, the number plan, emergency calls, network and
+the phone engine.
 
 ![Settings](shot:settings)
+
+## Caller language { #caller-language }
+
+One setting for everything callers hear and phones show, in English or Dutch:
+
+- queue announcements: the position of the caller ("you are caller number 3") and the hold time,
+- voicemail menus and greetings, feature codes and other system messages,
+- numbers, dates and times that are spoken,
+- the default language of [spoken text](prompts.md) for IVR menus and voice prompts,
+- voicemail, fax and other system e-mails,
+- new users and their welcome e-mail.
+
+**Phone screens follow the caller language** gives [provisioned phones](phones.md) the same language at their next
+configuration update. Turn it off to keep a separate phone language under **Phones & provisioning > Provisioning
+settings**.
+
+The language of the web interface is not part of it: every user chooses their own under **Account**. An
+administrator can work in English while callers hear Dutch.
+
+A single [queue](queues.md) or [IVR menu](ivr.md) can use another language in its own settings (**Caller
+language**), for example an English line for foreign customers. The language chosen during the first setup is
+the first caller language.
 
 ## Number plan
 
@@ -38,7 +61,6 @@ Changing a port needs a restart of the phone engine.
 
 | Setting | What it does |
 | --- | --- |
-| **Language of prompts** | English or Dutch, also used for voicemail e-mails. |
 | **Time zone** | For time conditions, call history and schedules. |
 | **Country code** | Without `+`; `31` is the Netherlands. |
 | **Codecs for phones** | In order of preference, for example `g722,alaw,ulaw`. |

@@ -23,7 +23,8 @@ are spread over the agents by a distribution strategy. Numbers are in the 700 ra
 3. Add **agents**. **Dynamic** agents sign in and out themselves (user portal, desktop softphone or `*45`); agents
    set to **Always on** are always signed in. A **penalty** puts an agent further back.
 4. Optional: a **greeting** (a [voice prompt](prompts.md) played once when the caller enters), **music on hold**
-   and **announce position** every N seconds.
+   and **announce position** every N seconds. Callers hear the announcements in the
+   [caller language](settings.md#caller-language); **Caller language** on the queue sets it apart.
 5. Set the timings and limits, and **when the queue is full or too slow**: the overflow destination.
 
 ![Editing the Support queue](shot:queue-edit)

@@ -16,8 +16,10 @@ const nf = (n: number, lang: string) => n.toLocaleString(lang.startsWith('nl') ?
  * Typed text to a prompt: text, language, engine (local Piper or ElevenLabs) and voice. onAudio gets
  * the 8 kHz WAV and its source, which the caller stores with the prompt.
  */
-export function SpeakFromText({ initial, onAudio, action, regenerate, compact }: {
+export function SpeakFromText({ initial, onAudio, action, regenerate, compact, defaultLanguage }: {
   initial?: PromptSource
+  /** The language callers of this prompt hear (an IVR set apart); defaults to the caller language. */
+  defaultLanguage?: 'nl' | 'en'
   onAudio: (r: TTSResult) => Promise<void> | void
   action?: string
   regenerate?: boolean
@@ -35,7 +37,7 @@ export function SpeakFromText({ initial, onAudio, action, regenerate, compact }:
   const [error, setError] = useState<unknown>(null)
   const [last, setLast] = useState<TTSResult | null>(null)
 
-  const language = lang || tts.el?.pbxLanguage || (i18n.language.startsWith('nl') ? 'nl' : 'en')
+  const language = lang || defaultLanguage || tts.el?.pbxLanguage || tts.speech?.pbxLanguage || (i18n.language.startsWith('nl') ? 'nl' : 'en')
   const locked = tts.elevenReady && !!tts.el?.settings.locked
   const eng: Engine = locked ? 'elevenlabs' : engine || (tts.elevenReady && tts.el?.settings.defaultEngine === 'elevenlabs' ? 'elevenlabs' : tts.piperReady ? 'piper' : 'elevenlabs')
   useEffect(() => {

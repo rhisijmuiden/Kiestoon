@@ -72,7 +72,7 @@ func (s *Server) speechGet(w http.ResponseWriter, r *http.Request) {
 			Downloaded: e.HasModel(m), Progress: e.Progress(m.ID)})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"settings": s.speechSettings(r.Context()), "ttsInstalled": tts, "sttInstalled": stt,
-		"voices": voices, "models": models})
+		"voices": voices, "models": models, "pbxLanguage": s.defaultLanguage(r.Context())})
 }
 
 func (s *Server) speechSave(w http.ResponseWriter, r *http.Request) {

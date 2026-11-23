@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ListOrdered, Pencil, Plus, Trash2 } from 'lucide-react'
 import { Badge, Empty, Modal, Select, Table, Toggle, formatDuration, td, useApi } from '../components/kit'
+import { CallerLanguageSelect } from '../components/CallerLanguage'
 import { DestinationLabel, DestinationPicker, IconButton, nextNumber, resetDestinations, useSaver } from '../components/pbx'
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api } from '../lib/api'
@@ -185,6 +186,7 @@ export function QueueFields({ q, setQ, compact, group = plain, prompts: promptLi
             </Select>
             <Input name="music" label={t('queues.music')} value={q.music} onChange={(e) => set('music', e.target.value)} hint={t('queues.musicHint')} className="font-mono" />
           </div>
+          <CallerLanguageSelect value={opts.language} onChange={(v) => set('options', { ...opts, language: v || undefined })} compact={compact} />
           <Toggle name="announcePosition" label={t('queues.announcePosition')} hint={t('queues.announcePositionHint')} checked={q.announcePosition} onChange={(v) => set('announcePosition', v)} />
           {q.announcePosition && <Input name="announceFrequency" label={t('queues.announceFrequency')} type="number" min={15} max={600} value={q.announceFrequency} onChange={(e) => set('announceFrequency', Number(e.target.value))} hint={t('common.seconds')} />}
           <Toggle name="joinEmpty" label={t('queues.joinEmpty')} hint={t('queues.joinEmptyHint')} checked={q.joinEmpty} onChange={(v) => set('joinEmpty', v)} />

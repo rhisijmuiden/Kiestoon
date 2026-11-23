@@ -24,7 +24,8 @@ Gesprekken worden over de medewerkers verdeeld volgens een verdeling. Nummers li
    desktop-softphone of `*45`); medewerkers op **Altijd aan** zijn altijd aangemeld. Een hogere **prioriteit**
    zet een medewerker verder naar achteren.
 4. Optioneel: een **begroeting** (een [gesproken tekst](prompts.md) die één keer speelt bij binnenkomst),
-   **wachtmuziek** en **positie omroepen** elke N seconden.
+   **wachtmuziek** en **positie omroepen** elke N seconden. Bellers horen de meldingen in de
+   [taal voor bellers](settings.md#taal-voor-bellers); **Taal voor bellers** bij de wachtrij wijkt daarvan af.
 5. Stel de tijden en limieten in, en **als de wachtrij vol of te traag is**: de overloopbestemming.
 
 ![De wachtrij Support bewerken](shot:queue-edit)

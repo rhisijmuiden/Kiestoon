@@ -31,7 +31,7 @@ Open **Phones & provisioning** and click **Provisioning settings**:
 | **Username / Password** | Protect the provisioning address. Generated; keep them private |
 | **Phone admin password** | Replaces the factory password of the phone's own web interface: **Unique per phone** (default) or **Same for all phones**. See below |
 | **Time server** | NTP server for the phones, for example `nl.pool.ntp.org` |
-| **Language** | Language on the phone display |
+| **Language** | Language on the phone display. **Like the system** follows the [caller language](settings.md#caller-language) |
 
 The card then shows the **provisioning URLs** to copy:
 

@@ -1372,8 +1372,6 @@
     "rtpEnd": "Audio ports to",
     "portsHint": "Changing a port needs a restart of the phone engine.",
     "calls": "Calls",
-    "language": "Language of prompts",
-    "languageHint": "Also used for voicemail e-mails.",
     "timezone": "Time zone",
     "countryCode": "Country code",
     "countryCodeHint": "Without +. 31 is the Netherlands.",
@@ -4744,5 +4742,31 @@
     "emptyTitle": "No lines",
     "emptyText": "This log is empty.",
     "emptyFiltered": "No lines match the search or the level."
+  },
+  "callerLanguage": {
+    "title": "Caller language",
+    "intro": "One setting for everything callers hear and phones show. The language of the web interface stays a choice per user.",
+    "covers": "This language is used for",
+    "cover": {
+      "queues": "Queue announcements: your position and the hold time",
+      "voicemail": "Voicemail menus and greetings",
+      "prompts": "Feature codes and system messages",
+      "numbers": "Numbers, dates and times that are spoken",
+      "speech": "The default language of spoken text (IVR, prompts)",
+      "mails": "Voicemail, fax and other system e-mails",
+      "users": "New users and their welcome e-mail"
+    },
+    "phones": "Phone screens follow the caller language",
+    "phonesHint": "Menus on provisioned phones use this language after their next configuration update.",
+    "phonesApart": "Phones keep their own language: {{language}}. Change it under Phones & provisioning > Provisioning settings.",
+    "phonesSelectHint": "Following the caller language keeps phones and callers in one language.",
+    "webHint": "Your own web interface language:",
+    "webLink": "Account",
+    "overrideNote": "A single queue or IVR can use another language in its own settings, for example an English line for foreign customers.",
+    "override": "Caller language",
+    "overrideHint": "What callers in this queue hear: announcements, position and hold time.",
+    "follow": "Like the system ({{language}})",
+    "followPlain": "Like the system",
+    "ivrHint": "Asterisk messages in this menu, and the default language of text you have spoken."
   }
 }

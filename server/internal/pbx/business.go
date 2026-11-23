@@ -551,6 +551,9 @@ type QueueOptions struct {
 	Callback    CallbackOptions `json:"callback"`
 	// SLA are the service level thresholds for the wallboard and the SLA alerts.
 	SLA SLAOptions `json:"sla"`
+	// Language callers of this queue hear (announcements, position, hold time): en or nl, or
+	// empty for the caller language of the phone system.
+	Language string `json:"language,omitempty"`
 }
 
 // CallbackOptions configure the queue callback: a waiting caller presses 1, hangs up and keeps their
@@ -572,6 +575,9 @@ type CallbackOptions struct {
 func (o *QueueOptions) normalize() error {
 	if err := o.SLA.normalize(); err != nil {
 		return err
+	}
+	if !ValidLanguageOverride(o.Language) {
+		return invalid("invalid", "options.language")
 	}
 	c := &o.Callback
 	def := func(v *int, d, min, max int, field string) error {

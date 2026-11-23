@@ -18,7 +18,7 @@ func Htek(in Input) string {
 	p(2, in.Settings.AdminPassword)
 	p(30, in.Settings.NTPServer)
 	p(64, "CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00")
-	if in.Settings.Language == "nl" {
+	if in.Settings.Lang() == "nl" {
 		p(1362, "nl")
 	} else {
 		p(1362, "en")
@@ -109,7 +109,7 @@ func Cisco(in Input) string {
 	w("Daylight_Saving_Time_Rule", "start=3/-1/7/2;end=10/-1/7/3;save=1")
 	w("Time_Format", "24hr")
 	w("Date_Format", "day/month")
-	if in.Settings.Language == "nl" {
+	if in.Settings.Lang() == "nl" {
 		w("Language_Selection", "Dutch")
 	} else {
 		w("Language_Selection", "English-US")

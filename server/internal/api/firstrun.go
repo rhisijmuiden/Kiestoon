@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/rhisijmuiden/kiestoon/server/internal/auth"
+	"github.com/rhisijmuiden/kiestoon/server/internal/pbx"
 	"github.com/rhisijmuiden/kiestoon/server/internal/store"
 )
 
@@ -174,6 +175,15 @@ func (s *Server) firstRun(w http.ResponseWriter, r *http.Request) {
 		_ = s.Auth.SetDisplayName(ctx, sess.User.ID, name)
 	}
 	_ = s.Auth.SetLanguage(ctx, sess.User.ID, req.Language)
+	// The language chosen at setup is also the first caller language (prompts, phones, e-mails).
+	if req.Language == "nl" || req.Language == "en" {
+		if st, err := pbx.LoadSettings(ctx, s.DB); err == nil && st.Language != req.Language {
+			st.Language = req.Language
+			if store.SetJSON(ctx, s.DB, pbx.SettingsKey, st) == nil && s.Ast != nil {
+				s.Ast.Changed()
+			}
+		}
+	}
 	_ = store.SetSetting(ctx, s.DB, "organization", org)
 	_ = os.Remove(InitialAdminPath(s.Cfg.DataDir))
 	s.updateConsoleIssue(ctx)

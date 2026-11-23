@@ -6,6 +6,7 @@ import { DestinationPicker } from '../../components/pbx'
 import { Button, ErrorMessage, Input } from '../../components/ui'
 import { WavePlayer, promptSrc } from '../../components/WavePlayer'
 import { SpeakFromText } from '../../components/SpeakFromText'
+import { CallerLanguageSelect } from '../../components/CallerLanguage'
 import { ApiError, api } from '../../lib/api'
 import { startRecording, toTelephoneWav } from '../../lib/audio'
 import type { InboundRoute, IVR, Prompt, PromptSource, SpeechIntent, TimeCondition } from '../../lib/types'
@@ -31,7 +32,8 @@ function Section({ title, children, aside }: { title: string; children: ReactNod
 }
 
 /** Chooses the voice prompt of a step: generate it from text, record, upload, pick one, or none. */
-function AudioSource({ promptId, onPrompt, promptName, prompts, onPromptsChanged, tone }: {
+function AudioSource({ promptId, onPrompt, promptName, prompts, onPromptsChanged, tone, language }: {
+  language?: 'nl' | 'en'
   promptId: number; onPrompt: (id: number) => void; promptName: string; prompts: Prompt[]; onPromptsChanged: () => void; tone: string
 }) {
   const { t } = useTranslation()
@@ -121,7 +123,7 @@ function AudioSource({ promptId, onPrompt, promptName, prompts, onPromptsChanged
       </div>
 
       {mode === 'generate' && (
-        <SpeakFromText compact initial={current?.source} regenerate={promptId > 0} onAudio={(r) => store(r.audio, r.source)} />
+        <SpeakFromText compact initial={current?.source} regenerate={promptId > 0} defaultLanguage={language} onAudio={(r) => store(r.audio, r.source)} />
       )}
 
       {mode === 'record' && (
@@ -214,6 +216,8 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
               <Input name="retries" label={t('ivr.retries')} type="number" min={0} max={5} value={ivr.retries} onChange={(e) => setIvr((v) => ({ ...v, retries: Number(e.target.value) }))} hint={t('ivr.retriesHint')} />
             </div>
             <Toggle name="directDial" label={t('ivr.directDial')} hint={t('ivr.directDialHint')} checked={ivr.directDial} onChange={(x) => setIvr((v) => ({ ...v, directDial: x }))} />
+            <CallerLanguageSelect compact value={ivr.flow?.language} onChange={(l) => setIvr((v) => ({ ...v, flow: { nodes: [], edges: [], ...v.flow, language: l || undefined } }))} />
+            <p className="-mt-1.5 text-xs text-subtle">{t('callerLanguage.ivrHint')}</p>
             <p className="text-xs text-subtle">{t('ivr.panel.startHint')}</p>
           </Section>
         )}
@@ -227,7 +231,7 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
         {hasAudio(d.type) && (
           <Section title={t('ivr.panel.audio')} aside={t(`ivr.panel.audioWhen.${d.type}`)}>
             <AudioSource key={node.id} promptId={d.promptId ?? 0} onPrompt={(id) => onChange({ promptId: id })} promptName={promptName}
-              prompts={prompts} onPromptsChanged={onPromptsChanged} tone={tone.text} />
+              prompts={prompts} onPromptsChanged={onPromptsChanged} tone={tone.text} language={ivr.flow?.language} />
           </Section>
         )}
 

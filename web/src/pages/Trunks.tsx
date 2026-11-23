@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowDown, ArrowUp, BookOpen, ExternalLink, Hash, Pencil, Plus, RefreshCw, Route, Trash2, Waypoints, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, BookOpen, ExternalLink, FileText, Hash, Pencil, Plus, RefreshCw, Route, Trash2, Waypoints, X } from 'lucide-react'
 import { Badge, Empty, Modal, Select, Table, Tabs, Textarea, Toggle, td, useApi } from '../components/kit'
 import { Alert, Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { api, ApiError } from '../lib/api'
@@ -8,6 +8,8 @@ import type { DestType, DialPattern, Extension, InboundRoute, Live, OutboundRout
 import { DestinationLabel, DestinationPicker, NumberOptions, Segmented, useNumbers } from '../components/pbx'
 import { expandBlock, formatNumber, MAX_BLOCK, parseNumbers } from '../lib/numbers'
 import { localDocsUrl } from '../components/help'
+import { Link } from 'react-router'
+import { LogLines, type LogEntry } from './Logs'
 
 type Tab = 'trunks' | 'inbound' | 'outbound'
 
@@ -97,6 +99,7 @@ function TrunkList() {
             <td className={td}>
               <Badge tone={statusTone(state(x.id))} dot>{t(`trunks.state.${state(x.id)}`, { defaultValue: state(x.id) })}</Badge>
               <RefreshResult value={result[x.id]} busy={refreshing[x.id]} />
+              {x.enabled && <TrunkWhy trunk={x} status={result[x.id]?.status ?? state(x.id)} busy={refreshing[x.id]} />}
             </td>
             <td className={`${td} font-mono`}>{x.callerId || '–'}</td>
             <td className={`${td} whitespace-nowrap text-right`}>
@@ -129,6 +132,50 @@ function RefreshResult({ value, busy }: { value?: { status?: string; error?: unk
   if (!value.status) return null
   const tone = value.status === 'registered' ? 'text-ok' : value.status === 'rejected' ? 'text-danger-ink' : 'text-subtle'
   return <p className={`mt-1 max-w-xs text-xs ${tone}`}>{t(`trunks.refreshResult.${value.status}`, { defaultValue: t('trunks.refreshResult.other', { status: value.status }) })}</p>
+}
+
+type Diagnosis = { reason: string; code?: string; lines: LogEntry[] }
+const badState = (s: string) => s === 'rejected' || s === 'unregistered' || s === 'unreachable' || s === 'pending'
+
+/**
+ * Why a trunk is not registered or not reachable: the reason Kiestoon reads from the Asterisk
+ * log, with the log lines about this trunk behind a button.
+ */
+function TrunkWhy({ trunk, status, busy }: { trunk: Trunk; status: string; busy?: boolean }) {
+  const { t } = useTranslation()
+  const [d, setD] = useState<Diagnosis | null>(null)
+  const [open, setOpen] = useState(false)
+  const bad = badState(status)
+  useEffect(() => {
+    if (!bad || busy) return
+    let live = true
+    api<Diagnosis>('GET', `/pbx/trunks/${trunk.id}/diagnose`).then((v) => live && setD(v)).catch(() => live && setD(null))
+    return () => { live = false }
+  }, [bad, busy, status, trunk.id])
+  if (!bad || !d || !d.reason) return null
+  return (
+    <>
+      <div className="mt-1 flex max-w-xs flex-col items-start gap-1">
+        <p className="text-xs text-danger-ink">{t(`trunks.why.${d.reason}`, { code: d.code ? ` (${d.code})` : '' })}</p>
+        <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1 text-xs text-accent hover:underline">
+          <FileText className="size-3.5" aria-hidden /> {t('trunks.whyShowLog', { count: d.lines.length })}
+        </button>
+      </div>
+      {open && (
+        <Modal wide title={t('trunks.whyTitle', { name: trunk.name })} onClose={() => setOpen(false)}
+          footer={<>
+            <Link to={`/logs?source=asterisk&q=${encodeURIComponent(trunk.host || `trunk-${trunk.id}`)}`} className="inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-line px-4 text-sm text-ink-2 hover:border-accent/50 hover:text-ink">
+              <FileText className="size-4" aria-hidden /> {t('trunks.whyOpenLogs')}
+            </Link>
+            <Button onClick={() => setOpen(false)}>{t('common.close')}</Button>
+          </>}>
+          <Alert tone="danger">{t(`trunks.why.${d.reason}`, { code: d.code ? ` (${d.code})` : '' })}</Alert>
+          <p className="text-sm text-muted">{t(`trunks.whyFix.${d.reason}`)}</p>
+          <div className="rounded-xl border border-line bg-surface-2/50 p-3"><LogLines entries={d.lines} /></div>
+        </Modal>
+      )}
+    </>
+  )
 }
 
 function TrunkForm({ value, onClose, onSaved }: { value: Trunk; onClose: () => void; onSaved: () => void }) {

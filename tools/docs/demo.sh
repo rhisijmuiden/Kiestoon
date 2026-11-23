@@ -16,11 +16,12 @@ node "$HERE/fake-helper.mjs" "$WORK/helper.sock" "$WORK/wg-keys.json" > "$WORK/h
 echo $! >> "$WORK/pids"
 start() {
 KIESTOON_DATA_DIR="$WORK/data" KIESTOON_LISTEN="127.0.0.1:$PORT" KIESTOON_TLS_LISTEN=off KIESTOON_CHANNEL=testing KIESTOON_AI_BASE_URL=http://127.0.0.1:9 KIESTOON_ELEVENLABS_BASE_URL="http://127.0.0.1:$((PORT + 1200))" \
-  KIESTOON_AMI_ADDR="127.0.0.1:$AMI_PORT" KIESTOON_HELPER_SOCKET="$WORK/helper.sock" TZ=Europe/Amsterdam \
+  KIESTOON_AMI_ADDR="127.0.0.1:$AMI_PORT" KIESTOON_ASTERISK_LOG_DIR="$WORK/asterisk-log" KIESTOON_HELPER_SOCKET="$WORK/helper.sock" TZ=Europe/Amsterdam \
   "$BIN" >> "$WORK/server.log" 2>&1 &
 echo $! > "$WORK/server.pid"
 for _ in $(seq 50); do curl -fs "http://127.0.0.1:$PORT/api/setup/status" >/dev/null 2>&1 && break; sleep 0.2; done
 }
+node "$HERE/fake-log.mjs" "$WORK/asterisk-log"
 start
 node "$HERE/seed.mjs" "http://127.0.0.1:$PORT" "$WORK/data"
 node --no-warnings "$HERE/dress.mjs" "http://127.0.0.1:$PORT" "$WORK/data" "$WORK/wg-keys.json"

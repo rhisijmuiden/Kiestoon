@@ -172,7 +172,10 @@
     "first_run_required": "Finish the first setup first: choose your own password.",
     "trunk_not_register": "Only a trunk that registers with the provider can be refreshed.",
     "trunk_disabled": "Turn the trunk on first.",
-    "reregister_failed": "Asterisk could not register the trunk again."
+    "reregister_failed": "Asterisk could not register the trunk again.",
+    "log_missing": "This log does not exist yet. It is created as soon as there is something to write.",
+    "log_permission": "The portal may not read this log. Run the update again to fix the permissions.",
+    "log_unavailable": "The log could not be read."
   },
   "setup": {
     "title": "Welcome to Kiestoon",
@@ -290,7 +293,8 @@
     "quality": "Call quality",
     "teams": "Microsoft Teams",
     "onCall": "On-call",
-    "myOnCall": "My on-call shifts"
+    "myOnCall": "My on-call shifts",
+    "logs": "Logs"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -887,7 +891,33 @@
       "unknown": "Unknown",
       "nonqualified": "Not checked",
       "pending": "Waiting"
-    }
+    },
+    "why": {
+      "auth_failed": "Sign-in refused{{code}}: the user name or password is wrong.",
+      "forbidden": "The provider refuses this account{{code}}.",
+      "not_found": "The provider does not know this account{{code}}.",
+      "timeout": "The provider does not answer.",
+      "dns": "The provider's host name cannot be found.",
+      "unavailable": "The provider's server is unavailable{{code}}.",
+      "transport": "The connection to the provider fails.",
+      "tls": "The secure (TLS) connection to the provider fails.",
+      "other": "See the log for what went wrong."
+    },
+    "whyFix": {
+      "auth_failed": "Check the user name, the authentication user name and the password with your provider. Copy the password again: a space at the end is enough to fail.",
+      "forbidden": "The account may be blocked, not yet active, or the provider only accepts it from a known IP address. Check the account in the provider's portal and whether your public IP address is allowed.",
+      "not_found": "Check the user name and the host: the account may belong to another server of the provider.",
+      "timeout": "Kiestoon gets no answer at all. Check the host and port, the transport (UDP, TCP or TLS), and whether a firewall or router blocks outgoing SIP. Behind NAT, fill in the public address under Settings.",
+      "dns": "Check the spelling of the host. When it is right, check the DNS servers of this server under Internet access.",
+      "unavailable": "The provider has a problem or maintenance. Try again later with Refresh registration, or ask the provider.",
+      "transport": "Check the port and transport, and whether the network of this server can reach the provider.",
+      "tls": "Check that the provider supports TLS on this port and that the server clock is right.",
+      "other": "The log lines below are the newest lines about this trunk."
+    },
+    "whyShowLog_one": "Show {{count}} log line",
+    "whyShowLog_other": "Show {{count}} log lines",
+    "whyTitle": "Why {{name}} does not work",
+    "whyOpenLogs": "Open in logs"
   },
   "routes": {
     "addInbound": "Add inbound route",
@@ -4587,5 +4617,50 @@
     "pinText": "Enter the pin code of this screen. The tv remembers it.",
     "pinWrong": "That pin code is not right.",
     "pinGo": "Show screen"
+  },
+  "logs": {
+    "title": "Logs",
+    "subtitle": "What the phone system and the portal write down, to find out why something does not work",
+    "source": "Log",
+    "sources": {
+      "asterisk": "Phone system",
+      "security": "Security",
+      "portal": "Portal",
+      "helper": "System helper",
+      "engine": "Phone engine service"
+    },
+    "sourceHint": {
+      "asterisk": "Notices, warnings and errors of Asterisk: trunk registrations, calls that fail, phones that cannot sign in.",
+      "security": "Sign-in attempts on phone accounts, including failed and blocked ones. fail2ban reads this log.",
+      "portal": "Messages of the Kiestoon portal: mail, backups, updates, integrations.",
+      "helper": "The helper that applies the firewall, backups, internet access and updates as root.",
+      "engine": "Start, stop and crashes of the Asterisk service."
+    },
+    "search": "Search",
+    "searchPlaceholder": "Word, number, host name or trunk-1",
+    "levelFilter": "Show",
+    "levels": {
+      "all": "Everything",
+      "notice": "Notices and worse",
+      "warning": "Warnings and errors",
+      "error": "Errors only"
+    },
+    "level": {
+      "error": "Error",
+      "warning": "Warning",
+      "notice": "Notice",
+      "security": "Security",
+      "info": "Info",
+      "debug": "Debug"
+    },
+    "reload": "Reload",
+    "download": "Download",
+    "follow": "Follow (refresh every 5 seconds)",
+    "count_one": "{{count}} line shown of the last {{scanned}}",
+    "count_other": "{{count}} lines shown of the last {{scanned}}",
+    "updated": "last written {{at}}",
+    "emptyTitle": "No lines",
+    "emptyText": "This log is empty.",
+    "emptyFiltered": "No lines match the search or the level."
   }
 }

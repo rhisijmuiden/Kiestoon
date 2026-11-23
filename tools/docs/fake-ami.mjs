@@ -236,7 +236,7 @@ net.createServer((sock) => {
           break
         case 'coreshowchannels': list(sock, id, channels().map((c) => ({ Event: 'CoreShowChannel', ...c, Duration: new Date(c.Duration * 1000).toISOString().slice(11, 19) })), 'CoreShowChannelsComplete'); break
         case 'pjsipshowcontacts': list(sock, id, contacts().map((c) => ({ Event: 'ContactList', ...c })), 'ContactListComplete'); break
-        case 'pjsipshowregistrationsoutbound': list(sock, id, [1, 2].map((n) => ({ Event: 'OutboundRegistrationDetail', ObjectName: `trunk-${n}`, Status: 'Registered' })), 'OutboundRegistrationDetailComplete'); break
+        case 'pjsipshowregistrationsoutbound': list(sock, id, [1, 2, 3].map((n) => ({ Event: 'OutboundRegistrationDetail', ObjectName: `trunk-${n}`, Status: n === 3 ? 'Rejected' : 'Registered' })), 'OutboundRegistrationDetailComplete'); break
         case 'extensionstatelist': list(sock, id, Object.entries(extState).map(([ext, s]) => ({ Event: 'ExtensionStatus', Exten: ext, Context: 'kiestoon-extensions', Hint: `PJSIP/${ext}`, Status: String(s) })), 'ExtensionStateListComplete'); break
         case 'queuestatus': list(sock, id, queueEvents(), 'QueueStatusComplete'); break
         case 'coresettings': write(sock, { Response: 'Success', ActionID: id, AsteriskVersion: '22.6.0', AMIversion: '11.0.0' }); break

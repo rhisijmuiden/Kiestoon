@@ -1,6 +1,6 @@
 import {
   Sparkles,
-  Activity, Archive, Gauge, Building2, Network, ServerCog, Sun, AudioLines, AudioWaveform, BookUser, Globe, Monitor, MonitorPlay, Plug, Printer, Clock, Disc3, GitBranch, Headset, History, KeyRound, LayoutGrid, ListOrdered, Mail, MonitorSmartphone,
+  Activity, Archive, FileText, Gauge, Building2, Network, ServerCog, Sun, AudioLines, AudioWaveform, BookUser, Globe, Monitor, MonitorPlay, Plug, Printer, Clock, Disc3, GitBranch, Headset, History, KeyRound, LayoutGrid, ListOrdered, Mail, MonitorSmartphone,
   MessagesSquare, Phone, Presentation, ScrollText, Settings, Shield, ShieldAlert, Siren, Smartphone, TabletSmartphone, User, UserCog, UsersRound, Voicemail, Waypoints,
   type LucideIcon,
 } from 'lucide-react'
@@ -77,6 +77,7 @@ export const nav: NavGroup[] = [
       { key: 'backups', path: '/backups', icon: Archive },
       { key: 'mail', path: '/mail', icon: Mail },
       { key: 'audit', path: '/audit', icon: ScrollText },
+      { key: 'logs', path: '/logs', icon: FileText },
       { key: 'settings', path: '/settings', icon: Settings },
     ],
   },

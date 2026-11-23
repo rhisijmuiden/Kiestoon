@@ -3,6 +3,10 @@
 Begin bij het **dashboard**: dat laat zien of de telefooncentrale draait, welke trunks online zijn, hoeveel
 telefoons geregistreerd zijn en elke waarschuwing die aandacht nodig heeft.
 
+Kijk daarna in [Logboeken](logs.md): het logboek van de telefooncentrale zegt waarom een trunk niet aanmeldt, waarom
+een toestel niet kan inloggen of waarom een gesprek mislukt. Een trunk die niet werkt toont de reden uit het logboek
+in de trunklijst.
+
 ## Telefoons
 
 ??? question "Een telefoon registreert niet"

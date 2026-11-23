@@ -41,6 +41,7 @@ function answer(cmd, args) {
         peers: keys.map((k, i) => ({ interface: 'kt0', publicKey: k, endpoint: `81.204.${12 + i}.${30 + i}:51820`, lastHandshake: new Date(Date.now() - (20 + i * 31) * 1000).toISOString(), rxBytes: 48211234 + i, txBytes: 51123321 + i })),
       }
     }
+    case 'logs.journal': return journal(args?.unit)
     case 'cluster.status': return { keepalivedInstalled: true, keepalivedActive: true, vrrpState: 'MASTER', vipHere: true, interface: 'eth0', asteriskActive: true }
     case 'backup.test': return { created: false }
     case 'backup.run': snapshots++; return { snapshotId: 'a3f9c2d1' + String(snapshots).padStart(56, '0'), bytesAdded: args?.kind === 'full' ? 412_334_112 : 3_482_119, files: 1843 }
@@ -66,3 +67,20 @@ net.createServer((c) => {
     c.end(JSON.stringify({ ok: true, ...(data !== null ? { data } : {}) }) + '\n')
   })
 }).listen(sock, () => console.log(`fake helper on ${sock} (${now()})`))
+
+// A few journal lines per service for the log viewer.
+function journal(unit) {
+  const day = new Date().toISOString().slice(0, 10)
+  const at = (hm) => `${day}T${hm}:00+01:00`
+  const lines = {
+    kiestoon: [
+      `${at('07:00')} pbx kiestoon[812]: time=${day}T07:00:00.000+01:00 level=INFO msg="backup finished" kind=incremental files=1843`,
+      `${at('07:30')} pbx kiestoon[812]: time=${day}T07:30:00.000+01:00 level=INFO msg="voicemail mail sent" mailbox=201`,
+      `${at('08:10')} pbx kiestoon[812]: time=${day}T08:10:00.000+01:00 level=WARN msg="crm lookup slow" crm=hubspot ms=2400`,
+      `${at('08:15')} pbx kiestoon[812]: time=${day}T08:15:00.000+01:00 level=INFO msg="update check" channel=testing`,
+    ],
+    'kiestoon-helper': [`${at('07:00')} pbx kiestoon-helper[640]: time=${day}T07:00:00.000+01:00 level=INFO msg="firewall applied" rules=14`],
+    asterisk: [`${at('06:58')} pbx systemd[1]: Started asterisk.service - Asterisk PBX.`],
+  }
+  return lines[unit] ?? []
+}

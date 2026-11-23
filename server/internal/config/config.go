@@ -30,6 +30,8 @@ type Config struct {
 	AsteriskHTTP string
 	// SoftphoneDir holds the Windows softphone installer (MSI) that the portal offers for download.
 	SoftphoneDir string
+	// AsteriskLogDir holds Asterisk's messages.log and security.log, read by the log viewer.
+	AsteriskLogDir string
 }
 
 // Load reads the configuration from environment variables, falling back to defaults.
@@ -45,6 +47,7 @@ func Load() Config {
 		HelperSocket:   env("KIESTOON_HELPER_SOCKET", "/run/kiestoon-helper/helper.sock"),
 		AsteriskHTTP:   env("KIESTOON_ASTERISK_HTTP", "127.0.0.1:8088"),
 		SoftphoneDir:   env("KIESTOON_SOFTPHONE_DIR", "/usr/share/kiestoon/softphone"),
+		AsteriskLogDir: env("KIESTOON_ASTERISK_LOG_DIR", "/var/log/asterisk"),
 	}
 }
 

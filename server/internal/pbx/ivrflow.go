@@ -23,9 +23,18 @@ import (
 //   - destination: sends the call to an extension, group, queue, voicemail, other menu, ... End point.
 //   - time:        checks a time condition (with its day/night switch). Ports "open" and "closed".
 //   - repeat:      plays the menu again. End point.
+//   - menu:        a further choice menu (for example after a time check: one menu when open, another
+//     when closed). Plays its prompt and the prompts of its keys and waits for a key, like the entry.
+//     Lines run from it to its keys and its timeout.
 //   - speech:      asks a question ("say what you are calling about"), records the answer, has it
 //     transcribed by the local Whisper and follows the line of the first matching intent (ports
 //     "i1".."i8", by keywords, optionally helped by AI) or "nomatch".
+//
+// The entry either is a menu itself (lines to keys and a timeout) or has one line to a start step
+// (a time check, audio, a menu, a speech step or a destination) that runs right after the welcome.
+// A port of a key, timeout, audio, time or speech step normally has one line. It may have several
+// when they all lead to an extension, ring group, queue or external number: those ring at the same
+// time and the first to answer gets the call.
 const (
 	NodeEntry       = "entry"
 	NodeKey         = "key"
@@ -35,7 +44,23 @@ const (
 	NodeTime        = "time"
 	NodeRepeat      = "repeat"
 	NodeSpeech      = "speech"
+	NodeMenu        = "menu"
 )
+
+// MaxParallel limits the destinations one port can ring at the same time.
+const MaxParallel = 5
+
+// Parallel reports whether a destination can ring together with others from one port.
+func Parallel(d *Destination) bool {
+	if d == nil {
+		return false
+	}
+	switch d.Type {
+	case DestExtension, DestRingGroup, DestQueue, DestExternal:
+		return true
+	}
+	return false
+}
 
 // MaxIntents limits the intents of one speech step.
 const MaxIntents = 8
@@ -118,15 +143,41 @@ func (f *Flow) Next(from, port string) *FlowNode {
 	return nil
 }
 
-// MenuKeys returns the key nodes connected to the entry, in key order.
-func (f *Flow) MenuKeys() []*FlowNode {
+// NextAll returns every node a port leads to (several when they ring at the same time).
+func (f *Flow) NextAll(from, port string) []*FlowNode {
+	var out []*FlowNode
+	for _, e := range f.Edges {
+		if e.From == from && e.Port == port {
+			if n := f.Node(e.To); n != nil {
+				out = append(out, n)
+			}
+		}
+	}
+	return out
+}
+
+// isMenu reports whether keys and a timeout hang off a node (the entry or a menu step).
+func isMenu(n *FlowNode) bool { return n != nil && (n.Type == NodeEntry || n.Type == NodeMenu) }
+
+// StartStep returns the step the entry runs right after the welcome instead of a menu, or nil.
+func (f *Flow) StartStep() *FlowNode {
 	entry := f.Entry()
 	if entry == nil {
 		return nil
 	}
+	for _, e := range f.Edges {
+		if n := f.Node(e.To); e.From == entry.ID && n != nil && n.Type != NodeKey && n.Type != NodeTimeout {
+			return n
+		}
+	}
+	return nil
+}
+
+// KeysOf returns the key nodes connected to a menu (the entry or a menu step), in key order.
+func (f *Flow) KeysOf(menu string) []*FlowNode {
 	var keys []*FlowNode
 	for _, e := range f.Edges {
-		if e.From != entry.ID {
+		if e.From != menu {
 			continue
 		}
 		if n := f.Node(e.To); n != nil && n.Type == NodeKey {
@@ -137,18 +188,33 @@ func (f *Flow) MenuKeys() []*FlowNode {
 	return keys
 }
 
-// TimeoutNode returns the timeout node connected to the entry, or nil.
-func (f *Flow) TimeoutNode() *FlowNode {
-	entry := f.Entry()
-	if entry == nil {
-		return nil
-	}
+// TimeoutOf returns the timeout node connected to a menu, or nil.
+func (f *Flow) TimeoutOf(menu string) *FlowNode {
 	for _, e := range f.Edges {
-		if n := f.Node(e.To); e.From == entry.ID && n != nil && n.Type == NodeTimeout {
+		if n := f.Node(e.To); e.From == menu && n != nil && n.Type == NodeTimeout {
 			return n
 		}
 	}
 	return nil
+}
+
+// MenuKeys returns the key nodes connected to the entry, in key order (none when the entry has a
+// start step).
+func (f *Flow) MenuKeys() []*FlowNode {
+	entry := f.Entry()
+	if entry == nil || f.StartStep() != nil {
+		return nil
+	}
+	return f.KeysOf(entry.ID)
+}
+
+// TimeoutNode returns the timeout node connected to the entry, or nil.
+func (f *Flow) TimeoutNode() *FlowNode {
+	entry := f.Entry()
+	if entry == nil || f.StartStep() != nil {
+		return nil
+	}
+	return f.TimeoutOf(entry.ID)
 }
 
 // Steps are the nodes a call can reach after a key or the timeout (audio, destination, time,
@@ -157,7 +223,7 @@ func (f *Flow) Steps() map[string]int {
 	m := map[string]int{}
 	for _, n := range f.Nodes {
 		switch n.Type {
-		case NodeAudio, NodeDestination, NodeTime, NodeRepeat, NodeSpeech:
+		case NodeAudio, NodeDestination, NodeTime, NodeRepeat, NodeSpeech, NodeMenu:
 			m[n.ID] = len(m) + 1
 		}
 	}
@@ -182,7 +248,7 @@ func (f *Flow) FirstDestination(from *FlowNode) Destination {
 				return *n.Destination
 			}
 			return Destination{Type: DestHangup}
-		case NodeRepeat:
+		case NodeRepeat, NodeMenu:
 			return Destination{Type: DestHangup}
 		case NodeSpeech:
 			n = f.Next(n.ID, "nomatch")
@@ -252,8 +318,7 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 		return invalid("too_large", "flow")
 	}
 	ids := map[string]bool{}
-	digits := map[string]bool{}
-	var entries, timeouts int
+	var entries int
 	prompts := map[int64]bool{}
 	for i := range f.Nodes {
 		n := &f.Nodes[i]
@@ -277,16 +342,11 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 		switch n.Type {
 		case NodeEntry:
 			entries++
-		case NodeTimeout:
-			timeouts++
+		case NodeTimeout, NodeMenu:
 		case NodeKey:
 			if !reIVRDigit.MatchString(n.Digit) {
 				return invalid("invalid_digit", "flow")
 			}
-			if digits[n.Digit] {
-				return invalid("duplicate_digit", "flow")
-			}
-			digits[n.Digit] = true
 		case NodeAudio, NodeRepeat:
 		case NodeSpeech:
 			if len(n.Intents) > MaxIntents {
@@ -324,7 +384,7 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 			return invalid("invalid", "flow")
 		}
 		switch n.Type {
-		case NodeEntry, NodeKey, NodeTimeout, NodeAudio, NodeSpeech:
+		case NodeEntry, NodeKey, NodeTimeout, NodeAudio, NodeSpeech, NodeMenu:
 		default:
 			n.PromptID = 0
 		}
@@ -335,11 +395,15 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 			prompts[n.PromptID] = true
 		}
 	}
-	if entries != 1 || timeouts > 1 {
+	if entries != 1 {
 		return invalid("invalid", "flow")
 	}
-	// Lines: from a known node and port to a known node; one line per port.
+	// Lines: from a known node and port to a known node; one line per port, except a menu (a line
+	// to each key, its timeout and at most one start step) and destinations that ring together.
 	used := map[string]bool{}
+	ports := map[string][]*FlowNode{}
+	parent := map[string]bool{} // key or timeout already in a menu
+	starts := 0
 	edges := f.Edges[:0]
 	for _, e := range f.Edges {
 		from, to := f.Node(e.From), f.Node(e.To)
@@ -350,9 +414,19 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 			return invalid("invalid_line", "flow")
 		}
 		switch from.Type {
-		case NodeEntry:
-			if e.Port != "out" || (to.Type != NodeKey && to.Type != NodeTimeout) {
+		case NodeEntry, NodeMenu:
+			if e.Port != "out" {
 				return invalid("invalid_line", "flow")
+			}
+			if to.Type == NodeKey || to.Type == NodeTimeout {
+				if parent[to.ID] {
+					return invalid("invalid_line", "flow")
+				}
+				parent[to.ID] = true
+			} else if from.Type == NodeMenu || to.Type == NodeRepeat {
+				return invalid("invalid_line", "flow")
+			} else {
+				starts++
 			}
 		case NodeKey, NodeTimeout, NodeAudio:
 			if e.Port != "out" || to.Type == NodeKey || to.Type == NodeTimeout {
@@ -373,17 +447,56 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 		default:
 			return invalid("invalid_line", "flow")
 		}
-		k := e.From + "\x00" + e.Port + "\x00"
-		if from.Type == NodeEntry {
-			k += e.To // the entry has a line to every key
-		}
+		k := e.From + "\x00" + e.Port + "\x00" + e.To
 		if used[k] {
 			return invalid("invalid_line", "flow")
 		}
 		used[k] = true
+		if !isMenu(from) {
+			pk := e.From + "\x00" + e.Port
+			ports[pk] = append(ports[pk], to)
+		}
 		edges = append(edges, e)
 	}
+	if starts > 1 {
+		return invalid("invalid_line", "flow")
+	}
+	// Several lines from one port only to destinations that can ring together.
+	for _, to := range ports {
+		if len(to) < 2 {
+			continue
+		}
+		if len(to) > MaxParallel {
+			return invalid("too_many_parallel", "flow")
+		}
+		for _, n := range to {
+			if n.Type != NodeDestination || !Parallel(n.Destination) {
+				return invalid("parallel_only_ring", "flow")
+			}
+		}
+	}
 	f.Edges = edges
+	// Keys of one menu have different digits; a menu has at most one timeout.
+	for i := range f.Nodes {
+		if n := &f.Nodes[i]; isMenu(n) {
+			seen := map[string]bool{}
+			for _, k := range f.KeysOf(n.ID) {
+				if seen[k.Digit] {
+					return invalid("duplicate_digit", "flow")
+				}
+				seen[k.Digit] = true
+			}
+			t := 0
+			for _, e := range f.Edges {
+				if to := f.Node(e.To); e.From == n.ID && to != nil && to.Type == NodeTimeout {
+					t++
+				}
+			}
+			if t > 1 {
+				return invalid("invalid", "flow")
+			}
+		}
+	}
 
 	// Derived fields.
 	v.PromptID = f.Entry().PromptID

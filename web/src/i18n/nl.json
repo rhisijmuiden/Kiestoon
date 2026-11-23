@@ -1969,6 +1969,38 @@
       "saved": "Opgeslagen",
       "unsaved": "Nog niet opgeslagen",
       "sharedHint": "Dit zijn de instellingen van de wachtrij zelf. Ze worden meteen opgeslagen, los van het menu, en gelden overal waar deze wachtrij gebruikt wordt."
+    },
+    "clip": {
+      "copy": "Kopiëren",
+      "copySelected": "{{count}} stappen kopiëren",
+      "copyBranch": "Kopiëren met de stappen erna",
+      "pasteInto": "Plakken in dit menu",
+      "pasteAfter": "Plakken na deze stap",
+      "pasteHere": "Hier plakken",
+      "deleteSelected": "{{count}} stappen verwijderen",
+      "copied_one": "1 stap gekopieerd",
+      "copied_other": "{{count}} stappen gekopieerd",
+      "pasted_one": "1 stap geplakt",
+      "pasted_other": "{{count}} stappen geplakt",
+      "hint": "Klik met rechts op een stap om te kopiëren en plakken. Selecteer meerdere stappen met Ctrl-klik of Shift-slepen, dan Ctrl+C en Ctrl+V. Plak je een gekopieerd keuzemenu in een ander menu, dan krijgt dat dezelfde toetsen en stappen."
+    },
+    "numbers": {
+      "title": "Telefoonnummers",
+      "aside": "inkomende routes",
+      "none": "Er gaat nog geen nummer naar dit menu.",
+      "add": "Nummer toevoegen",
+      "choose": "Kies een nummer",
+      "noFree": "Geen vrije trunknummers",
+      "free": "Vrije nummers",
+      "inUse": "Elders in gebruik (verhuist hierheen)",
+      "other": "Ander nummer…",
+      "otherLabel": "Telefoonnummer",
+      "saveFirst": "Sla het menu eerst op en koppel daarna hier telefoonnummers.",
+      "disabled": "route staat uit",
+      "unlink": "{{number}} ontkoppelen",
+      "unlinkConfirm": "{{number}} ontkoppelen? De inkomende route wordt verwijderd; het nummer staat daarna bij de nummers zonder route.",
+      "moveConfirm": "{{number}} gaat nu naar \"{{route}}\". In plaats daarvan naar dit menu sturen?",
+      "hint": "Wordt meteen opgeslagen als inkomende route (Trunks & routes › Inkomende routes), los van het menu."
     }
   },
   "timeConditions": {

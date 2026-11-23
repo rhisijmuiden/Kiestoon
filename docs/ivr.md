@@ -67,6 +67,30 @@ menus.
 New keys from the palette go into the selected choice menu (or the menu of the selected key). Keys that hang off
 **Incoming call** while it has a start step are skipped; the canvas warns about this.
 
+## Copy and paste
+
+Right-click a step for **Copy**, **Copy with the steps after it**, **Paste**, **Duplicate** and **Delete**; the same
+buttons are at the bottom of the side panel. Select several steps with <kbd>Ctrl</kbd>-click or by dragging a box
+with <kbd>Shift</kbd>, then use <kbd>Ctrl</kbd>+<kbd>C</kbd> and <kbd>Ctrl</kbd>+<kbd>V</kbd>. The clipboard stays in
+your browser, so you can paste into another menu too.
+
+Where the copy goes depends on what you paste on:
+
+- **A copied choice menu on another menu** (a choice menu or *Incoming call*): that menu gets the same keys, no-input
+  step and everything after them. Typical: copy the open-hours menu with its steps, right-click the empty
+  *Closed* menu and choose **Paste into this menu**, then change what differs. A key whose digit the menu already
+  has stays loose and is flagged.
+- **Copied keys on a menu**: they join that menu.
+- **One copied step on a step with a free dot**: it is connected after that step.
+- **On the empty canvas**: the copy is placed where you clicked, without lines.
+
+## Phone numbers
+
+Click **Incoming call** to see which phone numbers ring this menu. **Add a number** lists the free numbers of your
+trunks (and numbers that go elsewhere now, which then move to this menu), or type another number. This creates the
+inbound route right away, the same one you see under **Trunks & routes › Inbound routes**; the × removes it again. The
+numbers show on the *Incoming call* step. Save a new menu once before linking numbers.
+
 ## Ring several destinations at once
 
 A keypress (or *No input*, *Play audio*, a time condition or speech answer) can ring up to five destinations at the

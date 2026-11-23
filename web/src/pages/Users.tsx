@@ -8,6 +8,7 @@ import { api, roles, type Role, type User } from '../lib/api'
 import { useSession } from '../lib/session'
 import type { Extension, SsoProvider, WelcomeResult } from '../lib/types'
 import { WelcomeNotice } from '../components/WelcomeNotice'
+import { useCallerLanguage } from '../components/CallerLanguage'
 
 type Form = { id: number; username: string; displayName: string; email: string; role: Role; extensionId: number | null; language: 'en' | 'nl'; enabled: boolean; password: string }
 
@@ -19,6 +20,7 @@ export function Users() {
   const me = state.kind === 'ready' ? state.me.user : undefined
   const list = useApi<User[]>('/users')
   const exts = useApi<Extension[]>('/pbx/extensions')
+  const callerLang = useCallerLanguage()
   const sso = useApi<{ providers: SsoProvider[] }>('/sso/providers')
   const [edit, setEdit] = useState<Form | null>(null)
   const [error, setError] = useState<unknown>(null)
@@ -48,7 +50,7 @@ export function Users() {
   return (
     <>
       <PageHeader title={t('users.title')} subtitle={t('users.subtitle')}>
-        <Button onClick={() => setEdit({ id: 0, username: '', displayName: '', email: '', role: 'user', extensionId: null, language: i18n.language === 'nl' ? 'nl' : 'en', enabled: true, password: '' })}>
+        <Button onClick={() => setEdit({ id: 0, username: '', displayName: '', email: '', role: 'user', extensionId: null, language: callerLang ?? (i18n.language === 'nl' ? 'nl' : 'en'), enabled: true, password: '' })}>
           <Plus className="size-4" aria-hidden /> {t('users.add')}
         </Button>
       </PageHeader>

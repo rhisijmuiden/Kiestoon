@@ -107,6 +107,9 @@ type FlowEdge struct {
 type Flow struct {
 	Nodes []FlowNode `json:"nodes"`
 	Edges []FlowEdge `json:"edges"`
+	// Language callers of this IVR hear: en or nl, or empty for the caller language of the
+	// phone system.
+	Language string `json:"language,omitempty"`
 }
 
 // KeyOrder is the order in which key prompts are played and keys are listed.
@@ -319,6 +322,9 @@ func (r *Repo) validateFlow(ctx context.Context, v *IVR) error {
 	}
 	if len(f.Nodes) > MaxFlowNodes || len(f.Edges) > MaxFlowNodes*3 {
 		return invalid("too_large", "flow")
+	}
+	if !ValidLanguageOverride(f.Language) {
+		return invalid("invalid", "flow.language")
 	}
 	ids := map[string]bool{}
 	var entries int

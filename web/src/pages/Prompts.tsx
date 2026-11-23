@@ -108,7 +108,7 @@ function SourceBadge({ p }: { p: Prompt }) {
 function Regenerate({ prompts, onDone }: { prompts: Prompt[]; onDone: () => void }) {
   const { t, i18n } = useTranslation()
   const tts = useTTS()
-  const lang: 'nl' | 'en' = tts.el?.pbxLanguage ?? (i18n.language.startsWith('nl') ? 'nl' : 'en')
+  const lang: 'nl' | 'en' = tts.el?.pbxLanguage ?? tts.speech?.pbxLanguage ?? (i18n.language.startsWith('nl') ? 'nl' : 'en')
   const [engine, setEngine] = useState<'piper' | 'elevenlabs' | ''>('')
   const [elVoice, setElVoice] = useState<VoiceRef | null>(null)
   const [piperVoice, setPiperVoice] = useState('')

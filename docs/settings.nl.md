@@ -1,9 +1,31 @@
 # Instellingen
 
-**Instellingen** bevat de keuzes voor het hele systeem: het nummerplan, alarmnummers, het netwerk en de
-telefooncentrale zelf.
+**Instellingen** bevat de keuzes voor het hele systeem: de taal voor bellers, het nummerplan, alarmnummers, het
+netwerk en de telefooncentrale zelf.
 
 ![Instellingen](shot:settings)
+
+## Taal voor bellers { #taal-voor-bellers }
+
+Eén instelling voor alles wat bellers horen en toestellen tonen, in het Engels of het Nederlands:
+
+- meldingen in wachtrijen: de hoeveelste wachtende de beller is ("u bent nummer 3") en de wachttijd,
+- voicemailmenu's en begroetingen, sterretjescodes en andere systeemmeldingen,
+- uitgesproken getallen, datums en tijden,
+- de standaardtaal van [uitgesproken tekst](prompts.md) voor keuzemenu's en gesproken teksten,
+- voicemail-, fax- en andere systeemmails,
+- nieuwe gebruikers en hun welkomstmail.
+
+**Schermen van toestellen volgen de taal voor bellers** geeft [automatisch ingestelde toestellen](phones.md)
+dezelfde taal bij hun volgende configuratie-update. Zet het uit om toestellen een eigen taal te geven bij
+**Telefoons & provisioning > Provisioning-instellingen**.
+
+De taal van de webinterface hoort er niet bij: elke gebruiker kiest die zelf bij **Account**. Een beheerder kan
+dus in het Engels werken terwijl bellers Nederlands horen.
+
+Een losse [wachtrij](queues.md) of een [keuzemenu](ivr.md) kan in zijn eigen instellingen een andere taal krijgen
+(**Taal voor bellers**), bijvoorbeeld een Engelse lijn voor buitenlandse klanten. De taal die je bij de eerste
+installatie kiest, is meteen de eerste taal voor bellers.
 
 ## Nummerplan
 
@@ -40,7 +62,6 @@ Een poort wijzigen vraagt een herstart van de telefooncentrale.
 
 | Instelling | Wat het doet |
 | --- | --- |
-| **Taal van gesproken berichten** | Engels of Nederlands, ook gebruikt voor voicemailmails. |
 | **Tijdzone** | Voor tijdcondities, gespreksgeschiedenis en planningen. |
 | **Landcode** | Zonder `+`; `31` is Nederland. |
 | **Codecs voor toestellen** | Op volgorde van voorkeur, bijvoorbeeld `g722,alaw,ulaw`. |

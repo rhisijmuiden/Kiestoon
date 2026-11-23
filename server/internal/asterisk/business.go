@@ -504,6 +504,9 @@ func genQueues(x *w, s *pbx.Snapshot, o Options) {
 		}
 		x.f("[kiestoon-queue-%d]", q.ID)
 		x.f("exten => s,1,NoOp(Queue %s %s)", q.Number, esc(q.Name))
+		// The caller hears the queue in its language, also when the call came in through a
+		// Local channel or from another system.
+		x.f(" same => n,Set(CHANNEL(language)=%s)", s.Settings.CallerLanguage(q.Options.Language))
 		mark(x, "queue", fmt.Sprintf("id=%d", q.ID))
 		if q.CIDPrefix != "" {
 			x.f(" same => n,Set(CALLERID(name)=%s${CALLERID(name)})", esc(q.CIDPrefix))
@@ -531,6 +534,7 @@ func genQueues(x *w, s *pbx.Snapshot, o Options) {
 		// "par": the queue as one of several destinations that ring at the same time (IVR). The
 		// call is not answered here: the agents ring, and the first to answer anywhere gets it.
 		x.f("exten => par,1,NoOp(Queue %s rings together with other destinations)", q.Number)
+		x.f(" same => n,Set(CHANNEL(language)=%s)", s.Settings.CallerLanguage(q.Options.Language))
 		mark(x, "queue", fmt.Sprintf("id=%d", q.ID))
 		if q.CIDPrefix != "" {
 			x.f(" same => n,Set(CALLERID(name)=%s${CALLERID(name)})", esc(q.CIDPrefix))
@@ -659,6 +663,7 @@ func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 			x.f("include => kiestoon-direct")
 		}
 		x.f("exten => s,1,NoOp(IVR %s)", esc(v.Name))
+		x.f(" same => n,Set(CHANNEL(language)=%s)", s.Settings.CallerLanguage(f.Language))
 		x.f(" same => n,Answer()")
 		mark(x, "ivr", fmt.Sprintf("id=%d", v.ID))
 		if start != nil {

@@ -1373,8 +1373,6 @@
     "rtpEnd": "Audiopoorten tot",
     "portsHint": "Een poort wijzigen vraagt om een herstart van de telefooncentrale.",
     "calls": "Gesprekken",
-    "language": "Taal van gesproken berichten",
-    "languageHint": "Ook voor voicemailmails.",
     "timezone": "Tijdzone",
     "countryCode": "Landcode",
     "countryCodeHint": "Zonder +. 31 is Nederland.",
@@ -4786,5 +4784,31 @@
     "emptyTitle": "Geen regels",
     "emptyText": "Dit logboek is leeg.",
     "emptyFiltered": "Geen regels die passen bij de zoekopdracht of het niveau."
+  },
+  "callerLanguage": {
+    "title": "Taal voor bellers",
+    "intro": "Eén instelling voor alles wat bellers horen en toestellen tonen. De taal van de webinterface blijft een keuze per gebruiker.",
+    "covers": "Deze taal geldt voor",
+    "cover": {
+      "queues": "Meldingen in wachtrijen: de hoeveelste wachtende en de wachttijd",
+      "voicemail": "Voicemailmenu's en begroetingen",
+      "prompts": "Sterretjescodes en systeemmeldingen",
+      "numbers": "Uitgesproken getallen, datums en tijden",
+      "speech": "De standaardtaal van uitgesproken tekst (keuzemenu, geluiden)",
+      "mails": "Voicemail-, fax- en andere systeemmails",
+      "users": "Nieuwe gebruikers en hun welkomstmail"
+    },
+    "phones": "Schermen van toestellen volgen de taal voor bellers",
+    "phonesHint": "Menu's op automatisch ingestelde toestellen gebruiken deze taal na hun volgende configuratie-update.",
+    "phonesApart": "Toestellen houden een eigen taal: {{language}}. Wijzig dit bij Telefoons & provisioning > Provisioning-instellingen.",
+    "phonesSelectHint": "Volg je de taal voor bellers, dan spreken toestellen en bellers dezelfde taal.",
+    "webHint": "De taal van je eigen webinterface:",
+    "webLink": "Account",
+    "overrideNote": "Een losse wachtrij of een keuzemenu kan in zijn eigen instellingen een andere taal krijgen, bijvoorbeeld een Engelse lijn voor buitenlandse klanten.",
+    "override": "Taal voor bellers",
+    "overrideHint": "Wat bellers in deze wachtrij horen: meldingen, de hoeveelste wachtende en de wachttijd.",
+    "follow": "Zoals het systeem ({{language}})",
+    "followPlain": "Zoals het systeem",
+    "ivrHint": "Asterisk-meldingen in dit menu, en de standaardtaal van tekst die je laat uitspreken."
   }
 }

@@ -554,6 +554,9 @@ type QueueOptions struct {
 	// External are contacts outside the PBX (a mobile, another office) that take calls of this
 	// queue like an agent; the queue rings them over the trunk.
 	External []ExternalMember `json:"external"`
+	// Language callers of this queue hear (announcements, position, hold time): en or nl, or
+	// empty for the caller language of the phone system.
+	Language string `json:"language,omitempty"`
 }
 
 // ExternalMember is an external number that is a member of a queue.
@@ -611,6 +614,9 @@ func (o *QueueOptions) normalize() error {
 		if m.Penalty < 0 || m.Penalty > 10 {
 			return invalid("invalid", "options.external")
 		}
+	}
+	if !ValidLanguageOverride(o.Language) {
+		return invalid("invalid", "options.language")
 	}
 	c := &o.Callback
 	def := func(v *int, d, min, max int, field string) error {

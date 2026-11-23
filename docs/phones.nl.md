@@ -31,7 +31,7 @@ Open **Toestellen & provisioning** en klik **Provisioning-instellingen**:
 | **Gebruikersnaam / Wachtwoord** | Beveiligen het provisioning-adres. Worden gemaakt; houd ze geheim |
 | **Beheerwachtwoord toestellen** | Vervangt het fabriekswachtwoord van de webinterface van het toestel: **Uniek per toestel** (standaard) of **Hetzelfde voor alle toestellen**. Zie hieronder |
 | **Tijdserver** | NTP-server voor de telefoons, bijvoorbeeld `nl.pool.ntp.org` |
-| **Taal** | Taal op het display van de telefoon |
+| **Taal** | Taal op het display van de telefoon. **Zoals het systeem** volgt de [taal voor bellers](settings.md#taal-voor-bellers) |
 
 De kaart toont daarna de **provisioning-URL's** om te kopiëren:
 

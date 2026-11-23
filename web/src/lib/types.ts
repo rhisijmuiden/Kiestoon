@@ -150,7 +150,7 @@ export type BackupRun = {
 export type Snapshot = { id: string; shortId: string; time: string; hostname: string; tags: string[] }
 export type Schedule = { enabled: boolean; time: string; fullWeekday: number; retention: { daily: number; weekly: number; monthly: number } }
 
-export type ProvSettings = { enabled: boolean; username: string; password: string; server: string; adminPasswordMode: 'perPhone' | 'shared'; adminPassword: string; ntpServer: string; language: 'en' | 'nl' }
+export type ProvSettings = { enabled: boolean; username: string; password: string; server: string; adminPasswordMode: 'perPhone' | 'shared'; adminPassword: string; ntpServer: string; language: 'system' | 'en' | 'nl' }
 export type PhoneModel = { vendor: 'yealink' | 'snom' | 'grandstream' | 'fanvil' | 'gigaset' | 'poly' | 'htek' | 'akuvox' | 'cisco'; id: string; name: string; keys: number; lines?: number; perPage?: number }
 export type KeyType = 'none' | 'line' | 'blf' | 'speed' | 'park' | 'parkslot' | 'intercom' | 'dnd' | 'voicemail' | 'forward'
 export type PhoneKey = { type: KeyType; value: string; label: string }
@@ -199,7 +199,7 @@ export type Queue = {
 export type CallbackOptions = { enabled: boolean; offerEvery: number; retries: number; retryDelay: number; expire: number; callerId: string }
 export type SLAOptions = { target: number; norm: number; maxWaiting: number; maxWait: number; maxAbandoned: number }
 export type ExternalMember = { name: string; number: string; penalty: number; active: boolean }
-export type QueueOptions = { supervision: boolean; callback: CallbackOptions; sla?: SLAOptions; external?: ExternalMember[] }
+export type QueueOptions = { supervision: boolean; callback: CallbackOptions; sla?: SLAOptions; language?: 'en' | 'nl'; external?: ExternalMember[] }
 export type SLAKind = 'waiting' | 'wait' | 'level' | 'abandoned'
 export type SLAAlert = { queueId: number; queue: string; kind: SLAKind; value: number; limit: number; since: string }
 export type CallbackStatus = 'scheduled' | 'waiting' | 'calling' | 'done' | 'failed' | 'cancelled'
@@ -277,7 +277,7 @@ export type FlowNode = {
 }
 export type FlowPort = 'out' | 'open' | 'closed' | 'nomatch' | `i${number}`
 export type FlowEdge = { from: string; port: FlowPort; to: string }
-export type Flow = { nodes: FlowNode[]; edges: FlowEdge[] }
+export type Flow = { nodes: FlowNode[]; edges: FlowEdge[]; language?: 'en' | 'nl' }
 export type IVR = {
   id: number; name: string; promptId: number; timeout: number; retries: number; directDial: boolean; options: IVROption[]
   timeoutDestination: Destination; flow: Flow | null
@@ -411,7 +411,7 @@ export type AIData = {
   keySet: boolean; keyHint: string; sttReady: boolean
 }
 export type AIResult = { status: 'none' | 'done' | 'failed'; transcript?: string; summary?: AISummary; engine?: string; error?: string; at?: string }
-export type SpeechData = { settings: SpeechSettings; ttsInstalled: boolean; sttInstalled: boolean; voices: SpeechItem[]; models: SpeechItem[] }
+export type SpeechData = { settings: SpeechSettings; ttsInstalled: boolean; sttInstalled: boolean; voices: SpeechItem[]; models: SpeechItem[]; pbxLanguage?: 'en' | 'nl' }
 
 /** ElevenLabs cloud voices (System > Speech). */
 export type VoiceRef = { id: string; name: string }

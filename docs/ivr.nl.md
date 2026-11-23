@@ -13,7 +13,10 @@ stap eigen audio.
 2. Klik **Binnenkomend gesprek** en geef het menu een **naam** in het zijpaneel. Stel in:
     - **Wachten op een toets**: seconden dat het menu wacht na de aankondiging,
     - **Menu herhalen**: hoe vaak het menu opnieuw speelt voordat het stopt,
-    - **Toestelnummer intoetsen toestaan**: bellers die een toestelnummer kennen, kunnen het direct kiezen.
+    - **Toestelnummer intoetsen toestaan**: bellers die een toestelnummer kennen, kunnen het direct kiezen,
+    - **Taal voor bellers**: de taal van dit menu, als die afwijkt van de
+      [taal voor bellers](settings.md#taal-voor-bellers) van het systeem. Het is ook de standaardtaal van tekst die je
+      laat uitspreken.
 3. Geef het binnenkomende gesprek een **audiobericht** (de welkomsttekst), zie [Audio per stap](#audio-per-stap).
 4. Sleep bouwstenen uit de balk boven het canvas (of klik erop om ze toe te voegen) en verbind ze.
 5. Klik **Opslaan** en daarna **Testgesprek**.

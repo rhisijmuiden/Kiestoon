@@ -12,7 +12,10 @@ audio.
 2. Click **Incoming call** and give the menu a **name** in the side panel. Set:
     - **Wait for a key**: seconds the menu waits after the announcement,
     - **Repeat menu**: how many times the menu plays again before giving up,
-    - **Allow dialing an extension**: callers who know an extension can dial it directly.
+    - **Allow dialing an extension**: callers who know an extension can dial it directly,
+    - **Caller language**: the language of this menu, when it differs from the
+      [caller language](settings.md#caller-language) of the system. It is also the default language of text you
+      have spoken.
 3. Give the incoming call its **audio message** (the welcome text), see [Audio per step](#audio-per-step).
 4. Drag building blocks from the bar above the canvas (or click them to add), and connect them.
 5. Click **Save**, then **Test call**.

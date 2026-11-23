@@ -359,6 +359,10 @@ the testing channel.
   lead, everyone, a user, a number) with repeat, press-1 confirmation, greeting and a final destination. Engineers
   swap or hand over shifts in the portal (accept by colleague, optional approval), overrides beat the rota, gap and
   missing-mobile warnings, reminder mails, iCal link, every step in the call journey
+- [x] Trunk numbers and refresh registration (`v0.7.0-rc.30`): a **Refresh registration** button per trunk sends a
+  fresh REGISTER (AMI `PJSIPRegister`) and shows the provider's answer; a trunk carries its phone numbers, added one
+  by one, as a pasted list or as a number block (first + last or count); numbers without a route are listed under
+  Inbound routes and routed in bulk, and trunk numbers are suggested for every caller ID field
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

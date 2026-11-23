@@ -5,7 +5,8 @@ import { Select } from './kit'
 import { Button, Input } from './ui'
 import { api } from '../lib/api'
 import { startRecording, toTelephoneWav, type Wav } from '../lib/audio'
-import type { Destination, DestType, Destinations, NumberPlan } from '../lib/types'
+import type { Destination, DestType, Destinations, NumberInfo, NumberPlan } from '../lib/types'
+import { formatNumber } from '../lib/numbers'
 
 /** A small square icon button for table rows. */
 export function IconButton({ label, onClick, danger, children, disabled }: {
@@ -80,6 +81,30 @@ export function useDestinations() {
   return d
 }
 export const resetDestinations = () => { destCache = null }
+
+/** Loads the phone numbers of all trunks (admins only); reload after a trunk or route changes. */
+export function useNumbers(reloadKey = 0) {
+  const [n, setN] = useState<NumberInfo[] | null>(null)
+  useEffect(() => {
+    let live = true
+    api<NumberInfo[]>('GET', '/pbx/numbers').then((v) => live && setN(v)).catch(() => live && setN([]))
+    return () => { live = false }
+  }, [reloadKey])
+  return n
+}
+
+/**
+ * Suggestions for a phone number field: the numbers of the trunks. Give the input list={id}.
+ * Typing a number that is not on a trunk still works.
+ */
+export function NumberOptions({ id }: { id: string }) {
+  const nums = useNumbers()
+  return (
+    <datalist id={id}>
+      {nums?.map((n) => <option key={n.number} value={n.number}>{`${formatNumber(n.number)} · ${n.trunkName}${n.routeName ? ` · ${n.routeName}` : ''}`}</option>)}
+    </datalist>
+  )
+}
 
 /** Picks where a call goes: a type and, depending on the type, an object or a phone number. */
 export function DestinationPicker({ label, value, onChange, allowNone, exclude }: {

@@ -169,7 +169,10 @@
     "elevenlabs_quota": "The ElevenLabs characters of this period are used up. Wait for the next period or upgrade the plan.",
     "elevenlabs_failed": "ElevenLabs could not speak the text.",
     "elevenlabs_unreachable": "ElevenLabs cannot be reached from this server. Check the internet connection.",
-    "first_run_required": "Finish the first setup first: choose your own password."
+    "first_run_required": "Finish the first setup first: choose your own password.",
+    "trunk_not_register": "Only a trunk that registers with the provider can be refreshed.",
+    "trunk_disabled": "Turn the trunk on first.",
+    "reregister_failed": "Asterisk could not register the trunk again."
   },
   "setup": {
     "title": "Welcome to Kiestoon",
@@ -586,7 +589,8 @@
     "phoneCount": "Poor calls (phone)",
     "defaultEngine": "engine",
     "stability": "stability",
-    "speed": "speed"
+    "speed": "speed",
+    "numbers": "phone numbers"
   },
   "extensions": {
     "title": "Extensions",
@@ -847,6 +851,42 @@
         ],
         "terms": "Vodafone Ziggo does not publish a PBX manual. Settings come from Panasonic's Ziggo SIP trunk setup guide (2017); the details Ziggo gives you always win."
       }
+    },
+    "refresh": "Refresh registration",
+    "refreshBusy": "Registering again…",
+    "refreshResult": {
+      "registered": "Registered again just now.",
+      "rejected": "The provider rejected the registration. Check the user name and password.",
+      "pending": "Sent. The provider has not answered yet; the status updates by itself.",
+      "other": "Sent. Status: {{status}}."
+    },
+    "numbers": "Phone numbers",
+    "numbersHint": "The numbers the provider delivers on this trunk. Add a whole number block at once or paste a list. You can then route them to an extension, IVR, queue and more under Inbound routes, and pick them as caller ID.",
+    "numbersCount_one": "{{count}} number",
+    "numbersCount_other": "{{count}} numbers",
+    "numbersMore_one": "show {{count}} more",
+    "numbersMore_other": "show {{count}} more",
+    "numbersClear": "Remove all",
+    "numbersBlock": "Number block",
+    "numbersList": "One or more numbers",
+    "blockFirst": "First number",
+    "blockLast": "Last number or count",
+    "blockHint": "For example 020 123 4599, or 100 for 100 numbers.",
+    "blockPreview": "{{first}} to {{last}}: {{count}} numbers",
+    "blockInvalid": "Not a valid block. Use digits, the same length for both numbers, and at most {{max}} numbers.",
+    "numbersAdd_one": "Add {{count}} number",
+    "numbersAdd_other": "Add {{count}} numbers",
+    "numbersPaste": "Numbers",
+    "numbersPasteHint": "One per line, or separated by commas.",
+    "state": {
+      "registered": "Registered",
+      "unregistered": "Not registered",
+      "rejected": "Rejected",
+      "reachable": "Reachable",
+      "unreachable": "Unreachable",
+      "unknown": "Unknown",
+      "nonqualified": "Not checked",
+      "pending": "Waiting"
     }
   },
   "routes": {
@@ -887,7 +927,18 @@
     "callerId": "Caller ID",
     "callerIdHint": "Overrides the trunk's caller ID for this route. An extension's own caller ID always wins.",
     "up": "Move up",
-    "down": "Move down"
+    "down": "Move down",
+    "freeNumbers_one": "{{count}} number without a route",
+    "freeNumbers_other": "{{count}} numbers without a route",
+    "freeNumbersText": "Numbers of your trunks that do not go anywhere yet. Select them and give them a destination in one go.",
+    "selectAll": "Select all",
+    "selectNone": "Select none",
+    "routeSelected_one": "Route {{count}} number",
+    "routeSelected_other": "Route {{count}} numbers",
+    "multiNumbers_one": "{{count}} number",
+    "multiNumbers_other": "{{count}} numbers",
+    "multiNameHint": "Each number gets its own route, named after this name and the number. Leave it empty to use only the number.",
+    "partlyDone": "{{done}} of {{count}} routes were saved. Fix the problem and save again for the rest."
   },
   "phones": {
     "title": "Phones & provisioning",

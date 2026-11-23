@@ -40,6 +40,8 @@ func (s *Server) pbxRoutes(mux *http.ServeMux, admin, recep func(http.HandlerFun
 	mux.Handle("POST /api/pbx/trunks", admin(s.saveTrunk))
 	mux.Handle("PUT /api/pbx/trunks/{id}", admin(s.saveTrunk))
 	mux.Handle("DELETE /api/pbx/trunks/{id}", admin(s.deleteTrunk))
+	mux.Handle("POST /api/pbx/trunks/{id}/register", admin(s.reregisterTrunk))
+	mux.Handle("GET /api/pbx/numbers", admin(s.listNumbers))
 
 	mux.Handle("GET /api/pbx/inbound", admin(s.listInbound))
 	mux.Handle("POST /api/pbx/inbound", admin(s.saveInbound))
@@ -354,6 +356,85 @@ func (s *Server) deleteTrunk(w http.ResponseWriter, r *http.Request) {
 	s.Ast.Changed()
 	s.firewallChanged(r.Context())
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+// reregisterTrunk sends a fresh REGISTER for a trunk and waits a few seconds for the provider's
+// answer, so the button can show the outcome right away.
+func (s *Server) reregisterTrunk(w http.ResponseWriter, r *http.Request) {
+	t, err := s.PBX.Trunk(r.Context(), pathID(r))
+	if err != nil {
+		s.saveErr(w, err)
+		return
+	}
+	if t.AuthMode != "register" {
+		writeErr(w, http.StatusBadRequest, "trunk_not_register")
+		return
+	}
+	if !t.Enabled {
+		writeErr(w, http.StatusConflict, "trunk_disabled")
+		return
+	}
+	if !s.AMI.Connected() {
+		writeErr(w, http.StatusBadGateway, "asterisk_unavailable")
+		return
+	}
+	reg := t.Endpoint()
+	before, _ := s.AMI.RegistrationStatus(r.Context(), reg)
+	if err := s.AMI.Reregister(r.Context(), reg); err != nil {
+		var ae *asterisk.ActionError
+		if errors.As(err, &ae) {
+			writeJSON(w, http.StatusBadGateway, map[string]string{"error": "reregister_failed", "detail": ae.Msg})
+			return
+		}
+		writeErr(w, http.StatusBadGateway, "asterisk_unavailable")
+		return
+	}
+	s.audit(r, "trunk.reregistered", t.Name)
+	status := waitRegistration(r.Context(), func(ctx context.Context) (string, error) {
+		return s.AMI.RegistrationStatus(ctx, reg)
+	}, reregisterWait, 400*time.Millisecond)
+	s.Live.Invalidate()
+	writeJSON(w, http.StatusOK, map[string]string{"status": strings.ToLower(status), "before": strings.ToLower(before)})
+}
+
+// reregisterWait is how long the refresh waits for the provider before it answers "pending".
+var reregisterWait = 6 * time.Second
+
+// waitRegistration polls the registration status until the provider answered (Registered or
+// Rejected) or the time is up; it then returns the last status seen, or "pending".
+func waitRegistration(ctx context.Context, get func(context.Context) (string, error), wait, every time.Duration) string {
+	deadline := time.Now().Add(wait)
+	last := ""
+	for {
+		st, err := get(ctx)
+		if err == nil && st != "" {
+			last = st
+			if strings.EqualFold(st, "Registered") || strings.EqualFold(st, "Rejected") {
+				return st
+			}
+		}
+		if time.Now().Add(every).After(deadline) {
+			break
+		}
+		select {
+		case <-ctx.Done():
+			return "pending"
+		case <-time.After(every):
+		}
+	}
+	if last == "" || strings.EqualFold(last, "Unregistered") {
+		return "pending"
+	}
+	return last
+}
+
+func (s *Server) listNumbers(w http.ResponseWriter, r *http.Request) {
+	ns, err := s.PBX.Numbers(r.Context())
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal")
+		return
+	}
+	writeJSON(w, http.StatusOK, ns)
 }
 
 // ---- routes -----------------------------------------------------------------

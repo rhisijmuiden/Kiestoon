@@ -53,6 +53,42 @@ The trunk list and the dashboard show the status of every trunk: *Registered*, *
 *Rejected* (wrong username or password) or *Unreachable*. A trunk that is offline shows a warning at the top of the
 dashboard.
 
+### Refresh registration
+
+A trunk that signs in with a username and password has a **Refresh registration** button (the round arrows) in the
+trunk list. It makes Kiestoon sign in at the provider again right away, instead of waiting for the next retry. Use
+it after you changed something at the provider, after an outage, or when the status stays *Rejected* or *Not
+registered*. Kiestoon waits a few seconds for the provider's answer and shows it under the status:
+
+| Message | Meaning |
+| --- | --- |
+| *Registered again just now* | The provider accepted the registration |
+| *The provider rejected the registration* | Check the username and password with your provider |
+| *Sent, the provider has not answered yet* | The status in the list updates by itself as soon as the answer comes |
+
+![Refresh registration](shot:trunk-refresh)
+
+The button is not there for a trunk with IP authentication (there is nothing to sign in) or a trunk that is turned off.
+
+## Phone numbers
+
+Under **Phone numbers** in the trunk form you note which numbers the provider delivers on this trunk. You can add:
+
+- **A number block**: fill in the first number and the last number (`050 700 1200` to `050 700 1259`) or the first
+  number and a count (`050 700 1200` and `60`). The form shows how many numbers that makes before you add them.
+- **One or more numbers**: paste a list, one per line or separated by commas.
+
+Numbers keep their leading zero or `+`. A number can belong to one trunk only, and a trunk holds at most 10,000
+numbers. Remove a single number with its cross, or all of them with **Remove all**.
+
+![Phone numbers of a trunk](shot:trunk-numbers)
+
+The numbers are then offered wherever you choose a number:
+
+- under **Inbound routes**, where numbers without a route are listed and can be sent to an extension, IVR menu,
+  queue, ring group or any other [destination](concepts.md#destinations) in one go ([inbound routes](routes.md#inbound-routes));
+- as suggestions for the **caller ID** of a trunk, an outbound route and an extension.
+
 ## Behind NAT
 
 When Kiestoon has a private IP address, fill in the **public address** and the **local networks** under

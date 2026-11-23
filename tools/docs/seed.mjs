@@ -66,12 +66,14 @@ const trunk = await c.post('/api/pbx/trunks', {
   name: 'Voys', provider: 'voys', authMode: 'register', host: 'ha.voys.nl', port: 0, transport: 'udp', username: '155012345',
   authUsername: '155012345', secret: 'docs-example-secret', fromDomain: '', fromUser: '', matchIps: '195.35.114.0/23,185.103.76.0/22',
   didSource: 'ruri', codecs: 'alaw,g722', maxChannels: 10, callerId: '0507001234', srtp: false, t38: false, enabled: true,
+  // A number block of 60 numbers: 050 700 1200 to 050 700 1259.
+  numbers: Array.from({ length: 60 }, (_, i) => `05070012${String(i).padStart(2, '0')}`),
 })
 const trunkId = trunk.data.id
 await c.post('/api/pbx/trunks', {
   name: 'Cheapconnect (backup)', provider: 'generic', authMode: 'register', host: 'sip.cheapconnect.net', port: 5060, transport: 'udp',
   username: '0507001299', authUsername: '0507001299', secret: 'docs-example-secret', fromDomain: '', fromUser: '', matchIps: '',
-  didSource: 'to', codecs: 'alaw,ulaw', maxChannels: 4, callerId: '0507001299', srtp: false, t38: true, enabled: true,
+  didSource: 'to', codecs: 'alaw,ulaw', maxChannels: 4, callerId: '0507001299', srtp: false, t38: true, enabled: true, numbers: ['0507001299'],
 })
 await c.put('/api/pbx/settings', {
   digits: 3, countryCode: '31', emergencyCallerId: '0507001234', emergencyTrunkIds: [trunkId], externalAddress: 'pbx.noordkade.example',

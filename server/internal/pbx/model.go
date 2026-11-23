@@ -98,6 +98,8 @@ type Trunk struct {
 	Enabled      bool   `json:"enabled"`
 	// T38 offers T.38 fax (UDPTL) to the provider; without it faxes come in as G.711 audio.
 	T38 bool `json:"t38"`
+	// Numbers are the phone numbers (DIDs) this trunk carries. Nil on save keeps the stored ones.
+	Numbers []string `json:"numbers"`
 }
 
 // Endpoint is the Asterisk endpoint name of the trunk.
@@ -318,12 +320,39 @@ func (r *Repo) Trunks(ctx context.Context) ([]Trunk, error) {
 		}
 		out = append(out, *t)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+	nums, err := r.trunkNumbers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range out {
+		out[i].Numbers = []string{}
+		for _, n := range nums {
+			if n.TrunkID == out[i].ID {
+				out[i].Numbers = append(out[i].Numbers, n.Number)
+			}
+		}
+	}
+	return out, nil
 }
 
 // Trunk returns one trunk.
 func (r *Repo) Trunk(ctx context.Context, id int64) (*Trunk, error) {
-	return scanTrunk(r.DB.QueryRowContext(ctx, `SELECT `+trunkCols+` FROM trunks WHERE id = ?`, id))
+	t, err := scanTrunk(r.DB.QueryRowContext(ctx, `SELECT `+trunkCols+` FROM trunks WHERE id = ?`, id))
+	if err != nil {
+		return nil, err
+	}
+	t.Numbers = []string{}
+	nums, err := r.trunkNumbers(ctx)
+	for _, n := range nums {
+		if n.TrunkID == id {
+			t.Numbers = append(t.Numbers, n.Number)
+		}
+	}
+	return t, err
 }
 
 // SaveTrunk validates and stores a trunk. An empty secret on update keeps the stored one.
@@ -348,12 +377,21 @@ func (r *Repo) SaveTrunk(ctx context.Context, t *Trunk) error {
 			return uniqueErr(err, "name")
 		}
 		t.ID, _ = res.LastInsertId()
+		if err := r.saveTrunkNumbers(ctx, t); err != nil {
+			// A new trunk whose numbers clash is not kept half-made.
+			r.DB.ExecContext(ctx, `DELETE FROM trunks WHERE id = ?`, t.ID)
+			t.ID = 0
+			return err
+		}
 		return nil
 	}
 	_, err := r.DB.ExecContext(ctx, `UPDATE trunks SET name=?, provider=?, auth_mode=?, host=?, port=?, transport=?,
 		username=?, auth_username=?, secret=?, from_domain=?, from_user=?, match_ips=?, did_source=?, codecs=?,
 		max_channels=?, caller_id=?, srtp=?, enabled=?, t38=? WHERE id=?`, append(args, t.ID)...)
-	return uniqueErr(err, "name")
+	if err != nil {
+		return uniqueErr(err, "name")
+	}
+	return r.saveTrunkNumbers(ctx, t)
 }
 
 // DeleteTrunk removes a trunk and takes it out of every outbound route.

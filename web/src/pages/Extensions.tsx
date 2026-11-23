@@ -5,6 +5,7 @@ import { Badge, CopyField, Empty, Modal, Select, Table, Toggle, td, useApi } fro
 import { Button, Card, ErrorMessage, Input, PageHeader } from '../components/ui'
 import { WelcomeNotice } from '../components/WelcomeNotice'
 import { ExtensionPhones } from '../components/PhoneLink'
+import { NumberOptions } from '../components/pbx'
 import { api } from '../lib/api'
 import { blankFeatures, type Extension, type Live, type WelcomeResult } from '../lib/types'
 
@@ -166,7 +167,8 @@ function ExtensionForm({ value, onClose, onSaved }: { value: Extension; onClose:
       </div>
       <Toggle name="srtp" label={t('extensions.srtp')} hint={t('extensions.srtpHint')} checked={e.srtp} disabled={e.transport !== 'tls'} onChange={(v) => set('srtp', v)} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input name="outboundCallerId" label={t('extensions.outboundCid')} value={e.outboundCallerId} onChange={(x) => set('outboundCallerId', x.target.value)} hint={t('extensions.outboundCidHint')} className="font-mono" />
+        <Input name="outboundCallerId" label={t('extensions.outboundCid')} value={e.outboundCallerId} onChange={(x) => set('outboundCallerId', x.target.value)} hint={t('extensions.outboundCidHint')} className="font-mono" list="extension-numbers" />
+        <NumberOptions id="extension-numbers" />
         <Input name="maxContacts" label={t('extensions.maxContacts')} type="number" min={1} max={10} value={e.maxContacts} onChange={(x) => set('maxContacts', Number(x.target.value))} hint={t('extensions.maxContactsHint')} />
       </div>
       <Toggle name="voicemail" label={t('extensions.voicemail')} checked={e.voicemail} onChange={(v) => set('voicemail', v)} />

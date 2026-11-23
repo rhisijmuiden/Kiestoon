@@ -24,6 +24,15 @@ routes** pick the trunk for numbers your users dial. Both are on **Trunks & rout
 
 Calls from someone in the [phone book](phonebook.md) show the contact's name.
 
+### Route many numbers at once
+
+When your trunks have [phone numbers](trunks.md#phone-numbers), the numbers that do not have a route yet are listed
+above the routes. Tick the numbers (or **Select all**), click **Route numbers**, and choose one destination. Each
+number gets its own route, named after the name you give plus the number, so you can later send one of them
+somewhere else. When typing a phone number in a route, the trunk numbers are offered as suggestions.
+
+![Numbers without a route](shot:inbound-numbers)
+
 ## Outbound routes
 
 Outbound routes are tried **from top to bottom**; the first route with a matching dial pattern is used. Use the

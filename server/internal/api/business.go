@@ -435,6 +435,10 @@ func (s *Server) destinations(w http.ResponseWriter, r *http.Request) {
 	for _, c := range cs {
 		out = append(out, opt{pbx.DestConference, id(c.ID), c.Number + " " + c.Name})
 	}
+	ocs, _ := s.PBX.OnCallTeams(ctx)
+	for _, o := range ocs {
+		out = append(out, opt{pbx.DestOnCall, id(o.ID), o.Number + " " + o.Name})
+	}
 	fbs, _ := s.PBX.FaxBoxes(ctx)
 	for _, f := range fbs {
 		out = append(out, opt{pbx.DestFax, id(f.ID), f.Name})

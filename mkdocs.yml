@@ -103,6 +103,7 @@ plugins:
             IVR builder: Keuzemenu's (IVR)
             Time conditions and holidays: Tijdcondities en feestdagen
             Conference rooms: Vergaderruimtes
+            On-call: Storingsdienst
             Voice prompts and speech: Gesproken teksten en spraak
             AI summaries: AI-samenvattingen
             Voicemail: Voicemail
@@ -162,6 +163,7 @@ nav:
       - IVR builder: ivr.md
       - Time conditions and holidays: time-conditions.md
       - Conference rooms: conferences.md
+      - On-call: on-call.md
       - Voice prompts and speech: prompts.md
       - AI summaries: ai.md
       - Voicemail: voicemail.md

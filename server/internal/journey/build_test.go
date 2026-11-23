@@ -147,3 +147,37 @@ func TestBuildInternalTransferVoicemail(t *testing.T) {
 		t.Errorf("hangup by %+v", h.Party)
 	}
 }
+
+func TestBuildOnCall(t *testing.T) {
+	t0 := time.Date(2026, 11, 22, 3, 48, 0, 0, time.UTC)
+	at := func(s float64) time.Time { return t0.Add(time.Duration(s * float64(time.Second))) }
+	caller := "PJSIP/trunk-1-00000001"
+	evs := []Event{
+		{At: at(0), Kind: "CHAN_START", UniqueID: "1.1", Channel: caller, Data: map[string]string{"num": "0644112290", "exten": "0201234599", "context": "kiestoon-from-trunk"}},
+		{At: at(0.1), Kind: "kt_oncall", UniqueID: "1.1", Channel: caller, Data: map[string]string{"id": "3"}},
+		{At: at(2), Kind: "kt_ocstep", UniqueID: "1.1", Channel: caller, Data: map[string]string{"id": "3", "step": "1", "kind": "primary", "users": "1"}},
+		{At: at(27), Kind: "kt_ocstep", UniqueID: "1.1", Channel: caller, Data: map[string]string{"id": "3", "step": "2", "kind": "backup", "users": "", "skip": "1"}},
+		{At: at(27), Kind: "kt_ocstep", UniqueID: "1.1", Channel: caller, Data: map[string]string{"id": "3", "step": "3", "kind": "lead", "users": "4-n0201234567"}},
+		{At: at(40), Kind: "kt_ocok", UniqueID: "2.1", Channel: "Local/0698765432@kiestoon-followme-00000003;1", Data: map[string]string{"id": "3", "num": "0698765432"}},
+		{At: at(200), Kind: "HANGUP", UniqueID: "1.1", Channel: caller, Data: map[string]string{"hangupsource": caller, "hangupcause": "16"}},
+	}
+	names := func(kind, id string) string {
+		return map[string]string{"oc:3": "Storingsdienst ICT", "user:1": "Jan", "user:4": "Lars", "mobile:0698765432": "Lars"}[kind+":"+id]
+	}
+	j := Build("1.1", evs, names)
+	var oc *Step
+	for _, s := range j.Steps {
+		if s.Kind == "oncall" {
+			oc = s
+		}
+	}
+	if oc == nil || oc.Name != "Storingsdienst ICT" || oc.Result != "answered" || oc.Detail["answeredBy"] != "Lars" {
+		b, _ := json.Marshal(j)
+		t.Fatalf("on-call step: %s", b)
+	}
+	if len(oc.Subs) != 3 || oc.Subs[0].Result != "noanswer" || oc.Subs[1].Result != "skipped" || oc.Subs[2].Result != "answered" ||
+		oc.Subs[2].Value != "3|lead|Lars, 0201234567" || oc.Subs[0].DurationMs != 25000 {
+		b, _ := json.Marshal(oc.Subs)
+		t.Fatalf("subs: %s", b)
+	}
+}

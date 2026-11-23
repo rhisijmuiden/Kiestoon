@@ -93,6 +93,15 @@ func (s *Server) journeyNames(ctx context.Context) journey.Names {
 	for _, f := range snap.FaxBoxes {
 		m["fax:"+id(f.ID)] = f.Name
 	}
+	for _, l := range snap.OnCall {
+		m["oc:"+id(l.Team.ID)] = l.Team.Name
+		for _, u := range l.Users {
+			m["user:"+id(u.ID)] = u.Name
+			if u.Mobile != "" {
+				m["mobile:"+u.Mobile] = u.Name
+			}
+		}
+	}
 	return func(kind, key string) string { return m[kind+":"+key] }
 }
 

@@ -103,7 +103,8 @@ func (s *Server) elGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) elSave(w http.ResponseWriter, r *http.Request) {
-	var st elevenlabs.Settings
+	// Fields left out keep their current value, so older clients do not reset the voice profile.
+	st := s.elSettings(r.Context())
 	if err := decode(r, &st); err != nil {
 		writeErr(w, http.StatusBadRequest, "bad_request")
 		return
@@ -112,6 +113,12 @@ func (s *Server) elSave(w http.ResponseWriter, r *http.Request) {
 		fieldErr(w, err.Error())
 		return
 	}
+	if !st.Enabled {
+		st.Locked = false
+	}
+	if st.Locked {
+		st.DefaultEngine = "elevenlabs"
+	}
 	if st.DefaultEngine == "elevenlabs" && !st.Enabled {
 		st.DefaultEngine = "piper"
 	}
@@ -119,7 +126,7 @@ func (s *Server) elSave(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "internal")
 		return
 	}
-	s.audit(r, "speech.elevenlabs.saved", fmt.Sprint(st.Enabled))
+	s.audit(r, "speech.elevenlabs.saved", fmt.Sprintf("enabled=%v locked=%v", st.Enabled, st.Locked))
 	s.elGet(w, r)
 }
 
@@ -351,6 +358,15 @@ func (s *Server) speak(ctx context.Context, req ttsRequest) (*ttsResult, error) 
 	if engine == "" {
 		engine = el.DefaultEngine
 	}
+	if el.Enabled && el.Locked {
+		// The voice profile is locked: every prompt gets the profile's voice for its language.
+		engine, req.Voice, req.VoiceName = "elevenlabs", "", ""
+		if el.Voice(lang).ID == "" {
+			if other := map[string]string{"nl": "en", "en": "nl"}[lang]; el.Voice(other).ID != "" {
+				lang = other
+			}
+		}
+	}
 	if engine == "elevenlabs" && el.Enabled {
 		res, err := s.speakEleven(ctx, el, text, lang, req.Voice, req.VoiceName)
 		if err == nil || !el.Fallback || errors.Is(err, elevenlabs.ErrNoKey) {
@@ -407,7 +423,8 @@ func (s *Server) speakEleven(ctx context.Context, el elevenlabs.Settings, text, 
 	if len(src.VoiceName) > 80 {
 		src.VoiceName = src.VoiceName[:80]
 	}
-	h := sha256.Sum256([]byte(strings.Join([]string{src.Model, voice, lang, strconv.Itoa(el.Stability), strconv.Itoa(el.Speed), text}, "\x00")))
+	h := sha256.Sum256([]byte(strings.Join([]string{src.Model, voice, lang, strconv.Itoa(el.Stability), strconv.Itoa(el.Speed),
+		strconv.Itoa(el.Similarity), strconv.Itoa(el.Style), strconv.FormatBool(el.SpeakerBoost), text}, "\x00")))
 	cache := filepath.Join(s.elCacheDir(), hex.EncodeToString(h[:])+".wav")
 	if b, err := os.ReadFile(cache); err == nil {
 		if _, err := media.CheckWAV(b); err == nil {
@@ -418,7 +435,8 @@ func (s *Server) speakEleven(ctx context.Context, el elevenlabs.Settings, text, 
 	c := s.elClient(ctx)
 	sctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
-	pcm, err := c.Speak(sctx, elevenlabs.SpeakRequest{Voice: voice, Model: el.Model, Text: text, Language: lang, Stability: el.Stability, Speed: el.Speed})
+	pcm, err := c.Speak(sctx, elevenlabs.SpeakRequest{Voice: voice, Model: el.Model, Text: text, Language: lang, Stability: el.Stability, Speed: el.Speed,
+		Similarity: el.Similarity, Style: el.Style, SpeakerBoost: el.SpeakerBoost})
 	if err != nil {
 		return nil, err
 	}

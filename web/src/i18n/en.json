@@ -4352,7 +4352,12 @@
       "friendly": "Friendly",
       "deep": "Deep",
       "soft": "Soft"
-    }
+    },
+    "lockedTitle": "Locked voice profile",
+    "lockedSettings": "stability {{stability}}%, speed {{speed}}%",
+    "lockedHint": "Every prompt is spoken with this profile.",
+    "lockedOther": "The profile has no voice for this language, so this voice speaks it.",
+    "lockedChange": "Change in Speech"
   },
   "eleven": {
     "cloud": "Cloud",
@@ -4392,7 +4397,20 @@
     "speedHint": "95% is a little slower than normal, which works well for menu choices.",
     "fallback": "Use Piper when ElevenLabs cannot be reached",
     "fallbackHint": "Generating keeps working when the key, the credits or the internet are gone. Playback never depends on ElevenLabs.",
-    "privacy": "Only the typed text goes to ElevenLabs. Callers, recordings and voicemail never leave the server. Generated audio is kept here, so a call never waits for the internet."
+    "privacy": "Only the typed text goes to ElevenLabs. Callers, recordings and voicemail never leave the server. Generated audio is kept here, so a call never waits for the internet.",
+    "profile": "Voice profile",
+    "profileIntro": "The voice, model and settings that ElevenLabs uses for your prompts. Lock the profile and every Generate button (IVR, prompts, regenerate) uses it, so all prompts sound like the same speaker.",
+    "lockedBadge": "Locked",
+    "lock": "Lock the voice profile",
+    "lockHint": "On: Generate always uses this voice for its language, with these settings. Nobody has to pick a voice in the IVR any more.",
+    "lockNeeds": "Switch ElevenLabs on, save an API key and choose at least one voice to lock the profile.",
+    "lockedEngine": "The profile is locked, so new prompts are always spoken by ElevenLabs. Piper is only used as a fallback when that is switched on.",
+    "similarity": "Similarity",
+    "similarityHint": "How closely the result follows the original voice. 75% is a good start; higher can copy background noise from a cloned voice.",
+    "style": "Style exaggeration",
+    "styleHint": "Adds expression. Keep it at 0% for calm menu announcements; higher costs more time per prompt.",
+    "speakerBoost": "Speaker boost",
+    "speakerBoostHint": "Makes the voice a little clearer and closer to the original. Recommended on the phone."
   },
   "wallDesign": {
     "title": "Wallboard designer",

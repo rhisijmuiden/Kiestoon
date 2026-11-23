@@ -4352,7 +4352,12 @@
       "friendly": "Vriendelijk",
       "deep": "Diep",
       "soft": "Zacht"
-    }
+    },
+    "lockedTitle": "Vastgezet stemprofiel",
+    "lockedSettings": "stabiliteit {{stability}}%, snelheid {{speed}}%",
+    "lockedHint": "Elke tekst wordt met dit profiel ingesproken.",
+    "lockedOther": "Het profiel heeft geen stem voor deze taal, dus deze stem spreekt het in.",
+    "lockedChange": "Wijzigen bij Spraak"
   },
   "eleven": {
     "cloud": "Cloud",
@@ -4392,7 +4397,20 @@
     "speedHint": "95% is iets trager dan normaal, prettig voor menukeuzes.",
     "fallback": "Piper gebruiken als ElevenLabs niet bereikbaar is",
     "fallbackHint": "Genereren blijft werken als de sleutel, het tegoed of internet wegvalt. Afspelen hangt nooit van ElevenLabs af.",
-    "privacy": "Alleen de getypte tekst gaat naar ElevenLabs. Bellers, opnames en voicemail verlaten de server nooit. De audio wordt hier bewaard, dus een gesprek wacht nooit op internet."
+    "privacy": "Alleen de getypte tekst gaat naar ElevenLabs. Bellers, opnames en voicemail verlaten de server nooit. De audio wordt hier bewaard, dus een gesprek wacht nooit op internet.",
+    "profile": "Stemprofiel",
+    "profileIntro": "De stem, het model en de instellingen die ElevenLabs voor je teksten gebruikt. Zet je het profiel vast, dan gebruikt elke Genereren-knop (IVR, gesproken teksten, opnieuw inspreken) dit profiel en klinken alle teksten als dezelfde spreker.",
+    "lockedBadge": "Vastgezet",
+    "lock": "Stemprofiel vastzetten",
+    "lockHint": "Aan: Genereren gebruikt altijd deze stem voor de taal, met deze instellingen. In het IVR hoeft niemand meer een stem te kiezen.",
+    "lockNeeds": "Zet ElevenLabs aan, sla een API-sleutel op en kies minstens één stem om het profiel vast te zetten.",
+    "lockedEngine": "Het profiel staat vast, dus nieuwe teksten worden altijd door ElevenLabs ingesproken. Piper wordt alleen als terugval gebruikt als dat aan staat.",
+    "similarity": "Gelijkenis",
+    "similarityHint": "Hoe dicht het resultaat bij de originele stem blijft. 75% is een goed begin; hoger kan ruis van een gekloonde stem overnemen.",
+    "style": "Stijl overdrijven",
+    "styleHint": "Geeft meer expressie. Houd 0% aan voor rustige menumededelingen; hoger kost meer tijd per tekst.",
+    "speakerBoost": "Speaker boost",
+    "speakerBoostHint": "Maakt de stem iets helderder en dichter bij het origineel. Aanbevolen aan de telefoon."
   },
   "wallDesign": {
     "title": "Wallboard-ontwerper",

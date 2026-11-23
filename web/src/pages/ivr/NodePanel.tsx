@@ -1,6 +1,6 @@
 import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Ban, ChevronDown, Copy, Library, Loader2, Mic, Plus, Sparkles, Square, Trash2, Upload, X } from 'lucide-react'
+import { Ban, ChevronDown, ClipboardPaste, Copy, CopyPlus, GitFork, Library, Loader2, Mic, Plus, Sparkles, Square, Trash2, Upload, X } from 'lucide-react'
 import { Select, Toggle } from '../../components/kit'
 import { DestinationPicker } from '../../components/pbx'
 import { Button, ErrorMessage, Input } from '../../components/ui'
@@ -8,10 +8,11 @@ import { WavePlayer, promptSrc } from '../../components/WavePlayer'
 import { SpeakFromText } from '../../components/SpeakFromText'
 import { ApiError, api } from '../../lib/api'
 import { startRecording, toTelephoneWav } from '../../lib/audio'
-import type { IVR, Prompt, PromptSource, SpeechIntent, TimeCondition } from '../../lib/types'
+import type { InboundRoute, IVR, Prompt, PromptSource, SpeechIntent, TimeCondition } from '../../lib/types'
 import { KEYS, hasAudio, toneOf, tones, type StepData, type StepNode } from './flow'
 import { NodeTitle, iconOf, toneClass } from './nodes'
 import { QueueSettings } from './QueueSettings'
+import { EntryNumbers } from './EntryNumbers'
 
 type Mode = 'generate' | 'record' | 'upload' | 'library' | 'none'
 const MAX_UPLOAD = 10 << 20
@@ -164,7 +165,7 @@ function AudioSource({ promptId, onPrompt, promptName, prompts, onPromptsChanged
   )
 }
 
-export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeConditions, usedDigits, onChange, onRemoveIntent, onDelete, onDuplicate, onClose, onQueueSaved }: {
+export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeConditions, usedDigits, onChange, onRemoveIntent, onDelete, onDuplicate, onClose, onQueueSaved, onCopy, onCopyBranch, onPaste, pasteLabel, inbound, onInboundChanged }: {
   node: StepNode
   ivr: IVR
   setIvr: (fn: (v: IVR) => IVR) => void
@@ -178,6 +179,12 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
   onDuplicate: () => void
   onClose: () => void
   onQueueSaved?: () => void
+  onCopy?: () => void
+  onCopyBranch?: () => void
+  onPaste?: () => void
+  pasteLabel?: string
+  inbound?: InboundRoute[]
+  onInboundChanged?: () => void
 }) {
   const { t } = useTranslation()
   const d = node.data
@@ -208,6 +215,12 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
             </div>
             <Toggle name="directDial" label={t('ivr.directDial')} hint={t('ivr.directDialHint')} checked={ivr.directDial} onChange={(x) => setIvr((v) => ({ ...v, directDial: x }))} />
             <p className="text-xs text-subtle">{t('ivr.panel.startHint')}</p>
+          </Section>
+        )}
+
+        {d.type === 'entry' && (
+          <Section title={t('ivr.numbers.title')} aside={t('ivr.numbers.aside')}>
+            <EntryNumbers ivr={ivr} inbound={inbound ?? []} onChanged={() => onInboundChanged?.()} />
           </Section>
         )}
 
@@ -259,12 +272,14 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
           </Section>
         )}
 
-        {d.type !== 'entry' && (
-          <div className="flex gap-2">
-            {d.type !== 'timeout' && <Button variant="ghost" onClick={onDuplicate}><Copy className="size-4" aria-hidden />{t('ivr.panel.duplicate')}</Button>}
-            <Button variant="danger" onClick={onDelete}><Trash2 className="size-4" aria-hidden />{t('common.delete')}</Button>
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {d.type !== 'entry' && onCopy && <Button variant="ghost" onClick={onCopy}><Copy className="size-4" aria-hidden />{t('ivr.clip.copy')}</Button>}
+          {onCopyBranch && <Button variant="ghost" onClick={onCopyBranch}><GitFork className="size-4" aria-hidden />{t('ivr.clip.copyBranch')}</Button>}
+          {onPaste && <Button variant="ghost" onClick={onPaste}><ClipboardPaste className="size-4" aria-hidden />{pasteLabel}</Button>}
+          {d.type !== 'entry' && d.type !== 'timeout' && <Button variant="ghost" onClick={onDuplicate}><CopyPlus className="size-4" aria-hidden />{t('ivr.panel.duplicate')}</Button>}
+          {d.type !== 'entry' && <Button variant="danger" onClick={onDelete}><Trash2 className="size-4" aria-hidden />{t('common.delete')}</Button>}
+        </div>
+        <p className="text-[11px] text-subtle">{t('ivr.clip.hint')}</p>
       </div>
     </aside>
   )

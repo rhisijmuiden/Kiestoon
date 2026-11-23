@@ -5,7 +5,7 @@ import {
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from '@xyflow/react'
 import '@xyflow/react/dist/base.css'
-import { Activity, ArrowLeft, LayoutGrid, PhoneCall, Redo2, Spline, Undo2, Waypoints } from 'lucide-react'
+import { Activity, ArrowLeft, ClipboardPaste, Copy, CopyPlus, GitFork, LayoutGrid, PhoneCall, Redo2, Spline, Trash2, Undo2, Waypoints } from 'lucide-react'
 import { Badge, Modal, Select, useApi } from '../../components/kit'
 import { resetDestinations, useDestinations, useSaver } from '../../components/pbx'
 import { Button, ErrorMessage } from '../../components/ui'
@@ -14,6 +14,7 @@ import { useSession } from '../../lib/session'
 import { useTheme } from '../../lib/theme'
 import type { Extension, InboundRoute, IVR, IvrLive, Prompt, TimeCondition } from '../../lib/types'
 import { NodePanel } from './NodePanel'
+import { branchOf, makeClip, pasteClip, readClip, writeClip, type Clip } from './clipboard'
 import {
   MAX_PARALLEL, NODE_W, autoLayout, blankFlow, canConnect, canRingTogether, dataForKind, isMenu, fromFlow, intentPort, kindTone, makeEdge, newId, toFlow, toneOf, tones,
   type Kind, type StepData, type StepNode,
@@ -79,6 +80,9 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
   const [past, setPast] = useState<Snapshot[]>([])
   const [future, setFuture] = useState<Snapshot[]>([])
   const [testing, setTesting] = useState(false)
+  const [clip, setClip] = useState<Clip | null>(() => readClip())
+  const [notice, setNotice] = useState('')
+  const [menu, setMenu] = useState<{ x: number; y: number; node?: string; at: { x: number; y: number } } | null>(null)
   const lastCommit = useRef(0)
   const wrapper = useRef<HTMLDivElement>(null)
 
@@ -129,6 +133,15 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
         if (e.shiftKey) redo()
         else undo()
       }
+      if (!wrapper.current?.closest('body')) return
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && !window.getSelection()?.toString()) {
+        if (copySelection()) e.preventDefault()
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+        e.preventDefault()
+        paste(selected ? byId.get(selected) : undefined)
+      }
+      if (e.key === 'Escape') setMenu(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -258,6 +271,45 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
     if (data.type === 'key' && menu) setEdges((es) => [...es, makeEdge(menu, 'out', nid, byId.get(menu)!.data)])
     setSelected(nid)
   }
+  function flash(msg: string) {
+    setNotice(msg)
+    window.setTimeout(() => setNotice((m) => (m === msg ? '' : m)), 2500)
+  }
+  /** Copies the selected steps (several with Ctrl/Shift-click or a selection box); true when something was copied. */
+  function copySelection(only?: string) {
+    const picked = nodes.filter((n) => n.selected).map((n) => n.id)
+    const ids = only && !picked.includes(only) ? [only] : picked.length ? picked : selected ? [selected] : []
+    return copyIds(ids)
+  }
+  function copyIds(ids: string[]) {
+    const c = makeClip(ids, nodes, edges)
+    if (!c.nodes.length) return false
+    writeClip(c)
+    setClip(c)
+    flash(t('ivr.clip.copied', { count: c.nodes.length }))
+    return true
+  }
+  function copyBranch(id: string) {
+    copyIds(branchOf(id, nodes, edges))
+  }
+  function paste(target?: StepNode, at?: { x: number; y: number }) {
+    const c = readClip() ?? clip
+    if (!c?.nodes.length) return
+    commit()
+    const add = pasteClip(c, target, nodes, edges, at)
+    setNodes((ns) => [...ns.map((n) => ({ ...n, selected: false })), ...add.nodes])
+    setEdges((es) => [...es, ...add.edges])
+    setSelected(add.nodes[0]?.id ?? null)
+    flash(t('ivr.clip.pasted', { count: add.nodes.length }))
+  }
+  function removeMany(ids: string[]) {
+    const del = new Set(ids.filter((id) => byId.get(id)?.data.type !== 'entry'))
+    if (!del.size) return
+    commit()
+    setNodes((ns) => ns.filter((n) => !del.has(n.id)))
+    setEdges((es) => es.filter((e) => !del.has(e.source) && !del.has(e.target)))
+    setSelected(null)
+  }
   function tidy() {
     commit()
     setNodes((ns) => autoLayout(ns, edges))
@@ -292,13 +344,13 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
   }, [nodes, edges, entryId, byId, t])
 
   const promptMap = useMemo(() => new Map((prompts.data ?? []).map((p) => [p.id, p])), [prompts.data])
-  const phone = ivr.id ? inbound.data?.find((r) => r.destinationType === 'ivr' && r.destination === String(ivr.id))?.did : undefined
+  const phones = useMemo(() => (ivr.id ? (inbound.data ?? []).filter((r) => r.destinationType === 'ivr' && r.destination === String(ivr.id)).map((r) => r.did) : []), [ivr.id, inbound.data])
   const info: FlowInfo = useMemo(() => ({
     prompts: promptMap,
     destLabel: (type, target) => dests?.options.find((o) => o.type === type && o.target === target)?.label
       ?? (type === 'timecondition' ? tcs.data?.find((c) => String(c.id) === target)?.name : undefined),
-    problems, name: ivr.name, phone, live: live.data,
-  }), [promptMap, dests, tcs.data, problems, ivr.name, phone, live.data])
+    problems, name: ivr.name, phones, live: live.data,
+  }), [promptMap, dests, tcs.data, problems, ivr.name, phones, live.data])
 
   const sel = selected ? byId.get(selected) : undefined
 
@@ -376,7 +428,18 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
             <ReactFlow<StepNode, Edge>
               nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
               onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={isValidConnection}
-              onNodeClick={(_, n) => setSelected(n.id)} onPaneClick={() => setSelected(null)}
+              onNodeClick={(_, n) => { setSelected(n.id); setMenu(null) }} onPaneClick={() => { setSelected(null); setMenu(null) }}
+              onNodeContextMenu={(e, n) => {
+                e.preventDefault()
+                const r = wrapper.current!.getBoundingClientRect()
+                setMenu({ x: e.clientX - r.left, y: e.clientY - r.top, node: n.id, at: rf.screenToFlowPosition({ x: e.clientX, y: e.clientY }) })
+              }}
+              onPaneContextMenu={(e) => {
+                e.preventDefault()
+                const r = wrapper.current!.getBoundingClientRect()
+                setMenu({ x: e.clientX - r.left, y: e.clientY - r.top, at: rf.screenToFlowPosition({ x: e.clientX, y: e.clientY }) })
+              }}
+              onMoveStart={() => setMenu(null)}
               onNodeDragStop={() => setDirty(true)}
               colorMode={theme} fitView fitViewOptions={{ padding: 0.08, maxZoom: 1 }} minZoom={0.2} maxZoom={1.6}
               deleteKeyCode={['Backspace', 'Delete']} proOptions={{ hideAttribution: true }}
@@ -388,6 +451,24 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
               <MiniMap position="bottom-left" pannable zoomable nodeBorderRadius={8}
                 nodeColor={(n) => tones[toneOf(n.data as StepData)].stroke} bgColor="transparent" maskColor="rgb(from var(--kt-canvas) r g b / 0.55)" />
             </ReactFlow>
+            {notice && <div role="status" className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full border border-line bg-surface/95 px-3.5 py-1.5 text-xs font-medium text-ink shadow-lg backdrop-blur">{notice}</div>}
+            {menu && (
+              <StepMenu x={menu.x} y={menu.y} onClose={() => setMenu(null)} items={(() => {
+                const n = menu.node ? byId.get(menu.node) : undefined
+                const many = nodes.filter((x) => x.selected).length
+                const items: MenuItem[] = []
+                if (n) {
+                  if (n.data.type !== 'entry') items.push({ icon: Copy, label: many > 1 && n.selected ? t('ivr.clip.copySelected', { count: many }) : t('ivr.clip.copy'), hint: 'Ctrl+C', run: () => copySelection(n.id) })
+                  if (edges.some((e) => e.source === n.id)) items.push({ icon: GitFork, label: t('ivr.clip.copyBranch'), run: () => copyBranch(n.id) })
+                  if (clip) items.push({ icon: ClipboardPaste, label: isMenu(n.data) ? t('ivr.clip.pasteInto') : t('ivr.clip.pasteAfter'), hint: 'Ctrl+V', run: () => paste(n) })
+                  if (n.data.type !== 'entry' && n.data.type !== 'timeout') items.push({ icon: CopyPlus, label: t('ivr.panel.duplicate'), run: () => duplicate(n.id) })
+                  if (n.data.type !== 'entry') items.push({ icon: Trash2, label: many > 1 && n.selected ? t('ivr.clip.deleteSelected', { count: many }) : t('common.delete'), danger: true, run: () => removeMany(many > 1 && n.selected ? nodes.filter((x) => x.selected).map((x) => x.id) : [n.id]) })
+                } else {
+                  items.push({ icon: ClipboardPaste, label: t('ivr.clip.pasteHere'), hint: 'Ctrl+V', disabled: !clip, run: () => paste(undefined, menu.at) })
+                }
+                return items
+              })()} />
+            )}
           </div>
           </LineStyleContext.Provider>
           {sel && (
@@ -395,6 +476,9 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
               <NodePanel node={sel} ivr={ivr} setIvr={(fn) => { setIvr(fn); setDirty(true) }}
                 prompts={prompts.data ?? []} onPromptsChanged={prompts.reload} timeConditions={tcs.data ?? []} usedDigits={usedDigits}
                 onChange={(d) => changeData(sel.id, d)} onRemoveIntent={(i) => removeIntent(sel.id, i)} onDelete={() => remove(sel.id)} onDuplicate={() => duplicate(sel.id)} onClose={() => setSelected(null)}
+                onCopy={() => copySelection(sel.id)} onCopyBranch={edges.some((e) => e.source === sel.id) ? () => copyBranch(sel.id) : undefined}
+                onPaste={clip ? () => paste(sel) : undefined} pasteLabel={isMenu(sel.data) ? t('ivr.clip.pasteInto') : t('ivr.clip.pasteAfter')}
+                inbound={inbound.data ?? []} onInboundChanged={inbound.reload}
                 onQueueSaved={live.reload} />
             </div>
           )}
@@ -438,5 +522,32 @@ function TestCall({ ivr, onClose }: { ivr: IVR; onClose: () => void }) {
       </Select>
       {done && <p className="text-sm text-ok">{t('ivr.test.ringing', { ext: chosen })}</p>}
     </Modal>
+  )
+}
+
+type MenuItem = { icon: typeof Copy; label: string; hint?: string; danger?: boolean; disabled?: boolean; run: () => void }
+
+/** The right-click menu of the canvas. */
+function StepMenu({ x, y, items, onClose }: { x: number; y: number; items: MenuItem[]; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    ref.current?.querySelector<HTMLButtonElement>('button:not([disabled])')?.focus()
+    const away = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose() }
+    window.addEventListener('mousedown', away)
+    return () => window.removeEventListener('mousedown', away)
+  }, [onClose])
+  if (!items.length) return null
+  return (
+    <div ref={ref} role="menu" style={{ left: x, top: y }}
+      className="absolute z-30 min-w-[220px] overflow-hidden rounded-xl border border-line bg-surface/95 p-1 shadow-2xl backdrop-blur">
+      {items.map((it) => (
+        <button key={it.label} type="button" role="menuitem" disabled={it.disabled} onClick={() => { it.run(); onClose() }}
+          className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] disabled:opacity-40 ${it.danger ? 'text-danger hover:bg-danger/10' : 'text-ink hover:bg-tint/6'}`}>
+          <it.icon className="size-4 flex-none opacity-80" aria-hidden />
+          <span className="flex-1">{it.label}</span>
+          {it.hint && <span className="font-mono text-[10.5px] text-subtle">{it.hint}</span>}
+        </button>
+      ))}
+    </div>
   )
 }

@@ -378,6 +378,8 @@ the testing channel.
 - [x] IVR copy/paste and phone numbers (`v0.7.0-rc.34`): copy steps or a whole choice menu with the steps after it
   (right-click, side panel, Ctrl+C/V, multi-select); pasting a copied menu into another menu gives it the same keys;
   the incoming-call step links trunk numbers to the menu, creating or moving the inbound route straight away
+- [x] Forward key (`v0.7.0-rc.35`): key type Forward in the key editor and key templates; a press switches
+  unconditional forwarding to the key's external number on or off (`*74<ext>*<number>`), the lamp shows the state
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

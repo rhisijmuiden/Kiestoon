@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/rhisijmuiden/kiestoon/server/internal/importer"
 	"github.com/rhisijmuiden/kiestoon/server/internal/pbx"
 	"github.com/rhisijmuiden/kiestoon/server/internal/store"
 )
@@ -26,7 +27,8 @@ func TestSample(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	talk := a.Parse()
+	talk := a.Bundle()
+	talk.Info.System = "unifi-talk"
 	ctx := context.Background()
 	db, err := store.Open(ctx, filepath.Join(t.TempDir(), "k.db"))
 	if err != nil {
@@ -35,13 +37,13 @@ func TestSample(t *testing.T) {
 	defer db.Close()
 	r := &pbx.Repo{DB: db}
 	np := pbx.PlanFor(4)
-	plan, err := Prepare(ctx, r, np, a, talk)
+	plan, err := importer.Prepare(ctx, r, np, talk)
 	if err != nil {
 		t.Fatal(err)
 	}
 	b, _ := json.MarshalIndent(plan, "", " ")
 	os.WriteFile(filepath.Join(os.TempDir(), "talk-plan.json"), b, 0o600)
-	c := Choice{Prompts: map[string]int64{}}
+	c := importer.Choice{Prompts: map[string]int64{}}
 	for _, x := range plan.Extensions {
 		c.Extensions = append(c.Extensions, x.Key)
 	}
@@ -67,7 +69,7 @@ func TestSample(t *testing.T) {
 		}
 		c.Prompts[au.File] = pr.ID
 	}
-	res, err := Apply(ctx, r, np, talk, plan, c)
+	res, err := importer.Apply(ctx, r, np, talk, plan, c)
 	if err != nil {
 		t.Fatalf("%v (%+v)", err, res)
 	}
@@ -77,8 +79,8 @@ func TestSample(t *testing.T) {
 	b, _ = json.MarshalIndent(ivrs, "", " ")
 	os.WriteFile(filepath.Join(os.TempDir(), "talk-ivrs.json"), b, 0o600)
 	// A second run reuses everything.
-	plan2, _ := Prepare(ctx, r, np, a, talk)
-	res2, err := Apply(ctx, r, np, talk, plan2, c)
+	plan2, _ := importer.Prepare(ctx, r, np, talk)
+	res2, err := importer.Apply(ctx, r, np, talk, plan2, c)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -58,6 +58,7 @@ const topics: Record<string, Topic> = {
   '/backups': { page: 'backups' },
   '/mail': { page: 'mail' },
   '/audit': { page: 'users', en: 'audit-log', nl: 'auditlog' },
+  '/logs': { page: 'logs' },
   '/settings': { page: 'settings' },
   '/account': { page: 'users', en: 'passkeys', nl: 'passkeys' },
 }

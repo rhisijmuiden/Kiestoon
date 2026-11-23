@@ -172,7 +172,10 @@
     "first_run_required": "Rond eerst de eerste inrichting af: kies je eigen wachtwoord.",
     "trunk_not_register": "Alleen een trunk die zich bij de provider registreert kan worden vernieuwd.",
     "trunk_disabled": "Zet de trunk eerst aan.",
-    "reregister_failed": "Asterisk kon de trunk niet opnieuw registreren."
+    "reregister_failed": "Asterisk kon de trunk niet opnieuw registreren.",
+    "log_missing": "Dit logboek bestaat nog niet. Het wordt aangemaakt zodra er iets te schrijven is.",
+    "log_permission": "Het portaal mag dit logboek niet lezen. Voer de update opnieuw uit om de rechten te herstellen.",
+    "log_unavailable": "Het logboek kon niet worden gelezen."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -290,7 +293,8 @@
     "quality": "Gesprekskwaliteit",
     "teams": "Microsoft Teams",
     "onCall": "Storingsdienst",
-    "myOnCall": "Mijn storingsdiensten"
+    "myOnCall": "Mijn storingsdiensten",
+    "logs": "Logboeken"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -887,7 +891,33 @@
       "unknown": "Onbekend",
       "nonqualified": "Niet gecontroleerd",
       "pending": "Wachten"
-    }
+    },
+    "why": {
+      "auth_failed": "Aanmelden geweigerd{{code}}: de gebruikersnaam of het wachtwoord klopt niet.",
+      "forbidden": "De provider weigert dit account{{code}}.",
+      "not_found": "De provider kent dit account niet{{code}}.",
+      "timeout": "De provider antwoordt niet.",
+      "dns": "De hostnaam van de provider is niet te vinden.",
+      "unavailable": "De server van de provider is niet beschikbaar{{code}}.",
+      "transport": "De verbinding met de provider mislukt.",
+      "tls": "De beveiligde (TLS) verbinding met de provider mislukt.",
+      "other": "Zie het logboek voor wat er misging."
+    },
+    "whyFix": {
+      "auth_failed": "Controleer de gebruikersnaam, de authenticatiegebruikersnaam en het wachtwoord bij je provider. Kopieer het wachtwoord opnieuw: een spatie aan het eind is al genoeg om te mislukken.",
+      "forbidden": "Het account is misschien geblokkeerd, nog niet actief, of de provider accepteert het alleen vanaf een bekend IP-adres. Controleer het account in het portaal van de provider en of je publieke IP-adres is toegestaan.",
+      "not_found": "Controleer de gebruikersnaam en de host: het account hoort misschien bij een andere server van de provider.",
+      "timeout": "Kiestoon krijgt helemaal geen antwoord. Controleer host en poort, het transport (UDP, TCP of TLS), en of een firewall of router uitgaand SIP tegenhoudt. Achter NAT vul je het publieke adres in onder Instellingen.",
+      "dns": "Controleer de spelling van de host. Klopt die, controleer dan de DNS-servers van deze server onder Internettoegang.",
+      "unavailable": "De provider heeft een storing of onderhoud. Probeer het later opnieuw met Registratie vernieuwen, of vraag het de provider.",
+      "transport": "Controleer poort en transport, en of het netwerk van deze server de provider kan bereiken.",
+      "tls": "Controleer of de provider TLS op deze poort ondersteunt en of de klok van de server goed staat.",
+      "other": "Hieronder staan de nieuwste logregels over deze trunk."
+    },
+    "whyShowLog_one": "{{count}} logregel tonen",
+    "whyShowLog_other": "{{count}} logregels tonen",
+    "whyTitle": "Waarom {{name}} niet werkt",
+    "whyOpenLogs": "Openen in logboeken"
   },
   "routes": {
     "addInbound": "Inkomende route toevoegen",
@@ -4587,5 +4617,50 @@
     "pinText": "Voer de pincode van dit scherm in. De tv onthoudt hem.",
     "pinWrong": "Die pincode klopt niet.",
     "pinGo": "Scherm tonen"
+  },
+  "logs": {
+    "title": "Logboeken",
+    "subtitle": "Wat de telefooncentrale en het portaal vastleggen, om uit te zoeken waarom iets niet werkt",
+    "source": "Logboek",
+    "sources": {
+      "asterisk": "Telefooncentrale",
+      "security": "Beveiliging",
+      "portal": "Portaal",
+      "helper": "Systeemhulp",
+      "engine": "Dienst telefooncentrale"
+    },
+    "sourceHint": {
+      "asterisk": "Meldingen, waarschuwingen en fouten van Asterisk: trunkregistraties, mislukte gesprekken, toestellen die niet kunnen aanmelden.",
+      "security": "Aanmeldpogingen op telefoonaccounts, ook mislukte en geblokkeerde. fail2ban leest dit logboek.",
+      "portal": "Meldingen van het Kiestoon-portaal: mail, back-ups, updates, koppelingen.",
+      "helper": "De hulpdienst die als root de firewall, back-ups, internettoegang en updates toepast.",
+      "engine": "Starten, stoppen en vastlopen van de Asterisk-dienst."
+    },
+    "search": "Zoeken",
+    "searchPlaceholder": "Woord, nummer, hostnaam of trunk-1",
+    "levelFilter": "Tonen",
+    "levels": {
+      "all": "Alles",
+      "notice": "Meldingen en erger",
+      "warning": "Waarschuwingen en fouten",
+      "error": "Alleen fouten"
+    },
+    "level": {
+      "error": "Fout",
+      "warning": "Waarschuwing",
+      "notice": "Melding",
+      "security": "Beveiliging",
+      "info": "Info",
+      "debug": "Debug"
+    },
+    "reload": "Vernieuwen",
+    "download": "Downloaden",
+    "follow": "Volgen (elke 5 seconden vernieuwen)",
+    "count_one": "{{count}} regel getoond van de laatste {{scanned}}",
+    "count_other": "{{count}} regels getoond van de laatste {{scanned}}",
+    "updated": "laatst bijgewerkt {{at}}",
+    "emptyTitle": "Geen regels",
+    "emptyText": "Dit logboek is leeg.",
+    "emptyFiltered": "Geen regels die passen bij de zoekopdracht of het niveau."
   }
 }

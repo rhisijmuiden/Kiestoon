@@ -3,6 +3,9 @@
 Start with the **dashboard**: it shows whether the phone engine runs, which trunks are online, how many phones are
 registered and any warning that needs attention.
 
+Then look in [Logs](logs.md): the phone system log says why a trunk does not register, why a phone cannot sign in
+or why a call fails. A trunk that does not work shows the reason from the log in the trunk list.
+
 ## Phones
 
 ??? question "A phone does not register"

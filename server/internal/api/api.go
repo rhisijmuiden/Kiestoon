@@ -187,6 +187,7 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("PUT /api/system/hostnames", admin(s.hostnamesSave))
 
 	s.pbxRoutes(mux, admin, recep)
+	s.logRoutes(mux, admin)
 	s.systemRoutes(mux, admin)
 	s.businessRoutes(mux, admin, recep)
 	s.userRoutes(mux, admin)

@@ -53,6 +53,13 @@ De trunklijst en het dashboard tonen de status van elke trunk: *Aangemeld*, *Ber
 *Geweigerd* (verkeerde gebruikersnaam of wachtwoord) of *Onbereikbaar*. Een trunk die offline is geeft een
 waarschuwing bovenaan het dashboard.
 
+Is een trunk niet aangemeld of niet bereikbaar, dan staat de reden uit het logboek van de telefooncentrale onder de
+status, bijvoorbeeld *Aanmelden geweigerd (401): de gebruikersnaam of het wachtwoord klopt niet* of *De provider
+antwoordt niet*. **Logregels tonen** opent wat je kunt controleren en de logregels over de trunk. Zie
+[Logboeken](logs.md).
+
+![Waarom een trunk niet werkt](shot:trunk-why)
+
 ### Registratie vernieuwen
 
 Een trunk die zich aanmeldt met een gebruikersnaam en wachtwoord heeft in de trunklijst een knop **Registratie

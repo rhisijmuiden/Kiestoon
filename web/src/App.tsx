@@ -52,6 +52,7 @@ import { SetPassword } from './pages/SetPassword'
 import { Sso } from './pages/Sso'
 import { TimeConditions } from './pages/TimeConditions'
 import { Trunks } from './pages/Trunks'
+import { Logs } from './pages/Logs'
 import { Teams } from './pages/Teams'
 import { Users } from './pages/Users'
 import { Colleagues } from './pages/portal/Colleagues'
@@ -71,7 +72,7 @@ const pages: Record<string, ReactElement> = {
   myCalls: <MyCalls />, devices: <MyDevices />, switchboard: <Reception />, history: <History />, recordings: <Recordings />,
   extensions: <Extensions />, ringGroups: <RingGroups />, onCall: <OnCall />, myOnCall: <MyOnCall />, queues: <Queues />, ivr: <IVRs />, timeConditions: <TimeConditions />,
   conferences: <Conferences />, prompts: <Prompts />, trunks: <Trunks />, teams: <Teams />, phones: <Phones />, users: <Users />, sso: <Sso />,
-  features: <Features />, firewall: <Firewall />, backups: <Backups />, mail: <Mail />, audit: <Audit />, settings: <Settings />,
+  features: <Features />, firewall: <Firewall />, backups: <Backups />, mail: <Mail />, audit: <Audit />, logs: <Logs />, settings: <Settings />,
   phonebook: <Phonebook />, wallboard: <Wallboard />, fax: <Fax />, internet: <Internet />, integrations: <Integrations />, speech: <Speech />, ai: <AI />, mobileApp: <MobileApp />, windowsSoftphone: <Softphone />,
   sites: <Sites />, federation: <Federation />, sunRoutes: <SunRoutes />, cluster: <Cluster />, quality: <Quality />,
 }

@@ -53,6 +53,12 @@ The trunk list and the dashboard show the status of every trunk: *Registered*, *
 *Rejected* (wrong username or password) or *Unreachable*. A trunk that is offline shows a warning at the top of the
 dashboard.
 
+When a trunk is not registered or not reachable, the reason from the phone system log is shown under the status,
+for example *Sign-in refused (401): the user name or password is wrong* or *The provider does not answer*.
+**Show log lines** opens what to check and the log lines about the trunk. See [Logs](logs.md).
+
+![Why a trunk does not work](shot:trunk-why)
+
 ### Refresh registration
 
 A trunk that signs in with a username and password has a **Refresh registration** button (the round arrows) in the

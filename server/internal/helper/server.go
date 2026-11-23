@@ -271,6 +271,12 @@ func (s *Server) dispatch(ctx context.Context, req Request) (any, error) {
 		return map[string]string{"state": "releasing"}, nil
 	case "console.issue":
 		return nil, s.consoleIssue()
+	case "logs.journal":
+		var a JournalArgs
+		if err := json.Unmarshal(req.Args, &a); err != nil {
+			return nil, err
+		}
+		return journal(ctx, a)
 	case "portal.restart":
 		go func() {
 			time.Sleep(500 * time.Millisecond)
@@ -622,4 +628,36 @@ func (s *Server) consoleIssue() error {
 	}
 	b.WriteString("\n")
 	return os.WriteFile(path, []byte(b.String()), 0o644)
+}
+
+// ---- logs ---------------------------------------------------------------------
+
+// JournalArgs asks for the newest lines of a service's journal.
+type JournalArgs struct {
+	Unit  string `json:"unit"`
+	Lines int    `json:"lines"`
+}
+
+// journalUnits are the services whose journal the portal may read.
+var journalUnits = map[string]bool{"kiestoon": true, "kiestoon-helper": true, "asterisk": true, "kiestoon-updater": true}
+
+// journal returns the newest lines of a Kiestoon service's journal, oldest first.
+func journal(ctx context.Context, a JournalArgs) ([]string, error) {
+	if !journalUnits[a.Unit] {
+		return nil, errors.New("unknown unit")
+	}
+	if a.Lines <= 0 || a.Lines > 5000 {
+		a.Lines = 2000
+	}
+	out, err := runCmd(ctx, "journalctl", "-u", a.Unit+".service", "-n", strconv.Itoa(a.Lines), "--no-pager", "-o", "short-iso", "-q")
+	if err != nil {
+		return nil, err
+	}
+	lines := []string{}
+	for _, l := range strings.Split(out, "\n") {
+		if l = strings.TrimRight(l, "\r"); l != "" {
+			lines = append(lines, l)
+		}
+	}
+	return lines, nil
 }

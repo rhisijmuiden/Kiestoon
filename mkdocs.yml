@@ -137,6 +137,7 @@ plugins:
             Updates and channels: Updates en kanalen
             Settings: Instellingen
             Troubleshooting: Problemen oplossen
+            Logs: Logboeken
 
 nav:
   - Home: index.md
@@ -196,6 +197,7 @@ nav:
       - API, webhooks and metrics: api.md
       - Updates and channels: updates.md
       - Settings: settings.md
+      - Logs: logs.md
       - Troubleshooting: troubleshooting.md
 
 markdown_extensions:

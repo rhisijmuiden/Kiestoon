@@ -363,6 +363,10 @@ the testing channel.
   fresh REGISTER (AMI `PJSIPRegister`) and shows the provider's answer; a trunk carries its phone numbers, added one
   by one, as a pasted list or as a number block (first + last or count); numbers without a route are listed under
   Inbound routes and routed in bulk, and trunk numbers are suggested for every caller ID field
+- [x] Log viewer and trunk diagnosis (`v0.7.0-rc.31`): System › Logs shows the Asterisk messages and security logs
+  and the journal of the portal, helper and Asterisk service, with search, level filter, follow and download; a trunk
+  that is rejected, not registered or unreachable shows the reason read from the log (401/403/404, no answer, DNS,
+  TLS, transport) with what to check and the log lines about that trunk
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

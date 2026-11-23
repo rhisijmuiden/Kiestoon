@@ -75,6 +75,12 @@ await c.post('/api/pbx/trunks', {
   username: '0507001299', authUsername: '0507001299', secret: 'docs-example-secret', fromDomain: '', fromUser: '', matchIps: '',
   didSource: 'to', codecs: 'alaw,ulaw', maxChannels: 4, callerId: '0507001299', srtp: false, t38: true, enabled: true, numbers: ['0507001299'],
 })
+// A trunk that is being set up and does not register yet: the trunk list explains why from the log.
+await c.post('/api/pbx/trunks', {
+  name: 'Speakup (test)', provider: 'speakup', authMode: 'register', host: 'sip.speakup.example', port: 5060, transport: 'udp',
+  username: '0507001300', authUsername: '', secret: 'docs-wrong-secret', fromDomain: '', fromUser: '', matchIps: '',
+  didSource: 'to', codecs: 'alaw', maxChannels: 0, callerId: '', srtp: false, t38: false, enabled: true, numbers: [],
+})
 await c.put('/api/pbx/settings', {
   digits: 3, countryCode: '31', emergencyCallerId: '0507001234', emergencyTrunkIds: [trunkId], externalAddress: 'pbx.noordkade.example',
   localNets: ['192.168.10.0/24', '10.0.0.0/8'], sipPort: 5060, tlsPort: 5061, rtpStart: 10000, rtpEnd: 20000, codecs: 'g722,alaw,ulaw',

@@ -169,7 +169,10 @@
     "elevenlabs_quota": "De ElevenLabs-tekens van deze periode zijn op. Wacht op de volgende periode of kies een groter abonnement.",
     "elevenlabs_failed": "ElevenLabs kon de tekst niet inspreken.",
     "elevenlabs_unreachable": "ElevenLabs is niet bereikbaar vanaf deze server. Controleer de internetverbinding.",
-    "first_run_required": "Rond eerst de eerste inrichting af: kies je eigen wachtwoord."
+    "first_run_required": "Rond eerst de eerste inrichting af: kies je eigen wachtwoord.",
+    "trunk_not_register": "Alleen een trunk die zich bij de provider registreert kan worden vernieuwd.",
+    "trunk_disabled": "Zet de trunk eerst aan.",
+    "reregister_failed": "Asterisk kon de trunk niet opnieuw registreren."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -586,7 +589,8 @@
     "phoneCount": "Slechte gesprekken (toestel)",
     "defaultEngine": "engine",
     "stability": "stabiliteit",
-    "speed": "snelheid"
+    "speed": "snelheid",
+    "numbers": "telefoonnummers"
   },
   "extensions": {
     "title": "Toestellen",
@@ -847,6 +851,42 @@
         ],
         "terms": "Vodafone Ziggo publiceert geen handleiding voor een eigen centrale. De instellingen komen uit de Ziggo SIP-trunkhandleiding van Panasonic (2017); de gegevens van Ziggo gaan altijd voor."
       }
+    },
+    "refresh": "Registratie vernieuwen",
+    "refreshBusy": "Opnieuw registreren…",
+    "refreshResult": {
+      "registered": "Zojuist opnieuw aangemeld.",
+      "rejected": "De provider weigert de registratie. Controleer de gebruikersnaam en het wachtwoord.",
+      "pending": "Verstuurd. De provider heeft nog niet geantwoord; de status werkt zichzelf bij.",
+      "other": "Verstuurd. Status: {{status}}."
+    },
+    "numbers": "Telefoonnummers",
+    "numbersHint": "De nummers die de provider op deze trunk aflevert. Voeg in één keer een heel nummerblok toe of plak een lijst. Daarna stuur je ze onder Inkomende routes naar een toestel, keuzemenu, wachtrij en meer, en kies je ze als nummerweergave.",
+    "numbersCount_one": "{{count}} nummer",
+    "numbersCount_other": "{{count}} nummers",
+    "numbersMore_one": "nog {{count}} tonen",
+    "numbersMore_other": "nog {{count}} tonen",
+    "numbersClear": "Alles verwijderen",
+    "numbersBlock": "Nummerblok",
+    "numbersList": "Eén of meer nummers",
+    "blockFirst": "Eerste nummer",
+    "blockLast": "Laatste nummer of aantal",
+    "blockHint": "Bijvoorbeeld 020 123 4599, of 100 voor 100 nummers.",
+    "blockPreview": "{{first}} t/m {{last}}: {{count}} nummers",
+    "blockInvalid": "Geen geldig blok. Gebruik cijfers, voor beide nummers dezelfde lengte, en hooguit {{max}} nummers.",
+    "numbersAdd_one": "{{count}} nummer toevoegen",
+    "numbersAdd_other": "{{count}} nummers toevoegen",
+    "numbersPaste": "Nummers",
+    "numbersPasteHint": "Eén per regel, of gescheiden door komma's.",
+    "state": {
+      "registered": "Aangemeld",
+      "unregistered": "Niet aangemeld",
+      "rejected": "Geweigerd",
+      "reachable": "Bereikbaar",
+      "unreachable": "Onbereikbaar",
+      "unknown": "Onbekend",
+      "nonqualified": "Niet gecontroleerd",
+      "pending": "Wachten"
     }
   },
   "routes": {
@@ -887,7 +927,18 @@
     "callerId": "Nummerweergave",
     "callerIdHint": "Vervangt de nummerweergave van de trunk voor deze route. Het eigen nummer van een toestel gaat altijd voor.",
     "up": "Omhoog",
-    "down": "Omlaag"
+    "down": "Omlaag",
+    "freeNumbers_one": "{{count}} nummer zonder route",
+    "freeNumbers_other": "{{count}} nummers zonder route",
+    "freeNumbersText": "Nummers van je trunks die nog nergens heen gaan. Selecteer ze en geef ze in één keer een bestemming.",
+    "selectAll": "Alles selecteren",
+    "selectNone": "Niets selecteren",
+    "routeSelected_one": "{{count}} nummer routeren",
+    "routeSelected_other": "{{count}} nummers routeren",
+    "multiNumbers_one": "{{count}} nummer",
+    "multiNumbers_other": "{{count}} nummers",
+    "multiNameHint": "Elk nummer krijgt een eigen route, genoemd naar deze naam en het nummer. Laat leeg om alleen het nummer te gebruiken.",
+    "partlyDone": "{{done}} van {{count}} routes zijn opgeslagen. Los het probleem op en sla opnieuw op voor de rest."
   },
   "phones": {
     "title": "Toestellen & provisioning",

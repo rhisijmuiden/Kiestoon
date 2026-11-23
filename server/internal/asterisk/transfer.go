@@ -116,3 +116,25 @@ func containsStr(list []string, s string) bool {
 	}
 	return false
 }
+
+// Reregister makes Asterisk send a fresh REGISTER for an outbound registration (the trunk's
+// endpoint name), unregistering first when it is registered. It also restarts the retry timer
+// of a registration that gave up after a rejection.
+func (a *AMI) Reregister(ctx context.Context, registration string) error {
+	return a.simple(ctx, Message{{"Action", "PJSIPRegister"}, {"Registration", registration}})
+}
+
+// RegistrationStatus returns the status of one outbound registration (Registered, Unregistered,
+// Rejected, ...), or "" when Asterisk does not know it.
+func (a *AMI) RegistrationStatus(ctx context.Context, registration string) (string, error) {
+	evs, err := a.List(ctx, Message{{"Action", "PJSIPShowRegistrationsOutbound"}})
+	if err != nil {
+		return "", err
+	}
+	for _, e := range evs {
+		if e.Get("Event") == "OutboundRegistrationDetail" && e.Get("ObjectName") == registration {
+			return e.Get("Status"), nil
+		}
+	}
+	return "", nil
+}

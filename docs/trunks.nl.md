@@ -53,6 +53,44 @@ De trunklijst en het dashboard tonen de status van elke trunk: *Aangemeld*, *Ber
 *Geweigerd* (verkeerde gebruikersnaam of wachtwoord) of *Onbereikbaar*. Een trunk die offline is geeft een
 waarschuwing bovenaan het dashboard.
 
+### Registratie vernieuwen
+
+Een trunk die zich aanmeldt met een gebruikersnaam en wachtwoord heeft in de trunklijst een knop **Registratie
+vernieuwen** (de ronde pijlen). Daarmee meldt Kiestoon zich meteen opnieuw aan bij de provider, in plaats van te wachten
+op de volgende poging. Gebruik hem nadat je iets bij de provider hebt aangepast, na een storing, of als de status op
+*Geweigerd* of *Niet aangemeld* blijft staan. Kiestoon wacht een paar seconden op het antwoord van de provider en toont
+dat onder de status:
+
+| Melding | Betekenis |
+| --- | --- |
+| *Zojuist opnieuw aangemeld* | De provider heeft de registratie geaccepteerd |
+| *De provider weigert de registratie* | Controleer de gebruikersnaam en het wachtwoord bij je provider |
+| *Verstuurd, de provider heeft nog niet geantwoord* | De status in de lijst werkt zichzelf bij zodra het antwoord komt |
+
+![Registratie vernieuwen](shot:trunk-refresh)
+
+De knop staat er niet bij een trunk met IP-authenticatie (daar valt niets aan te melden) of een trunk die uit staat.
+
+## Telefoonnummers
+
+Onder **Telefoonnummers** in het trunkformulier leg je vast welke nummers de provider op deze trunk aflevert. Je kunt
+toevoegen:
+
+- **Een nummerblok**: vul het eerste en het laatste nummer in (`050 700 1200` t/m `050 700 1259`) of het eerste nummer
+  en een aantal (`050 700 1200` en `60`). Het formulier laat zien hoeveel nummers dat zijn voordat je ze toevoegt.
+- **Eén of meer nummers**: plak een lijst, één per regel of gescheiden door komma's.
+
+Nummers houden hun voorloopnul of `+`. Een nummer hoort bij één trunk, en een trunk heeft hooguit 10.000 nummers.
+Verwijder één nummer met het kruisje, of alles met **Alles verwijderen**.
+
+![Telefoonnummers van een trunk](shot:trunk-numbers)
+
+De nummers kun je daarna overal kiezen waar je een nummer invult:
+
+- onder **Inkomende routes**, waar nummers zonder route bovenaan staan en je ze in één keer naar een toestel,
+  keuzemenu, wachtrij, belgroep of andere [bestemming](concepts.md#bestemmingen) stuurt ([inkomende routes](routes.md#inkomende-routes));
+- als suggestie voor de **nummerweergave** van een trunk, een uitgaande route en een toestel.
+
 ## Achter NAT
 
 Heeft Kiestoon een privé-IP-adres, vul dan het **publieke adres** en de **lokale netwerken** in onder

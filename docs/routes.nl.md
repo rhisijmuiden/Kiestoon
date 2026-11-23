@@ -25,6 +25,15 @@ routes**.
 
 Bij bellers die in het [telefoonboek](phonebook.md) staan, verschijnt de naam van het contact.
 
+### Veel nummers tegelijk routeren
+
+Als je trunks [telefoonnummers](trunks.md#telefoonnummers) hebben, staan de nummers die nog geen route hebben boven de
+routes. Vink de nummers aan (of **Alles selecteren**), klik **Nummers routeren** en kies één bestemming. Elk nummer
+krijgt een eigen route, genoemd naar de naam die je opgeeft plus het nummer, zodat je er later één ergens anders heen
+kunt sturen. Bij het intypen van een telefoonnummer in een route worden de trunknummers als suggestie getoond.
+
+![Nummers zonder route](shot:inbound-numbers)
+
 ## Uitgaande routes
 
 Uitgaande routes worden **van boven naar beneden** geprobeerd; de eerste route met een passend kiespatroon wordt

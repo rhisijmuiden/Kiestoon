@@ -46,6 +46,19 @@ export type Trunk = {
   srtp: boolean
   t38: boolean
   enabled: boolean
+  /** Phone numbers (DIDs) the trunk carries. */
+  numbers: string[]
+}
+
+/** A trunk number with the inbound route that answers it. */
+export type NumberInfo = {
+  number: string
+  trunkId: number
+  trunkName: string
+  routeId?: number
+  routeName?: string
+  destinationType?: string
+  destination?: string
 }
 
 export type TrunkPreset = {

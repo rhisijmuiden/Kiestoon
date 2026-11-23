@@ -876,6 +876,14 @@ var migrations = []string{
 		key TEXT PRIMARY KEY,
 		at  TEXT NOT NULL
 	);`,
+	// Phone numbers a trunk carries (one row per number, a number block is stored as its numbers).
+	// Inbound routes, caller IDs and the number pickers offer them.
+	`CREATE TABLE trunk_numbers (
+		number   TEXT PRIMARY KEY,
+		trunk_id INTEGER NOT NULL REFERENCES trunks(id) ON DELETE CASCADE,
+		position INTEGER NOT NULL DEFAULT 0
+	);
+	CREATE INDEX trunk_numbers_trunk ON trunk_numbers(trunk_id);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

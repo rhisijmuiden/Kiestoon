@@ -245,6 +245,7 @@ net.createServer((sock) => {
           write(sock, { Response: 'Success', ActionID: id, CoreStartupDate: d.toISOString().slice(0, 10), CoreStartupTime: d.toTimeString().slice(0, 8), CoreCurrentCalls: '6' })
           break
         }
+        case 'pjsipregister': write(sock, { Response: 'Success', ActionID: id, Message: 'Re-register queued' }); break
         case 'command': write(sock, { Response: 'Success', ActionID: id, Output: '' }); break
         case 'getvar': write(sock, { Response: 'Success', ActionID: id, Variable: m.variable, Value: (m.channel || '').includes('trunk') ? 'alaw' : 'g722' }); break
         default: write(sock, { Response: 'Success', ActionID: id, Message: 'OK' })

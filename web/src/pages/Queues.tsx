@@ -87,7 +87,7 @@ export function editableQueue(v: Queue | QueueView): Queue {
 /** A new, empty queue with sensible defaults. */
 export const blankQueue = (number = ''): Queue => ({ ...blank, number, members: [], options: { ...blank.options, callback: { ...blank.options.callback } } })
 
-const plain = (_title: string, children: ReactNode) => children
+const plain = (_title: string, children: ReactNode, _id: string) => children
 
 /**
  * Every setting of a call queue. Used in the queue dialog and, in a narrow column (compact),
@@ -95,7 +95,7 @@ const plain = (_title: string, children: ReactNode) => children
  * collapsible section).
  */
 export function QueueFields({ q, setQ, compact, group = plain, prompts: promptList }: {
-  q: Queue; setQ: (fn: (q: Queue) => Queue) => void; compact?: boolean; group?: (title: string, children: ReactNode) => ReactNode; prompts?: Prompt[]
+  q: Queue; setQ: (fn: (q: Queue) => Queue) => void; compact?: boolean; group?: (title: string, children: ReactNode, id: string) => ReactNode; prompts?: Prompt[]
 }) {
   const { t } = useTranslation()
   const exts = useApi<Extension[]>('/pbx/extensions')
@@ -118,7 +118,7 @@ export function QueueFields({ q, setQ, compact, group = plain, prompts: promptLi
   return (
     <>
       {group(t('queues.groups.general'), (
-        <div key="general" className={compact ? 'flex flex-col gap-3' : 'flex flex-col gap-4'}>
+        <div key="general" data-group="general" className={compact ? 'flex flex-col gap-3' : 'flex flex-col gap-4'}>
           <div className={compact ? 'grid grid-cols-[96px_minmax(0,1fr)] gap-3 [&>*]:min-w-0' : 'grid gap-4 sm:grid-cols-[160px_1fr_1fr]'}>
             <Input name="number" label={t('common.number')} value={q.number} onChange={(e) => set('number', e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="font-mono" />
             <Input name="name" label={t('common.name')} value={q.name} onChange={(e) => set('name', e.target.value)} autoFocus={!compact} maxLength={60} />
@@ -127,10 +127,10 @@ export function QueueFields({ q, setQ, compact, group = plain, prompts: promptLi
           {compact && <StrategySelect q={q} set={set} />}
           {compact && <Toggle name="enabled" label={t('common.enabled')} checked={q.enabled} onChange={(v) => set('enabled', v)} />}
         </div>
-      ))}
+      ), 'general')}
 
       {group(compact ? `${t('queues.agents')} · ${chosen}` : t('queues.agents'), (
-        <div key="agents" className="flex flex-col gap-2">
+        <div key="agents" data-group="agents" className="flex flex-col gap-2">
           {!compact && <span className="text-sm font-medium text-ink-2">{t('queues.agents')}</span>}
           <p className="text-xs text-subtle">{t('queues.agentsHint')}</p>
           <div className="grid gap-1.5">
@@ -163,10 +163,10 @@ export function QueueFields({ q, setQ, compact, group = plain, prompts: promptLi
           </div>
           <RemoteAgents value={q.remoteMembers ?? []} onChange={(v) => set('remoteMembers', v)} />
         </div>
-      ))}
+      ), 'agents')}
 
       {group(t('queues.groups.timing'), (
-        <div key="timing" className={grid3}>
+        <div key="timing" data-group="timing" className={grid3}>
           <Input name="agentTimeout" label={t('queues.agentTimeout')} type="number" min={5} max={120} value={q.agentTimeout} onChange={(e) => set('agentTimeout', Number(e.target.value))} hint={t('common.seconds')} />
           <Input name="retry" label={t('queues.retry')} type="number" min={0} max={60} value={q.retry} onChange={(e) => set('retry', Number(e.target.value))} hint={t('common.seconds')} />
           <Input name="wrapup" label={t('queues.wrapup')} type="number" min={0} max={600} value={q.wrapup} onChange={(e) => set('wrapup', Number(e.target.value))} hint={t('queues.wrapupHint')} />
@@ -174,10 +174,10 @@ export function QueueFields({ q, setQ, compact, group = plain, prompts: promptLi
           <Input name="maxCallers" label={t('queues.maxCallers')} type="number" min={0} max={500} value={q.maxCallers} onChange={(e) => set('maxCallers', Number(e.target.value))} hint={t('queues.zeroUnlimited')} />
           <Input name="cidPrefix" label={t('ringGroups.cidPrefix')} value={q.cidPrefix} onChange={(e) => set('cidPrefix', e.target.value)} hint={t('ringGroups.cidPrefixHint')} />
         </div>
-      ))}
+      ), 'timing')}
 
       {group(t('queues.groups.caller'), (
-        <div key="caller" className={compact ? 'flex flex-col gap-3' : 'flex flex-col gap-4'}>
+        <div key="caller" data-group="caller" className={compact ? 'flex flex-col gap-3' : 'flex flex-col gap-4'}>
           <div className={grid2}>
             <Select name="greetingPrompt" label={t('queues.greeting')} value={q.greetingPrompt} onChange={(e) => set('greetingPrompt', Number(e.target.value))} hint={t('queues.greetingHint')}>
               <option value={0}>{t('queues.noGreeting')}</option>
@@ -190,10 +190,10 @@ export function QueueFields({ q, setQ, compact, group = plain, prompts: promptLi
           <Toggle name="joinEmpty" label={t('queues.joinEmpty')} hint={t('queues.joinEmptyHint')} checked={q.joinEmpty} onChange={(v) => set('joinEmpty', v)} />
           <Toggle name="record" label={t('queues.record')} hint={t('queues.recordHint')} checked={q.record} onChange={(v) => set('record', v)} />
         </div>
-      ))}
+      ), 'caller')}
 
       {group(t('queues.groups.more'), (
-        <div key="more" className={compact ? 'flex flex-col gap-3' : 'flex flex-col gap-4'}>
+        <div key="more" data-group="more" className={compact ? 'flex flex-col gap-3' : 'flex flex-col gap-4'}>
           <div className="flex flex-col gap-3 rounded-xl border border-line p-4">
             <Toggle name="callback" label={t('queues.callback')} hint={t('queues.callbackHint')} checked={cb.enabled} onChange={(v) => setCb({ enabled: v })} />
             {cb.enabled && (
@@ -210,7 +210,7 @@ export function QueueFields({ q, setQ, compact, group = plain, prompts: promptLi
           <DestinationPicker label={t('queues.overflow')} value={q.overflow} onChange={(d) => set('overflow', d)} exclude={q.id ? { type: 'queue', target: String(q.id) } : undefined} />
           {!compact && <Toggle name="enabled" label={t('common.enabled')} checked={q.enabled} onChange={(v) => set('enabled', v)} />}
         </div>
-      ))}
+      ), 'more')}
     </>
   )
 }

@@ -367,6 +367,11 @@ the testing channel.
   and the journal of the portal, helper and Asterisk service, with search, level filter, follow and download; a trunk
   that is rejected, not registered or unreachable shows the reason read from the log (401/403/404, no answer, DNS,
   TLS, transport) with what to check and the log lines about that trunk
+- [x] IVR branches and queue settings (`v0.7.0-rc.32`): the incoming call can check a time condition first, with a
+  **Choice menu** (own message, keys and no-input) per branch; one key can ring up to five extensions, ring groups,
+  queues or external numbers at the same time (first to answer gets the call); a queue step in the IVR builder edits
+  the queue itself (agents, timings, music, callback, overflow) or creates a new one; saving an unchanged queue no
+  longer fails
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

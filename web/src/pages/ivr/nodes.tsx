@@ -2,7 +2,7 @@ import { createContext, useContext, type CSSProperties, type ReactNode } from 'r
 import { useTranslation } from 'react-i18next'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import {
-  Clock, GitBranch, Grid3x3, Hourglass, ListOrdered, Mic, Phone, PhoneForwarded, PhoneIncoming, PhoneOff, Repeat, TriangleAlert, UsersRound, Voicemail, Volume2,
+  Clock, GitBranch, Grid3x3, LayoutList, Hourglass, ListOrdered, Mic, Phone, PhoneForwarded, PhoneIncoming, PhoneOff, Repeat, TriangleAlert, UsersRound, Voicemail, Volume2,
   type LucideIcon,
 } from 'lucide-react'
 import { WavePlayer, promptSrc } from '../../components/WavePlayer'
@@ -21,7 +21,7 @@ export type FlowInfo = {
 export const FlowInfoContext = createContext<FlowInfo>({ prompts: new Map(), destLabel: () => undefined, problems: new Map(), name: '' })
 
 export const kindIcon: Record<Kind, LucideIcon> = {
-  key: Grid3x3, audio: Volume2, speech: Mic, extension: PhoneForwarded, ringgroup: UsersRound, queue: ListOrdered, voicemail: Voicemail, ivr: GitBranch,
+  menu: LayoutList, key: Grid3x3, audio: Volume2, speech: Mic, extension: PhoneForwarded, ringgroup: UsersRound, queue: ListOrdered, voicemail: Voicemail, ivr: GitBranch,
   external: Phone, time: Clock, repeat: Repeat, hangup: PhoneOff, timeout: Hourglass,
 }
 
@@ -218,7 +218,7 @@ export function StepNodeView({ id, data, selected }: NodeProps<StepNode>) {
         <AudioWell d={data} tone={tone.text} />
       </div>
     )
-  } else if (data.type === 'key' || data.type === 'timeout' || data.type === 'audio') {
+  } else if (data.type === 'key' || data.type === 'timeout' || data.type === 'audio' || data.type === 'menu') {
     body = <AudioWell d={data} tone={tone.text} />
   } else if (data.type === 'destination') {
     body = <DestWell d={data} />
@@ -244,7 +244,7 @@ export function StepNodeView({ id, data, selected }: NodeProps<StepNode>) {
     body = <div className="kt-well flex min-h-10 items-center px-2.5 py-1.5 text-[12px] text-ink-2">{t('ivr.node.repeatText')}</div>
   }
 
-  const singleOut = data.type === 'entry' || data.type === 'key' || data.type === 'timeout' || data.type === 'audio'
+  const singleOut = data.type === 'entry' || data.type === 'menu' || data.type === 'key' || data.type === 'timeout' || data.type === 'audio'
   return (
     <div style={{ width: NODE_W }} className={`kt-node ${toneClass(toneKey)} ${selected ? 'is-selected' : ''}`}>
       {data.type !== 'entry' && <Handle type="target" position={Position.Left} id="in" className="kt-port" />}

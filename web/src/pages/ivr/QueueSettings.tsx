@@ -46,9 +46,9 @@ export function QueueSettings({ queueId, prompts, onCreated, onSaved }: {
     } else {
       setDraft(null)
     }
-    setSaved(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueId, list.data, creating])
+  useEffect(() => setSaved(false), [queueId])
 
   const { busy, error, save, setError } = useSaver<Queue>('/pbx/queues', (q) => {
     const fresh = editableQueue(q)
@@ -83,11 +83,8 @@ export function QueueSettings({ queueId, prompts, onCreated, onSaved }: {
     setSaved(false)
     setDraft((q) => (q ? fn(q) : q))
   }
-  let n = 0
-  const group = (title: string, children: ReactNode) => {
-    const i = n++
-    return <Group key={i} title={title} open={creating || i < 2}>{children}</Group>
-  }
+  const group = (title: string, children: ReactNode, id: string) =>
+    <Group key={id} title={title} open={creating || id === 'general' || id === 'agents'}>{children}</Group>
 
   return (
     <div className="flex flex-col gap-3">

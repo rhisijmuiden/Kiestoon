@@ -207,6 +207,7 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
               <Input name="retries" label={t('ivr.retries')} type="number" min={0} max={5} value={ivr.retries} onChange={(e) => setIvr((v) => ({ ...v, retries: Number(e.target.value) }))} hint={t('ivr.retriesHint')} />
             </div>
             <Toggle name="directDial" label={t('ivr.directDial')} hint={t('ivr.directDialHint')} checked={ivr.directDial} onChange={(x) => setIvr((v) => ({ ...v, directDial: x }))} />
+            <p className="text-xs text-subtle">{t('ivr.panel.startHint')}</p>
           </Section>
         )}
 
@@ -228,7 +229,7 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
               </div>
             )}
             {d.type === 'speech' && <SpeechIntents d={d} onChange={onChange} onRemoveIntent={onRemoveIntent} />}
-            {(d.type === 'audio' || d.type === 'destination' || d.type === 'repeat' || d.type === 'time' || d.type === 'timeout' || d.type === 'speech') && (
+            {(d.type === 'audio' || d.type === 'destination' || d.type === 'repeat' || d.type === 'time' || d.type === 'timeout' || d.type === 'speech' || d.type === 'menu') && (
               <Input name="label" label={t('ivr.label')} value={d.label ?? ''} onChange={(e) => onChange({ label: e.target.value })} hint={t('ivr.labelHint')} maxLength={40} />
             )}
             {d.type === 'destination' && (
@@ -246,7 +247,8 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
             )}
             {d.type === 'timeout' && <p className="text-xs text-subtle">{t('ivr.noInputHint', { retries: ivr.retries })}</p>}
             {d.type === 'repeat' && <p className="text-xs text-subtle">{t('ivr.panel.repeatHint')}</p>}
-            <p className="text-xs text-subtle">{t(d.type === 'speech' ? 'ivr.panel.speechLinesHint' : d.type === 'key' || d.type === 'timeout' || d.type === 'audio' || d.type === 'time' ? 'ivr.panel.linesHint' : 'ivr.panel.endHint')}</p>
+            <p className="text-xs text-subtle">{t(d.type === 'menu' ? 'ivr.panel.menuHint' : d.type === 'speech' ? 'ivr.panel.speechLinesHint' : d.type === 'key' || d.type === 'timeout' || d.type === 'audio' || d.type === 'time' ? 'ivr.panel.linesHint' : 'ivr.panel.endHint')}</p>
+            {(d.type === 'key' || d.type === 'timeout' || d.type === 'audio' || d.type === 'time' || d.type === 'speech') && <p className="text-xs text-subtle">{t('ivr.panel.parallelHint')}</p>}
           </Section>
         )}
 

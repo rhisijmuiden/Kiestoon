@@ -27,8 +27,9 @@ turn the moving dots on the lines (the direction of the call) on or off.
 
 | Block | What it does | Lines out |
 | --- | --- | --- |
-| **Incoming call** | Start of the menu; plays the welcome message | To the keypresses and *No input* |
-| **Keypress** | "Press 1": the caller pressed this key | One |
+| **Incoming call** | Start of the menu; plays the welcome message | To the keypresses and *No input*, or one start step |
+| **Choice menu** | A further menu with its own message and keys, for example one per branch of a time condition | To its keypresses and *No input* |
+| **Keypress** | "Press 1": the caller pressed this key | One, or several destinations that [ring together](#ring-several-destinations-at-once) |
 | **No input** | The caller pressed nothing or an unused key, after the menu repeated | One |
 | **Play audio** | Plays a message, then follows the line | One |
 | **Speech question** | Asks what the caller wants and listens to the answer (see [below](#speech-question)) | One per answer, plus *Not understood* |
@@ -54,6 +55,33 @@ The canvas helps you along:
   flow out neatly, the minimap and zoom buttons help with large menus.
 - **Duplicate** in the side panel copies a step.
 - Keyboard: press <kbd>Enter</kbd> on a step to select it, then move it with the arrow keys.
+
+## Check the time first
+
+Want the time to decide which menu callers get? Draw the line from **Incoming call** to a **Time condition** instead
+of to keys. That step then runs right after the welcome message. Draw **open** and **closed** each to a
+**Choice menu**, and give each menu its own keys and *No input*. A choice menu plays its own message (for example
+"Press 1 for support") and waits for a key, just like the start of the menu. The same key can be used in different
+menus.
+
+New keys from the palette go into the selected choice menu (or the menu of the selected key). Keys that hang off
+**Incoming call** while it has a start step are skipped; the canvas warns about this.
+
+## Ring several destinations at once
+
+A keypress (or *No input*, *Play audio*, a time condition or speech answer) can ring up to five destinations at the
+same time: draw a second line from the same dot, for example to a queue and to an external number. The first to
+answer gets the call; the others stop ringing. This works for extensions, ring groups, queues and external
+numbers. While the phones ring, the caller hears the music of the queue (or ringing when there is no queue). When
+nobody answers within the maximum wait of the queue (60 seconds without a queue), the call follows the overflow of
+the queue.
+
+## Queue settings in the editor
+
+Click a **Queue** step to change the queue itself in the side panel: agents, distribution, ring and wait times,
+greeting, music, position announcements, callback and overflow. **Save queue** stores it straight away, apart from
+the menu, and the change applies everywhere the queue is used. **New queue** creates a queue right there and points
+the step to it.
 
 ## Audio per step
 

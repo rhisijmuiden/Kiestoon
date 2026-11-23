@@ -175,7 +175,9 @@
     "reregister_failed": "Asterisk kon de trunk niet opnieuw registreren.",
     "log_missing": "Dit logboek bestaat nog niet. Het wordt aangemaakt zodra er iets te schrijven is.",
     "log_permission": "Het portaal mag dit logboek niet lezen. Voer de update opnieuw uit om de rechten te herstellen.",
-    "log_unavailable": "Het logboek kon niet worden gelezen."
+    "log_unavailable": "Het logboek kon niet worden gelezen.",
+    "parallel_only_ring": "Meerdere lijnen vanuit één stap kunnen alleen naar toestellen, belgroepen, wachtrijen of externe nummers gaan.",
+    "too_many_parallel": "Er kunnen maximaal vijf bestemmingen tegelijk overgaan."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -1825,7 +1827,8 @@
       "followsun": "Follow the sun",
       "entry": "Binnenkomend gesprek",
       "destination": "Doorverbinden",
-      "speech": "Spraakvraag"
+      "speech": "Spraakvraag",
+      "menu": "Keuzemenu"
     },
     "node": {
       "press": "Druk",
@@ -1852,13 +1855,16 @@
       }
     },
     "problem": {
-      "notInMenu": "Hoort niet bij het menu: trek een lijn van het binnenkomende gesprek naar deze stap.",
+      "notInMenu": "Hoort niet bij een menu: trek een lijn van het binnenkomende gesprek of een keuzemenu naar deze stap.",
       "unreachable": "Er loopt geen lijn naar deze stap.",
       "noLine": "Er loopt geen lijn uit: het gesprek stopt hier.",
       "chooseTime": "Kies een tijdconditie.",
       "chooseTarget": "Kies waar het gesprek heen gaat.",
       "noIntents": "Voeg minstens één antwoord met trefwoorden toe",
-      "intentIncomplete": "Elk antwoord heeft een naam en trefwoorden nodig"
+      "intentIncomplete": "Elk antwoord heeft een naam en trefwoorden nodig",
+      "skippedByStart": "Wordt overgeslagen: het gesprek gaat eerst naar de startstap. Koppel deze toets aan een keuzemenu.",
+      "noKeys": "Dit menu heeft nog geen toetsen.",
+      "cannotRingTogether": "Alleen een toestel, belgroep, wachtrij of extern nummer kan tegelijk met andere bestemmingen overgaan."
     },
     "panel": {
       "title": "Stap bewerken",
@@ -1892,7 +1898,8 @@
         "key": "speelt als deel van het menu",
         "timeout": "speelt voor het opgeven",
         "audio": "speelt, en volgt dan de lijn",
-        "speech": "stelt de vraag"
+        "speech": "stelt de vraag",
+        "menu": "voor de toetsen"
       },
       "manage": "Beheren",
       "keypress": "Toets",
@@ -1910,7 +1917,8 @@
         "destination": "Gesprek doorsturen",
         "time": "Openingstijden controleren",
         "repeat": "Menu herhalen",
-        "speech": "Vraag waarvoor de beller belt"
+        "speech": "Vraag waarvoor de beller belt",
+        "menu": "Speelt de tekst af en wacht op een toets, net als het welkom. Gebruik het na een tijdcontrole, voor een eigen menu per tak."
       },
       "speechIntro": "De beller antwoordt in eigen woorden. Kiestoon schrijft het antwoord uit op deze server (Whisper) en volgt de lijn van het antwoord waarvan het de trefwoorden hoort.",
       "intent": "Antwoord {{n}}",
@@ -1921,7 +1929,10 @@
       "keywordsHint": "Een trefwoord past ook op langere woorden: “factu” past op factuur en facturen. Hoofdletters en accenten maken niet uit. Het antwoord met de meeste trefwoorden wint.",
       "speechAI": "Laat AI kiezen als geen trefwoord past",
       "speechAIHint": "Gebruikt de engine van de AI-pagina (Claude is het snelst). Zonder AI gaat het gesprek via de lijn “Niet begrepen”.",
-      "speechLinesHint": "Trek een lijn van elk antwoord, en van “Niet begrepen”, naar de volgende stap. Spraak-naar-tekst moet aan staan onder Spraak."
+      "speechLinesHint": "Trek een lijn van elk antwoord, en van “Niet begrepen”, naar de volgende stap. Spraak-naar-tekst moet aan staan onder Spraak.",
+      "menuHint": "Sleep vanaf de stip rechts naar de toetsen van dit menu (en de stap voor geen invoer). Nieuwe toetsen uit het palet komen in het geselecteerde menu.",
+      "parallelHint": "Wil je twee bestemmingen tegelijk laten overgaan, zoals een wachtrij en een extern nummer? Trek een tweede lijn vanaf dezelfde stip. Wie het eerst opneemt, krijgt het gesprek.",
+      "startHint": "Wil je eerst de tijd controleren? Trek vanaf hier een lijn naar een tijdconditie in plaats van naar toetsen. Elke tak kan naar een eigen keuzemenu gaan."
     },
     "test": {
       "button": "Testgesprek",

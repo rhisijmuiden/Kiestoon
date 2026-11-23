@@ -1762,7 +1762,14 @@
     "callbackCallerId": "Caller ID for callbacks",
     "callbackCallerIdHint": "Empty: the number of the outbound route",
     "supervision": "Supervision",
-    "supervisionHint": "Reception and admins with an extension can listen, whisper to the agent or barge in on calls of this queue (switchboard or *33, *34, *35 + extension). Tell your employees: listening in is privacy sensitive. Every use is in the audit log."
+    "supervisionHint": "Reception and admins with an extension can listen, whisper to the agent or barge in on calls of this queue (switchboard or *33, *34, *35 + extension). Tell your employees: listening in is privacy sensitive. Every use is in the audit log.",
+    "groups": {
+      "general": "General",
+      "timing": "Ringing and waiting",
+      "caller": "What the caller hears",
+      "more": "Callback and overflow"
+    },
+    "noExtensions": "There are no extensions yet."
   },
   "ivr": {
     "title": "IVR builder",
@@ -1936,7 +1943,21 @@
       "curve": "Flowing lines",
       "step": "Angular lines"
     },
-    "motion": "Show the call flowing along the lines"
+    "motion": "Show the call flowing along the lines",
+    "queue": {
+      "title": "Queue settings",
+      "aside": "saved to the queue",
+      "new": "New queue",
+      "openPage": "Open in Call queues",
+      "creatingHint": "A new queue. Create it here and this step routes to it straight away.",
+      "pickFirst": "Choose a queue above, or make a new one.",
+      "create": "Create queue",
+      "save": "Save queue",
+      "undo": "Undo changes",
+      "saved": "Saved",
+      "unsaved": "Not saved yet",
+      "sharedHint": "These are the settings of the queue itself. They are saved straight away, apart from the menu, and apply everywhere this queue is used."
+    }
   },
   "timeConditions": {
     "title": "Time conditions",

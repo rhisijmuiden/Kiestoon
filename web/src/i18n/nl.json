@@ -1762,7 +1762,14 @@
     "callbackCallerId": "Nummerweergave bij terugbellen",
     "callbackCallerIdHint": "Leeg: het nummer van de uitgaande route",
     "supervision": "Supervisie",
-    "supervisionHint": "Receptie en beheerders met een toestel kunnen meeluisteren, de medewerker influisteren of inbreken op gesprekken van deze wachtrij (schakelbord of *33, *34, *35 + toestel). Informeer je medewerkers: meeluisteren is privacygevoelig. Elk gebruik staat in het auditlog."
+    "supervisionHint": "Receptie en beheerders met een toestel kunnen meeluisteren, de medewerker influisteren of inbreken op gesprekken van deze wachtrij (schakelbord of *33, *34, *35 + toestel). Informeer je medewerkers: meeluisteren is privacygevoelig. Elk gebruik staat in het auditlog.",
+    "groups": {
+      "general": "Algemeen",
+      "timing": "Overgaan en wachten",
+      "caller": "Wat de beller hoort",
+      "more": "Terugbellen en overloop"
+    },
+    "noExtensions": "Er zijn nog geen toestellen."
   },
   "ivr": {
     "title": "Keuzemenu's",
@@ -1936,7 +1943,21 @@
       "curve": "Vloeiende lijnen",
       "step": "Hoekige lijnen"
     },
-    "motion": "Laat het gesprek over de lijnen stromen"
+    "motion": "Laat het gesprek over de lijnen stromen",
+    "queue": {
+      "title": "Wachtrij-instellingen",
+      "aside": "opgeslagen in de wachtrij",
+      "new": "Nieuwe wachtrij",
+      "openPage": "Openen in Wachtrijen",
+      "creatingHint": "Een nieuwe wachtrij. Maak hem hier aan, dan gaat deze stap er meteen naartoe.",
+      "pickFirst": "Kies hierboven een wachtrij of maak een nieuwe.",
+      "create": "Wachtrij aanmaken",
+      "save": "Wachtrij opslaan",
+      "undo": "Wijzigingen terugdraaien",
+      "saved": "Opgeslagen",
+      "unsaved": "Nog niet opgeslagen",
+      "sharedHint": "Dit zijn de instellingen van de wachtrij zelf. Ze worden meteen opgeslagen, los van het menu, en gelden overal waar deze wachtrij gebruikt wordt."
+    }
   },
   "timeConditions": {
     "title": "Tijdcondities",

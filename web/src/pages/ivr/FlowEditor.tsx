@@ -367,7 +367,8 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
             <div className="absolute inset-0 z-10 bg-surface-2 lg:static lg:inset-auto lg:w-[380px] lg:flex-none lg:border-l lg:border-line">
               <NodePanel node={sel} ivr={ivr} setIvr={(fn) => { setIvr(fn); setDirty(true) }}
                 prompts={prompts.data ?? []} onPromptsChanged={prompts.reload} timeConditions={tcs.data ?? []} usedDigits={usedDigits}
-                onChange={(d) => changeData(sel.id, d)} onRemoveIntent={(i) => removeIntent(sel.id, i)} onDelete={() => remove(sel.id)} onDuplicate={() => duplicate(sel.id)} onClose={() => setSelected(null)} />
+                onChange={(d) => changeData(sel.id, d)} onRemoveIntent={(i) => removeIntent(sel.id, i)} onDelete={() => remove(sel.id)} onDuplicate={() => duplicate(sel.id)} onClose={() => setSelected(null)}
+                onQueueSaved={live.reload} />
             </div>
           )}
         </div>

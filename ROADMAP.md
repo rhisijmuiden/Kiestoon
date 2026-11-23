@@ -378,6 +378,10 @@ the testing channel.
 - [x] IVR copy/paste and phone numbers (`v0.7.0-rc.34`): copy steps or a whole choice menu with the steps after it
   (right-click, side panel, Ctrl+C/V, multi-select); pasting a copied menu into another menu gives it the same keys;
   the incoming-call step links trunk numbers to the menu, creating or moving the inbound route straight away
+- [x] IVR on-call and after the message (next release): an On-call block rings whoever is on duty (shown live on the
+  block); after a Play audio step a Then list sends the caller back to a menu (the one they came from, the main menu
+  or a choice menu), hangs up or goes on to a step; Back to menu can target a chosen menu; queues take external
+  numbers as members (typed or from the phone book)
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

@@ -1771,7 +1771,17 @@
       "caller": "What the caller hears",
       "more": "Callback and overflow"
     },
-    "noExtensions": "There are no extensions yet."
+    "noExtensions": "There are no extensions yet.",
+    "external": {
+      "title": "External numbers",
+      "hint": "Numbers outside the PBX that take calls of this queue like an agent, for example a mobile or another office. The queue rings them over the trunk, so each call costs an outside line. Untick a number to keep it in the list without ringing it.",
+      "active": "Ring this number",
+      "name": "Name",
+      "number": "Number",
+      "add": "Add external number",
+      "fromBook": "From the phone book",
+      "bookEmpty": "The phone book has no contacts with a number yet."
+    }
   },
   "ivr": {
     "title": "IVR builder",
@@ -1817,7 +1827,7 @@
       "time": "Time condition",
       "ivr": "Submenu",
       "external": "External number",
-      "repeat": "Repeat menu",
+      "repeat": "Back to menu",
       "hangup": "Hang up",
       "timeout": "No input",
       "timecondition": "Time condition",
@@ -1828,7 +1838,8 @@
       "entry": "Incoming call",
       "destination": "Transfer",
       "speech": "Speech question",
-      "menu": "Choice menu"
+      "menu": "Choice menu",
+      "oncall": "On-call"
     },
     "node": {
       "press": "Press",
@@ -1836,7 +1847,7 @@
       "noAudio": "No audio yet",
       "hangupText": "End the call",
       "choose": "Choose a destination",
-      "repeatText": "Back to the start of the menu",
+      "repeatText": "Back to the menu the caller came from",
       "open": "open",
       "closed": "closed",
       "intentUnnamed": "Unnamed answer",
@@ -1852,7 +1863,12 @@
         "inCall": "In a call",
         "ringing": "Ringing",
         "offline": "Offline"
-      }
+      },
+      "backTo": "Back to {{menu}}",
+      "onDuty": "On duty: {{name}}",
+      "backup": "backup {{name}}",
+      "nobodyOnDuty": "Nobody on duty now",
+      "oncallOff": "On-call team is switched off"
     },
     "problem": {
       "notInMenu": "Not part of a menu: draw a line from the incoming call or a choice menu to this step.",
@@ -1897,7 +1913,7 @@
         "entry": "plays first",
         "key": "plays as part of the menu",
         "timeout": "plays before giving up",
-        "audio": "plays, then follows the line",
+        "audio": "plays, then goes on as set below",
         "speech": "asks the question",
         "menu": "before the keys"
       },
@@ -1905,7 +1921,7 @@
       "keypress": "Key",
       "timeCondition": "Time condition",
       "timeHint": "Opening hours and the day/night switch decide which line the call follows: open or closed.",
-      "repeatHint": "Plays the menu again from the start.",
+      "repeatHint": "Plays the chosen menu again from the start, with its keys.",
       "linesHint": "Drag from the dot on the right to the next step to connect it.",
       "endHint": "This is an end point: the call leaves the menu here.",
       "duplicate": "Duplicate",
@@ -1916,7 +1932,7 @@
         "audio": "Play audio",
         "destination": "Send the call",
         "time": "Check opening hours",
-        "repeat": "Repeat the menu",
+        "repeat": "Go back to a menu",
         "speech": "Ask what the caller wants",
         "menu": "Plays its text and waits for a key, like the welcome. Use it after a time check, for a menu per branch."
       },
@@ -1932,7 +1948,9 @@
       "speechLinesHint": "Draw a line from every answer, and from “Not understood”, to the next step. Speech-to-text must be on under Speech.",
       "menuHint": "Drag from the dot on the right to the keys of this menu (and its no-input step). New keys from the palette go into the selected menu.",
       "parallelHint": "Want two destinations to ring at once, such as a queue and an external number? Draw a second line from the same dot. The first to answer gets the call.",
-      "startHint": "Want to check the time first? Draw a line from here to a time condition step instead of to keys. Each branch can lead to its own choice menu."
+      "startHint": "Want to check the time first? Draw a line from here to a time condition step instead of to keys. Each branch can lead to its own choice menu.",
+      "oncallHint": "Rings whoever is on duty in this on-call team right now (then the backup and escalation as set on the team). Handy after hours, for example under a key in the closed-hours menu.",
+      "oncallOpen": "Open the on-call schedule"
     },
     "test": {
       "button": "Test call",
@@ -2000,6 +2018,23 @@
       "unlinkConfirm": "Unlink {{number}}? Its inbound route is removed; the number then shows under numbers without a route.",
       "moveConfirm": "{{number}} now goes to \"{{route}}\". Send it to this menu instead?",
       "hint": "Saved straight away as an inbound route (Trunks & routes › Inbound routes), separately from the menu."
+    },
+    "then": {
+      "title": "After the message",
+      "aside": "what happens next",
+      "label": "Then",
+      "notSet": "Not set: the call ends",
+      "many_one": "{{count}} steps at once",
+      "many_other": "{{count}} steps at once",
+      "groupBack": "Back to a menu",
+      "cameFrom": "The menu the caller came from",
+      "backToMenu": "Back to {{menu}}",
+      "mainMenu": "Main menu",
+      "hangup": "Hang up",
+      "groupStep": "Go on to a step",
+      "backTo": "Go back to",
+      "notSetHint": "Nothing follows this message yet, so the call ends after it. Choose what happens next.",
+      "hint": "This draws the line on the canvas for you. You can also drag from the dot to any step."
     }
   },
   "timeConditions": {

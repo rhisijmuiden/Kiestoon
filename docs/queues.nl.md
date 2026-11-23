@@ -88,6 +88,13 @@ staat in het auditlog.
     bellers) dat gesprekken in deze wachtrij beluisterd kunnen worden, bijvoorbeeld in de begroeting en in je
     privacyverklaring.
 
+## Externe nummers
+
+Onder **Medewerkers** voeg je bij **Externe nummers** nummers buiten de centrale toe die gesprekken aannemen zoals een
+agent, bijvoorbeeld een mobiel of een ander kantoor. Typ een naam en nummer of kies er een **Uit het telefoonboek**. De
+wachtrij belt ze via de trunk, dus elk gesprek gebruikt een buitenlijn. Vink een nummer uit om het in de lijst te
+houden zonder het te bellen. Maximaal 20 per wachtrij.
+
 ## Medewerkers op andere locaties
 
 Met [gekoppelde centrales](multi-site.md) kunnen medewerkers van een andere Kiestoon in de wachtrij

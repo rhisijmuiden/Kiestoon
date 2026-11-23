@@ -29,7 +29,7 @@ const DRAG_TYPE = 'application/x-kiestoon-step'
 const GROUPS: { key: string; kinds: Kind[] }[] = [
   { key: 'menu', kinds: ['menu', 'key', 'timeout', 'repeat'] },
   { key: 'audio', kinds: ['audio', 'speech'] },
-  { key: 'route', kinds: ['extension', 'ringgroup', 'queue', 'voicemail', 'ivr', 'external', 'hangup'] },
+  { key: 'route', kinds: ['extension', 'ringgroup', 'queue', 'oncall', 'voicemail', 'ivr', 'external', 'hangup'] },
   { key: 'logic', kinds: ['time'] },
 ]
 
@@ -215,6 +215,13 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
     const data = dataForKind(kind, usedDigits)
     const id = newId()
     setNodes((ns) => [...ns.map((n) => ({ ...n, selected: false })), { id, type: 'step', position, data, selected: true }])
+    // A new audio message goes back to the menu the caller came from afterwards; easy to change in the panel.
+    if (kind === 'audio') {
+      const back = newId()
+      const pos = position
+      setNodes((ns) => [...ns, { id: back, type: 'step', position: { x: pos.x + NODE_W + 80, y: pos.y }, data: { type: 'repeat' } }])
+      setEdges((es) => [...es, makeEdge(id, 'out', back, data)])
+    }
     if ((kind === 'key' || kind === 'timeout') && targetMenu) {
       const menu = byId.get(targetMenu)!
       setEdges((es) => [...es, makeEdge(targetMenu, 'out', id, menu.data)])
@@ -251,6 +258,43 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
       return [k > i ? makeEdge(id, intentPort(k - 1), e.target, data) : e]
     }))
   }
+  /** What a step does after it (audio played): see ThenPicker in the panel. */
+  function setThen(id: string, value: string) {
+    const n = byId.get(id)
+    if (!n) return
+    commit()
+    const out = edges.filter((e) => e.source === id && (e.sourceHandle ?? 'out') === 'out')
+    // A "back to menu" or "hang up" step that only this step used goes away with its line.
+    const own = (tid: string) => {
+      const d = byId.get(tid)?.data
+      return (d?.type === 'repeat' || (d?.type === 'destination' && d.destination?.type === 'hangup')) && edges.every((e) => e.target !== tid || e.source === id)
+    }
+    const drop = new Set(out.map((e) => e.target).filter(own))
+    const add: StepNode[] = []
+    const lines: Edge[] = []
+    if (value.startsWith('back:')) {
+      const menu = value.slice(5)
+      const reuse = out.length === 1 && drop.has(out[0].target) ? out[0].target : ''
+      if (reuse) {
+        drop.delete(reuse)
+        setNodes((ns) => ns.map((x) => (x.id === reuse ? { ...x, data: { ...x.data, menu: menu || undefined } } : x)))
+        return
+      }
+      const back = newId()
+      add.push({ id: back, type: 'step', position: { x: n.position.x + NODE_W + 80, y: n.position.y }, data: { type: 'repeat', ...(menu ? { menu } : {}) } })
+      lines.push(makeEdge(id, 'out', back, n.data))
+    } else if (value === 'hangup') {
+      if (out.length === 1 && byId.get(out[0].target)?.data.destination?.type === 'hangup' && byId.get(out[0].target)?.data.type === 'destination') return
+      const end = newId()
+      add.push({ id: end, type: 'step', position: { x: n.position.x + NODE_W + 80, y: n.position.y }, data: { type: 'destination', destination: { type: 'hangup', target: '' } } })
+      lines.push(makeEdge(id, 'out', end, n.data))
+    } else if (value.startsWith('step:')) {
+      lines.push(makeEdge(id, 'out', value.slice(5), n.data))
+    }
+    setNodes((ns) => [...ns.filter((x) => !drop.has(x.id)), ...add])
+    setEdges((es) => [...es.filter((e) => !(e.source === id && (e.sourceHandle ?? 'out') === 'out') && !drop.has(e.target) && !drop.has(e.source)), ...lines])
+  }
+
   function remove(id: string) {
     commit()
     setNodes((ns) => ns.filter((n) => n.id !== id))
@@ -350,7 +394,11 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
     destLabel: (type, target) => dests?.options.find((o) => o.type === type && o.target === target)?.label
       ?? (type === 'timecondition' ? tcs.data?.find((c) => String(c.id) === target)?.name : undefined),
     problems, name: ivr.name, phones, live: live.data,
-  }), [promptMap, dests, tcs.data, problems, ivr.name, phones, live.data])
+    menuName: (id) => {
+      const m = byId.get(id)?.data
+      return m?.type === 'entry' ? t('ivr.then.mainMenu') : m?.type === 'menu' ? m.label || t('ivr.kind.menu') : undefined
+    },
+  }), [promptMap, dests, tcs.data, problems, ivr.name, phones, live.data, byId, t])
 
   const sel = selected ? byId.get(selected) : undefined
 
@@ -479,7 +527,7 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
                 onCopy={() => copySelection(sel.id)} onCopyBranch={edges.some((e) => e.source === sel.id) ? () => copyBranch(sel.id) : undefined}
                 onPaste={clip ? () => paste(sel) : undefined} pasteLabel={isMenu(sel.data) ? t('ivr.clip.pasteInto') : t('ivr.clip.pasteAfter')}
                 inbound={inbound.data ?? []} onInboundChanged={inbound.reload}
-                onQueueSaved={live.reload} />
+                onQueueSaved={live.reload} nodes={nodes} edges={edges} onThen={(v) => setThen(sel.id, v)} />
             </div>
           )}
         </div>

@@ -84,6 +84,12 @@ joined, never other calls of the agent, and every use is written to the audit lo
     Listening in on calls is processing of personal data. Tell your employees (and, where needed, callers) that
     calls in this queue can be listened to, for example in the greeting and in your privacy policy.
 
+## External numbers
+
+Under **Agents**, **External numbers** adds numbers outside the PBX that take calls like an agent, for example a mobile
+or another office. Type a name and number or pick one **From the phone book**. The queue rings them over the trunk, so
+every call uses an outside line. Untick a number to keep it in the list without ringing it. Up to 20 per queue.
+
 ## Agents on other sites
 
 With [linked systems](multi-site.md), agents of another Kiestoon can join the queue (**Agents on linked systems**).

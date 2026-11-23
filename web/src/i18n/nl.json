@@ -1771,7 +1771,17 @@
       "caller": "Wat de beller hoort",
       "more": "Terugbellen en overloop"
     },
-    "noExtensions": "Er zijn nog geen toestellen."
+    "noExtensions": "Er zijn nog geen toestellen.",
+    "external": {
+      "title": "Externe nummers",
+      "hint": "Nummers buiten de centrale die gesprekken van deze wachtrij aannemen zoals een agent, bijvoorbeeld een mobiel of een ander kantoor. De wachtrij belt ze via de trunk, dus elk gesprek gebruikt een buitenlijn. Vink een nummer uit om het in de lijst te houden zonder het te bellen.",
+      "active": "Dit nummer laten overgaan",
+      "name": "Naam",
+      "number": "Nummer",
+      "add": "Extern nummer toevoegen",
+      "fromBook": "Uit het telefoonboek",
+      "bookEmpty": "Het telefoonboek heeft nog geen contacten met een nummer."
+    }
   },
   "ivr": {
     "title": "Keuzemenu's",
@@ -1817,7 +1827,7 @@
       "time": "Tijdconditie",
       "ivr": "Submenu",
       "external": "Extern nummer",
-      "repeat": "Herhaal menu",
+      "repeat": "Terug naar menu",
       "hangup": "Ophangen",
       "timeout": "Geen invoer",
       "timecondition": "Tijdconditie",
@@ -1828,7 +1838,8 @@
       "entry": "Binnenkomend gesprek",
       "destination": "Doorverbinden",
       "speech": "Spraakvraag",
-      "menu": "Keuzemenu"
+      "menu": "Keuzemenu",
+      "oncall": "Storingsdienst"
     },
     "node": {
       "press": "Druk",
@@ -1836,7 +1847,7 @@
       "noAudio": "Nog geen audio",
       "hangupText": "Gesprek beëindigen",
       "choose": "Kies een bestemming",
-      "repeatText": "Terug naar het begin van het menu",
+      "repeatText": "Terug naar het menu waar de beller vandaan kwam",
       "open": "open",
       "closed": "dicht",
       "intentUnnamed": "Antwoord zonder naam",
@@ -1852,7 +1863,12 @@
         "inCall": "In gesprek",
         "ringing": "Gaat over",
         "offline": "Offline"
-      }
+      },
+      "backTo": "Terug naar {{menu}}",
+      "onDuty": "Dienst: {{name}}",
+      "backup": "reserve {{name}}",
+      "nobodyOnDuty": "Nu niemand van dienst",
+      "oncallOff": "Storingsdienst staat uit"
     },
     "problem": {
       "notInMenu": "Hoort niet bij een menu: trek een lijn van het binnenkomende gesprek of een keuzemenu naar deze stap.",
@@ -1897,7 +1913,7 @@
         "entry": "speelt als eerste",
         "key": "speelt als deel van het menu",
         "timeout": "speelt voor het opgeven",
-        "audio": "speelt, en volgt dan de lijn",
+        "audio": "speelt, en gaat dan verder zoals hieronder ingesteld",
         "speech": "stelt de vraag",
         "menu": "voor de toetsen"
       },
@@ -1905,7 +1921,7 @@
       "keypress": "Toets",
       "timeCondition": "Tijdconditie",
       "timeHint": "Openingstijden en de dag/nacht-schakelaar bepalen welke lijn het gesprek volgt: open of dicht.",
-      "repeatHint": "Speelt het menu opnieuw vanaf het begin.",
+      "repeatHint": "Speelt het gekozen menu opnieuw vanaf het begin, met de toetsen.",
       "linesHint": "Sleep vanaf het bolletje rechts naar de volgende stap om ze te verbinden.",
       "endHint": "Dit is een eindpunt: hier verlaat het gesprek het menu.",
       "duplicate": "Dupliceren",
@@ -1916,7 +1932,7 @@
         "audio": "Audio afspelen",
         "destination": "Gesprek doorsturen",
         "time": "Openingstijden controleren",
-        "repeat": "Menu herhalen",
+        "repeat": "Terug naar een menu",
         "speech": "Vraag waarvoor de beller belt",
         "menu": "Speelt de tekst af en wacht op een toets, net als het welkom. Gebruik het na een tijdcontrole, voor een eigen menu per tak."
       },
@@ -1932,7 +1948,9 @@
       "speechLinesHint": "Trek een lijn van elk antwoord, en van “Niet begrepen”, naar de volgende stap. Spraak-naar-tekst moet aan staan onder Spraak.",
       "menuHint": "Sleep vanaf de stip rechts naar de toetsen van dit menu (en de stap voor geen invoer). Nieuwe toetsen uit het palet komen in het geselecteerde menu.",
       "parallelHint": "Wil je twee bestemmingen tegelijk laten overgaan, zoals een wachtrij en een extern nummer? Trek een tweede lijn vanaf dezelfde stip. Wie het eerst opneemt, krijgt het gesprek.",
-      "startHint": "Wil je eerst de tijd controleren? Trek vanaf hier een lijn naar een tijdconditie in plaats van naar toetsen. Elke tak kan naar een eigen keuzemenu gaan."
+      "startHint": "Wil je eerst de tijd controleren? Trek vanaf hier een lijn naar een tijdconditie in plaats van naar toetsen. Elke tak kan naar een eigen keuzemenu gaan.",
+      "oncallHint": "Belt wie nu dienst heeft in deze storingsdienst (daarna de reserve en de escalatie zoals ingesteld bij de dienst). Handig buiten kantoortijden, bijvoorbeeld onder een toets in het menu voor gesloten.",
+      "oncallOpen": "Rooster van de storingsdienst openen"
     },
     "test": {
       "button": "Testgesprek",
@@ -2000,6 +2018,23 @@
       "unlinkConfirm": "{{number}} ontkoppelen? De inkomende route wordt verwijderd; het nummer staat daarna bij de nummers zonder route.",
       "moveConfirm": "{{number}} gaat nu naar \"{{route}}\". In plaats daarvan naar dit menu sturen?",
       "hint": "Wordt meteen opgeslagen als inkomende route (Trunks & routes › Inkomende routes), los van het menu."
+    },
+    "then": {
+      "title": "Na het bericht",
+      "aside": "wat er daarna gebeurt",
+      "label": "Daarna",
+      "notSet": "Niet ingesteld: het gesprek eindigt",
+      "many_one": "{{count}} stappen tegelijk",
+      "many_other": "{{count}} stappen tegelijk",
+      "groupBack": "Terug naar een menu",
+      "cameFrom": "Het menu waar de beller vandaan kwam",
+      "backToMenu": "Terug naar {{menu}}",
+      "mainMenu": "Hoofdmenu",
+      "hangup": "Ophangen",
+      "groupStep": "Verder naar een stap",
+      "backTo": "Terug naar",
+      "notSetHint": "Na dit bericht volgt nog niets, dus het gesprek eindigt. Kies wat er daarna gebeurt.",
+      "hint": "Dit tekent de lijn op het canvas voor je. Je kunt ook vanaf de stip naar elke stap slepen."
     }
   },
   "timeConditions": {

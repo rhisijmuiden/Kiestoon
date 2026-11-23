@@ -2,7 +2,7 @@ import { createContext, useContext, type CSSProperties, type ReactNode } from 'r
 import { useTranslation } from 'react-i18next'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import {
-  Clock, GitBranch, Grid3x3, LayoutList, Hourglass, ListOrdered, Mic, Phone, PhoneForwarded, PhoneIncoming, PhoneOff, Repeat, TriangleAlert, UsersRound, Voicemail, Volume2,
+  Clock, GitBranch, Grid3x3, LayoutList, Hourglass, ListOrdered, Mic, Phone, PhoneForwarded, PhoneIncoming, PhoneOff, Repeat, Siren, TriangleAlert, UsersRound, Voicemail, Volume2,
   type LucideIcon,
 } from 'lucide-react'
 import { WavePlayer, promptSrc } from '../../components/WavePlayer'
@@ -17,12 +17,14 @@ export type FlowInfo = {
   name: string
   phones?: string[]
   live?: IvrLive | null
+  /** The name of a menu (the entry or a choice menu) for "back to" steps. */
+  menuName?: (id: string) => string | undefined
 }
 export const FlowInfoContext = createContext<FlowInfo>({ prompts: new Map(), destLabel: () => undefined, problems: new Map(), name: '' })
 
 export const kindIcon: Record<Kind, LucideIcon> = {
   menu: LayoutList, key: Grid3x3, audio: Volume2, speech: Mic, extension: PhoneForwarded, ringgroup: UsersRound, queue: ListOrdered, voicemail: Voicemail, ivr: GitBranch,
-  external: Phone, time: Clock, repeat: Repeat, hangup: PhoneOff, timeout: Hourglass,
+  external: Phone, oncall: Siren, time: Clock, repeat: Repeat, hangup: PhoneOff, timeout: Hourglass,
 }
 
 /** The CSS class that sets --tone for the block styles in index.css. */
@@ -155,6 +157,12 @@ function DestWell({ d }: { d: StepData }) {
     sub = t('ivr.node.mailbox')
   } else if (type === 'ringgroup' && live?.members) {
     sub = t('ivr.node.members', { count: live.members })
+  } else if (type === 'oncall') {
+    sub = !live ? t('ivr.kind.oncall')
+      : live.off ? <span className="text-warn">{t('ivr.node.oncallOff')}</span>
+      : live.onDuty
+        ? <span className="inline-flex min-w-0 items-center gap-1.5"><span className="size-1.5 flex-none rounded-full bg-ok" /><span className="truncate">{t('ivr.node.onDuty', { name: live.onDuty })}{live.backup ? ` · ${t('ivr.node.backup', { name: live.backup })}` : ''}</span></span>
+        : <span className="text-warn">{t('ivr.node.nobodyOnDuty')}</span>
   } else if (type === 'queue' && live) {
     sub = live.online !== undefined
       ? <span className="inline-flex items-center gap-1.5"><span className={`size-1.5 rounded-full ${live.online ? 'bg-ok' : 'bg-subtle'}`} />{t('ivr.node.online', { online: live.online, waiting: live.waiting ?? 0 })}</span>
@@ -241,7 +249,8 @@ export function StepNodeView({ id, data, selected }: NodeProps<StepNode>) {
       </div>
     )
   } else if (data.type === 'repeat') {
-    body = <div className="kt-well flex min-h-10 items-center px-2.5 py-1.5 text-[12px] text-ink-2">{t('ivr.node.repeatText')}</div>
+    const to = data.menu ? info.menuName?.(data.menu) : undefined
+    body = <div className="kt-well flex min-h-10 items-center px-2.5 py-1.5 text-[12px] text-ink-2">{to ? t('ivr.node.backTo', { menu: to }) : t('ivr.node.repeatText')}</div>
   }
 
   const singleOut = data.type === 'entry' || data.type === 'menu' || data.type === 'key' || data.type === 'timeout' || data.type === 'audio'

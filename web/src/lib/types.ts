@@ -198,7 +198,8 @@ export type Queue = {
 }
 export type CallbackOptions = { enabled: boolean; offerEvery: number; retries: number; retryDelay: number; expire: number; callerId: string }
 export type SLAOptions = { target: number; norm: number; maxWaiting: number; maxWait: number; maxAbandoned: number }
-export type QueueOptions = { supervision: boolean; callback: CallbackOptions; sla?: SLAOptions }
+export type ExternalMember = { name: string; number: string; penalty: number; active: boolean }
+export type QueueOptions = { supervision: boolean; callback: CallbackOptions; sla?: SLAOptions; external?: ExternalMember[] }
 export type SLAKind = 'waiting' | 'wait' | 'level' | 'abandoned'
 export type SLAAlert = { queueId: number; queue: string; kind: SLAKind; value: number; limit: number; since: string }
 export type CallbackStatus = 'scheduled' | 'waiting' | 'calling' | 'done' | 'failed' | 'cancelled'
@@ -272,7 +273,7 @@ export type FlowNodeType = 'entry' | 'key' | 'timeout' | 'audio' | 'destination'
 export type SpeechIntent = { label: string; keywords: string[] }
 export type FlowNode = {
   id: string; type: FlowNodeType; x: number; y: number; digit?: string; label?: string; promptId?: number; destination?: Destination
-  intents?: SpeechIntent[]; ai?: boolean
+  intents?: SpeechIntent[]; ai?: boolean; menu?: string
 }
 export type FlowPort = 'out' | 'open' | 'closed' | 'nomatch' | `i${number}`
 export type FlowEdge = { from: string; port: FlowPort; to: string }
@@ -297,7 +298,7 @@ export type Conference = {
 /** Live state for the IVR canvas: time conditions open now, and destinations keyed "type:target". */
 export type IvrLive = {
   open: Record<string, boolean>
-  dests: Record<string, { state?: string; members?: number; online?: number; waiting?: number }>
+  dests: Record<string, { state?: string; members?: number; online?: number; waiting?: number; onDuty?: string; backup?: string; off?: boolean }>
 }
 export type Prompt = { id: number; name: string; durationMs: number; createdAt: string; source?: PromptSource }
 /** How a prompt was spoken from text, so it can be spoken again with another voice. */

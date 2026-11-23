@@ -1,6 +1,7 @@
-import { useRef, useState, type DragEvent, type ReactNode } from 'react'
+import { useContext, useRef, useState, type DragEvent, type ReactNode } from 'react'
+import type { Edge } from '@xyflow/react'
 import { useTranslation } from 'react-i18next'
-import { Ban, ChevronDown, ClipboardPaste, Copy, CopyPlus, GitFork, Library, Loader2, Mic, Plus, Sparkles, Square, Trash2, Upload, X } from 'lucide-react'
+import { Ban, ChevronDown, ClipboardPaste, Copy, CopyPlus, ExternalLink, GitFork, Library, Loader2, Mic, Plus, Sparkles, Square, Trash2, Upload, X } from 'lucide-react'
 import { Select, Toggle } from '../../components/kit'
 import { DestinationPicker } from '../../components/pbx'
 import { Button, ErrorMessage, Input } from '../../components/ui'
@@ -9,8 +10,8 @@ import { SpeakFromText } from '../../components/SpeakFromText'
 import { ApiError, api } from '../../lib/api'
 import { startRecording, toTelephoneWav } from '../../lib/audio'
 import type { InboundRoute, IVR, Prompt, PromptSource, SpeechIntent, TimeCondition } from '../../lib/types'
-import { KEYS, hasAudio, toneOf, tones, type StepData, type StepNode } from './flow'
-import { NodeTitle, iconOf, toneClass } from './nodes'
+import { KEYS, canConnect, hasAudio, isMenu, toneOf, tones, type StepData, type StepNode } from './flow'
+import { FlowInfoContext, NodeTitle, iconOf, kindLabel, toneClass } from './nodes'
 import { QueueSettings } from './QueueSettings'
 import { EntryNumbers } from './EntryNumbers'
 
@@ -165,7 +166,7 @@ function AudioSource({ promptId, onPrompt, promptName, prompts, onPromptsChanged
   )
 }
 
-export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeConditions, usedDigits, onChange, onRemoveIntent, onDelete, onDuplicate, onClose, onQueueSaved, onCopy, onCopyBranch, onPaste, pasteLabel, inbound, onInboundChanged }: {
+export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeConditions, usedDigits, onChange, onRemoveIntent, onDelete, onDuplicate, onClose, onQueueSaved, onCopy, onCopyBranch, onPaste, pasteLabel, inbound, onInboundChanged, nodes, edges, onThen }: {
   node: StepNode
   ivr: IVR
   setIvr: (fn: (v: IVR) => IVR) => void
@@ -185,6 +186,9 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
   pasteLabel?: string
   inbound?: InboundRoute[]
   onInboundChanged?: () => void
+  nodes?: StepNode[]
+  edges?: Edge[]
+  onThen?: (value: string) => void
 }) {
   const { t } = useTranslation()
   const d = node.data
@@ -231,6 +235,12 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
           </Section>
         )}
 
+        {d.type === 'audio' && nodes && edges && onThen && (
+          <Section title={t('ivr.then.title')} aside={t('ivr.then.aside')}>
+            <ThenPicker node={node} nodes={nodes} edges={edges} onThen={onThen} />
+          </Section>
+        )}
+
         {d.type !== 'entry' && (
           <Section title={t('ivr.panel.manage')}>
             {d.type === 'key' && (
@@ -259,7 +269,21 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
               </>
             )}
             {d.type === 'timeout' && <p className="text-xs text-subtle">{t('ivr.noInputHint', { retries: ivr.retries })}</p>}
+            {d.type === 'repeat' && (
+              <Select name="menu" label={t('ivr.then.backTo')} value={d.menu ?? ''} onChange={(e) => onChange({ menu: e.target.value || undefined })}>
+                <option value="">{t('ivr.then.cameFrom')}</option>
+                {(nodes ?? []).filter((n) => isMenu(n.data)).map((n) => <option key={n.id} value={n.id}>{menuLabel(n, t)}</option>)}
+              </Select>
+            )}
             {d.type === 'repeat' && <p className="text-xs text-subtle">{t('ivr.panel.repeatHint')}</p>}
+            {d.type === 'destination' && d.destination?.type === 'oncall' && (
+              <div className="flex flex-col gap-1.5">
+                <p className="text-xs text-subtle">{t('ivr.panel.oncallHint')}</p>
+                <a href="/on-call" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline">
+                  <ExternalLink className="size-3.5" aria-hidden />{t('ivr.panel.oncallOpen')}
+                </a>
+              </div>
+            )}
             <p className="text-xs text-subtle">{t(d.type === 'menu' ? 'ivr.panel.menuHint' : d.type === 'speech' ? 'ivr.panel.speechLinesHint' : d.type === 'key' || d.type === 'timeout' || d.type === 'audio' || d.type === 'time' ? 'ivr.panel.linesHint' : 'ivr.panel.endHint')}</p>
             {(d.type === 'key' || d.type === 'timeout' || d.type === 'audio' || d.type === 'time' || d.type === 'speech') && <p className="text-xs text-subtle">{t('ivr.panel.parallelHint')}</p>}
           </Section>
@@ -312,6 +336,51 @@ function SpeechIntents({ d, onChange, onRemoveIntent }: { d: StepData; onChange:
       )}
       <p className="text-xs text-subtle">{t('ivr.panel.keywordsHint')}</p>
       <Toggle name="ai" label={t('ivr.panel.speechAI')} hint={t('ivr.panel.speechAIHint')} checked={!!d.ai} onChange={(v) => onChange({ ai: v })} />
+    </div>
+  )
+}
+
+const menuLabel = (n: StepNode, t: (k: string) => string) => (n.data.type === 'entry' ? t('ivr.then.mainMenu') : n.data.label || t('ivr.kind.menu'))
+
+/**
+ * What happens after an audio message: back to a menu, hang up, or on to another step. Each choice
+ * draws (or replaces) the line from the step's dot, so the canvas always shows what happens.
+ */
+function ThenPicker({ node, nodes, edges, onThen }: { node: StepNode; nodes: StepNode[]; edges: Edge[]; onThen: (v: string) => void }) {
+  const { t } = useTranslation()
+  const info = useContext(FlowInfoContext)
+  const byId = new Map(nodes.map((n) => [n.id, n]))
+  const out = edges.filter((e) => e.source === node.id && (e.sourceHandle ?? 'out') === 'out')
+  const first = out.length === 1 ? byId.get(out[0].target) : undefined
+  let value = ''
+  if (out.length > 1) value = 'many'
+  else if (first?.data.type === 'repeat') value = `back:${first.data.menu ?? ''}`
+  else if (first?.data.type === 'destination' && first.data.destination?.type === 'hangup') value = 'hangup'
+  else if (first) value = `step:${first.id}`
+  const menus = nodes.filter((n) => isMenu(n.data))
+  const steps = nodes.filter((n) => n.id !== node.id && n.data.type !== 'repeat' && !(n.data.type === 'destination' && n.data.destination?.type === 'hangup') && canConnect(node.data, n.data))
+  const stepName = (n: StepNode) => {
+    const d = n.data
+    const title = d.type === 'destination' && d.destination?.target ? (d.label || info.destLabel(d.destination.type, d.destination.target) || d.destination.target) : (d.label || '')
+    return title ? `${kindLabel(d, t)}: ${title}` : kindLabel(d, t)
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <Select name="then" label={t('ivr.then.label')} value={value} onChange={(e) => e.target.value !== 'many' && onThen(e.target.value)}>
+        {value === '' && <option value="">{t('ivr.then.notSet')}</option>}
+        {value === 'many' && <option value="many">{t('ivr.then.many', { count: out.length })}</option>}
+        <optgroup label={t('ivr.then.groupBack')}>
+          <option value="back:">{t('ivr.then.cameFrom')}</option>
+          {menus.map((n) => <option key={n.id} value={`back:${n.id}`}>{t('ivr.then.backToMenu', { menu: menuLabel(n, t) })}</option>)}
+        </optgroup>
+        <option value="hangup">{t('ivr.then.hangup')}</option>
+        {steps.length > 0 && (
+          <optgroup label={t('ivr.then.groupStep')}>
+            {steps.map((n) => <option key={n.id} value={`step:${n.id}`}>{stepName(n)}</option>)}
+          </optgroup>
+        )}
+      </Select>
+      <p className="text-xs text-subtle">{value === '' ? t('ivr.then.notSetHint') : t('ivr.then.hint')}</p>
     </div>
   )
 }

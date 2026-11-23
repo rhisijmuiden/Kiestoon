@@ -589,6 +589,17 @@ func genQueuesConf(s *pbx.Snapshot) string {
 			x.f("member => Local/%s@kiestoon-ring/n,%d,%s,hint:%s@kiestoon-extensions", m.Number, m.Penalty,
 				esc(strings.ReplaceAll(m.Name, ",", " ")), m.Number)
 		}
+		// External numbers ring over the trunk like any outside call.
+		for _, m := range q.Options.External {
+			if !m.Active {
+				continue
+			}
+			name := m.Name
+			if name == "" {
+				name = m.Number
+			}
+			x.f("member => Local/%s@kiestoon-external/n,%d,%s", m.Number, m.Penalty, esc(strings.ReplaceAll(name, ",", " ")))
+		}
 		remoteQueueMembers(&x, s, q)
 		x.nl()
 	}
@@ -708,8 +719,22 @@ func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 			case pbx.NodeRepeat:
 				mark(x, "ivrrepeat", fmt.Sprintf("id=%d", v.ID))
 				x.f(" same => n,Set(KT_TRIES=0)")
-				x.f(` same => n,ExecIf($["${KT_MENU}" = ""]?Set(KT_MENU=%s))`, mainCtx)
-				x.f(" same => n,Goto(${KT_MENU},s,start)")
+				back := f.Node(n.Menu)
+				switch {
+				case back != nil && back.Type == pbx.NodeMenu:
+					x.f(" same => n,Goto(%s-m%d,s,start)", mainCtx, steps[back.ID])
+				case back != nil && start != nil:
+					// Back to the start: the welcome and the start step (for example the time check) again.
+					x.f(" same => n,Goto(%s,s,1)", mainCtx)
+				case back != nil:
+					x.f(" same => n,Goto(%s,s,start)", mainCtx)
+				case start != nil:
+					x.f(` same => n,GotoIf($["${KT_MENU}" = ""]?%s,s,1)`, mainCtx)
+					x.f(" same => n,Goto(${KT_MENU},s,start)")
+				default:
+					x.f(` same => n,ExecIf($["${KT_MENU}" = ""]?Set(KT_MENU=%s))`, mainCtx)
+					x.f(" same => n,Goto(${KT_MENU},s,start)")
+				}
 			}
 		}
 		// Destinations that ring at the same time: each in its own Local channel; the first to

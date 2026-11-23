@@ -4865,7 +4865,7 @@
       "asterisk": "upload /etc/asterisk as a .tar.gz or zip (add /var/lib/asterisk/sounds/custom for the recordings), or the loose .conf files.",
       "freepbx": "Admin > Backup & Restore: make a backup with all modules and upload the .tar.gz. Older backups (.tgz) and a mysqldump of the asterisk database work too.",
       "freeswitch": "upload /etc/freeswitch (FreeSWITCH) as an archive, or a FusionPBX backup with its database dump.",
-      "3cx": "Dashboard > Backups: make a backup without encryption and upload the .zip.",
+      "3cx": "Admin > Backup: make a backup without a password and upload the .zip. The extension list from Users > Export (.csv) works too, on its own or next to the backup.",
       "unifi-talk": "UniFi OS > Settings > Backups: download a backup of Talk and upload the .unifi file."
     },
     "notes": {
@@ -4888,7 +4888,8 @@
       "encrypted_backup": "The 3CX backup is encrypted. Make a backup without a password and upload that one.",
       "no_database": "The backup holds no database, so only the configuration files are read.",
       "trunk_numbers_not_added": "The numbers could not be added to the existing trunk {{name}}; add them on the Trunks page.",
-      "fusion_time_conditions": "FusionPBX time conditions and other dialplans are not imported; set them up again on the Time conditions page."
+      "fusion_time_conditions": "FusionPBX time conditions and other dialplans are not imported; set them up again on the Time conditions page.",
+      "threecx_partial": "3CX does not publish its backup format. Kiestoon reads extensions, ring groups, queues, digital receptionists and recordings where it finds them; check the preview before importing."
     },
     "errors": {
       "unknown_format": "Kiestoon does not recognise this file. Pick the phone system above, or check that it is a complete backup.",

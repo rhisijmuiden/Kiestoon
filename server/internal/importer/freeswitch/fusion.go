@@ -173,7 +173,9 @@ func (f *fusion) build() {
 				opts = append(opts, o)
 			}
 		}
-		slices.SortFunc(opts, func(a, b map[string]string) int { return strings.Compare(a["ivr_menu_option_digits"], b["ivr_menu_option_digits"]) })
+		slices.SortFunc(opts, func(a, b map[string]string) int {
+			return strings.Compare(a["ivr_menu_option_digits"], b["ivr_menu_option_digits"])
+		})
 		for _, o := range opts {
 			d := o["ivr_menu_option_digits"]
 			if len(d) != 1 {

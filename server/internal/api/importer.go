@@ -21,6 +21,7 @@ import (
 	_ "github.com/rhisijmuiden/kiestoon/server/internal/importer/asterisk"
 	_ "github.com/rhisijmuiden/kiestoon/server/internal/importer/freepbx"
 	_ "github.com/rhisijmuiden/kiestoon/server/internal/importer/freeswitch"
+	_ "github.com/rhisijmuiden/kiestoon/server/internal/importer/threecx"
 	_ "github.com/rhisijmuiden/kiestoon/server/internal/unifitalk"
 )
 

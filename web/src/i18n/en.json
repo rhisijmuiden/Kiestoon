@@ -4886,7 +4886,8 @@
       "freepbx_legacy": "This is a FreePBX 2.x/13/14 backup: it is read from its database dump.",
       "feature_codes": "Feature codes (*xx) are not imported; Kiestoon has its own (see Feature codes in the manual).",
       "encrypted_backup": "The 3CX backup is encrypted. Make a backup without a password and upload that one.",
-      "no_database": "The backup holds no database, so only the configuration files are read."
+      "no_database": "The backup holds no database, so only the configuration files are read.",
+      "trunk_numbers_not_added": "The numbers could not be added to the existing trunk {{name}}; add them on the Trunks page."
     },
     "errors": {
       "unknown_format": "Kiestoon does not recognise this file. Pick the phone system above, or check that it is a complete backup.",

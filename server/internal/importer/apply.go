@@ -340,6 +340,20 @@ func (ap *applier) trunks() error {
 			continue
 		}
 		if pt.ExistingID != 0 {
+			// The numbers no trunk carries yet are added to the trunk that is reused.
+			if len(pt.Numbers) > 0 {
+				if tr, err := ap.r.Trunk(ap.ctx, pt.ExistingID); err == nil {
+					for _, n := range pt.Numbers {
+						if !slices.Contains(tr.Numbers, n) {
+							tr.Numbers = append(tr.Numbers, n)
+						}
+					}
+					tr.Secret = ""
+					if err := ap.r.SaveTrunk(ap.ctx, tr); err != nil {
+						ap.warn("trunk_numbers_not_added", "name", tr.Name)
+					}
+				}
+			}
 			ap.res.Created = append(ap.res.Created, Created{Kind: "trunk", Key: pt.Key, ID: pt.ExistingID, Name: pt.Name, Reused: true})
 			continue
 		}

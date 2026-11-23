@@ -644,6 +644,11 @@ func (r *Repo) validateOutbound(ctx context.Context, x *OutboundRoute) error {
 	if x.CallerID != "" && !reCallerID.MatchString(x.CallerID) {
 		return invalid("invalid", "callerId")
 	}
+	gids, err := r.validateGroupIDs(ctx, x.GroupIDs)
+	if err != nil {
+		return err
+	}
+	x.GroupIDs = gids
 	return nil
 }
 

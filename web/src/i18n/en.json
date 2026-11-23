@@ -177,7 +177,11 @@
     "log_permission": "The portal may not read this log. Run the update again to fix the permissions.",
     "log_unavailable": "The log could not be read.",
     "parallel_only_ring": "Several lines from one step can only lead to extensions, ring groups, queues or external numbers.",
-    "too_many_parallel": "At most five destinations can ring at the same time."
+    "too_many_parallel": "At most five destinations can ring at the same time.",
+    "group_in_use": "This group is still used by an outbound route. Take it out of the route first.",
+    "unknown_group": "The extension group does not exist.",
+    "unknown_template": "One of the key templates does not exist.",
+    "template_model_twice": "Pick one key template per phone model."
   },
   "setup": {
     "title": "Welcome to Kiestoon",
@@ -660,7 +664,8 @@
     "allowPremium": "Allow premium-rate numbers",
     "allowPremiumHint": "Such as 0900 and 0906. Off is safer.",
     "webrtc": "Browser softphone",
-    "webrtcHint": "The user can call with a headset in the user portal."
+    "webrtcHint": "The user can call with a headset in the user portal.",
+    "tabExtensions": "Extensions"
   },
   "trunks": {
     "title": "Trunks & routes",
@@ -957,7 +962,7 @@
     "trunkOrder": "Tried in this order. The next trunk is used when one fails.",
     "addTrunk": "Add trunk",
     "callerId": "Caller ID",
-    "callerIdHint": "Overrides the trunk's caller ID for this route. An extension's own caller ID always wins.",
+    "callerIdHint": "Overrides the trunk's caller ID for this route. An extension's own caller ID and its group's number win over it.",
     "up": "Move up",
     "down": "Move down",
     "freeNumbers_one": "{{count}} number without a route",
@@ -970,7 +975,12 @@
     "multiNumbers_one": "{{count}} number",
     "multiNumbers_other": "{{count}} numbers",
     "multiNameHint": "Each number gets its own route, named after this name and the number. Leave it empty to use only the number.",
-    "partlyDone": "{{done}} of {{count}} routes were saved. Fix the problem and save again for the rest."
+    "partlyDone": "{{done}} of {{count}} routes were saved. Fix the problem and save again for the rest.",
+    "who": "Who can use this route",
+    "whoHint": "Pick extension groups to make this route theirs, for example their own trunk and number. Others skip this route and use the next one that matches.",
+    "everyone": "Everyone",
+    "manageGroups": "Manage groups",
+    "noGroups": "There are no extension groups yet. Create them under Extensions › Extension groups."
   },
   "phones": {
     "title": "Phones & provisioning",
@@ -1383,7 +1393,9 @@
     "restartText": "Restart when no calls are active, or now. Restarting now ends every active call.",
     "restartIdle": "When idle",
     "restartNow": "Restart now",
-    "restartSent": "The phone engine is restarting."
+    "restartSent": "The phone engine is restarting.",
+    "language": "Language of prompts",
+    "languageHint": "Also used for voicemail e-mails."
   },
   "roles": {
     "superadmin": "Super admin",
@@ -1826,7 +1838,7 @@
       "time": "Time condition",
       "ivr": "Submenu",
       "external": "External number",
-      "repeat": "Back to menu",
+      "repeat": "Repeat menu",
       "hangup": "Hang up",
       "timeout": "No input",
       "timecondition": "Time condition",
@@ -1846,7 +1858,7 @@
       "noAudio": "No audio yet",
       "hangupText": "End the call",
       "choose": "Choose a destination",
-      "repeatText": "Back to the menu the caller came from",
+      "repeatText": "Back to the start of the menu",
       "open": "open",
       "closed": "closed",
       "intentUnnamed": "Unnamed answer",
@@ -1912,7 +1924,7 @@
         "entry": "plays first",
         "key": "plays as part of the menu",
         "timeout": "plays before giving up",
-        "audio": "plays, then goes on as set below",
+        "audio": "plays, then follows the line",
         "speech": "asks the question",
         "menu": "before the keys"
       },
@@ -1920,7 +1932,7 @@
       "keypress": "Key",
       "timeCondition": "Time condition",
       "timeHint": "Opening hours and the day/night switch decide which line the call follows: open or closed.",
-      "repeatHint": "Plays the chosen menu again from the start, with its keys.",
+      "repeatHint": "Plays the menu again from the start.",
       "linesHint": "Drag from the dot on the right to the next step to connect it.",
       "endHint": "This is an end point: the call leaves the menu here.",
       "duplicate": "Duplicate",
@@ -1931,7 +1943,7 @@
         "audio": "Play audio",
         "destination": "Send the call",
         "time": "Check opening hours",
-        "repeat": "Go back to a menu",
+        "repeat": "Repeat the menu",
         "speech": "Ask what the caller wants",
         "menu": "Plays its text and waits for a key, like the welcome. Use it after a time check, for a menu per branch."
       },
@@ -4810,5 +4822,52 @@
     "follow": "Like the system ({{language}})",
     "followPlain": "Like the system",
     "ivrHint": "Asterisk messages in this menu, and the default language of text you have spoken."
+  },
+  "extGroups": {
+    "tab": "Extension groups",
+    "text": "Group extensions that work the same way. A group can send its own number on outside calls, enforce settings such as voicemail on all members, and keep the keys of their phones the same with a key template.",
+    "add": "New group",
+    "edit": "Edit {{name}}",
+    "name": "Name",
+    "group": "Extension group",
+    "none": "No group",
+    "members": "Members",
+    "membersHint": "An extension is in one group at a time. Choosing one that is in another group moves it here.",
+    "movesFrom": "Moves from {{name}}",
+    "callerId": "Outbound caller ID",
+    "callerIdHint": "The number all members send on outside calls. A member's own caller ID still wins. Empty: the route or trunk decides.",
+    "routeDefault": "Route default",
+    "enforced": "Set by the group",
+    "routes": "Own routes",
+    "settings": "Settings for all members",
+    "settingsHint": "Tick a setting to set it for every member; the extension form then shows it locked. Settings you leave unticked stay per extension.",
+    "perExtension": "Per extension",
+    "on": "on",
+    "off": "off",
+    "templates": "Key templates",
+    "templatesHint": "The members' phones get these keys right away, and so does every phone that is linked to a member later. One template per phone model.",
+    "noTemplates": "There are no key templates yet. Make them under Phones › Key templates.",
+    "templateBadge": "Keys: {{name}}",
+    "syncPhones": "Send the keys to the phones again",
+    "synced_one": "{{count}} phone got the group's keys ({{notified}} told to fetch them now).",
+    "synced_other": "{{count}} phones got the group's keys ({{notified}} told to fetch them now).",
+    "saved": "Group {{name}} saved.",
+    "savedPhones_one": "Group saved. {{count}} phone got the group's keys ({{notified}} told to fetch them now).",
+    "savedPhones_other": "Group saved. {{count}} phones got the group's keys ({{notified}} told to fetch them now).",
+    "confirmDelete": "Delete the group {{name}}? Its members keep their current settings.",
+    "emptyTitle": "No extension groups yet",
+    "emptyText": "Make a group such as Sales or Support to give its members one outbound number and the same settings.",
+    "groupHint_one": "The group sets {{count}} setting; those fields are locked below.",
+    "groupHint_other": "The group sets {{count}} settings; those fields are locked below.",
+    "noGroupHint": "A group can give this extension its outbound number, settings and phone keys.",
+    "lockedBy": "Set by group {{name}}: {{value}}",
+    "cidFromGroup": "Empty: sends {{number}} from group {{name}}.",
+    "prec": {
+      "title": "Which number goes out",
+      "extension": "Extension's own caller ID",
+      "group": "Group's caller ID",
+      "route": "Route's caller ID",
+      "trunk": "Trunk's caller ID"
+    }
   }
 }

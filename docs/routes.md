@@ -42,7 +42,10 @@ arrows to change the order.
 2. Click a preset: **Dutch numbers** (`0[1-9]XXXXXXXX`) or **International** (`00X.`), or write your own patterns.
 3. Add one or more **trunks**. They are tried in this order; the next trunk is used when one fails or is busy.
 4. **Caller ID** (optional) overrides the trunk's caller ID for this route. An extension's own outbound caller ID
-   always wins.
+   and the number of its [extension group](extension-groups.md) win over it.
+5. **Who can use this route** (optional): pick [extension groups](extension-groups.md#own-outbound-route-per-group)
+   to give them their own route, for example over their own trunk. Others skip the route and take the next one that
+   matches. Default: everyone.
 
 ### Dial patterns
 

@@ -58,6 +58,8 @@ type Extension struct {
 	// WebRTC enables the browser softphone in the user portal.
 	WebRTC       bool   `json:"webrtc"`
 	WebRTCSecret string `json:"-"`
+	// GroupID is the extension group (0: none). When saving, nil keeps the current group.
+	GroupID *int64 `json:"groupId"`
 	// MobileApp is set in a Snapshot when the user of the extension has linked the mobile app (and
 	// the app is switched on): calls then wake the phone with a push notification.
 	MobileApp bool `json:"-"`
@@ -132,7 +134,10 @@ type OutboundRoute struct {
 	Patterns []DialPattern `json:"patterns"`
 	TrunkIDs []int64       `json:"trunkIds"`
 	CallerID string        `json:"callerId"`
-	Enabled  bool          `json:"enabled"`
+	// GroupIDs limits the route to the members of these extension groups; empty: everyone.
+	// Callers it does not apply to fall through to the next matching route.
+	GroupIDs []int64 `json:"groupIds"`
+	Enabled  bool    `json:"enabled"`
 }
 
 // Repo reads and writes phone system data.
@@ -170,15 +175,18 @@ func b2i(b bool) int {
 
 const extCols = `id, number, name, email, sip_secret, transport, srtp, max_contacts, outbound_cid, ring_seconds,
 	voicemail, voicemail_pin, voicemail_email, voicemail_delete, enabled, created_at, features, record_mode, pickup_group,
-	outbound_class, allow_premium, webrtc, webrtc_secret`
+	outbound_class, allow_premium, webrtc, webrtc_secret,
+	IFNULL((SELECT group_id FROM extension_group_members WHERE extension_id = extensions.id), 0)`
 
 func scanExt(row interface{ Scan(...any) error }) (*Extension, error) {
 	var e Extension
 	var srtp, vm, vme, vmd, en, prem, web int
 	var feat string
+	var gid int64
 	err := row.Scan(&e.ID, &e.Number, &e.Name, &e.Email, &e.SIPSecret, &e.Transport, &srtp, &e.MaxContacts,
 		&e.OutboundCID, &e.RingSeconds, &vm, &e.VoicemailPIN, &vme, &vmd, &en, &e.CreatedAt, &feat, &e.RecordMode,
-		&e.PickupGroup, &e.OutboundClass, &prem, &web, &e.WebRTCSecret)
+		&e.PickupGroup, &e.OutboundClass, &prem, &web, &e.WebRTCSecret, &gid)
+	e.GroupID = &gid
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -214,9 +222,36 @@ func (r *Repo) Extension(ctx context.Context, id int64) (*Extension, error) {
 
 // SaveExtension validates and inserts (ID 0) or updates an extension.
 func (r *Repo) SaveExtension(ctx context.Context, plan NumberPlan, e *Extension) error {
+	// The settings of the extension's group win over what was sent.
+	gid := int64(0)
+	if e.GroupID != nil {
+		gid = *e.GroupID
+	} else if e.ID != 0 {
+		_ = r.DB.QueryRowContext(ctx, `SELECT group_id FROM extension_group_members WHERE extension_id = ?`, e.ID).Scan(&gid)
+	}
+	if gid != 0 {
+		g, err := r.ExtensionGroup(ctx, gid)
+		if err != nil {
+			return invalid("unknown_group", "groupId")
+		}
+		g.Settings.Apply(e)
+	}
 	if err := r.validateExtension(ctx, plan, e); err != nil {
 		return err
 	}
+	if err := r.saveExtensionRow(ctx, e); err != nil {
+		return err
+	}
+	if e.GroupID != nil {
+		if err := r.SetExtensionGroup(ctx, e.ID, *e.GroupID); err != nil {
+			return err
+		}
+	}
+	e.GroupID = &gid
+	return nil
+}
+
+func (r *Repo) saveExtensionRow(ctx context.Context, e *Extension) error {
 	if e.SIPSecret == "" {
 		e.SIPSecret = GenerateSecret(24)
 	}
@@ -499,7 +534,7 @@ func deleteRow(ctx context.Context, db *sql.DB, table string, id int64) error {
 
 // OutboundRoutes returns all outbound routes in the order they are tried.
 func (r *Repo) OutboundRoutes(ctx context.Context) ([]OutboundRoute, error) {
-	rows, err := r.DB.QueryContext(ctx, `SELECT id, name, position, patterns, trunk_ids, caller_id, enabled
+	rows, err := r.DB.QueryContext(ctx, `SELECT id, name, position, patterns, trunk_ids, caller_id, group_ids, enabled
 		FROM outbound_routes ORDER BY position, id`)
 	if err != nil {
 		return nil, err
@@ -508,11 +543,12 @@ func (r *Repo) OutboundRoutes(ctx context.Context) ([]OutboundRoute, error) {
 	out := []OutboundRoute{}
 	for rows.Next() {
 		var x OutboundRoute
-		var pats, tids string
+		var pats, tids, gids string
 		var en int
-		if err := rows.Scan(&x.ID, &x.Name, &x.Position, &pats, &tids, &x.CallerID, &en); err != nil {
+		if err := rows.Scan(&x.ID, &x.Name, &x.Position, &pats, &tids, &x.CallerID, &gids, &en); err != nil {
 			return nil, err
 		}
+		x.GroupIDs = scanGroupIDs(gids)
 		_ = json.Unmarshal([]byte(pats), &x.Patterns)
 		_ = json.Unmarshal([]byte(tids), &x.TrunkIDs)
 		if x.Patterns == nil {
@@ -534,20 +570,21 @@ func (r *Repo) SaveOutboundRoute(ctx context.Context, x *OutboundRoute) error {
 	}
 	pats, _ := json.Marshal(x.Patterns)
 	tids, _ := json.Marshal(x.TrunkIDs)
+	gids, _ := json.Marshal(x.GroupIDs)
 	if x.ID == 0 {
 		var maxPos sql.NullInt64
 		_ = r.DB.QueryRowContext(ctx, `SELECT MAX(position) FROM outbound_routes`).Scan(&maxPos)
 		x.Position = int(maxPos.Int64) + 1
-		res, err := r.DB.ExecContext(ctx, `INSERT INTO outbound_routes(name, position, patterns, trunk_ids, caller_id, enabled)
-			VALUES (?,?,?,?,?,?)`, x.Name, x.Position, string(pats), string(tids), x.CallerID, b2i(x.Enabled))
+		res, err := r.DB.ExecContext(ctx, `INSERT INTO outbound_routes(name, position, patterns, trunk_ids, caller_id, group_ids, enabled)
+			VALUES (?,?,?,?,?,?,?)`, x.Name, x.Position, string(pats), string(tids), x.CallerID, string(gids), b2i(x.Enabled))
 		if err != nil {
 			return err
 		}
 		x.ID, _ = res.LastInsertId()
 		return nil
 	}
-	res, err := r.DB.ExecContext(ctx, `UPDATE outbound_routes SET name=?, patterns=?, trunk_ids=?, caller_id=?, enabled=?
-		WHERE id=?`, x.Name, string(pats), string(tids), x.CallerID, b2i(x.Enabled), x.ID)
+	res, err := r.DB.ExecContext(ctx, `UPDATE outbound_routes SET name=?, patterns=?, trunk_ids=?, caller_id=?, group_ids=?, enabled=?
+		WHERE id=?`, x.Name, string(pats), string(tids), x.CallerID, string(gids), b2i(x.Enabled), x.ID)
 	if err != nil {
 		return err
 	}

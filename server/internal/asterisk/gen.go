@@ -167,7 +167,7 @@ func genPJSIP(s *pbx.Snapshot, o Options) string {
 			x.f("media_encryption=sdes")
 			x.f("media_encryption_optimistic=no")
 		}
-		extVars(&x, e)
+		extVars(&x, s, e)
 		if e.PickupGroup != "" {
 			x.f("named_call_group=%s", e.PickupGroup)
 			x.f("named_pickup_group=%s", e.PickupGroup)
@@ -489,9 +489,23 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 		}
 	}
 	x.nl()
-	for _, r := range s.Outbound {
+	needNone := false
+	for i, r := range s.Outbound {
 		if !r.Enabled {
 			continue
+		}
+		groupOnly := len(r.GroupIDs) > 0
+		if groupOnly {
+			// Callers outside the route's groups go on to the routes after this one.
+			needNone = true
+			x.f("[kiestoon-outafter-%d]", r.ID)
+			for _, n := range s.Outbound[i+1:] {
+				if n.Enabled {
+					x.f("include => kiestoon-out-%d", n.ID)
+				}
+			}
+			x.f("include => kiestoon-out-none")
+			x.nl()
 		}
 		x.f("[kiestoon-out-%d]", r.ID)
 		x.f("; %s", esc(r.Name))
@@ -507,6 +521,15 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 				pat = "_" + ext
 			}
 			x.f("exten => %s,1,Set(KT_NUM=%s${EXTEN:%d})", pat, p.Prepend, len(p.Prefix))
+			if groupOnly {
+				conds := make([]string, 0, len(r.GroupIDs))
+				for _, g := range r.GroupIDs {
+					conds = append(conds, fmt.Sprintf(`"${KT_GROUP}" = "%d"`, g))
+				}
+				x.f(" same => n,GotoIf($[%s]?kiestoon-route-%d,s,1)", strings.Join(conds, " | "), r.ID)
+				x.f(" same => n,Goto(kiestoon-outafter-%d,${EXTEN},1)", r.ID)
+				continue
+			}
 			x.f(" same => n,Goto(kiestoon-route-%d,s,1)", r.ID)
 		}
 		x.nl()
@@ -547,6 +570,15 @@ func genDialplan(s *pbx.Snapshot, o Options) string {
 		x.f(" same => n,Playback(all-circuits-busy-now)")
 		x.f(" same => n(done),Hangup()")
 		x.f(" same => n(denied),Playback(ss-noservice)")
+		x.f(" same => n,Hangup()")
+		x.nl()
+	}
+
+	if needNone {
+		// No route left for this caller after the group-only ones.
+		x.f("[kiestoon-out-none]")
+		x.f("exten => _[0-9+*#].,1,NoOp(No outbound route for group ${KT_GROUP})")
+		x.f(" same => n,Playback(ss-noservice)")
 		x.f(" same => n,Hangup()")
 		x.nl()
 	}
@@ -656,10 +688,23 @@ func ChangedModules(changed []string) []string {
 }
 
 // extVars are the channel variables the dialplan uses to know who is calling and what they may do.
-func extVars(x *w, e pbx.Extension) {
+// KT_OUTCID is the extension's own outbound caller ID or else its group's; KT_GROUP is its
+// extension group, which decides the group-only outbound routes it may use.
+// groupVar is the value of KT_GROUP for an extension: its group id, "" without a group.
+func groupVar(s *pbx.Snapshot, e pbx.Extension) string {
+	if id := s.GroupID(e); id > 0 {
+		return fmt.Sprint(id)
+	}
+	return ""
+}
+
+func extVars(x *w, s *pbx.Snapshot, e pbx.Extension) {
 	x.f("set_var=KT_EXT=%s", e.Number)
-	if e.OutboundCID != "" {
-		x.f("set_var=KT_OUTCID=%s", esc(e.OutboundCID))
+	if cid := s.OutboundCallerID(e); cid != "" {
+		x.f("set_var=KT_OUTCID=%s", esc(cid))
+	}
+	if g := groupVar(s, e); g != "" {
+		x.f("set_var=KT_GROUP=%s", g)
 	}
 	x.f("set_var=KT_CLASS=%s", e.OutboundClass)
 	x.f("set_var=KT_PREMIUM=%d", b2i(e.AllowPremium))
@@ -695,7 +740,7 @@ func genWebRTCEndpoint(x *w, s *pbx.Snapshot, e pbx.Extension, name string) {
 		x.f("named_call_group=%s", e.PickupGroup)
 		x.f("named_pickup_group=%s", e.PickupGroup)
 	}
-	extVars(x, e)
+	extVars(x, s, e)
 	x.nl()
 	x.f("[%s]", name)
 	x.f("type=auth")

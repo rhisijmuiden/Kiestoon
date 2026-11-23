@@ -67,6 +67,7 @@ func (s *Server) systemRoutes(mux *http.ServeMux, admin func(http.HandlerFunc) h
 	s.hotdeskRoutes(mux, admin)
 	s.adminPasswordRoutes(mux, admin)
 	s.keyTemplateRoutes(mux, admin)
+	s.extGroupRoutes(mux, admin)
 
 	mux.Handle("GET /api/system/helper", admin(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]bool{"available": s.Helper.Available(r.Context())})
@@ -852,6 +853,12 @@ func (s *Server) savePhone(w http.ResponseWriter, r *http.Request) {
 	var old *pbx.Phone
 	if p.ID != 0 {
 		old, _ = s.PBX.Phone(r.Context(), p.ID)
+	}
+	// A phone that gets (another) extension takes the key template of that extension's group.
+	if p.ExtensionID != nil && (old == nil || old.ExtensionID == nil || *old.ExtensionID != *p.ExtensionID) {
+		if t := s.groupTemplateFor(r.Context(), *p.ExtensionID, p.Vendor, p.Model); t != nil {
+			copyTemplate(t, &p)
+		}
 	}
 	if err := s.PBX.SavePhone(r.Context(), &p, lim); err != nil {
 		s.saveErr(w, err)

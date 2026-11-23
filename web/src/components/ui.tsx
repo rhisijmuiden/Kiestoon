@@ -55,7 +55,7 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
             onChange?.(e)
           }}
           {...rest}
-          className={`min-h-11 rounded-[10px] border bg-field px-3.5 text-[15px] text-ink placeholder:text-subtle outline-none transition ${err.message ? invalidCls : 'border-line focus:border-accent/60 focus:ring-2 focus:ring-accent/20'} ${className}`}
+          className={`min-h-11 rounded-[10px] border bg-field px-3.5 text-[15px] text-ink placeholder:text-subtle outline-none transition disabled:cursor-not-allowed disabled:opacity-60 ${err.message ? invalidCls : 'border-line focus:border-accent/60 focus:ring-2 focus:ring-accent/20'} ${className}`}
         />
         {err.message && <FieldErrorText id={`${id}-err`}>{err.message}</FieldErrorText>}
         {hint && (

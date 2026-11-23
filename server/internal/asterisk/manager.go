@@ -22,6 +22,8 @@ type Manager struct {
 	AMI     *AMI
 	Log     *slog.Logger
 	Options func(ctx context.Context) Options
+	// Applied runs after every successful reload (for example to set custom device states).
+	Applied func(ctx context.Context)
 
 	mu            sync.Mutex
 	kick          chan struct{}
@@ -97,6 +99,8 @@ func (m *Manager) Run(ctx context.Context) {
 			}
 			if err := m.Apply(ctx); err != nil {
 				m.Log.Warn("asterisk configuration", "err", err)
+			} else if m.Applied != nil {
+				m.Applied(ctx)
 			}
 		case <-tick.C:
 			// After Asterisk (re)starts it reads the files itself; clear "restart needed" then.

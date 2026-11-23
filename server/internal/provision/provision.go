@@ -719,6 +719,7 @@ func (r Request) Matches(vendor string) bool {
 // Render builds the configuration for a phone. For Poly this is the file with the settings; the
 // master file that points to it is PolyMaster.
 func Render(in Input) (body, contentType string) {
+	in = forwardKeys(in)
 	switch in.Phone.Vendor {
 	case "snom":
 		return Snom(in), "application/xml; charset=utf-8"

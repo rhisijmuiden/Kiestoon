@@ -77,6 +77,9 @@ func (s *Server) phoneAdopt(w http.ResponseWriter, r *http.Request) {
 		s.saveErr(w, err)
 		return
 	}
+	if p.HasForwardKey() {
+		s.Ast.Changed() // the dialplan holds the forward key codes
+	}
 	_ = s.PBX.ForgetDiscovery(r.Context(), d.MAC)
 	s.audit(r, "phone.adopted", fmt.Sprintf("%s %s/%s ext=%s", p.MAC, p.Vendor, p.Model, s.extNumber(r.Context(), p.ExtensionID)))
 	s.ztpAfterSave(r, &p, nil)

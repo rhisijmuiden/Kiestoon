@@ -1012,7 +1012,8 @@
       "parkslot": "Parkeerplek",
       "intercom": "Intercom",
       "dnd": "Niet storen",
-      "voicemail": "Voicemail"
+      "voicemail": "Voicemail",
+      "forward": "Doorschakelen"
     },
     "noKeys": "Dit model heeft geen programmeerbare toetsen.",
     "preview": "Configuratie bekijken",
@@ -2221,6 +2222,7 @@
     "echo": "Echotest",
     "forwardOn": "Alle gesprekken doorschakelen naar een nummer",
     "forwardOff": "Doorschakelen stoppen",
+    "forwardToggle": "Doorschakelen naar een nummer aan of uit",
     "dndToggle": "Niet storen aan of uit",
     "queueToggle": "Aan- of afmelden bij al je wachtrijen",
     "queueToggleOne": "Aan- of afmelden bij één wachtrij",
@@ -3391,11 +3393,13 @@
     "intercomTo": "Intercom naar",
     "slot": "Parkeerplek",
     "number": "Nummer",
+    "forwardTo": "Doorschakelen naar",
     "explain": {
       "none": "De toets doet niets.",
       "park": "Parkeert het huidige gesprek; de beller hoort muziek tot iemand het oppakt op een parkeerplek (71-79).",
       "dnd": "Zet niet storen aan en uit (*76).",
-      "voicemail": "Belt je voicemail (*97)."
+      "voicemail": "Belt je voicemail (*97).",
+      "forward": "Schakelt al je gesprekken direct door naar dit nummer; nog eens drukken stopt het. De toets brandt zolang je doorschakelt."
     },
     "accounts": "Extra lijnen",
     "accountsHint": "Lijn 1 is de extensie hierboven. Voeg tot {{max}} accounts in totaal toe, bijvoorbeeld een gedeelde verkooplijn. Zet ze hieronder op lijntoetsen.",

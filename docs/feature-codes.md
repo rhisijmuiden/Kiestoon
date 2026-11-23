@@ -10,6 +10,7 @@ right away (for example the do-not-disturb state). The list is also on the **Cal
 | `*43` | Echo test: hear yourself back, to check audio |
 | `*72<number>` | Forward all calls to a number |
 | `*73` | Stop forwarding |
+| `*74<number>` | Forwarding to a number on or off (what a forward key does) |
 | `*76` | Do not disturb on or off |
 | `*45` | Sign in or out of all your queues |
 | `*45<queue>` | Sign in or out of one queue, for example `*45700` |

@@ -10,6 +10,7 @@ meteen (bijvoorbeeld de stand van niet storen). De lijst staat ook op de pagina 
 | `*43` | Echotest: hoor jezelf terug, om de audio te controleren |
 | `*72<nummer>` | Alle gesprekken doorschakelen naar een nummer |
 | `*73` | Doorschakelen stoppen |
+| `*74<nummer>` | Doorschakelen naar een nummer aan of uit (wat een doorschakeltoets doet) |
 | `*76` | Niet storen aan of uit |
 | `*45` | Aan- of afmelden bij al je wachtrijen |
 | `*45<wachtrij>` | Aan- of afmelden bij één wachtrij, bijvoorbeeld `*45700` |

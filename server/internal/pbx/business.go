@@ -1418,7 +1418,7 @@ type FeatureCode struct {
 // FeatureCodes are the star codes Kiestoon's dialplan understands.
 var FeatureCodes = []FeatureCode{
 	{"*97", "voicemail"}, {"*98", "voicemailAny"}, {"*43", "echo"},
-	{"*72<number>", "forwardOn"}, {"*73", "forwardOff"}, {"*76", "dndToggle"},
+	{"*72<number>", "forwardOn"}, {"*73", "forwardOff"}, {"*74<number>", "forwardToggle"}, {"*76", "dndToggle"},
 	{"*45", "queueToggle"}, {"*45<queue>", "queueToggleOne"},
 	{"*8", "groupPickup"}, {"**<extension>", "directedPickup"},
 	{"70", "park"}, {"71 … 79", "parkSlots"},

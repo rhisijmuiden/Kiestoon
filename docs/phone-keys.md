@@ -23,9 +23,25 @@ another page or module.
 | **Intercom** | Calls a colleague who answers on the speaker | Extension |
 | **Do not disturb** | Switches DND on and off (`*76`), with the lamp showing the state | |
 | **Voicemail** | Calls your voicemail (`*97`) | |
+| **Forward** | Forwards all your calls to the number at once; press again to stop. The lamp is lit while you forward | External number, e.g. `0612345678` or `+31612345678` |
 | **Empty** | Does nothing | |
 
 Each key also has a **label** for the display.
+
+### Forward key
+
+A forward key switches **unconditional forwarding** of the phone's own extension (line 1) on and off. It uses the same
+forwarding as `*72`/`*73` and the **Forward all calls** setting of the extension, so the portal, the app and the
+phone always agree:
+
+- Press the key: all calls go to the number of the key. The lamp lights up.
+- Press again: forwarding stops and the lamp goes out. If you were forwarding to another number (set with `*72` or in
+  the portal), the key also switches that off.
+- The phone dials `*74<extension>*<number>`; Kiestoon adds that code to the dialplan when you save a phone with a
+  forward key. Calls forwarded out go through the outbound routes with the rights of the extension.
+
+Put a forward key in a **key template** to give every phone of that model the same key, for example a key to the
+on-call mobile. It works on all Yealink models and on every brand that has BLF keys.
 
 ## Extra lines
 

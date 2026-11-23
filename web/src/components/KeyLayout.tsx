@@ -1,13 +1,13 @@
 import { useState, type DragEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BellOff, CircleParking, GripVertical, Hash, Megaphone, Phone as PhoneIcon, Plus, SquareParking, Trash2, User, Voicemail } from 'lucide-react'
+import { BellOff, CircleParking, PhoneForwarded, GripVertical, Hash, Megaphone, Phone as PhoneIcon, Plus, SquareParking, Trash2, User, Voicemail } from 'lucide-react'
 import { Select } from './kit'
 import { Button, Input } from './ui'
 import type { KeyType, ModuleType, PhoneKey, PhoneModule } from '../lib/types'
 
 /** A visual editor for the programmable keys of a phone and its expansion modules. */
 
-export const keyTypes: KeyType[] = ['none', 'line', 'blf', 'speed', 'park', 'parkslot', 'intercom', 'dnd', 'voicemail']
+export const keyTypes: KeyType[] = ['none', 'line', 'blf', 'speed', 'park', 'parkslot', 'intercom', 'dnd', 'voicemail', 'forward']
 export const blankKey = (i: number): PhoneKey => ({ type: i === 0 ? 'line' : 'none', value: '', label: '' })
 
 /** Fills a key list up to n keys. */
@@ -25,9 +25,10 @@ const tone: Record<KeyType, string> = {
   intercom: 'border-accent-2/40 bg-accent-2/10 text-ink',
   dnd: 'border-danger/40 bg-danger/10 text-ink',
   voicemail: 'border-accent/40 bg-accent/10 text-ink',
+  forward: 'border-accent-2/40 bg-accent-2/10 text-ink',
 }
 const icons: Record<KeyType, typeof PhoneIcon> = {
-  none: Hash, line: PhoneIcon, blf: User, speed: Hash, park: SquareParking, parkslot: CircleParking, intercom: Megaphone, dnd: BellOff, voicemail: Voicemail,
+  none: Hash, line: PhoneIcon, blf: User, speed: Hash, park: SquareParking, parkslot: CircleParking, intercom: Megaphone, dnd: BellOff, voicemail: Voicemail, forward: PhoneForwarded,
 }
 
 type Surface = { key: string; title: string; keys: PhoneKey[]; perPage: number; module?: number }
@@ -219,7 +220,7 @@ function KeyForm({ k, n, lines, exts, onChange }: { k: PhoneKey; n: number; line
     let value = ''
     if (type === 'parkslot') value = '71'
     if ((type === 'blf' || type === 'intercom') && (k.type === 'blf' || k.type === 'intercom')) value = k.value
-    if (type === 'speed' && k.type === 'speed') value = k.value
+    if ((type === 'speed' || type === 'forward') && (k.type === 'speed' || k.type === 'forward')) value = k.value
     onChange({ type, value, label: type === 'none' ? '' : k.label })
   }
   return (
@@ -245,7 +246,8 @@ function KeyForm({ k, n, lines, exts, onChange }: { k: PhoneKey; n: number; line
         </Select>
       )}
       {k.type === 'speed' && <Input name="value" label={t('keys.number')} value={k.value} onChange={(e) => set({ value: e.target.value })} className="font-mono" inputMode="tel" />}
-      {['none', 'park', 'dnd', 'voicemail'].includes(k.type) && <p className="self-center text-xs text-subtle sm:col-span-1">{t(`keys.explain.${k.type}`)}</p>}
+      {k.type === 'forward' && <Input name="value" label={t('keys.forwardTo')} value={k.value} placeholder="0612345678" onChange={(e) => set({ value: e.target.value })} className="font-mono" inputMode="tel" />}
+      {['none', 'park', 'dnd', 'voicemail', 'forward'].includes(k.type) && <p className="self-center text-xs text-subtle sm:col-span-1">{t(`keys.explain.${k.type}`)}</p>}
       {k.type !== 'none' && <Input name="label" label={t('phones.keyLabel')} value={k.label} maxLength={20} onChange={(e) => set({ label: e.target.value })} />}
     </div>
   )

@@ -97,6 +97,9 @@ func (s *Server) applyKeyTemplate(w http.ResponseWriter, r *http.Request) {
 			s.saveErr(w, err)
 			return
 		}
+		if p.HasForwardKey() {
+			s.Ast.Changed() // the dialplan holds the forward key codes
+		}
 		applied++
 		if req.Resync == nil || *req.Resync {
 			if st, _ := s.notifyPhone(r.Context(), p, s.registeredAs(r.Context(), p)); st == resyncSent {

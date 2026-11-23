@@ -1012,7 +1012,8 @@
       "parkslot": "Parking slot",
       "intercom": "Intercom",
       "dnd": "Do not disturb",
-      "voicemail": "Voicemail"
+      "voicemail": "Voicemail",
+      "forward": "Forward"
     },
     "noKeys": "This model has no programmable keys.",
     "preview": "Preview config",
@@ -2221,6 +2222,7 @@
     "echo": "Echo test",
     "forwardOn": "Forward all calls to a number",
     "forwardOff": "Stop forwarding",
+    "forwardToggle": "Switch forwarding to a number on or off",
     "dndToggle": "Do not disturb on or off",
     "queueToggle": "Sign in or out of all your queues",
     "queueToggleOne": "Sign in or out of one queue",
@@ -3391,11 +3393,13 @@
     "intercomTo": "Intercom to",
     "slot": "Parking slot",
     "number": "Number",
+    "forwardTo": "Forward to",
     "explain": {
       "none": "The key does nothing.",
       "park": "Parks the current call; the caller hears music until someone picks it up at a parking slot (71-79).",
       "dnd": "Switches do not disturb on and off (*76).",
-      "voicemail": "Calls your voicemail (*97)."
+      "voicemail": "Calls your voicemail (*97).",
+      "forward": "Forwards all your calls to this number at once; press again to stop. The key is lit while you forward."
     },
     "accounts": "Extra lines",
     "accountsHint": "Line 1 is the extension above. Add up to {{max}} accounts in total, for example a shared sales line. Put them on line keys below.",

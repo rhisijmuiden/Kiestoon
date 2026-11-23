@@ -24,9 +24,25 @@ sleep een toets op een andere om ze te wisselen, ook naar een andere pagina of m
 | **Intercom** | Belt een collega die opneemt via de luidspreker | Toestel |
 | **Niet storen** | Zet niet storen aan en uit (`*76`), het lampje toont de stand | |
 | **Voicemail** | Belt je voicemail (`*97`) | |
+| **Doorschakelen** | Schakelt al je gesprekken direct door naar het nummer; nog eens drukken stopt het. Het lampje brandt zolang je doorschakelt | Extern nummer, bijv. `0612345678` of `+31612345678` |
 | **Leeg** | Doet niets | |
 
 Elke toets heeft ook een **label** voor het display.
+
+### Doorschakeltoets
+
+Een doorschakeltoets zet **onvoorwaardelijk doorschakelen** van de eigen extensie van het toestel (lijn 1) aan en uit.
+Het is hetzelfde doorschakelen als `*72`/`*73` en de instelling **Alle gesprekken doorschakelen** van de extensie,
+dus portaal, app en toestel zijn het altijd eens:
+
+- Druk op de toets: alle gesprekken gaan naar het nummer van de toets. Het lampje gaat branden.
+- Nog eens drukken: het doorschakelen stopt en het lampje gaat uit. Schakelde je door naar een ander nummer (met `*72`
+  of in het portaal), dan zet de toets dat ook uit.
+- Het toestel belt `*74<extensie>*<nummer>`; Kiestoon zet die code in het belplan zodra je een toestel met een
+  doorschakeltoets opslaat. Gesprekken naar buiten gaan via de uitgaande routes met de rechten van de extensie.
+
+Zet een doorschakeltoets in een **toetsensjabloon** om elk toestel van dat model dezelfde toets te geven, bijvoorbeeld
+naar de mobiel van de storingsdienst. Het werkt op alle Yealink-modellen en op elk merk met BLF-toetsen.
 
 ## Extra lijnen
 

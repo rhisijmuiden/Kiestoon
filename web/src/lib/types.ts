@@ -415,7 +415,8 @@ export type SpeechData = { settings: SpeechSettings; ttsInstalled: boolean; sttI
 /** ElevenLabs cloud voices (System > Speech). */
 export type VoiceRef = { id: string; name: string }
 export type ElevenSettings = {
-  enabled: boolean; model: string; defaultEngine: 'piper' | 'elevenlabs'; voiceNl: VoiceRef; voiceEn: VoiceRef; stability: number; speed: number; fallback: boolean
+  enabled: boolean; model: string; defaultEngine: 'piper' | 'elevenlabs'; voiceNl: VoiceRef; voiceEn: VoiceRef; stability: number; speed: number
+  similarity: number; style: number; speakerBoost: boolean; locked: boolean; fallback: boolean
 }
 export type ElevenData = {
   settings: ElevenSettings; keySet: boolean; keyHint: string; models: { id: string; name: string; maxChars: number }[]; pbxLanguage: 'en' | 'nl'; maxText: number

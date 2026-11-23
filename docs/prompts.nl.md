@@ -48,7 +48,8 @@ clouddienst met zeer natuurlijke stemmen. Het staat standaard uit en vereist een
 1. Maak op elevenlabs.io een API-sleutel aan onder **Developers › API keys**, met toegang tot text-to-speech en voices.
 2. Open **Spraak**, zet **ElevenLabs gebruiken** aan, plak de sleutel en klik **Sleutel controleren en opslaan**. De
    sleutel wordt bij ElevenLabs gecontroleerd, versleuteld op de server opgeslagen en daarna nooit meer getoond.
-3. Kies de **Nederlandse stem** en **Engelse stem**, en zet **Engine** op **ElevenLabs** om het standaard te gebruiken.
+3. Kies onder **Stemprofiel** de **Nederlandse stem** en **Engelse stem**, en zet **Engine** op **ElevenLabs** om het
+   standaard te gebruiken. Zet **Stemprofiel vastzetten** aan om de stem voor elke tekst vast te leggen (zie hieronder).
 
 ![ElevenLabs-instellingen op de pagina Spraak](shot:speech)
 
@@ -59,7 +60,8 @@ stem uit de bibliotheek wordt aan je ElevenLabs-account toegevoegd als je hem ge
 
 ![Een stem kiezen met voorbeelden](shot:voice-picker)
 
-In de [keuzemenu-bouwer](ivr.md) en op deze pagina kies je bij **Genereren** nu per tekst de engine en de stem. De
+In de [keuzemenu-bouwer](ivr.md) en op deze pagina begint **Genereren** met de stem van het profiel en kun je voor
+één tekst een andere engine of stem kiezen, tenzij het profiel vaststaat. De
 teller onder de tekst toont hoeveel tekens het kost en hoeveel er deze periode nog over zijn.
 
 ![Een menutekst genereren met ElevenLabs](shot:ivr-tts)
@@ -76,6 +78,27 @@ Goed om te weten:
   periode is gebruikt.
 - **Model**: *Multilingual v2* klinkt in het Nederlands het natuurlijkst; *Flash v2.5* is sneller en kost de helft van de
   tekens.
+
+### Stemprofiel
+
+De kaart **Stemprofiel** op de pagina **Spraak**, onder de API-sleutel, bevat alles wat ElevenLabs gebruikt om een
+tekst in te spreken: de **Nederlandse stem** en **Engelse stem**, het **Model** en de steminstellingen.
+
+| Instelling | Wat het doet |
+| --- | --- |
+| **Stabiliteit** | Hoger klinkt rustiger en gelijkmatiger; lager klinkt levendiger. |
+| **Gelijkenis** | Hoe dicht het resultaat bij de originele stem blijft. 75% is een goed begin. |
+| **Stijl overdrijven** | Geeft meer expressie. Houd 0% aan voor rustige menumededelingen. |
+| **Snelheid** | 95% is iets trager dan normaal, prettig voor menukeuzes. |
+| **Speaker boost** | Maakt de stem iets helderder. Aanbevolen aan de telefoon. |
+
+Zet **Stemprofiel vastzetten** aan zodat alle teksten als dezelfde spreker klinken. Elke **Genereren**-knop (de
+keuzemenu-bouwer, deze pagina en opnieuw inspreken) gebruikt dan de stem van het profiel voor de taal van de tekst,
+met deze instellingen; de keuze van engine en stem maakt plaats voor het vastgezette profiel met een link hierheen.
+Vastzetten vereist dat ElevenLabs aan staat, een opgeslagen sleutel en minstens één stem. Heeft een taal geen stem in
+het profiel, dan spreekt de andere stem het in. Zet je ElevenLabs uit, dan vervalt het vastzetten.
+
+![Het stemprofiel, vastgezet](shot:voice-profile)
 
 ### Een andere stem voor alle teksten
 

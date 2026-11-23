@@ -181,6 +181,35 @@ func TestElevenLabs(t *testing.T) {
 	if b := rawGet(t, c, "/api/pbx/prompts"); !strings.Contains(b, `"voiceName":"Daan"`) || !strings.Contains(b, "Welkom 2") {
 		t.Fatalf("after regenerate: %s", b)
 	}
+
+	// A locked voice profile needs a voice, and then wins over the engine and voice of a request.
+	if st["similarity"] != float64(75) || st["speakerBoost"] != true || st["locked"] != false {
+		t.Fatalf("profile defaults: %v", st)
+	}
+	st["locked"], st["voiceNl"] = true, map[string]string{"id": "", "name": ""}
+	if code, b := c.do("PUT", "/api/speech/elevenlabs", st); code != 400 || b["field"] != "locked" {
+		t.Fatalf("locked without voice: %d %v", code, b)
+	}
+	st["voiceNl"], st["defaultEngine"] = map[string]string{"id": "ruth1", "name": "Ruth"}, "piper"
+	saved := mustDo(t, c, "PUT", "/api/speech/elevenlabs", st, 200)["settings"].(map[string]any)
+	if saved["locked"] != true || saved["defaultEngine"] != "elevenlabs" {
+		t.Fatalf("locked save: %v", saved)
+	}
+	other := map[string]any{"text": "Welkom bij RHIS.", "language": "nl", "engine": "piper", "voice": "daanMine", "voiceName": "Daan"}
+	out = mustDo(t, c, "POST", "/api/speech/tts", other, 200)
+	if src := out["source"].(map[string]any); src["engine"] != "elevenlabs" || src["voice"] != "ruth1" || out["cached"] != true {
+		t.Fatalf("locked tts: %v", out)
+	}
+	// English has no voice in the profile: the Dutch profile voice speaks it.
+	out = mustDo(t, c, "POST", "/api/speech/tts", map[string]any{"text": "Welcome.", "language": "en"}, 200)
+	if src := out["source"].(map[string]any); src["voice"] != "ruth1" || src["language"] != "nl" {
+		t.Fatalf("locked en: %v", out)
+	}
+	// Switching ElevenLabs off releases the lock.
+	st["enabled"] = false
+	if saved := mustDo(t, c, "PUT", "/api/speech/elevenlabs", st, 200)["settings"].(map[string]any); saved["locked"] != false {
+		t.Fatalf("lock kept while off: %v", saved)
+	}
 }
 
 func jsonNum(f float64) string { b, _ := json.Marshal(f); return string(b) }

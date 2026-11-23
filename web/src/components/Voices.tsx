@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { Check, Loader2, Pause, Play, Search, Sparkles } from 'lucide-react'
+import { Check, Loader2, Lock, Pause, Play, Search, Sparkles } from 'lucide-react'
+import { Link } from 'react-router'
 import { Modal, Select, Tabs, useApi } from './kit'
 import { Button, ErrorMessage } from './ui'
 import { api } from '../lib/api'
@@ -297,4 +298,29 @@ export function useTTS() {
   const piperReady = !!speech.data?.settings.tts.enabled && !!speech.data?.ttsInstalled && piperVoices.length > 0
   const elevenReady = !!el.data?.settings.enabled && !!el.data?.keySet
   return { speech: speech.data, el: el.data, piperVoices, piperReady, elevenReady, loaded: !!speech.data && !!el.data }
+}
+
+/** The locked voice profile of System > Speech: shown instead of the engine and voice choice. */
+export function LockedProfile({ el, language, compact }: { el: ElevenData; language: 'nl' | 'en'; compact?: boolean }) {
+  const { t } = useTranslation()
+  const own = language === 'nl' ? el.settings.voiceNl : el.settings.voiceEn
+  const voice = own.id ? own : language === 'nl' ? el.settings.voiceEn : el.settings.voiceNl
+  const vlang: 'nl' | 'en' = own.id ? language : language === 'nl' ? 'en' : 'nl'
+  const model = el.models.find((m) => m.id === el.settings.model)?.name ?? el.settings.model
+  return (
+    <div className={`flex flex-col gap-2 rounded-xl border border-accent/45 bg-accent/6 ${compact ? 'p-2.5' : 'p-3'}`}>
+      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-accent-ink">
+        <Lock className="size-3.5" aria-hidden />{t('voices.lockedTitle')}
+      </div>
+      <div className="flex min-w-0 items-center gap-3">
+        <VoiceAvatar voice={voice} size={compact ? 'sm' : 'md'} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-medium text-ink">{voice.name || voice.id}</span>
+          <span className="block truncate text-xs text-subtle">{model} · {t(`voices.lang.${vlang}`)} · {t('voices.lockedSettings', { stability: el.settings.stability, speed: el.settings.speed })}</span>
+        </span>
+        <PreviewButton id={voice.id} language={vlang} label={t('voices.preview', { name: voice.name })} />
+      </div>
+      <p className="text-[11px] text-subtle">{own.id ? t('voices.lockedHint') : t('voices.lockedOther')} <Link to="/speech" className="text-accent underline">{t('voices.lockedChange')}</Link></p>
+    </div>
+  )
 }

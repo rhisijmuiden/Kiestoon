@@ -80,6 +80,8 @@ export const shots = [
   { name: 'crm', path: '/integrations?tab=crm', full: true },
   { name: 'crm-connect', path: '/integrations?tab=crm', run: (p) => click(p, 'Connect', 'Koppelen'), selector: dialog },
   { name: 'speech', path: '/speech', full: true },
+  { name: 'voice-profile', path: '/speech', run: async (p) => { await p.waitForTimeout(800); await click(p, 'Lock the voice profile', 'Stemprofiel vastzetten', 'switch') },
+    selector: 'section.card:has(h2:has-text("Voice profile")), section.card:has(h2:has-text("Stemprofiel"))', wait: 600 },
   { name: 'voice-picker', path: '/speech', run: async (p) => { await p.waitForTimeout(800); await click(p, 'Change', 'Wijzigen') }, selector: dialog, wait: 1500 },
   { name: 'ai', path: '/ai', full: true },
   { name: 'mobile-app', path: '/mobile-app', full: true },

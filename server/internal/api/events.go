@@ -168,6 +168,7 @@ func (s *Server) RunMaintenance(ctx context.Context) {
 	go s.runReports(ctx)
 	go s.runCRM(ctx)
 	go s.runQuality(ctx)
+	go s.runOnCall(ctx)
 	day := ""
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()

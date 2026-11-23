@@ -156,7 +156,7 @@ export type Phone = {
 
 // ---- phase 2: business features ---------------------------------------------
 
-export type DestType = 'extension' | 'voicemail' | 'ringgroup' | 'queue' | 'ivr' | 'timecondition' | 'conference' | 'fax' | 'external' | 'hangup' | 'remote' | 'followsun'
+export type DestType = 'extension' | 'voicemail' | 'ringgroup' | 'queue' | 'ivr' | 'timecondition' | 'conference' | 'oncall' | 'fax' | 'external' | 'hangup' | 'remote' | 'followsun'
 export type Destination = { type: DestType | ''; target: string }
 export type DestOption = { type: DestType; target: string; label: string }
 export type Destinations = { types: DestType[]; options: DestOption[] }
@@ -492,7 +492,7 @@ export type ResyncResult = { resync: ResyncState; message?: string }
 
 export type JourneyParty = { kind: 'ext' | 'caller' | 'remote' | 'system'; number?: string; name?: string }
 export type JourneySub = {
-  kind: 'key' | 'timeout' | 'invalid' | 'repeat' | 'speech' | 'ring'; at: string; durationMs: number; value?: string; party?: JourneyParty; result?: string
+  kind: 'key' | 'timeout' | 'invalid' | 'repeat' | 'speech' | 'ring' | 'ocstep'; at: string; durationMs: number; value?: string; party?: JourneyParty; result?: string
 }
 export type JourneyStep = {
   id: number; kind: string; at: string; durationMs: number; ref?: string; name?: string; number?: string; result?: string
@@ -551,3 +551,27 @@ export type QualityRule = { enabled: boolean; minutes: number; count: number }
 export type QualitySettings = QualityLimits & {
   trunk: QualityRule; phone: QualityRule; eachCall: boolean; recovered: boolean; email: boolean; recipients: string[]; quiet: number; keepDays: number
 }
+
+// ---- on-call (storingsdienst) -------------------------------------------------
+
+export type OnCallStepKind = 'primary' | 'backup' | 'lead' | 'all' | 'user' | 'number'
+export type OnCallStep = { kind: OnCallStepKind; target: string; seconds: number }
+export type OnCallTeam = {
+  id: number; number: string; name: string; enabled: boolean
+  mode: 'weekly' | 'daily' | 'manual'; handoverDay: number; handoverTime: string; startDate: string
+  members: number[]; backup: 'next' | 'fixed' | 'none'; backupUser: number; leadUser: number
+  steps: OnCallStep[]; repeat: number; confirm: boolean; ringExtension: boolean; music: boolean
+  greetingPrompt: number; cidPrefix: string; final: Destination
+  swapApproval: 'none' | 'lead' | 'admin'; reminders: boolean; icalToken?: string
+}
+export type OnCallShift = {
+  id: number; teamId: number; line: 1 | 2; userId: number; start: string; end: string
+  kind: 'shift' | 'override' | 'handover' | 'swap' | 'takeover'; status: 'pending' | 'approved' | 'declined' | 'cancelled'
+  requestedBy: number; fromUser: number; pairId: number; accepted: boolean; note: string; decidedBy: number; createdAt: string
+}
+export type OnCallSegment = { line: 1 | 2; userId: number; start: string; end: string; kind: string; shiftId?: number }
+export type OnCallWarning = { kind: 'gap' | 'nomobile'; line?: number; userId?: number; start?: string; end?: string }
+export type OnCallView = {
+  team: OnCallTeam; segments: OnCallSegment[]; shifts: OnCallShift[]; primary: number; backup: number; until: string; warnings: OnCallWarning[]
+}
+export type OnCallUser = { id: number; name: string; mobile: string; extension: string; email: boolean }

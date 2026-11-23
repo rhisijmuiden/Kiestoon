@@ -354,6 +354,11 @@ the testing channel.
   pages, templates), per tile figure, queues, period and thresholds, per screen house style (theme, accent, own logo,
   background, tile style, text size, language, alarm behaviour). Draft and publish. Every screen gets its own address
   `/wall/<name>` with open, pin code or link-only access and an optional network limit
+- [x] On-call (storingsdienst) (`v0.7.0-rc.29`): on-call teams with a weekly, daily or planned rota, backup and team
+  lead; the PBX works out who is on duty and calls their own mobile number, escalation steps (on duty, backup, team
+  lead, everyone, a user, a number) with repeat, press-1 confirmation, greeting and a final destination. Engineers
+  swap or hand over shifts in the portal (accept by colleague, optional approval), overrides beat the rota, gap and
+  missing-mobile warnings, reminder mails, iCal link, every step in the call journey
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

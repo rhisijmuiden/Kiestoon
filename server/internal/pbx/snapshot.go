@@ -38,6 +38,8 @@ type Snapshot struct {
 	FraudLocked bool
 	// CRMDeskName asks the CRM for the caller's name on calls from trunks (desk phone display).
 	CRMDeskName bool
+	// OnCall is who every on-call team rings right now (regenerated when that changes).
+	OnCall []OnCallLive
 	// Now decides which year's holidays go into the dialplan (it is regenerated every night).
 	Now time.Time
 }
@@ -134,6 +136,9 @@ func (r *Repo) Snapshot(ctx context.Context) (*Snapshot, error) {
 		s.Now = time.Now().In(loc)
 	} else {
 		s.Now = time.Now()
+	}
+	if s.OnCall, err = r.OnCallLive(ctx, s.Now); err != nil {
+		return nil, err
 	}
 	return &s, nil
 }

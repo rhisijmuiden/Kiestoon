@@ -44,6 +44,8 @@ import { Queues } from './pages/Queues'
 import { Reception } from './pages/Reception'
 import { Recordings } from './pages/Recordings'
 import { RingGroups } from './pages/RingGroups'
+import { OnCall } from './pages/OnCall'
+import { MyOnCall } from './pages/portal/MyOnCall'
 import { Settings } from './pages/Settings'
 import { FirstRun, Setup } from './pages/Setup'
 import { SetPassword } from './pages/SetPassword'
@@ -67,7 +69,7 @@ import { DesktopLink } from './components/WindowsSoftphone'
 const pages: Record<string, ReactElement> = {
   dashboard: <Dashboard />, myPhone: <MyPhone />, voicemail: <Voicemail />, myQueues: <MyQueues />, colleagues: <Colleagues />,
   myCalls: <MyCalls />, devices: <MyDevices />, switchboard: <Reception />, history: <History />, recordings: <Recordings />,
-  extensions: <Extensions />, ringGroups: <RingGroups />, queues: <Queues />, ivr: <IVRs />, timeConditions: <TimeConditions />,
+  extensions: <Extensions />, ringGroups: <RingGroups />, onCall: <OnCall />, myOnCall: <MyOnCall />, queues: <Queues />, ivr: <IVRs />, timeConditions: <TimeConditions />,
   conferences: <Conferences />, prompts: <Prompts />, trunks: <Trunks />, teams: <Teams />, phones: <Phones />, users: <Users />, sso: <Sso />,
   features: <Features />, firewall: <Firewall />, backups: <Backups />, mail: <Mail />, audit: <Audit />, settings: <Settings />,
   phonebook: <Phonebook />, wallboard: <Wallboard />, fax: <Fax />, internet: <Internet />, integrations: <Integrations />, speech: <Speech />, ai: <AI />, mobileApp: <MobileApp />, windowsSoftphone: <Softphone />,

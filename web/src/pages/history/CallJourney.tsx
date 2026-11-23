@@ -8,7 +8,7 @@ import {
 import '@xyflow/react/dist/base.css'
 import {
   ArrowLeft, ArrowRightLeft, Check, CircleParking, Clock, Disc3, FileText, GitBranch, Grid3x3, Hand, Hourglass, ListOrdered, Phone, PhoneCall,
-  PhoneForwarded, PhoneIncoming, PhoneMissed, PhoneOff, PhoneOutgoing, Repeat, Route, TriangleAlert, Users, UsersRound, Voicemail, X,
+  PhoneForwarded, PhoneIncoming, PhoneMissed, PhoneOff, PhoneOutgoing, Repeat, Route, Siren, TriangleAlert, Users, UsersRound, Voicemail, X,
   type LucideIcon,
 } from 'lucide-react'
 import { Badge, formatDate, useApi } from '../../components/kit'
@@ -36,6 +36,7 @@ const stepIcon: Record<string, LucideIcon> = {
   inbound: PhoneIncoming, internal: PhoneOutgoing, outbound: Route, timecondition: Clock, ivr: GitBranch, queue: ListOrdered,
   ringgroup: UsersRound, extension: PhoneForwarded, talk: PhoneCall, transfer: ArrowRightLeft, voicemail: Voicemail, forward: PhoneForwarded,
   park: CircleParking, pickup: Hand, conference: Users, fax: FileText, external: Phone, noroute: TriangleAlert, hangup: PhoneOff,
+  oncall: Siren,
 }
 
 function toneOf(s: JourneyStep): Tone {
@@ -108,6 +109,9 @@ function stepResult(t: TFunction, s: JourneyStep): { text: string; tone?: 'ok' |
     case 'outbound':
       if (!r) return null
       return { text: t(`journey.extResult.${r}`, { defaultValue: r }), tone: r === 'answered' ? 'ok' : 'warn' }
+    case 'oncall':
+      if (r === 'answered') return { text: t('journey.oncallAnswered', { name: s.detail?.answeredBy ?? '' }), tone: 'ok' }
+      return r ? { text: t('journey.oncallNoAnswer'), tone: 'warn' } : null
     case 'voicemail':
       return r ? { text: t(`journey.vm.${r}`, { defaultValue: r }) } : null
     case 'transfer':
@@ -169,6 +173,10 @@ function subText(t: TFunction, x: JourneySub) {
       return t('journey.ivr.repeat')
     case 'speech':
       return x.value ? t('journey.ivr.said', { intent: x.value }) : t('journey.ivr.notUnderstood')
+    case 'ocstep': {
+      const [n, kind, who] = (x.value ?? '').split('|')
+      return t('journey.ocstep', { n, kind: t(`onCall.stepKinds.${kind}`, { defaultValue: kind }), who: who || '–' })
+    }
     default:
       return partyLabel(t, x.party)
   }
@@ -180,15 +188,16 @@ const ringTone = (r?: string) => (r === 'answered' ? 'text-ok' : r === 'noanswer
 
 function SubRow({ x }: { x: JourneySub }) {
   const { t } = useTranslation()
-  const Icon = x.kind === 'ring' ? (x.result === 'answered' ? Check : x.result === 'cancel' ? Disc3 : PhoneMissed)
+  const ring = x.kind === 'ring' || x.kind === 'ocstep'
+  const Icon = ring ? (x.result === 'answered' ? Check : x.result === 'cancel' || x.result === 'skipped' ? Disc3 : PhoneMissed)
     : x.kind === 'key' ? Grid3x3 : x.kind === 'repeat' ? Repeat : x.kind === 'timeout' ? Hourglass : X
-  const tone = x.kind === 'ring' ? ringTone(x.result) : x.kind === 'key' ? 'text-accent' : 'text-warn'
+  const tone = ring ? ringTone(x.result) : x.kind === 'key' ? 'text-accent' : 'text-warn'
   return (
     <li className="flex min-w-0 items-center gap-2 text-[12.5px]">
       <Icon className={`size-3.5 flex-none ${tone}`} aria-hidden />
       <span className="min-w-0 flex-1 truncate text-ink-2">{subText(t, x)}</span>
-      {x.kind === 'ring' && x.result && <span className={`text-[11px] ${tone}`}>{t(`journey.ring.${x.result}`, { defaultValue: x.result })}</span>}
-      <span className="font-mono text-[11px] text-subtle">{x.kind === 'ring' ? fmtMs(x.durationMs) : `+${fmtMs(x.durationMs)}`}</span>
+      {ring && x.result && <span className={`text-[11px] ${tone}`}>{t(`journey.ring.${x.result}`, { defaultValue: x.result })}</span>}
+      <span className="font-mono text-[11px] text-subtle">{ring ? fmtMs(x.durationMs) : `+${fmtMs(x.durationMs)}`}</span>
     </li>
   )
 }

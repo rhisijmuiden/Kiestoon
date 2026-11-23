@@ -52,6 +52,13 @@ Dial-in rooms with a PIN, a moderator and an optional recording.
 
 ![Conference rooms](shot:conferences)
 
+### [On-call](on-call.md)
+
+A weekly or daily rota that rings the engineer on duty on their own mobile, escalates to the backup and the team
+lead, and lets engineers swap shifts in the portal.
+
+![On-call](shot:on-call)
+
 ### [Voice prompts and ElevenLabs voices](prompts.md)
 
 Record, upload or generate prompts with a local voice or an ElevenLabs voice.

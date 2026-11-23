@@ -36,6 +36,8 @@ func destGoto(d pbx.Destination) string {
 		return fmt.Sprintf("Goto(kiestoon-external,%s,1)", d.Target)
 	case pbx.DestFax:
 		return fmt.Sprintf("Goto(kiestoon-fax-%s,s,1)", d.Target)
+	case pbx.DestOnCall:
+		return fmt.Sprintf("Goto(kiestoon-oc-%s,s,1)", d.Target)
 	case pbx.DestFollowSun:
 		return fmt.Sprintf("Goto(kiestoon-sun-%s,s,1)", d.Target)
 	case pbx.DestRemote:
@@ -393,6 +395,9 @@ func genLocal(x *w, s *pbx.Snapshot) {
 		if c.Enabled {
 			x.f("exten => %s,1,Goto(kiestoon-conf-%d,s,1)", c.Number, c.ID)
 		}
+	}
+	for _, l := range s.OnCall {
+		x.f("exten => %s,1,Goto(kiestoon-oc-%d,s,1)", l.Team.Number, l.Team.ID)
 	}
 	x.nl()
 }

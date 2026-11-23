@@ -240,7 +240,7 @@ func planNumbers(ctx context.Context, db execQuerier, table string) ([]string, e
 	return out, rows.Err()
 }
 
-var numberedTables = []string{"extensions", "ring_groups", "queues", "conferences"}
+var numberedTables = []string{"extensions", "ring_groups", "queues", "conferences", "oncall_teams"}
 
 // PlanMigrationAll computes the renumbering of every numbered table.
 func (r *Repo) PlanMigrationAll(ctx context.Context, digits int) ([]Renumber, []string, error) {

@@ -358,6 +358,60 @@ func (b *builder) event(e Event) {
 			s.Detail["callbackNumber"] = d["num"]
 		}
 		b.cur = nil
+	case "kt_oncall":
+		b.cur = b.add(&Step{Kind: "oncall", At: e.At, Ref: d["id"], Name: b.names("oc", d["id"]), Tone: "accent", Detail: map[string]string{}})
+	case "kt_ocstep":
+		// One escalation step: who it rang (user ids), or skipped when nobody could be rung.
+		if s := b.lastStep("oncall"); s != nil {
+			who := []string{}
+			for _, u := range strings.Split(d["users"], "-") {
+				if u == "" {
+					continue
+				}
+				if n := b.names("user", u); n != "" {
+					who = append(who, n)
+				} else if strings.HasPrefix(u, "n") {
+					who = append(who, u[1:])
+				}
+			}
+			sub := &Sub{Kind: "ocstep", At: e.At, Value: d["step"] + "|" + d["kind"] + "|" + strings.Join(who, ", "), open: d["skip"] != "1"}
+			if d["skip"] == "1" {
+				sub.Result = "skipped"
+			}
+			for _, x := range s.Subs {
+				if x.open && x.Kind == "ocstep" {
+					x.open, x.Result, x.DurationMs = false, "noanswer", ms(e.At.Sub(x.At))
+				}
+			}
+			s.Subs = append(s.Subs, sub)
+		}
+	case "kt_ocok":
+		if s := b.lastStep("oncall"); s != nil {
+			who := b.names("mobile", d["num"])
+			if who == "" {
+				who = b.names("ext", d["num"])
+			}
+			if who == "" {
+				who = d["num"]
+			}
+			s.Result, s.Tone = "answered", "ok"
+			s.Detail["answeredBy"] = who
+			for _, x := range s.Subs {
+				if x.open && x.Kind == "ocstep" {
+					x.open, x.Result, x.DurationMs = false, "answered", ms(e.At.Sub(x.At))
+				}
+			}
+		}
+	case "kt_ocend":
+		if s := b.lastStep("oncall"); s != nil && s.Result == "" {
+			s.Result, s.Tone = "noanswer", "warn"
+			for _, x := range s.Subs {
+				if x.open && x.Kind == "ocstep" {
+					x.open, x.Result, x.DurationMs = false, "noanswer", ms(e.At.Sub(x.At))
+				}
+			}
+		}
+		b.cur = nil
 	case "kt_rg":
 		b.cur = b.add(&Step{Kind: "ringgroup", At: e.At, Ref: d["id"], Name: b.names("rg", d["id"]), Tone: "accent"})
 	case "kt_rgend":

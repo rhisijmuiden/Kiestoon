@@ -843,6 +843,39 @@ var migrations = []string{
 	ALTER TABLE wallboard_screens ADD COLUMN published_at TEXT NOT NULL DEFAULT '';
 	UPDATE wallboard_screens SET slug = 'screen-' || id;
 	CREATE UNIQUE INDEX wallboard_screens_slug ON wallboard_screens(slug);`,
+	// On-call (storingsdienst): teams with their rotation and escalation (config JSON), the shifts,
+	// swaps and take-overs on top of the rotation, the mails already sent, and each user's own mobile.
+	`ALTER TABLE users ADD COLUMN mobile TEXT NOT NULL DEFAULT '';
+	CREATE TABLE oncall_teams (
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		number     TEXT NOT NULL UNIQUE,
+		name       TEXT NOT NULL,
+		enabled    INTEGER NOT NULL DEFAULT 1,
+		config     TEXT NOT NULL DEFAULT '{}',
+		ical_token TEXT NOT NULL DEFAULT ''
+	);
+	CREATE TABLE oncall_shifts (
+		id           INTEGER PRIMARY KEY AUTOINCREMENT,
+		team_id      INTEGER NOT NULL REFERENCES oncall_teams(id) ON DELETE CASCADE,
+		line         INTEGER NOT NULL,
+		user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		start_at     TEXT NOT NULL,
+		end_at       TEXT NOT NULL,
+		kind         TEXT NOT NULL,
+		status       TEXT NOT NULL,
+		requested_by INTEGER NOT NULL DEFAULT 0,
+		from_user    INTEGER NOT NULL DEFAULT 0,
+		pair_id      INTEGER NOT NULL DEFAULT 0,
+		accepted     INTEGER NOT NULL DEFAULT 0,
+		note         TEXT NOT NULL DEFAULT '',
+		decided_by   INTEGER NOT NULL DEFAULT 0,
+		created_at   TEXT NOT NULL
+	);
+	CREATE INDEX oncall_shifts_end ON oncall_shifts(end_at);
+	CREATE TABLE oncall_notified (
+		key TEXT PRIMARY KEY,
+		at  TEXT NOT NULL
+	);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

@@ -211,6 +211,7 @@ func (s *Server) Routes() http.Handler {
 	s.mobileRoutes(mux, admin, full)
 	s.crmRoutes(mux, admin, recep, full)
 	s.qualityRoutes(mux, admin)
+	s.onCallRoutes(mux, admin, full)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)

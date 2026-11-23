@@ -187,6 +187,27 @@ const { data: me } = await c.get('/api/users')
 const adminUser = (Array.isArray(me) ? me : me.users ?? []).find((u) => u.username === 'admin')
 if (adminUser) await c.put(`/api/users/${adminUser.id}`, { username: 'admin', displayName: 'Anna de Vries', email: 'anna.devries@noordkade.example', role: 'superadmin', extensionId: ext['204'], language: 'en', enabled: true, password: '' })
 
+// ---- on-call team: Anna, Thomas, Daan and Emma rotate weekly, Ruben is team lead ----
+{
+  const { data: ul } = await c.get('/api/users')
+  const byName = Object.fromEntries((Array.isArray(ul) ? ul : ul.users ?? []).map((u) => [u.username, u.id]))
+  const mobiles = { admin: '0612345678', 'thomas.jansen': '0623456789', 'daan.visser': '0634567890', 'emma.deboer': '0645678901', 'ruben.mulder': '0656789012' }
+  for (const [u, m] of Object.entries(mobiles)) if (byName[u]) await c.put(`/api/oncall/engineers/${byName[u]}/mobile`, { mobile: m })
+  const monday = new Date(); monday.setHours(0, 0, 0, 0); monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7))
+  const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const { data: oc } = await c.post('/api/oncall/teams', {
+    number: '650', name: 'IT on-call', enabled: true, mode: 'weekly', handoverDay: 0, handoverTime: '08:00', startDate: ymd(monday),
+    members: ['admin', 'thomas.jansen', 'daan.visser', 'emma.deboer'].map((u) => byName[u]), backup: 'next', backupUser: 0, leadUser: byName['ruben.mulder'],
+    steps: [{ kind: 'primary', target: '', seconds: 25 }, { kind: 'backup', target: '', seconds: 25 }, { kind: 'lead', target: '', seconds: 30 }],
+    repeat: 1, confirm: true, ringExtension: false, music: true, greetingPrompt: 0, cidPrefix: 'OC: ', final: { type: 'voicemail', target: '210' },
+    swapApproval: 'lead', reminders: true,
+  })
+  const at = (days, h) => { const d = new Date(monday); d.setDate(d.getDate() + days); d.setHours(h, 0, 0, 0); return d.toISOString() }
+  // Emma covers Thursday night for Thomas next week; Anna asks Daan to take over her Saturday.
+  await c.post(`/api/oncall/teams/${oc.id}/shifts`, { line: 1, userId: byName['emma.deboer'], start: at(10, 17), end: at(11, 8), kind: 'override', note: 'Thomas at a training' })
+  await c.post('/api/portal/oncall/requests', { teamId: oc.id, kind: 'handover', line: 1, start: at(5, 8), end: at(6, 8), to: byName['daan.visser'], note: 'Family visit' })
+}
+
 // ---- phones, key template ----
 const blf = (n, l) => ({ type: 'blf', value: n, label: l })
 const keys = [

@@ -52,6 +52,13 @@ Inbelruimtes met pincode, moderator en optionele opname.
 
 ![Vergaderruimtes](shot:conferences)
 
+### [Storingsdienst](on-call.md)
+
+Een wekelijks of dagelijks rooster dat de dienstdoende engineer op zijn eigen mobiel belt, escaleert naar de
+back-up en de teamleider, en engineers diensten laat ruilen in het portaal.
+
+![Storingsdienst](shot:on-call)
+
 ### [Gesproken teksten en ElevenLabs-stemmen](prompts.md)
 
 Neem teksten op, upload ze of laat ze maken met een lokale stem of een ElevenLabs-stem.

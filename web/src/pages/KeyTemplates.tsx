@@ -4,6 +4,7 @@ import { LayoutTemplate, Pencil, Plus, Send, Trash2 } from 'lucide-react'
 import { Empty, Modal, Select, Table, Toggle, td, useApi } from '../components/kit'
 import { Button, Card, ErrorMessage, Input } from '../components/ui'
 import { KeyLayout, fillKeys } from '../components/KeyLayout'
+import { useDestinations } from '../components/pbx'
 import type { LinkNotice } from '../components/PhoneLink'
 import { formatMac } from '../components/PhoneLink'
 import { vendorName } from './PhoneExtras'
@@ -64,6 +65,7 @@ export function KeyTemplatesPanel({ models, moduleTypes, exts, phones, onApplied
 function TemplateForm({ value, models, moduleTypes, exts, onClose, onSaved }: {
   value: KeyTemplate; models: PhoneModel[]; moduleTypes: ModuleType[]; exts: Extension[]; onClose: () => void; onSaved: () => void
 }) {
+  const dests = useDestinations()
   const { t } = useTranslation()
   const [x, setX] = useState(value)
   const [busy, setBusy] = useState(false)
@@ -99,7 +101,7 @@ function TemplateForm({ value, models, moduleTypes, exts, onClose, onSaved }: {
           ))}
         </Select>
       </div>
-      <KeyLayout key={`${x.vendor}/${x.model}`} vendor={x.vendor} perPage={model?.perPage} keys={keys} modules={x.modules} moduleTypes={fits} lines={model?.lines ?? 1} exts={exts}
+      <KeyLayout key={`${x.vendor}/${x.model}`} vendor={x.vendor} perPage={model?.perPage} keys={keys} modules={x.modules} moduleTypes={fits} lines={model?.lines ?? 1} exts={exts} dests={dests}
         onKeys={(k) => setX((o) => ({ ...o, keys: k }))} onModules={(m) => setX((o) => ({ ...o, modules: m }))} />
     </Modal>
   )

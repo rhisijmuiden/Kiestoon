@@ -2366,6 +2366,8 @@
     "forwarding": "Forwarding",
     "forwardAlways": "Always forward to",
     "forwardAlwaysHint": "Your phone does not ring at all.",
+    "forwardByKey": "Your forward key forwards all calls to: {{type}}.",
+    "forwardStop": "Stop forwarding",
     "forwardBusy": "When busy, forward to",
     "forwardBusyHint": "When you are already on a call.",
     "forwardNoAnswer": "When not answered, forward to",
@@ -3426,12 +3428,13 @@
     "slot": "Parking slot",
     "number": "Number",
     "forwardTo": "Forward to",
+    "forwardInternal": "Forwards to a destination inside the phone system ({{type}}), set by your administrator.",
     "explain": {
       "none": "The key does nothing.",
       "park": "Parks the current call; the caller hears music until someone picks it up at a parking slot (71-79).",
       "dnd": "Switches do not disturb on and off (*76).",
       "voicemail": "Calls your voicemail (*97).",
-      "forward": "Forwards all your calls to this number at once; press again to stop. The key is lit while you forward."
+      "forward": "Forwards all your calls at once to the chosen number or destination (colleague, queue, IVR, on-call team, ...); press again to stop. The key is lit while you forward."
     },
     "accounts": "Extra lines",
     "accountsHint": "Line 1 is the extension above. Add up to {{max}} accounts in total, for example a shared sales line. Put them on line keys below.",

@@ -148,6 +148,11 @@ func forwardTo(x *w, num string) {
 	mark(x, "fwd", "num="+num)
 	x.f(" same => n,Set(KT_HOPS=$[${KT_HOPS} + 1])")
 	x.f(` same => n,GotoIf($[${KT_HOPS} > 5]?loop)`)
+	if d, ok := pbx.ParseForwardCode(num); ok {
+		// A forward key to a destination inside Kiestoon (IVR, queue, on-call team, ...).
+		x.f(" same => n,%s", destGoto(d))
+		return
+	}
 	x.f(" same => n,Goto(kiestoon-forward,%s,1)", num)
 }
 
@@ -1150,7 +1155,7 @@ func genFeatureCodes(x *w, s *pbx.Snapshot, o Options) {
 		x.f("exten => fwdon,1,Answer()")
 		x.f(" same => n,UserEvent(Kiestoon,Action: forward,Ext: %s,Value: ${KT_TO})", e.Number)
 		x.f(" same => n,Playback(call-fwd-unconditional)")
-		x.f(" same => n,SayDigits(${KT_TO})")
+		x.f(` same => n,ExecIf($["${KT_TO:0:2}" != "**"]?SayDigits(${KT_TO}))`)
 		x.f(" same => n,Hangup()")
 		if e.Features.ForwardAlways != "" {
 			x.f("exten => fwdtoggle,1,Goto(fwdoff,1)")

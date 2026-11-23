@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { BellOff, CircleParking, PhoneForwarded, GripVertical, Hash, Megaphone, Phone as PhoneIcon, Plus, SquareParking, Trash2, User, Voicemail } from 'lucide-react'
 import { Select } from './kit'
 import { Button, Input } from './ui'
-import type { KeyType, ModuleType, PhoneKey, PhoneModule } from '../lib/types'
+import { DestinationPicker } from './pbx'
+import type { DestType, Destination, Destinations, KeyType, ModuleType, PhoneKey, PhoneModule } from '../lib/types'
 
 /** A visual editor for the programmable keys of a phone and its expansion modules. */
 
@@ -41,9 +42,28 @@ function phonePerPage(vendor: string, keys: number, perPage?: number) {
   return vendor === 'snom' ? 12 : 10
 }
 
-export function KeyLayout({ vendor, perPage, keys, modules, moduleTypes, lines, exts, onKeys, onModules, canEditModules = true }: {
+/** The destination types a forward key can send calls to (pbx.ForwardKeyTypes). */
+export const forwardTypes: DestType[] = ['external', 'extension', 'voicemail', 'ringgroup', 'queue', 'ivr', 'timecondition', 'conference', 'oncall', 'followsun', 'fax']
+
+/** Reads a forward key value: a phone number, or "<type>:<target>" for a destination inside Kiestoon. */
+export function forwardDest(v: string): Destination {
+  const i = v.indexOf(':')
+  return i < 0 ? { type: 'external', target: v } : { type: v.slice(0, i) as DestType, target: v.slice(i + 1) }
+}
+const forwardCodes: Record<string, DestType> = {
+  '01': 'extension', '02': 'voicemail', '03': 'ringgroup', '04': 'queue', '05': 'ivr', '06': 'timecondition', '07': 'conference', '08': 'oncall', '09': 'followsun', '10': 'fax',
+}
+/** The destination type of unconditional forwarding set by a forward key ("**053" is IVR 3), or null for a phone number. */
+export const forwardCodeType = (fwd: string): DestType | null => (fwd.startsWith('**') ? forwardCodes[fwd.slice(2, 4)] ?? null : null)
+const forwardValue = (d: Destination) => (d.type === 'external' ? d.target : `${d.type}:${d.target}`)
+
+/**
+ * dests: give the call destinations (admins) to let forward keys go to any destination; without
+ * them a forward key takes a phone number only.
+ */
+export function KeyLayout({ vendor, perPage, keys, modules, moduleTypes, lines, exts, onKeys, onModules, canEditModules = true, dests }: {
   vendor: string; perPage?: number; keys: PhoneKey[]; modules: PhoneModule[]; moduleTypes: ModuleType[]; lines: number; exts: Ext[]
-  onKeys: (k: PhoneKey[]) => void; onModules: (m: PhoneModule[]) => void; canEditModules?: boolean
+  onKeys: (k: PhoneKey[]) => void; onModules: (m: PhoneModule[]) => void; canEditModules?: boolean; dests?: Destinations | null
 }) {
   const { t } = useTranslation()
   const typeOf = (id: string) => moduleTypes.find((m) => m.id === id)
@@ -143,6 +163,11 @@ export function KeyLayout({ vendor, perPage, keys, modules, moduleTypes, lines, 
     switch (k.type) {
       case 'line': return t('keys.lineN', { n: k.value || '1' })
       case 'blf': case 'intercom': { const e = exts.find((x) => x.number === k.value); return e ? `${k.value} ${e.name}` : k.value }
+      case 'forward': {
+        const d = forwardDest(k.value)
+        if (d.type === 'external') return k.value || t('phones.keyTypes.forward')
+        return dests?.options.find((o) => o.type === d.type && o.target === d.target)?.label ?? t(`dest.types.${d.type}`)
+      }
       default: return k.value || t(`phones.keyTypes.${k.type}`)
     }
   }
@@ -185,7 +210,7 @@ export function KeyLayout({ vendor, perPage, keys, modules, moduleTypes, lines, 
       </div>
       <p className="text-xs text-subtle">{t('keys.hint')}</p>
       {selected && sel && (
-        <KeyForm k={selected} n={sel.i + 1} lines={lines} exts={exts} onChange={(k) => update(cur.key, sel.i, k)} />
+        <KeyForm k={selected} n={sel.i + 1} lines={lines} exts={exts} dests={dests} onChange={(k) => update(cur.key, sel.i, k)} />
       )}
       {canEditModules && (
         <div className="flex flex-wrap items-end justify-between gap-3 border-t border-line pt-3">
@@ -213,7 +238,9 @@ function AddModule({ types, value, onType, onAdd, disabled, note }: { types: Mod
 }
 
 /** The settings of one key. */
-function KeyForm({ k, n, lines, exts, onChange }: { k: PhoneKey; n: number; lines: number; exts: Ext[]; onChange: (k: PhoneKey) => void }) {
+function KeyForm({ k, n, lines, exts, dests, onChange }: {
+  k: PhoneKey; n: number; lines: number; exts: Ext[]; dests?: Destinations | null; onChange: (k: PhoneKey) => void
+}) {
   const { t } = useTranslation()
   const set = (p: Partial<PhoneKey>) => onChange({ ...k, ...p })
   const changeType = (type: KeyType) => {
@@ -246,7 +273,17 @@ function KeyForm({ k, n, lines, exts, onChange }: { k: PhoneKey; n: number; line
         </Select>
       )}
       {k.type === 'speed' && <Input name="value" label={t('keys.number')} value={k.value} onChange={(e) => set({ value: e.target.value })} className="font-mono" inputMode="tel" />}
-      {k.type === 'forward' && <Input name="value" label={t('keys.forwardTo')} value={k.value} placeholder="0612345678" onChange={(e) => set({ value: e.target.value })} className="font-mono" inputMode="tel" />}
+      {k.type === 'forward' && (dests !== undefined ? (
+        <div className="sm:col-span-3">
+          <DestinationPicker label={t('keys.forwardTo')} value={forwardDest(k.value)} types={forwardTypes}
+            onChange={(d) => {
+              const label = d.type === 'external' ? '' : dests?.options.find((o) => o.type === d.type && o.target === d.target)?.label ?? ''
+              set({ value: forwardValue(d), label: k.label || label.slice(0, 20) })
+            }} />
+        </div>
+      ) : forwardDest(k.value).type === 'external' ? (
+        <Input name="value" label={t('keys.forwardTo')} value={k.value} placeholder="0612345678" onChange={(e) => set({ value: e.target.value })} className="font-mono" inputMode="tel" />
+      ) : <p className="self-center text-xs text-subtle">{t('keys.forwardInternal', { type: t(`dest.types.${forwardDest(k.value).type}`) })}</p>)}
       {['none', 'park', 'dnd', 'voicemail', 'forward'].includes(k.type) && <p className="self-center text-xs text-subtle sm:col-span-1">{t(`keys.explain.${k.type}`)}</p>}
       {k.type !== 'none' && <Input name="label" label={t('phones.keyLabel')} value={k.label} maxLength={20} onChange={(e) => set({ label: e.target.value })} />}
     </div>

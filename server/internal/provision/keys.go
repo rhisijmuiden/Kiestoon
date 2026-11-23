@@ -49,8 +49,8 @@ func resolveKey(k pbx.Key) rkey {
 	case "park":
 		r.Kind, r.Value = "park", codePark
 	case "forward":
-		// Value is "<ext>*<number>" (see forwardKeys): a BLF on *74<ext>*<number>, lit while the
-		// extension forwards; a press switches forwarding to <number> on or off.
+		// Value is "<ext>*<forward code>" (see forwardKeys): a BLF on *74<ext>*<code>, lit while
+		// the extension forwards; a press switches forwarding to that destination on or off.
 		if k.Value != "" {
 			r.Kind, r.Value = "blf", codeForward+k.Value
 		}
@@ -106,13 +106,17 @@ func forwardKeys(in Input) Input {
 		out := make([]pbx.Key, len(keys))
 		for i, k := range keys {
 			if k.Type == "forward" {
-				if ext == "" || k.Value == "" {
+				d, ok := pbx.ParseForwardKey(k.Value)
+				if ext == "" || !ok {
 					k = pbx.Key{Type: "none"}
 				} else {
 					if k.Label == "" {
-						k.Label = k.Value
+						k.Label = "Forward"
+						if d.Type == pbx.DestExternal {
+							k.Label = d.Target
+						}
 					}
-					k.Value = ext + "*" + k.Value
+					k.Value = ext + "*" + pbx.ForwardCode(d)
 				}
 			}
 			out[i] = k

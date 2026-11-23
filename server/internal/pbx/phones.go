@@ -297,9 +297,18 @@ func CleanKeys(keys []Key, max, lines int) ([]Key, error) {
 				return nil, invalid("invalid", "keys")
 			}
 		case "forward":
-			k.Value = strings.NewReplacer(" ", "", "-", "", ".", "", "(", "", ")", "").Replace(k.Value)
-			if !reKeyForward.MatchString(k.Value) {
+			v := k.Value
+			if !strings.Contains(v, ":") {
+				v = strings.NewReplacer(" ", "", "-", "", ".", "", "(", "", ")", "").Replace(v)
+			}
+			d, ok := ParseForwardKey(v)
+			if !ok {
 				return nil, invalid("invalid", "keys")
+			}
+			if d.Type == DestExternal {
+				k.Value = d.Target
+			} else {
+				k.Value = d.Type + ":" + d.Target
 			}
 		default:
 			return nil, invalid("invalid", "keys")
@@ -514,14 +523,17 @@ func jsonMarshal(v any) (string, error) {
 	return string(b), err
 }
 
-// ForwardTargets lists the numbers the forward keys on these phones forward to, sorted and
-// without duplicates. The dialplan makes a toggle code with a BLF hint for each of them.
+// ForwardTargets lists the forward codes (see ForwardCode) of the forward keys on these phones,
+// sorted and without duplicates. The dialplan makes a toggle code with a BLF hint for each.
 func ForwardTargets(phones []Phone) []string {
 	seen := map[string]bool{}
 	add := func(keys []Key) {
 		for _, k := range keys {
-			if k.Type == "forward" && reKeyForward.MatchString(k.Value) {
-				seen[k.Value] = true
+			if k.Type != "forward" {
+				continue
+			}
+			if d, ok := ParseForwardKey(k.Value); ok {
+				seen[ForwardCode(d)] = true
 			}
 		}
 	}

@@ -123,8 +123,10 @@ func genAppWake(x *w, s *pbx.Snapshot) {
 }
 
 // classVars makes forwarded and follow-me calls use the outbound rights of the extension that forwards.
-func classVars(x *w, e pbx.Extension) {
+// The forwarder's extension group decides which group-only outbound routes the call may take.
+func classVars(x *w, s *pbx.Snapshot, e pbx.Extension) {
 	x.f(" same => n,Set(__KT_CLASS=%s)", e.OutboundClass)
+	x.f(" same => n,Set(__KT_GROUP=%s)", groupVar(s, e))
 	x.f(" same => n,Set(__KT_PREMIUM=%d)", b2i(e.AllowPremium))
 	x.f(" same => n,Set(__KT_FWDBY=%s)", e.Number)
 }
@@ -207,7 +209,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 			x.f(" same => n,Goto(busy)")
 		}
 		if f.ForwardAlways != "" {
-			classVars(x, e)
+			classVars(x, s, e)
 			forwardTo(x, f.ForwardAlways)
 		}
 		if f.ScheduleID != 0 && f.ClosedForward != "" && tcs[f.ScheduleID] {
@@ -223,7 +225,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		}
 		fm := f.FollowMe
 		if fm.Enabled && len(fm.Numbers) > 0 {
-			classVars(x, e)
+			classVars(x, s, e)
 			extra := ""
 			for _, n := range fm.Numbers {
 				extra += "&Local/" + n + "@kiestoon-followme/n"
@@ -247,7 +249,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		x.f(` same => n,GotoIf($["${DIALSTATUS}" = "ANSWER"]?done)`)
 		// Not answered or not reachable.
 		if f.ForwardNoAnswer != "" {
-			classVars(x, e)
+			classVars(x, s, e)
 			forwardTo(x, f.ForwardNoAnswer)
 		} else if e.Voicemail {
 			mark(x, "vm", "box="+e.Number, "reason=noanswer")
@@ -258,7 +260,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		x.f(" same => n(done),Hangup()")
 		x.f(" same => n(busy),NoOp(Busy)")
 		if f.ForwardBusy != "" {
-			classVars(x, e)
+			classVars(x, s, e)
 			forwardTo(x, f.ForwardBusy)
 		} else if e.Voicemail {
 			mark(x, "vm", "box="+e.Number, "reason=busy")
@@ -270,7 +272,7 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		if f.ScheduleID != 0 && f.ClosedForward != "" && tcs[f.ScheduleID] {
 			x.f(" same => n(closed),NoOp(Outside schedule)")
 			mark(x, "closed", "num="+e.Number)
-			classVars(x, e)
+			classVars(x, s, e)
 			forwardTo(x, f.ClosedForward)
 		}
 		x.f(" same => n(loop),NoOp(Forwarding loop)")
@@ -336,8 +338,11 @@ func genExtensionsBusiness(x *w, s *pbx.Snapshot) {
 		x.f("exten => %s,1,Set(KT_EXT=%s)", e.Number, e.Number)
 		x.f(" same => n,Set(KT_CLASS=%s)", e.OutboundClass)
 		x.f(" same => n,Set(KT_PREMIUM=%d)", b2i(e.AllowPremium))
-		if e.OutboundCID != "" {
-			x.f(" same => n,Set(KT_OUTCID=%s)", esc(e.OutboundCID))
+		if cid := s.OutboundCallerID(e); cid != "" {
+			x.f(" same => n,Set(KT_OUTCID=%s)", esc(cid))
+		}
+		if g := groupVar(s, e); g != "" {
+			x.f(" same => n,Set(KT_GROUP=%s)", g)
 		}
 		x.f(" same => n,Set(CALLERID(all)=\"%s\" <%s>)", esc(strings.ReplaceAll(e.Name, `"`, "")), e.Number)
 		x.f(" same => n,Return()")

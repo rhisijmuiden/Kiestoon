@@ -87,6 +87,7 @@ plugins:
             How Kiestoon works: Hoe Kiestoon werkt
             Telephony: Telefonie
             Extensions: Toestellen
+            Extension groups: Toestelgroepen
             Phones and provisioning: Telefoons en provisioning
             Phone keys and modules: Toetsen en uitbreidingsmodules
             Hot desks: Flexplekken
@@ -148,6 +149,7 @@ nav:
       - How Kiestoon works: concepts.md
   - Telephony:
       - Extensions: extensions.md
+      - Extension groups: extension-groups.md
       - Phones and provisioning: phones.md
       - Phone keys and modules: phone-keys.md
       - Hot desks: hotdesk.md

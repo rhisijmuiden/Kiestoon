@@ -17,12 +17,22 @@ export type Extension = {
   voicemailDelete: boolean
   enabled: boolean
   features: Features
-  recordMode: 'never' | 'ondemand' | 'always'
+  recordMode: 'off' | 'ondemand' | 'always'
   pickupGroup: string
   outboundClass: 'internal' | 'national' | 'international'
   allowPremium: boolean
   webrtc: boolean
+  /** Extension group (0: none). */
+  groupId?: number
 }
+
+/** Settings an extension group enforces on its members; a missing key stays per extension. */
+export type GroupSettings = {
+  voicemail?: boolean; voicemailEmail?: boolean; voicemailDelete?: boolean; ringSeconds?: number
+  recordMode?: Extension['recordMode']; pickupGroup?: string; outboundClass?: Extension['outboundClass']
+  allowPremium?: boolean; webrtc?: boolean; maxContacts?: number
+}
+export type ExtensionGroup = { id: number; name: string; callerId: string; settings: GroupSettings; keyTemplateIds: number[]; members: number[] }
 
 export type Trunk = {
   id: number
@@ -71,7 +81,7 @@ export type InboundRoute = {
 }
 
 export type DialPattern = { prefix: string; match: string; prepend: string }
-export type OutboundRoute = { id: number; name: string; position: number; patterns: DialPattern[]; trunkIds: number[]; callerId: string; enabled: boolean }
+export type OutboundRoute = { id: number; name: string; position: number; patterns: DialPattern[]; trunkIds: number[]; callerId: string; groupIds: number[]; enabled: boolean }
 
 export type PbxSettings = {
   digits: number

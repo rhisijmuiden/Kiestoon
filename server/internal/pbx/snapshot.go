@@ -16,6 +16,7 @@ type Snapshot struct {
 	Trunks         []Trunk
 	Inbound        []InboundRoute
 	Outbound       []OutboundRoute
+	ExtGroups      []ExtensionGroup
 	RingGroups     []RingGroup
 	Queues         []Queue
 	IVRs           []IVR
@@ -61,6 +62,9 @@ func (r *Repo) Snapshot(ctx context.Context) (*Snapshot, error) {
 		return nil, err
 	}
 	if s.Outbound, err = r.OutboundRoutes(ctx); err != nil {
+		return nil, err
+	}
+	if s.ExtGroups, err = r.ExtensionGroups(ctx); err != nil {
 		return nil, err
 	}
 	if s.Features, err = LoadFeatureSettings(ctx, r.DB); err != nil {

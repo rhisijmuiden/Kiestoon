@@ -177,7 +177,11 @@
     "log_permission": "Het portaal mag dit logboek niet lezen. Voer de update opnieuw uit om de rechten te herstellen.",
     "log_unavailable": "Het logboek kon niet worden gelezen.",
     "parallel_only_ring": "Meerdere lijnen vanuit één stap kunnen alleen naar toestellen, belgroepen, wachtrijen of externe nummers gaan.",
-    "too_many_parallel": "Er kunnen maximaal vijf bestemmingen tegelijk overgaan."
+    "too_many_parallel": "Er kunnen maximaal vijf bestemmingen tegelijk overgaan.",
+    "group_in_use": "Deze groep wordt nog gebruikt door een uitgaande route. Haal hem eerst uit de route.",
+    "unknown_group": "De toestelgroep bestaat niet.",
+    "unknown_template": "Een van de toetssjablonen bestaat niet.",
+    "template_model_twice": "Kies één toetssjabloon per telefoonmodel."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -660,7 +664,8 @@
     "allowPremium": "Betaalnummers toestaan",
     "allowPremiumHint": "Zoals 0900 en 0906. Uit is veiliger.",
     "webrtc": "Browsersoftphone",
-    "webrtcHint": "De gebruiker kan met een headset bellen in het gebruikersportaal."
+    "webrtcHint": "De gebruiker kan met een headset bellen in het gebruikersportaal.",
+    "tabExtensions": "Toestellen"
   },
   "trunks": {
     "title": "Trunks & routes",
@@ -957,7 +962,7 @@
     "trunkOrder": "In deze volgorde geprobeerd. Als er een faalt, wordt de volgende gebruikt.",
     "addTrunk": "Trunk toevoegen",
     "callerId": "Nummerweergave",
-    "callerIdHint": "Vervangt de nummerweergave van de trunk voor deze route. Het eigen nummer van een toestel gaat altijd voor.",
+    "callerIdHint": "Gaat voor de nummerweergave van de trunk op deze route. Het eigen nummer van een toestel en het nummer van zijn groep gaan voor.",
     "up": "Omhoog",
     "down": "Omlaag",
     "freeNumbers_one": "{{count}} nummer zonder route",
@@ -970,7 +975,12 @@
     "multiNumbers_one": "{{count}} nummer",
     "multiNumbers_other": "{{count}} nummers",
     "multiNameHint": "Elk nummer krijgt een eigen route, genoemd naar deze naam en het nummer. Laat leeg om alleen het nummer te gebruiken.",
-    "partlyDone": "{{done}} van {{count}} routes zijn opgeslagen. Los het probleem op en sla opnieuw op voor de rest."
+    "partlyDone": "{{done}} van {{count}} routes zijn opgeslagen. Los het probleem op en sla opnieuw op voor de rest.",
+    "who": "Wie mag deze route gebruiken",
+    "whoHint": "Kies toestelgroepen om deze route van hen te maken, bijvoorbeeld met een eigen trunk en nummer. Anderen slaan deze route over en gebruiken de volgende die past.",
+    "everyone": "Iedereen",
+    "manageGroups": "Groepen beheren",
+    "noGroups": "Er zijn nog geen toestelgroepen. Maak ze aan onder Toestellen › Toestelgroepen."
   },
   "phones": {
     "title": "Toestellen & provisioning",
@@ -4744,5 +4754,52 @@
     "emptyTitle": "Geen regels",
     "emptyText": "Dit logboek is leeg.",
     "emptyFiltered": "Geen regels die passen bij de zoekopdracht of het niveau."
+  },
+  "extGroups": {
+    "tab": "Toestelgroepen",
+    "text": "Groepeer toestellen die op dezelfde manier werken. Een groep kan een eigen nummer meesturen bij externe gesprekken, instellingen zoals voicemail voor alle leden vastzetten en de toetsen van hun telefoons gelijk houden met een toetssjabloon.",
+    "add": "Nieuwe groep",
+    "edit": "{{name}} bewerken",
+    "name": "Naam",
+    "group": "Toestelgroep",
+    "none": "Geen groep",
+    "members": "Leden",
+    "membersHint": "Een toestel zit in één groep tegelijk. Kies je er een die in een andere groep zit, dan verhuist hij naar deze.",
+    "movesFrom": "Verhuist uit {{name}}",
+    "callerId": "Uitgaand nummer",
+    "callerIdHint": "Het nummer dat alle leden meesturen bij externe gesprekken. Een eigen nummer van een lid gaat voor. Leeg: de route of trunk bepaalt het.",
+    "routeDefault": "Standaard van de route",
+    "enforced": "Vastgezet door de groep",
+    "routes": "Eigen routes",
+    "settings": "Instellingen voor alle leden",
+    "settingsHint": "Vink een instelling aan om hem voor elk lid vast te zetten; in het toestelformulier staat hij dan op slot. Instellingen die je niet aanvinkt blijven per toestel.",
+    "perExtension": "Per toestel",
+    "on": "aan",
+    "off": "uit",
+    "templates": "Toetssjablonen",
+    "templatesHint": "De telefoons van de leden krijgen meteen deze toetsen, en ook elke telefoon die later aan een lid gekoppeld wordt. Eén sjabloon per telefoonmodel.",
+    "noTemplates": "Er zijn nog geen toetssjablonen. Maak ze aan onder Telefoons › Toetssjablonen.",
+    "templateBadge": "Toetsen: {{name}}",
+    "syncPhones": "Toetsen opnieuw naar de telefoons sturen",
+    "synced_one": "{{count}} telefoon kreeg de toetsen van de groep ({{notified}} gevraagd ze nu op te halen).",
+    "synced_other": "{{count}} telefoons kregen de toetsen van de groep ({{notified}} gevraagd ze nu op te halen).",
+    "saved": "Groep {{name}} opgeslagen.",
+    "savedPhones_one": "Groep opgeslagen. {{count}} telefoon kreeg de toetsen van de groep ({{notified}} gevraagd ze nu op te halen).",
+    "savedPhones_other": "Groep opgeslagen. {{count}} telefoons kregen de toetsen van de groep ({{notified}} gevraagd ze nu op te halen).",
+    "confirmDelete": "Groep {{name}} verwijderen? De leden houden hun huidige instellingen.",
+    "emptyTitle": "Nog geen toestelgroepen",
+    "emptyText": "Maak een groep zoals Verkoop of Support om de leden één uitgaand nummer en dezelfde instellingen te geven.",
+    "groupHint_one": "De groep zet {{count}} instelling vast; die velden staan hieronder op slot.",
+    "groupHint_other": "De groep zet {{count}} instellingen vast; die velden staan hieronder op slot.",
+    "noGroupHint": "Een groep kan dit toestel een uitgaand nummer, instellingen en telefoontoetsen geven.",
+    "lockedBy": "Vastgezet door groep {{name}}: {{value}}",
+    "cidFromGroup": "Leeg: stuurt {{number}} mee van groep {{name}}.",
+    "prec": {
+      "title": "Welk nummer gaat naar buiten",
+      "extension": "Eigen nummer van het toestel",
+      "group": "Nummer van de groep",
+      "route": "Nummer van de route",
+      "trunk": "Nummer van de trunk"
+    }
   }
 }

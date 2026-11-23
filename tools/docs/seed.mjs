@@ -235,7 +235,24 @@ const phones = [
 for (const [mac, vendor, model, n, label, k, modules] of phones) {
   await c.post('/api/phones', { mac, vendor, model, extensionId: ext[n], label, keys: k, modules, lines: [], options: { intercom: { allow: true, mute: false, tone: true, barge: false } } })
 }
-await c.post('/api/key-templates', { name: 'Support desk', vendor: 'yealink', model: 'T54W', keys, modules: [] })
+const supportDesk = await c.post('/api/key-templates', { name: 'Support desk', vendor: 'yealink', model: 'T54W', keys, modules: [] })
+
+// ---- extension groups: own number, enforced settings and keys; Support gets its own outbound route ----
+await c.post('/api/pbx/extension-groups', {
+  name: 'Sales', callerId: '0507001210', members: ['202', '206', '208'].map((n) => ext[n]), keyTemplateIds: [],
+  settings: { voicemail: true, voicemailEmail: true, outboundClass: 'international' },
+})
+const supportGroup = await c.post('/api/pbx/extension-groups', {
+  name: 'Support', callerId: '0507001240', members: ['204', '205', '209'].map((n) => ext[n]), keyTemplateIds: [supportDesk.data.id],
+  settings: { recordMode: 'always', ringSeconds: 30, allowPremium: false },
+})
+await c.post('/api/pbx/extension-groups', { name: 'Warehouse', callerId: '', members: [ext['210'], ext['211']], keyTemplateIds: [], settings: { voicemail: false } })
+await c.post('/api/pbx/outbound', { name: 'Support line', patterns: [{ prefix: '', match: '0[1-9]XXXXXXXX', prepend: '' }], trunkIds: [2, trunkId], callerId: '', groupIds: [supportGroup.data.id], enabled: true })
+{
+  const { data: routes } = await c.get('/api/pbx/outbound')
+  const own = routes.find((r) => r.name === 'Support line')
+  await c.put('/api/pbx/outbound/order', { ids: [own.id, ...routes.filter((r) => r !== own).map((r) => r.id)] })
+}
 await c.put('/api/provisioning/settings', { enabled: true, username: 'prov', password: 'docs-example-pass', server: 'pbx.noordkade.example', adminPassword: 'docs-admin', ntpServer: 'nl.pool.ntp.org', language: 'nl' })
 // Two phones that asked for their configuration but are not linked yet.
 for (const [mac, uaStr, file] of [['805ec0a1b2f1', 'Yealink SIP-T54W 96.86.0.70 80:5e:c0:a1:b2:f1', '805ec0a1b2f1.cfg'], ['000413a2c2f2', 'Mozilla/4.0 (compatible; snomD735-SIP 10.1.175.12)', 'snomD735-000413A2C2F2.htm']]) {

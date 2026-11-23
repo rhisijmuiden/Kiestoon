@@ -29,6 +29,8 @@ const topics: Record<string, Topic> = {
   '/me/calls#call': { page: 'call-journey' },
   '/recordings': { page: 'history', en: 'recordings', nl: 'opnames' },
   '/extensions': { page: 'extensions' },
+  // Tabs opened with ?tab=... use path#tab.
+  '/extensions#groups': { page: 'extension-groups' },
   '/ring-groups': { page: 'ring-groups' },
   '/queues': { page: 'queues' },
   '/ivr': { page: 'ivr' },
@@ -81,7 +83,9 @@ export function localDocsUrl(url: string, language: string): string {
 export function HelpButton({ className = '' }: { className?: string }) {
   const { t, i18n } = useTranslation()
   const { pathname, search } = useLocation()
-  const path = new URLSearchParams(search).has('call') ? `${pathname.replace(/\/+$/, '')}#call` : pathname
+  const q = new URLSearchParams(search)
+  const base = pathname.replace(/\/+$/, '')
+  const path = q.has('call') ? `${base}#call` : q.get('tab') && topics[`${base}#${q.get('tab')}`] ? `${base}#${q.get('tab')}` : pathname
   return (
     <a
       href={helpUrl(path, i18n.language)}

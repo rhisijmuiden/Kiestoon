@@ -45,7 +45,10 @@ gebruikt. Met de pijltjes verander je de volgorde.
 3. Voeg een of meer **trunks** toe. Ze worden in deze volgorde geprobeerd; de volgende trunk wordt gebruikt als er
    een uitvalt of vol zit.
 4. **Nummerweergave** (optioneel) gaat voor de nummerweergave van de trunk. Het eigen uitgaande nummer van een
-   toestel gaat altijd voor.
+   toestel en het nummer van zijn [toestelgroep](extension-groups.md) gaan voor.
+5. **Wie mag deze route gebruiken** (optioneel): kies [toestelgroepen](extension-groups.md#eigen-uitgaande-route-per-groep)
+   om ze een eigen route te geven, bijvoorbeeld over een eigen trunk. Anderen slaan de route over en nemen de
+   volgende die past. Standaard: iedereen.
 
 ### Kiespatronen
 

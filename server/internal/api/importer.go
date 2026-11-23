@@ -19,6 +19,7 @@ import (
 
 	// The adapters register themselves.
 	_ "github.com/rhisijmuiden/kiestoon/server/internal/importer/asterisk"
+	_ "github.com/rhisijmuiden/kiestoon/server/internal/unifitalk"
 )
 
 // Importing another phone system: the administrator uploads a backup or configuration files

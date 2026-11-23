@@ -385,7 +385,6 @@ func (ap *applier) trunks() error {
 	return nil
 }
 
-
 func (ap *applier) timesStep() error {
 	for _, pt := range ap.p.TimeConditions {
 		if pt.ExistingID != 0 {

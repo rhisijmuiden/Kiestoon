@@ -523,6 +523,15 @@ func genQueues(x *w, s *pbx.Snapshot, o Options) {
 		mark(x, "queueend", fmt.Sprintf("id=%d", q.ID), "status=${QUEUESTATUS}")
 		x.f(" same => n,%s", destGoto(q.Overflow))
 		x.f(" same => n,Hangup()")
+		// "par": the queue as one of several destinations that ring at the same time (IVR). The
+		// call is not answered here: the agents ring, and the first to answer anywhere gets it.
+		x.f("exten => par,1,NoOp(Queue %s rings together with other destinations)", q.Number)
+		mark(x, "queue", fmt.Sprintf("id=%d", q.ID))
+		if q.CIDPrefix != "" {
+			x.f(" same => n,Set(CALLERID(name)=%s${CALLERID(name)})", esc(q.CIDPrefix))
+		}
+		x.f(" same => n,Queue(kiestoon-q-%d,tTr,,,%s,,%s)", q.ID, maxWait, gosub)
+		x.f(" same => n,Hangup()")
 		x.nl()
 	}
 }
@@ -587,6 +596,14 @@ func genQueuesConf(s *pbx.Snapshot) string {
 }
 
 func genIVRs(x *w, s *pbx.Snapshot, o Options) {
+	queues := map[string]pbx.Queue{}
+	for _, q := range s.Queues {
+		queues[strconv.FormatInt(q.ID, 10)] = q
+	}
+	groups := map[string]pbx.RingGroup{}
+	for _, g := range s.RingGroups {
+		groups[strconv.FormatInt(g.ID, 10)] = g
+	}
 	for _, v := range s.IVRs {
 		f := v.Flow
 		if f == nil || f.Entry() == nil {
@@ -594,7 +611,8 @@ func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 		}
 		steps := f.Steps()
 		flowCtx := fmt.Sprintf("kiestoon-ivr-%d-flow", v.ID)
-		// gotoNode sends the call to the step a port leads to; nothing connected hangs up.
+		mainCtx := fmt.Sprintf("kiestoon-ivr-%d", v.ID)
+		// gotoNode sends the call to a step; nothing connected hangs up.
 		gotoNode := func(n *pbx.FlowNode) string {
 			if n == nil {
 				return "Hangup()"
@@ -604,51 +622,55 @@ func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 			}
 			return "Hangup()"
 		}
+		// gotoPort follows the line(s) of a port. Several lines ring their destinations at the
+		// same time, from a step p<n> written after the others.
+		var parallel [][]*pbx.FlowNode
+		gotoPort := func(from, port string) string {
+			to := f.NextAll(from, port)
+			if len(to) < 2 {
+				if len(to) == 0 {
+					return "Hangup()"
+				}
+				return gotoNode(to[0])
+			}
+			parallel = append(parallel, to)
+			return fmt.Sprintf("Goto(%s,p%d,1)", flowCtx, len(parallel))
+		}
 		entry := f.Entry()
-		x.f("[kiestoon-ivr-%d]", v.ID)
-		if v.DirectDial {
+		start := f.StartStep()
+		x.f("[%s]", mainCtx)
+		if v.DirectDial && start == nil {
 			x.f("include => kiestoon-direct")
 		}
 		x.f("exten => s,1,NoOp(IVR %s)", esc(v.Name))
 		x.f(" same => n,Answer()")
 		mark(x, "ivr", fmt.Sprintf("id=%d", v.ID))
-		x.f(" same => n,Set(KT_TRIES=0)")
-		x.f(" same => n(start),Set(TIMEOUT(digit)=3)")
-		x.f(" same => n,Set(TIMEOUT(response)=%d)", v.Timeout)
-		if entry.PromptID != 0 {
-			x.f(" same => n,Background(%s)", promptPath(o, entry.PromptID))
-		}
-		keys := f.MenuKeys()
-		for _, k := range keys {
-			if k.PromptID != 0 {
-				x.f(" same => n,Background(%s)", promptPath(o, k.PromptID))
+		if start != nil {
+			// A start step (for example a time check) runs right after the welcome.
+			if entry.PromptID != 0 {
+				x.f(" same => n,Playback(%s)", promptPath(o, entry.PromptID))
 			}
+			x.f(" same => n,%s", gotoPort(entry.ID, "out"))
+			x.nl()
+		} else {
+			genIVRMenu(x, o, v, f, entry, mainCtx, gotoPort)
 		}
-		x.f(" same => n,WaitExten(%d)", v.Timeout)
-		for _, k := range keys {
-			x.f("exten => %s,1,CELGenUserEvent(kt_ivrkey,id=%d&key=${EXTEN})", k.Digit, v.ID)
-			x.f(" same => n,%s", gotoNode(f.Next(k.ID, "out")))
-		}
-		timeout := f.TimeoutNode()
-		for _, ev := range []string{"t", "i"} {
-			x.f("exten => %s,1,Set(KT_TRIES=$[${KT_TRIES} + 1])", ev)
-			mark(x, map[string]string{"t": "ivrtimeout", "i": "ivrinvalid"}[ev], fmt.Sprintf("id=%d", v.ID), "try=${KT_TRIES}")
-			if ev == "i" {
-				x.f(" same => n,Playback(option-is-invalid)")
-			}
-			x.f(" same => n,GotoIf($[${KT_TRIES} <= %d]?s,start)", v.Retries)
-			if timeout == nil {
-				x.f(" same => n,Hangup()")
+
+		// Further menus (for example one per branch of a time check), each in its own context.
+		for _, m := range f.Nodes {
+			if m.Type != pbx.NodeMenu {
 				continue
 			}
-			if timeout.PromptID != 0 {
-				x.f(" same => n,Playback(%s)", promptPath(o, timeout.PromptID))
+			ctx := fmt.Sprintf("%s-m%d", mainCtx, steps[m.ID])
+			x.f("[%s]", ctx)
+			if v.DirectDial {
+				x.f("include => kiestoon-direct")
 			}
-			x.f(" same => n,%s", gotoNode(f.Next(timeout.ID, "out")))
+			x.f("exten => s,1,NoOp(Menu %s)", esc(m.Label))
+			genIVRMenu(x, o, v, f, &m, ctx, gotoPort)
 		}
-		x.nl()
 
-		// The steps after a key: audio, destinations, time checks and "play the menu again".
+		// The steps after a key: audio, destinations, time checks, menus and "play the menu again".
 		x.f("[%s]", flowCtx)
 		for _, n := range f.Nodes {
 			i, ok := steps[n.ID]
@@ -661,7 +683,7 @@ func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 				if n.PromptID != 0 {
 					x.f(" same => n,Playback(%s)", promptPath(o, n.PromptID))
 				}
-				x.f(" same => n,%s", gotoNode(f.Next(n.ID, "out")))
+				x.f(" same => n,%s", gotoPort(n.ID, "out"))
 			case pbx.NodeDestination:
 				d := pbx.Destination{Type: pbx.DestHangup}
 				if n.Destination != nil {
@@ -676,18 +698,127 @@ func genIVRs(x *w, s *pbx.Snapshot, o Options) {
 				x.f(" same => n,Gosub(kiestoon-tcstate-%s,s,1)", n.Destination.Target)
 				mark(x, "tc", "id="+n.Destination.Target, "state=${GOSUB_RETVAL}")
 				x.f(` same => n,GotoIf($["${GOSUB_RETVAL}" = "open"]?open)`)
-				x.f(" same => n,%s", gotoNode(f.Next(n.ID, "closed")))
-				x.f(" same => n(open),%s", gotoNode(f.Next(n.ID, "open")))
+				x.f(" same => n,%s", gotoPort(n.ID, "closed"))
+				x.f(" same => n(open),%s", gotoPort(n.ID, "open"))
 			case pbx.NodeSpeech:
-				genSpeechStep(x, o, v.ID, f, &n, gotoNode)
+				genSpeechStep(x, o, v.ID, f, &n, gotoPort)
+			case pbx.NodeMenu:
+				x.f(" same => n,Set(KT_TRIES=0)")
+				x.f(" same => n,Goto(%s-m%d,s,start)", mainCtx, i)
 			case pbx.NodeRepeat:
 				mark(x, "ivrrepeat", fmt.Sprintf("id=%d", v.ID))
 				x.f(" same => n,Set(KT_TRIES=0)")
-				x.f(" same => n,Goto(kiestoon-ivr-%d,s,start)", v.ID)
+				x.f(` same => n,ExecIf($["${KT_MENU}" = ""]?Set(KT_MENU=%s))`, mainCtx)
+				x.f(" same => n,Goto(${KT_MENU},s,start)")
 			}
+		}
+		// Destinations that ring at the same time: each in its own Local channel; the first to
+		// answer gets the call. Callers hear the queue's music (or ringing) while they wait.
+		for k, to := range parallel {
+			genParallel(x, k+1, to, queues, groups)
 		}
 		x.nl()
 	}
+}
+
+// genIVRMenu writes the body of a menu: its prompt and those of its keys, then a key or the timeout.
+func genIVRMenu(x *w, o Options, v pbx.IVR, f *pbx.Flow, menu *pbx.FlowNode, ctx string, gotoPort func(from, port string) string) {
+	if menu.Type == pbx.NodeEntry {
+		x.f(" same => n,Set(KT_TRIES=0)")
+	}
+	x.f(" same => n(start),Set(TIMEOUT(digit)=3)")
+	x.f(" same => n,Set(KT_MENU=%s)", ctx)
+	x.f(" same => n,Set(TIMEOUT(response)=%d)", v.Timeout)
+	if menu.PromptID != 0 {
+		x.f(" same => n,Background(%s)", promptPath(o, menu.PromptID))
+	}
+	keys := f.KeysOf(menu.ID)
+	for _, k := range keys {
+		if k.PromptID != 0 {
+			x.f(" same => n,Background(%s)", promptPath(o, k.PromptID))
+		}
+	}
+	x.f(" same => n,WaitExten(%d)", v.Timeout)
+	for _, k := range keys {
+		x.f("exten => %s,1,CELGenUserEvent(kt_ivrkey,id=%d&key=${EXTEN})", k.Digit, v.ID)
+		x.f(" same => n,%s", gotoPort(k.ID, "out"))
+	}
+	timeout := f.TimeoutOf(menu.ID)
+	for _, ev := range []string{"t", "i"} {
+		x.f("exten => %s,1,Set(KT_TRIES=$[${KT_TRIES} + 1])", ev)
+		mark(x, map[string]string{"t": "ivrtimeout", "i": "ivrinvalid"}[ev], fmt.Sprintf("id=%d", v.ID), "try=${KT_TRIES}")
+		if ev == "i" {
+			x.f(" same => n,Playback(option-is-invalid)")
+		}
+		x.f(" same => n,GotoIf($[${KT_TRIES} <= %d]?s,start)", v.Retries)
+		if timeout == nil {
+			x.f(" same => n,Hangup()")
+			continue
+		}
+		if timeout.PromptID != 0 {
+			x.f(" same => n,Playback(%s)", promptPath(o, timeout.PromptID))
+		}
+		x.f(" same => n,%s", gotoPort(timeout.ID, "out"))
+	}
+	x.nl()
+}
+
+// genParallel writes step p<k>: ring several destinations at once. Queues ring through their own
+// "par" extension (ringing their agents without answering the call); ring groups ring their
+// members; extensions and external numbers ring as usual. When nobody answers, the call follows
+// the overflow of the first queue, or hangs up.
+func genParallel(x *w, k int, to []*pbx.FlowNode, queues map[string]pbx.Queue, groups map[string]pbx.RingGroup) {
+	var legs []string
+	music, timeout := "", 60
+	overflow := pbx.Destination{Type: pbx.DestHangup}
+	haveQueue := false
+	for _, n := range to {
+		d := n.Destination
+		if d == nil {
+			continue
+		}
+		switch d.Type {
+		case pbx.DestExtension:
+			legs = append(legs, fmt.Sprintf("Local/%s@kiestoon-ring/n", d.Target))
+		case pbx.DestExternal:
+			legs = append(legs, fmt.Sprintf("Local/%s@kiestoon-external/n", d.Target))
+		case pbx.DestRingGroup:
+			if g, ok := groups[d.Target]; ok && g.Enabled {
+				for _, m := range g.Members {
+					legs = append(legs, fmt.Sprintf("Local/%s@kiestoon-ring/n", m))
+				}
+			}
+		case pbx.DestQueue:
+			q, ok := queues[d.Target]
+			if !ok || !q.Enabled {
+				continue
+			}
+			legs = append(legs, fmt.Sprintf("Local/par@kiestoon-queue-%d/n", q.ID))
+			if !haveQueue {
+				haveQueue = true
+				music = q.Music
+				overflow = q.Overflow
+				if q.MaxWait > 0 {
+					timeout = q.MaxWait
+				} else {
+					timeout = 600
+				}
+			}
+		}
+	}
+	x.f("exten => p%d,1,NoOp(Ring %d destinations at the same time)", k, len(legs))
+	if len(legs) == 0 {
+		x.f(" same => n,Hangup()")
+		return
+	}
+	opts := "tTr"
+	if music != "" {
+		opts = fmt.Sprintf("tTm(%s)", music)
+	}
+	x.f(" same => n,Dial(%s,%d,%s)", strings.Join(legs, "&"), timeout, opts)
+	x.f(` same => n,GotoIf($["${DIALSTATUS}" = "ANSWER"]?done)`)
+	x.f(" same => n,%s", destGoto(overflow))
+	x.f(" same => n(done),Hangup()")
 }
 
 var weekdayNames = []string{"", "mon", "tue", "wed", "thu", "fri", "sat", "sun"}
@@ -1083,13 +1214,13 @@ func genAllowed(x *w, s *pbx.Snapshot) {
 // genSpeechStep asks a question, records the answer and lets the server recognise it (FastAGI).
 // The server sets KT_INTENT (the intent number, empty when nothing matched) and KT_INTENTL (its
 // label, safe for the journey mark). Without speech support the call takes the "nomatch" line.
-func genSpeechStep(x *w, o Options, ivr int64, f *pbx.Flow, n *pbx.FlowNode, gotoNode func(*pbx.FlowNode) string) {
+func genSpeechStep(x *w, o Options, ivr int64, f *pbx.Flow, n *pbx.FlowNode, gotoPort func(from, port string) string) {
 	if n.PromptID != 0 {
 		x.f(" same => n,Playback(%s)", promptPath(o, n.PromptID))
 	}
 	if o.SpeechDir == "" || o.AGIAddr == "" || len(n.Intents) == 0 {
 		mark(x, "ivrspeech", fmt.Sprintf("id=%d", ivr), "intent=")
-		x.f(" same => n,%s", gotoNode(f.Next(n.ID, "nomatch")))
+		x.f(" same => n,%s", gotoPort(n.ID, "nomatch"))
 		return
 	}
 	x.f(" same => n,Set(KT_INTENT=)")
@@ -1104,8 +1235,8 @@ func genSpeechStep(x *w, o Options, ivr int64, f *pbx.Flow, n *pbx.FlowNode, got
 	for i := range n.Intents {
 		x.f(` same => n,GotoIf($["${KT_INTENT}" = "%d"]?%s)`, i+1, pbx.SpeechPort(i+1))
 	}
-	x.f(" same => n,%s", gotoNode(f.Next(n.ID, "nomatch")))
+	x.f(" same => n,%s", gotoPort(n.ID, "nomatch"))
 	for i := range n.Intents {
-		x.f(" same => n(%s),%s", pbx.SpeechPort(i+1), gotoNode(f.Next(n.ID, pbx.SpeechPort(i+1))))
+		x.f(" same => n(%s),%s", pbx.SpeechPort(i+1), gotoPort(n.ID, pbx.SpeechPort(i+1)))
 	}
 }

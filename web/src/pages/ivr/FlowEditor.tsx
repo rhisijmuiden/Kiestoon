@@ -15,7 +15,7 @@ import { useTheme } from '../../lib/theme'
 import type { Extension, InboundRoute, IVR, IvrLive, Prompt, TimeCondition } from '../../lib/types'
 import { NodePanel } from './NodePanel'
 import {
-  NODE_W, autoLayout, blankFlow, canConnect, dataForKind, fromFlow, intentPort, kindTone, makeEdge, newId, toFlow, toneOf, tones,
+  MAX_PARALLEL, NODE_W, autoLayout, blankFlow, canConnect, canRingTogether, dataForKind, isMenu, fromFlow, intentPort, kindTone, makeEdge, newId, toFlow, toneOf, tones,
   type Kind, type StepData, type StepNode,
 } from './flow'
 import { LineStyleContext, edgeTypes, type LineStyle } from './edges'
@@ -26,7 +26,7 @@ const DRAG_TYPE = 'application/x-kiestoon-step'
 
 /** The building blocks in the palette, grouped as a menu designer thinks about them. */
 const GROUPS: { key: string; kinds: Kind[] }[] = [
-  { key: 'menu', kinds: ['key', 'timeout', 'repeat'] },
+  { key: 'menu', kinds: ['menu', 'key', 'timeout', 'repeat'] },
   { key: 'audio', kinds: ['audio', 'speech'] },
   { key: 'route', kinds: ['extension', 'ringgroup', 'queue', 'voicemail', 'ivr', 'external', 'hangup'] },
   { key: 'logic', kinds: ['time'] },
@@ -155,19 +155,39 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
   const isValidConnection = useCallback((c: Connection | Edge) => c.source !== c.target && canConnect(byId.get(c.source)?.data, byId.get(c.target)?.data), [byId])
   const onConnect = useCallback((c: Connection) => {
     const src = byId.get(c.source)
-    if (!src || !isValidConnection(c)) return
+    const dst = byId.get(c.target)
+    if (!src || !dst || !isValidConnection(c)) return
     commit()
     const port = (c.sourceHandle ?? 'out') as 'out' | 'open' | 'closed'
     setEdges((es) => {
-      // One line per port, except the entry, which has a line to every key.
-      const rest = src.data.type === 'entry' ? es.filter((e) => !(e.source === c.source && e.target === c.target)) : es.filter((e) => !(e.source === c.source && (e.sourceHandle ?? 'out') === port))
+      const others = es.filter((e) => !(e.source === c.source && e.target === c.target))
+      let rest: Edge[]
+      if (isMenu(src.data)) {
+        // A menu has a line to every key and its timeout; a key or timeout is in one menu only.
+        // The entry has at most one start step (for example a time check).
+        rest = dst.data.type === 'key' || dst.data.type === 'timeout'
+          ? others.filter((e) => !(e.target === c.target && isMenu(byId.get(e.source)?.data)))
+          : others.filter((e) => !(e.source === c.source && byId.get(e.target)?.data.type !== 'key' && byId.get(e.target)?.data.type !== 'timeout'))
+        if (dst.data.type === 'timeout') rest = rest.filter((e) => !(e.source === c.source && byId.get(e.target)?.data.type === 'timeout'))
+      } else {
+        // One line per port, except destinations that ring at the same time.
+        const same = others.filter((e) => e.source === c.source && (e.sourceHandle ?? 'out') === port)
+        const together = canRingTogether(dst.data) && same.length < MAX_PARALLEL && same.every((e) => canRingTogether(byId.get(e.target)?.data))
+        rest = together ? others : others.filter((e) => !same.includes(e))
+      }
       return [...rest, makeEdge(c.source, port, c.target, src.data)]
     })
   }, [byId, commit, isValidConnection, setEdges])
 
   const entryId = nodes.find((n) => n.data.type === 'entry')?.id
-  const usedDigits = nodes.filter((n) => n.data.type === 'key').map((n) => n.data.digit ?? '')
-  const hasTimeout = nodes.some((n) => n.data.type === 'timeout')
+  // The menu (entry or menu step) a key or timeout belongs to.
+  const menuOf = (id: string) => edges.find((e) => e.target === id && isMenu(byId.get(e.source)?.data))?.source
+  const keysOf = (menu: string | undefined) => edges.filter((e) => e.source === menu && byId.get(e.target)?.data.type === 'key').map((e) => byId.get(e.target)!)
+  // New keys go into the selected menu (or the menu of the selected key), else the entry.
+  const selData = selected ? byId.get(selected)?.data : undefined
+  const targetMenu = selected && isMenu(selData) ? selected : selected && (selData?.type === 'key' || selData?.type === 'timeout') ? menuOf(selected) ?? entryId : entryId
+  const usedDigits = keysOf(targetMenu).map((n) => n.data.digit ?? '')
+  const hasTimeout = edges.some((e) => e.source === targetMenu && byId.get(e.target)?.data.type === 'timeout')
 
   function addNode(kind: Kind, pos?: { x: number; y: number }) {
     if (kind === 'timeout' && hasTimeout) return
@@ -182,9 +202,9 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
     const data = dataForKind(kind, usedDigits)
     const id = newId()
     setNodes((ns) => [...ns.map((n) => ({ ...n, selected: false })), { id, type: 'step', position, data, selected: true }])
-    if ((kind === 'key' || kind === 'timeout') && entryId) {
-      const entry = byId.get(entryId)!
-      setEdges((es) => [...es, makeEdge(entryId, 'out', id, entry.data)])
+    if ((kind === 'key' || kind === 'timeout') && targetMenu) {
+      const menu = byId.get(targetMenu)!
+      setEdges((es) => [...es, makeEdge(targetMenu, 'out', id, menu.data)])
     }
     setSelected(id)
   }
@@ -229,11 +249,13 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
     if (!n) return
     commit()
     const data = { ...n.data }
-    if (data.type === 'key') data.digit = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '*', '#'].find((k) => !usedDigits.includes(k))
+    const menu = data.type === 'key' ? menuOf(id) ?? entryId : undefined
+    const taken = keysOf(menu).map((k) => k.data.digit ?? '')
+    if (data.type === 'key') data.digit = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '*', '#'].find((k) => !taken.includes(k))
     if (data.type === 'key' && !data.digit) return
     const nid = newId()
     setNodes((ns) => [...ns.map((x) => ({ ...x, selected: false })), { id: nid, type: 'step', position: { x: n.position.x + 30, y: n.position.y + 120 }, data, selected: true }])
-    if (data.type === 'key' && entryId) setEdges((es) => [...es, makeEdge(entryId, 'out', nid, byId.get(entryId)!.data)])
+    if (data.type === 'key' && menu) setEdges((es) => [...es, makeEdge(menu, 'out', nid, byId.get(menu)!.data)])
     setSelected(nid)
   }
   function tidy() {
@@ -251,18 +273,23 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
       from.set(e.source, [...(from.get(e.source) ?? []), e])
       into.add(e.target)
     }
+    const startStep = edges.some((e) => e.source === entryId && byId.get(e.target)?.data.type !== 'key' && byId.get(e.target)?.data.type !== 'timeout')
     for (const n of nodes) {
       const d = n.data
-      if ((d.type === 'key' || d.type === 'timeout') && !edges.some((e) => e.source === entryId && e.target === n.id)) m.set(n.id, t('ivr.problem.notInMenu'))
+      const parent = edges.find((e) => e.target === n.id && isMenu(byId.get(e.source)?.data))?.source
+      if ((d.type === 'key' || d.type === 'timeout') && !parent) m.set(n.id, t('ivr.problem.notInMenu'))
+      else if ((d.type === 'key' || d.type === 'timeout') && parent === entryId && startStep) m.set(n.id, t('ivr.problem.skippedByStart'))
       else if (d.type !== 'entry' && d.type !== 'key' && d.type !== 'timeout' && !into.has(n.id)) m.set(n.id, t('ivr.problem.unreachable'))
       else if ((d.type === 'key' || d.type === 'audio' || d.type === 'timeout') && !from.has(n.id)) m.set(n.id, t('ivr.problem.noLine'))
+      else if (d.type === 'menu' && !(from.get(n.id) ?? []).some((e) => byId.get(e.target)?.data.type === 'key')) m.set(n.id, t('ivr.problem.noKeys'))
       else if (d.type === 'time' && !d.destination?.target) m.set(n.id, t('ivr.problem.chooseTime'))
       else if (d.type === 'speech' && !(d.intents ?? []).length) m.set(n.id, t('ivr.problem.noIntents'))
       else if (d.type === 'speech' && (d.intents ?? []).some((i) => !i.label.trim() || !i.keywords.some((k) => k.trim()))) m.set(n.id, t('ivr.problem.intentIncomplete'))
       else if (d.type === 'destination' && d.destination?.type !== 'hangup' && !d.destination?.target) m.set(n.id, t('ivr.problem.chooseTarget'))
+      else if (d.type === 'destination' && !canRingTogether(d) && edges.some((e) => e.target === n.id && edges.some((o) => o !== e && o.source === e.source && o.sourceHandle === e.sourceHandle && !isMenu(byId.get(e.source)?.data)))) m.set(n.id, t('ivr.problem.cannotRingTogether'))
     }
     return m
-  }, [nodes, edges, entryId, t])
+  }, [nodes, edges, entryId, byId, t])
 
   const promptMap = useMemo(() => new Map((prompts.data ?? []).map((p) => [p.id, p])), [prompts.data])
   const phone = ivr.id ? inbound.data?.find((r) => r.destinationType === 'ivr' && r.destination === String(ivr.id))?.did : undefined
@@ -367,7 +394,8 @@ function Editor({ value, onClose, onSaved }: { value: IVR; onClose: () => void; 
             <div className="absolute inset-0 z-10 bg-surface-2 lg:static lg:inset-auto lg:w-[380px] lg:flex-none lg:border-l lg:border-line">
               <NodePanel node={sel} ivr={ivr} setIvr={(fn) => { setIvr(fn); setDirty(true) }}
                 prompts={prompts.data ?? []} onPromptsChanged={prompts.reload} timeConditions={tcs.data ?? []} usedDigits={usedDigits}
-                onChange={(d) => changeData(sel.id, d)} onRemoveIntent={(i) => removeIntent(sel.id, i)} onDelete={() => remove(sel.id)} onDuplicate={() => duplicate(sel.id)} onClose={() => setSelected(null)} />
+                onChange={(d) => changeData(sel.id, d)} onRemoveIntent={(i) => removeIntent(sel.id, i)} onDelete={() => remove(sel.id)} onDuplicate={() => duplicate(sel.id)} onClose={() => setSelected(null)}
+                onQueueSaved={live.reload} />
             </div>
           )}
         </div>

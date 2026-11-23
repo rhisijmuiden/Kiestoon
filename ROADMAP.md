@@ -370,6 +370,11 @@ the testing channel.
 - [x] Locked ElevenLabs voice profile (`v0.7.0-rc.32`): Speech › Voice profile under the API key holds the voices
   per language, model, stability, similarity, style, speed and speaker boost; locking it makes every Generate button
   (IVR builder, prompts, regenerate) use the profile's voice, enforced by the server
+- [x] IVR branches and queue settings (`v0.7.0-rc.33`): the incoming call can check a time condition first, with a
+  **Choice menu** (own message, keys and no-input) per branch; one key can ring up to five extensions, ring groups,
+  queues or external numbers at the same time (first to answer gets the call); a queue step in the IVR builder edits
+  the queue itself (agents, timings, music, callback, overflow) or creates a new one; saving an unchanged queue no
+  longer fails
 
 Design rule from phase 0 on: all state lives in the data directory (`/var/lib/kiestoon`: database plus files),
 and every generated configuration (Asterisk, firewall, provisioning) can be rebuilt from the database.

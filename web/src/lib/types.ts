@@ -268,7 +268,7 @@ export type WallSettings = {
 }
 
 export type IVROption = { digit: string; destination: Destination }
-export type FlowNodeType = 'entry' | 'key' | 'timeout' | 'audio' | 'destination' | 'time' | 'repeat' | 'speech'
+export type FlowNodeType = 'entry' | 'key' | 'timeout' | 'audio' | 'destination' | 'time' | 'repeat' | 'speech' | 'menu'
 export type SpeechIntent = { label: string; keywords: string[] }
 export type FlowNode = {
   id: string; type: FlowNodeType; x: number; y: number; digit?: string; label?: string; promptId?: number; destination?: Destination

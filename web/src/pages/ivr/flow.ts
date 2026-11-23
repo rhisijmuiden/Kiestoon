@@ -28,6 +28,7 @@ export function toneOf(d: StepData): Tone {
     case 'key':
     case 'repeat':
     case 'speech':
+    case 'menu':
       return 'accent'
     case 'audio':
       return 'ok'
@@ -39,7 +40,7 @@ export function toneOf(d: StepData): Tone {
 }
 
 /** Which node types can hold a voice prompt. */
-export const hasAudio = (t: FlowNodeType) => t === 'entry' || t === 'key' || t === 'timeout' || t === 'audio' || t === 'speech'
+export const hasAudio = (t: FlowNodeType) => t === 'entry' || t === 'key' || t === 'timeout' || t === 'audio' || t === 'speech' || t === 'menu'
 
 /** The port of intent i (from 1) of a speech step. */
 export const intentPort = (i: number): FlowPort => `i${i}`
@@ -50,6 +51,7 @@ export function portsOf(t: FlowNodeType, intents = 0): FlowPort[] {
     case 'speech':
       return [...Array.from({ length: intents }, (_, i) => intentPort(i + 1)), 'nomatch']
     case 'entry':
+    case 'menu':
     case 'key':
     case 'timeout':
     case 'audio':
@@ -64,18 +66,29 @@ export function portsOf(t: FlowNodeType, intents = 0): FlowPort[] {
 /** Whether a line from a node to another is allowed. */
 export function canConnect(from: StepData | undefined, to: StepData | undefined): boolean {
   if (!from || !to || to.type === 'entry') return false
-  if (from.type === 'entry') return to.type === 'key' || to.type === 'timeout'
+  // The entry is a menu (keys, timeout) or has one start step, for example a time check.
+  if (from.type === 'entry') return to.type !== 'repeat'
+  if (from.type === 'menu') return to.type === 'key' || to.type === 'timeout'
   if (from.type === 'key' || from.type === 'timeout' || from.type === 'audio' || from.type === 'time' || from.type === 'speech') return to.type !== 'key' && to.type !== 'timeout'
   return false
 }
 
+/** Whether a node is a menu: the entry or a menu step (keys and a timeout hang off it). */
+export const isMenu = (d: StepData | undefined) => d?.type === 'entry' || d?.type === 'menu'
+
+/** Destinations that can ring together when one port has several lines. */
+export const RING_TYPES = ['extension', 'ringgroup', 'queue', 'external']
+export const MAX_PARALLEL = 5
+export const canRingTogether = (d: StepData | undefined) => d?.type === 'destination' && RING_TYPES.includes(d.destination?.type ?? '')
+
 /** The building blocks offered in the palette. */
-export type Kind = 'key' | 'audio' | 'speech' | 'extension' | 'ringgroup' | 'queue' | 'voicemail' | 'ivr' | 'external' | 'time' | 'repeat' | 'hangup' | 'timeout'
-export const kinds: Kind[] = ['key', 'audio', 'speech', 'extension', 'ringgroup', 'queue', 'voicemail', 'time', 'ivr', 'external', 'repeat', 'hangup', 'timeout']
+export type Kind = 'menu' | 'key' | 'audio' | 'speech' | 'extension' | 'ringgroup' | 'queue' | 'voicemail' | 'ivr' | 'external' | 'time' | 'repeat' | 'hangup' | 'timeout'
+export const kinds: Kind[] = ['menu', 'key', 'audio', 'speech', 'extension', 'ringgroup', 'queue', 'voicemail', 'time', 'ivr', 'external', 'repeat', 'hangup', 'timeout']
 
 export function kindTone(k: Kind): Tone {
   switch (k) {
     case 'key':
+    case 'menu':
     case 'repeat':
     case 'speech':
       return 'accent'
@@ -101,6 +114,8 @@ export function dataForKind(k: Kind, usedDigits: string[]): StepData {
       return { type: 'time', destination: { type: 'timecondition', target: '' } }
     case 'repeat':
       return { type: 'repeat' }
+    case 'menu':
+      return { type: 'menu', label: '' }
     case 'speech':
       return { type: 'speech', label: '', intents: [], ai: false }
     case 'timeout':

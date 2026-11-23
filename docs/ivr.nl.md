@@ -28,8 +28,9 @@ bewegende stipjes op de lijnen (de richting van het gesprek) aan of uit.
 
 | Bouwsteen | Wat het doet | Lijnen naar buiten |
 | --- | --- | --- |
-| **Binnenkomend gesprek** | Begin van het menu; speelt de welkomsttekst | Naar de toetskeuzes en *Geen invoer* |
-| **Toetskeuze** | "Toets 1": de beller drukte deze toets | Eén |
+| **Binnenkomend gesprek** | Begin van het menu; speelt de welkomsttekst | Naar de toetskeuzes en *Geen invoer*, of één startstap |
+| **Keuzemenu** | Een volgend menu met een eigen tekst en toetsen, bijvoorbeeld één per tak van een tijdconditie | Naar zijn toetskeuzes en *Geen invoer* |
+| **Toetskeuze** | "Toets 1": de beller drukte deze toets | Eén, of meerdere bestemmingen die [tegelijk overgaan](#meerdere-bestemmingen-tegelijk-laten-overgaan) |
 | **Geen invoer** | De beller drukte niets of een ongebruikte toets, nadat het menu herhaald is | Eén |
 | **Audio afspelen** | Speelt een bericht en volgt dan de lijn | Eén |
 | **Spraakvraag** | Vraagt waarvoor de beller belt en luistert naar het antwoord (zie [hieronder](#spraakvraag)) | Eén per antwoord, plus *Niet begrepen* |
@@ -57,6 +58,34 @@ Het canvas helpt je:
   **Automatisch ordenen** zet de flow netjes neer, de minimap en zoomknoppen helpen bij grote menu's.
 - **Dupliceren** in het zijpaneel kopieert een stap.
 - Toetsenbord: druk <kbd>Enter</kbd> op een stap om hem te selecteren en verplaats hem met de pijltjestoetsen.
+
+## Eerst de tijd controleren
+
+Wil je dat de tijd bepaalt in welk menu bellers komen? Trek de lijn vanaf **Binnenkomend gesprek** naar een
+**Tijdconditie** in plaats van naar toetsen. Die stap draait dan direct na de welkomsttekst. Trek **open** en
+**gesloten** elk naar een **Keuzemenu** en geef elk menu eigen toetsen en *Geen invoer*. Een keuzemenu speelt zijn
+eigen tekst (bijvoorbeeld "Toets 1 voor support") en wacht op een toets, net als het begin van het menu. Dezelfde
+toets mag in verschillende menu's voorkomen.
+
+Nieuwe toetsen uit het palet komen in het geselecteerde keuzemenu (of het menu van de geselecteerde toets). Toetsen
+die aan **Binnenkomend gesprek** hangen terwijl dat een startstap heeft, worden overgeslagen; het canvas waarschuwt
+daarvoor.
+
+## Meerdere bestemmingen tegelijk laten overgaan
+
+Een toetskeuze (of *Geen invoer*, *Audio afspelen*, een tijdconditie of spraakantwoord) kan tot vijf bestemmingen
+tegelijk laten overgaan: trek een tweede lijn vanaf hetzelfde bolletje, bijvoorbeeld naar een wachtrij én een extern
+nummer. Wie het eerst opneemt, krijgt het gesprek; de rest stopt met overgaan. Dit werkt voor toestellen,
+belgroepen, wachtrijen en externe nummers. Zolang de toestellen overgaan hoort de beller de muziek van de wachtrij
+(of het overgaan als er geen wachtrij bij zit). Neemt niemand op binnen de maximale wachttijd van de wachtrij (zonder
+wachtrij 60 seconden), dan volgt het gesprek de overloop van de wachtrij.
+
+## Wachtrij-instellingen in de editor
+
+Klik op een **Wachtrij**-stap om de wachtrij zelf te wijzigen in het zijpaneel: medewerkers, verdeling, overgaan- en
+wachttijden, begroeting, muziek, positiemeldingen, terugbellen en overloop. **Wachtrij opslaan** slaat dat meteen
+op, los van het menu, en de wijziging geldt overal waar de wachtrij gebruikt wordt. **Nieuwe wachtrij** maakt ter
+plekke een wachtrij aan en laat de stap ernaartoe gaan.
 
 ## Audio per stap
 

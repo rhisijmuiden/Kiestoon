@@ -29,6 +29,8 @@ Gesprekken worden over de medewerkers verdeeld volgens een verdeling. Nummers li
 
 ![De wachtrij Support bewerken](shot:queue-edit)
 
+Je kunt een wachtrij ook wijzigen of een nieuwe maken vanuit de [IVR-bouwer](ivr.nl.md#wachtrij-instellingen-in-de-editor): klik op een wachtrij-stap in het canvas.
+
 ## Tijden en limieten
 
 | Instelling | Betekenis |

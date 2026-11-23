@@ -71,16 +71,28 @@ export function useSaver<T extends { id: number }>(base: string, onSaved: (v: T)
 }
 
 let destCache: Promise<Destinations> | null = null
+const destListeners = new Set<() => void>()
 /** Loads every possible call destination once per page load (reset after a save). */
 export function useDestinations() {
   const [d, setD] = useState<Destinations | null>(null)
+  const [version, setVersion] = useState(0)
+  useEffect(() => {
+    const bump = () => setVersion((v) => v + 1)
+    destListeners.add(bump)
+    return () => { destListeners.delete(bump) }
+  }, [])
   useEffect(() => {
     destCache ??= api<Destinations>('GET', '/pbx/destinations').catch((e) => { destCache = null; throw e })
     destCache.then(setD).catch(() => undefined)
-  }, [])
+  }, [version])
   return d
 }
 export const resetDestinations = () => { destCache = null }
+/** Forgets the cached destinations and reloads them everywhere they are shown (after a queue is renamed or added). */
+export const refreshDestinations = () => {
+  destCache = null
+  destListeners.forEach((f) => f())
+}
 
 /** Loads the phone numbers of all trunks (admins only); reload after a trunk or route changes. */
 export function useNumbers(reloadKey = 0) {

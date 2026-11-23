@@ -11,6 +11,7 @@ import { startRecording, toTelephoneWav } from '../../lib/audio'
 import type { IVR, Prompt, PromptSource, SpeechIntent, TimeCondition } from '../../lib/types'
 import { KEYS, hasAudio, toneOf, tones, type StepData, type StepNode } from './flow'
 import { NodeTitle, iconOf, toneClass } from './nodes'
+import { QueueSettings } from './QueueSettings'
 
 type Mode = 'generate' | 'record' | 'upload' | 'library' | 'none'
 const MAX_UPLOAD = 10 << 20
@@ -163,7 +164,7 @@ function AudioSource({ promptId, onPrompt, promptName, prompts, onPromptsChanged
   )
 }
 
-export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeConditions, usedDigits, onChange, onRemoveIntent, onDelete, onDuplicate, onClose }: {
+export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeConditions, usedDigits, onChange, onRemoveIntent, onDelete, onDuplicate, onClose, onQueueSaved }: {
   node: StepNode
   ivr: IVR
   setIvr: (fn: (v: IVR) => IVR) => void
@@ -176,6 +177,7 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
   onDelete: () => void
   onDuplicate: () => void
   onClose: () => void
+  onQueueSaved?: () => void
 }) {
   const { t } = useTranslation()
   const d = node.data
@@ -205,6 +207,7 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
               <Input name="retries" label={t('ivr.retries')} type="number" min={0} max={5} value={ivr.retries} onChange={(e) => setIvr((v) => ({ ...v, retries: Number(e.target.value) }))} hint={t('ivr.retriesHint')} />
             </div>
             <Toggle name="directDial" label={t('ivr.directDial')} hint={t('ivr.directDialHint')} checked={ivr.directDial} onChange={(x) => setIvr((v) => ({ ...v, directDial: x }))} />
+            <p className="text-xs text-subtle">{t('ivr.panel.startHint')}</p>
           </Section>
         )}
 
@@ -226,7 +229,7 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
               </div>
             )}
             {d.type === 'speech' && <SpeechIntents d={d} onChange={onChange} onRemoveIntent={onRemoveIntent} />}
-            {(d.type === 'audio' || d.type === 'destination' || d.type === 'repeat' || d.type === 'time' || d.type === 'timeout' || d.type === 'speech') && (
+            {(d.type === 'audio' || d.type === 'destination' || d.type === 'repeat' || d.type === 'time' || d.type === 'timeout' || d.type === 'speech' || d.type === 'menu') && (
               <Input name="label" label={t('ivr.label')} value={d.label ?? ''} onChange={(e) => onChange({ label: e.target.value })} hint={t('ivr.labelHint')} maxLength={40} />
             )}
             {d.type === 'destination' && (
@@ -244,7 +247,15 @@ export function NodePanel({ node, ivr, setIvr, prompts, onPromptsChanged, timeCo
             )}
             {d.type === 'timeout' && <p className="text-xs text-subtle">{t('ivr.noInputHint', { retries: ivr.retries })}</p>}
             {d.type === 'repeat' && <p className="text-xs text-subtle">{t('ivr.panel.repeatHint')}</p>}
-            <p className="text-xs text-subtle">{t(d.type === 'speech' ? 'ivr.panel.speechLinesHint' : d.type === 'key' || d.type === 'timeout' || d.type === 'audio' || d.type === 'time' ? 'ivr.panel.linesHint' : 'ivr.panel.endHint')}</p>
+            <p className="text-xs text-subtle">{t(d.type === 'menu' ? 'ivr.panel.menuHint' : d.type === 'speech' ? 'ivr.panel.speechLinesHint' : d.type === 'key' || d.type === 'timeout' || d.type === 'audio' || d.type === 'time' ? 'ivr.panel.linesHint' : 'ivr.panel.endHint')}</p>
+            {(d.type === 'key' || d.type === 'timeout' || d.type === 'audio' || d.type === 'time' || d.type === 'speech') && <p className="text-xs text-subtle">{t('ivr.panel.parallelHint')}</p>}
+          </Section>
+        )}
+
+        {d.type === 'destination' && d.destination?.type === 'queue' && (
+          <Section title={t('ivr.queue.title')} aside={t('ivr.queue.aside')}>
+            <QueueSettings queueId={Number(d.destination.target) || 0} prompts={prompts}
+              onCreated={(id) => onChange({ destination: { type: 'queue', target: String(id) } })} onSaved={() => onQueueSaved?.()} />
           </Section>
         )}
 

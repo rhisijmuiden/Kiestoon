@@ -108,7 +108,8 @@ func TestIVRFlow(t *testing.T) {
 		fmt.Sprintf("[kiestoon-ivr-%d-flow]", id),
 		fmt.Sprintf("Playback(%s)", filepath.Join(s.promptDir(), fmt.Sprint(prompts[2]))),
 		fmt.Sprintf("Gosub(kiestoon-tcstate-%v,s,1)", tc["id"]),
-		fmt.Sprintf("Goto(kiestoon-ivr-%d,s,start)", id),
+		fmt.Sprintf("Set(KT_MENU=kiestoon-ivr-%d)", id),
+		"Goto(${KT_MENU},s,start)",
 	} {
 		if !strings.Contains(dp, want) {
 			t.Errorf("extensions.conf misses %q", want)
@@ -119,11 +120,18 @@ func TestIVRFlow(t *testing.T) {
 	}
 
 	// Invalid flows.
-	dup := map[string]any{"name": "Dup", "flow": map[string]any{"nodes": []any{node("e", "entry", nil), node("a", "key", map[string]any{"digit": "1"}), node("b", "key", map[string]any{"digit": "1"})}}}
+	dup := map[string]any{"name": "Dup", "flow": map[string]any{"nodes": []any{node("e", "entry", nil), node("a", "key", map[string]any{"digit": "1"}), node("b", "key", map[string]any{"digit": "1"})},
+		"edges": []any{edge("e", "out", "a"), edge("e", "out", "b")}}}
 	mustDo(t, c, "POST", "/api/pbx/ivrs", dup, 400)
-	bad := map[string]any{"name": "Bad", "flow": map[string]any{"nodes": []any{node("e", "entry", nil), node("d", "destination", map[string]any{"destination": map[string]string{"type": "extension", "target": "201"}})},
-		"edges": []any{edge("e", "out", "d")}}}
+	bad := map[string]any{"name": "Bad", "flow": map[string]any{"nodes": []any{node("e", "entry", nil), node("r", "repeat", nil)},
+		"edges": []any{edge("e", "out", "r")}}}
 	mustDo(t, c, "POST", "/api/pbx/ivrs", bad, 400)
+	// Several lines from one key only to destinations that can ring together.
+	voicemail := map[string]any{"name": "Bad", "flow": map[string]any{"nodes": []any{node("e", "entry", nil), node("k", "key", map[string]any{"digit": "1"}),
+		node("a", "destination", map[string]any{"destination": map[string]string{"type": "external", "target": "0612345678"}}),
+		node("b", "destination", map[string]any{"destination": map[string]string{"type": "hangup"}})},
+		"edges": []any{edge("e", "out", "k"), edge("k", "out", "a"), edge("k", "out", "b")}}}
+	mustDo(t, c, "POST", "/api/pbx/ivrs", voicemail, 400)
 
 	// Deleting the extension clears it inside the flow too.
 	mustDo(t, c, "DELETE", fmt.Sprintf("/api/pbx/extensions/%v", ext["id"]), map[string]any{}, 200)

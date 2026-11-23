@@ -28,6 +28,8 @@ are spread over the agents by a distribution strategy. Numbers are in the 700 ra
 
 ![Editing the Support queue](shot:queue-edit)
 
+You can also change a queue, or create a new one, straight from the [IVR builder](ivr.md#queue-settings-in-the-editor): click a queue step on the canvas.
+
 ## Timings and limits
 
 | Setting | Meaning |

@@ -175,7 +175,9 @@
     "reregister_failed": "Asterisk could not register the trunk again.",
     "log_missing": "This log does not exist yet. It is created as soon as there is something to write.",
     "log_permission": "The portal may not read this log. Run the update again to fix the permissions.",
-    "log_unavailable": "The log could not be read."
+    "log_unavailable": "The log could not be read.",
+    "parallel_only_ring": "Several lines from one step can only lead to extensions, ring groups, queues or external numbers.",
+    "too_many_parallel": "At most five destinations can ring at the same time."
   },
   "setup": {
     "title": "Welcome to Kiestoon",
@@ -1762,7 +1764,14 @@
     "callbackCallerId": "Caller ID for callbacks",
     "callbackCallerIdHint": "Empty: the number of the outbound route",
     "supervision": "Supervision",
-    "supervisionHint": "Reception and admins with an extension can listen, whisper to the agent or barge in on calls of this queue (switchboard or *33, *34, *35 + extension). Tell your employees: listening in is privacy sensitive. Every use is in the audit log."
+    "supervisionHint": "Reception and admins with an extension can listen, whisper to the agent or barge in on calls of this queue (switchboard or *33, *34, *35 + extension). Tell your employees: listening in is privacy sensitive. Every use is in the audit log.",
+    "groups": {
+      "general": "General",
+      "timing": "Ringing and waiting",
+      "caller": "What the caller hears",
+      "more": "Callback and overflow"
+    },
+    "noExtensions": "There are no extensions yet."
   },
   "ivr": {
     "title": "IVR builder",
@@ -1818,7 +1827,8 @@
       "followsun": "Follow the sun",
       "entry": "Incoming call",
       "destination": "Transfer",
-      "speech": "Speech question"
+      "speech": "Speech question",
+      "menu": "Choice menu"
     },
     "node": {
       "press": "Press",
@@ -1845,13 +1855,16 @@
       }
     },
     "problem": {
-      "notInMenu": "Not part of the menu: draw a line from the incoming call to this step.",
+      "notInMenu": "Not part of a menu: draw a line from the incoming call or a choice menu to this step.",
       "unreachable": "No line leads to this step.",
       "noLine": "No line goes out: the call ends here.",
       "chooseTime": "Choose a time condition.",
       "chooseTarget": "Choose where the call goes.",
       "noIntents": "Add at least one answer with keywords",
-      "intentIncomplete": "Every answer needs a name and keywords"
+      "intentIncomplete": "Every answer needs a name and keywords",
+      "skippedByStart": "Skipped: the incoming call goes to its start step first. Connect this key to a choice menu instead.",
+      "noKeys": "This menu has no keys yet.",
+      "cannotRingTogether": "Only an extension, ring group, queue or external number can ring together with other destinations."
     },
     "panel": {
       "title": "Edit step",
@@ -1885,7 +1898,8 @@
         "key": "plays as part of the menu",
         "timeout": "plays before giving up",
         "audio": "plays, then follows the line",
-        "speech": "asks the question"
+        "speech": "asks the question",
+        "menu": "before the keys"
       },
       "manage": "Manage",
       "keypress": "Key",
@@ -1903,7 +1917,8 @@
         "destination": "Send the call",
         "time": "Check opening hours",
         "repeat": "Repeat the menu",
-        "speech": "Ask what the caller wants"
+        "speech": "Ask what the caller wants",
+        "menu": "Plays its text and waits for a key, like the welcome. Use it after a time check, for a menu per branch."
       },
       "speechIntro": "The caller answers in their own words. Kiestoon writes out the answer on this server (Whisper) and follows the line of the answer whose keywords it hears.",
       "intent": "Answer {{n}}",
@@ -1914,7 +1929,10 @@
       "keywordsHint": "A keyword also matches longer words: “factu” matches factuur and facturen. Capitals and accents do not matter. The answer with the most keywords wins.",
       "speechAI": "Let AI choose when no keyword matches",
       "speechAIHint": "Uses the engine of the AI page (Claude is quickest). Without it, the call takes the “Not understood” line.",
-      "speechLinesHint": "Draw a line from every answer, and from “Not understood”, to the next step. Speech-to-text must be on under Speech."
+      "speechLinesHint": "Draw a line from every answer, and from “Not understood”, to the next step. Speech-to-text must be on under Speech.",
+      "menuHint": "Drag from the dot on the right to the keys of this menu (and its no-input step). New keys from the palette go into the selected menu.",
+      "parallelHint": "Want two destinations to ring at once, such as a queue and an external number? Draw a second line from the same dot. The first to answer gets the call.",
+      "startHint": "Want to check the time first? Draw a line from here to a time condition step instead of to keys. Each branch can lead to its own choice menu."
     },
     "test": {
       "button": "Test call",
@@ -1936,7 +1954,21 @@
       "curve": "Flowing lines",
       "step": "Angular lines"
     },
-    "motion": "Show the call flowing along the lines"
+    "motion": "Show the call flowing along the lines",
+    "queue": {
+      "title": "Queue settings",
+      "aside": "saved to the queue",
+      "new": "New queue",
+      "openPage": "Open in Call queues",
+      "creatingHint": "A new queue. Create it here and this step routes to it straight away.",
+      "pickFirst": "Choose a queue above, or make a new one.",
+      "create": "Create queue",
+      "save": "Save queue",
+      "undo": "Undo changes",
+      "saved": "Saved",
+      "unsaved": "Not saved yet",
+      "sharedHint": "These are the settings of the queue itself. They are saved straight away, apart from the menu, and apply everywhere this queue is used."
+    }
   },
   "timeConditions": {
     "title": "Time conditions",

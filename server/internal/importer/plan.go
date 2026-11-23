@@ -3,6 +3,7 @@ package importer
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -341,6 +342,8 @@ func (b *Bundle) shortName() string {
 	return "Import"
 }
 
+var reQueueFile = regexp.MustCompile(`^(?i)queue_?[0-9]+(_[0-9]+)*_|_file$`)
+
 // Prepare builds the plan.
 func Prepare(ctx context.Context, r *pbx.Repo, np pbx.NumberPlan, b *Bundle) (*Plan, error) {
 	ex, err := loadExisting(ctx, r)
@@ -448,7 +451,9 @@ func Prepare(ctx context.Context, r *pbx.Repo, np pbx.NumberPlan, b *Bundle) (*P
 		for _, f := range q.Messages {
 			pq.Audio = append(pq.Audio, f)
 			kind := strings.TrimSuffix(pathBase(f), pathExt(f))
-			use(f, PromptName(sys, pq.Name, strings.ReplaceAll(kind, "_", " ")), pq.Key)
+			// UniFi Talk names them queue_<id>_<n>_timeouts_message_file.mp3: keep "timeouts message".
+			kind = reQueueFile.ReplaceAllString(kind, "")
+			use(f, PromptName(sys, pq.Name, strings.TrimSpace(strings.ReplaceAll(kind, "_", " "))), pq.Key)
 		}
 		if len(q.Messages) > 0 {
 			p.Notes = append(p.Notes, NewNote("queue_messages", "name", pq.Name))
@@ -532,15 +537,29 @@ func Prepare(ctx context.Context, r *pbx.Repo, np pbx.NumberPlan, b *Bundle) (*P
 		}
 		pm.Steps = b.planStep(s)
 		var walk func(ps *PlanStep, path []string)
+		// Prompt names follow the path of titles: "Talk - Main - Sales". The welcome of the menu
+		// itself is "... - welcome"; a step without a title or key (an announcement) is "... - info".
 		walk = func(ps *PlanStep, path []string) {
+			here := path
 			label := ps.Title
-			if ps.Type == "root" {
+			switch {
+			case ps.Type == "root":
 				label = "welcome"
-			} else if label == "" && ps.Key != "" {
+			case label == "" && ps.Key != "":
 				label = ps.Key
+			case label == "":
+				label = "info"
 			}
-			here := append(slices.Clone(path), label)
-			use(ps.Audio, PromptName(append([]string{sys}, here...)...), pm.Key)
+			if ps.Type != "root" && ps.Title != "" || ps.Type != "root" && ps.Key != "" {
+				here = append(slices.Clone(path), label)
+			}
+			if ps.Audio != "" {
+				own := here
+				if ps.Type == "root" || (ps.Title == "" && ps.Key == "") {
+					own = append(slices.Clone(here), label)
+				}
+				use(ps.Audio, PromptName(append([]string{sys}, own...)...), pm.Key)
+			}
 			for _, c := range ps.Children {
 				walk(c, here[:len(here):len(here)])
 			}

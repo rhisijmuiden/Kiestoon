@@ -1,0 +1,8 @@
+<include>
+  <menu name="main_menu" greet-long="$${sounds_dir}/custom/welcome.wav" greet-short="custom/short.wav" timeout="5000" max-failures="3">
+    <entry action="menu-exec-app" digits="1" param="transfer 2000 XML default"/>
+    <entry action="menu-exec-app" digits="2" param="transfer 7000 XML default"/>
+    <entry action="menu-exec-app" digits="3" param="bridge sofia/gateway/voys/0612345678"/>
+    <entry action="menu-top" digits="9"/>
+  </menu>
+</include>

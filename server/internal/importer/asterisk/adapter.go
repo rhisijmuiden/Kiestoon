@@ -3,6 +3,7 @@ package asterisk
 import (
 	"context"
 	"path"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -293,6 +294,8 @@ func readDialplan(b *importer.Bundle, acc *accounts, dp *Dialplan, sounds func(s
 	}
 }
 
+var reDirVar = regexp.MustCompile(`^(\$?\$\{[a-z0-9_]+\}/)+`)
+
 // audioIndex finds the sound files the dialplan refers to.
 type audioIndex map[string][]string // lower-case name without extension -> files
 
@@ -315,6 +318,8 @@ func indexAudio(entries []importer.Entry) audioIndex {
 func (idx audioIndex) find(ref string) string {
 	ref = strings.ToLower(strings.TrimSpace(ref))
 	ref = strings.TrimSuffix(ref, path.Ext(ref))
+	// A leading variable (sounds_dir, base_dir) stands for a directory.
+	ref = reDirVar.ReplaceAllString(ref, "")
 	if ref == "" || strings.Contains(ref, "${") {
 		return ""
 	}

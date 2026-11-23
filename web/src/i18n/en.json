@@ -4887,7 +4887,8 @@
       "feature_codes": "Feature codes (*xx) are not imported; Kiestoon has its own (see Feature codes in the manual).",
       "encrypted_backup": "The 3CX backup is encrypted. Make a backup without a password and upload that one.",
       "no_database": "The backup holds no database, so only the configuration files are read.",
-      "trunk_numbers_not_added": "The numbers could not be added to the existing trunk {{name}}; add them on the Trunks page."
+      "trunk_numbers_not_added": "The numbers could not be added to the existing trunk {{name}}; add them on the Trunks page.",
+      "fusion_time_conditions": "FusionPBX time conditions and other dialplans are not imported; set them up again on the Time conditions page."
     },
     "errors": {
       "unknown_format": "Kiestoon does not recognise this file. Pick the phone system above, or check that it is a complete backup.",

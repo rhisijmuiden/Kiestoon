@@ -1,0 +1,8 @@
+<include>
+  <gateway name="voys">
+    <param name="username" value="150012345"/>
+    <param name="password" value="TrunkPassw0rd"/>
+    <param name="realm" value="ha.voys.nl"/>
+    <param name="register" value="true"/>
+  </gateway>
+</include>

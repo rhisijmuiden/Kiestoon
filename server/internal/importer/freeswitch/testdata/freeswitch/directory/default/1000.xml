@@ -1,0 +1,12 @@
+<include>
+  <user id="1000">
+    <params>
+      <param name="password" value="Wachtw00rd1000"/>
+      <param name="vm-password" value="1000"/>
+    </params>
+    <variables>
+      <variable name="effective_caller_id_name" value="Anna de Vries"/>
+      <variable name="outbound_caller_id_number" value="$${outbound_caller_id}"/>
+    </variables>
+  </user>
+</include>

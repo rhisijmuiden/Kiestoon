@@ -4887,7 +4887,8 @@
       "feature_codes": "Functiecodes (*xx) worden niet geïmporteerd; Kiestoon heeft eigen codes (zie Functiecodes in de handleiding).",
       "encrypted_backup": "De 3CX-backup is versleuteld. Maak een backup zonder wachtwoord en upload die.",
       "no_database": "De backup bevat geen database, dus alleen de configuratiebestanden worden gelezen.",
-      "trunk_numbers_not_added": "De nummers konden niet aan de bestaande trunk {{name}} worden toegevoegd; voeg ze toe op de pagina Trunks."
+      "trunk_numbers_not_added": "De nummers konden niet aan de bestaande trunk {{name}} worden toegevoegd; voeg ze toe op de pagina Trunks.",
+      "fusion_time_conditions": "Tijdscondities en andere dialplans uit FusionPBX worden niet geïmporteerd; stel ze opnieuw in op de pagina Tijdscondities."
     },
     "errors": {
       "unknown_format": "Kiestoon herkent dit bestand niet. Kies hierboven de telefooncentrale, of controleer of het een volledige backup is.",

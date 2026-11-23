@@ -56,6 +56,7 @@ const topics: Record<string, Topic> = {
   '/mobile-app': { page: 'mobile-app' },
   '/softphone': { page: 'softphone' },
   '/backups': { page: 'backups' },
+  '/import': { page: 'import' },
   '/mail': { page: 'mail' },
   '/audit': { page: 'users', en: 'audit-log', nl: 'auditlog' },
   '/logs': { page: 'logs' },

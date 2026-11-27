@@ -139,7 +139,7 @@ jobs:
           KIESTOON_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
           KIESTOON_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
           KIESTOON_UPLOAD_KEY_ALIAS: ${{ vars.ANDROID_UPLOAD_KEY_ALIAS || 'upload' }}
-        run: npx tauri android build --aab --target aarch64 --target armv7 --target x86_64
+        run: npx tauri android build --aab true --apk false --target aarch64 --target armv7 --target x86_64
       - name: Check the bundle
         id: aab
         run: |

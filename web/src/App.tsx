@@ -15,6 +15,8 @@ import { Dashboard } from './pages/Dashboard'
 import { Extensions } from './pages/Extensions'
 import { Fax } from './pages/Fax'
 import { Integrations } from './pages/Integrations'
+import { Mcp } from './pages/Mcp'
+import { OAuthConsent } from './pages/OAuthConsent'
 import { Internet } from './pages/Internet'
 import { Phonebook } from './pages/Phonebook'
 import { Wallboard } from './pages/Wallboard'
@@ -76,6 +78,7 @@ const pages: Record<string, ReactElement> = {
   features: <Features />, firewall: <Firewall />, backups: <Backups />, import: <Import />, mail: <Mail />, audit: <Audit />, logs: <Logs />, settings: <Settings />,
   phonebook: <Phonebook />, wallboard: <Wallboard />, fax: <Fax />, internet: <Internet />, integrations: <Integrations />, speech: <Speech />, ai: <AI />, mobileApp: <MobileApp />, windowsSoftphone: <Softphone />,
   sites: <Sites />, federation: <Federation />, sunRoutes: <SunRoutes />, cluster: <Cluster />, quality: <Quality />,
+  mcp: <Mcp />, myAssistants: <Mcp mine />,
 }
 
 function NoExtension() {
@@ -95,9 +98,12 @@ export function App() {
   useEffect(() => {
     try {
       if (pathname === '/desktop-link' && state.kind !== 'ready') sessionStorage.setItem(AFTER_KEY, pathname)
-      if (state.kind === 'ready' && pathname === '/' && sessionStorage.getItem(AFTER_KEY)) {
+      // An AI assistant asking to connect (OAuth): come back to the consent page after an SSO sign-in.
+      if (pathname === '/oauth/consent' && state.kind !== 'ready') sessionStorage.setItem(AFTER_KEY, pathname + window.location.search)
+      const after = sessionStorage.getItem(AFTER_KEY)
+      if (state.kind === 'ready' && pathname === '/' && after) {
         sessionStorage.removeItem(AFTER_KEY)
-        navigate('/desktop-link', { replace: true })
+        navigate(after.startsWith('/oauth/consent') ? after : '/desktop-link', { replace: true })
       }
     } catch {
       /* storage blocked */
@@ -134,6 +140,10 @@ export function App() {
   }
 
   if (pathname === '/desktop-link') return <DesktopLink />
+  if (pathname === '/oauth/consent') {
+    try { sessionStorage.removeItem(AFTER_KEY) } catch { /* storage blocked */ }
+    return <OAuthConsent />
+  }
 
   const role = state.me.user.role
   const hasExt = !!state.me.extension

@@ -95,6 +95,8 @@ type Server struct {
 	quality qualityState
 	// imports are the uploads of other phone systems being imported.
 	imports importSessions
+	// mcp is the MCP server for AI assistants: proposals, OAuth codes and rate limits.
+	mcp mcpState
 }
 
 // New wires up a server.
@@ -217,6 +219,7 @@ func (s *Server) Routes() http.Handler {
 	s.qualityRoutes(mux, admin)
 	s.onCallRoutes(mux, admin, full)
 	s.importRoutes(mux, admin)
+	s.mcpRoutes(mux, admin, full)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, http.StatusNotFound, "not_found") })
 	return s.jsonOnly(mux)
@@ -267,6 +270,17 @@ func (s *Server) jsonOnly(next http.Handler) http.Handler {
 
 func (s *Server) signedIn(next http.Handler, needMFA bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// A tool of the MCP server calling in-process as the user of its connection. Only code can put
+		// this session in the context; requests from outside never carry it.
+		if ms, ok := r.Context().Value(mcpSessKey{}).(*auth.Session); ok {
+			if !mcpRouteAllowed(r) || (ms.Method == "token-ro" && r.Method != http.MethodGet && r.Method != http.MethodHead && r.URL.Path != "/api/system/updates/check") {
+				writeErr(w, http.StatusForbidden, "token_not_allowed")
+				return
+			}
+			ms = capSession(r, ms)
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, ms)))
+			return
+		}
 		// API tokens (Authorization: Bearer kt_…) instead of a session cookie.
 		if tsess, bearer := s.tokenSession(r); bearer {
 			if tsess == nil {

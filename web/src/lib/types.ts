@@ -600,3 +600,27 @@ export type OnCallView = {
   team: OnCallTeam; segments: OnCallSegment[]; shifts: OnCallShift[]; primary: number; backup: number; until: string; warnings: OnCallWarning[]
 }
 export type OnCallUser = { id: number; name: string; mobile: string; extension: string; email: boolean }
+
+// ---- MCP server ---------------------------------------------------------------
+
+export type McpKind = 'read' | 'act' | 'write'
+export type McpScope = { key: string; kind: McpKind; tools: string[]; available: boolean }
+export type McpSettings = {
+  enabled: boolean; defaultReadOnly: boolean; confirmWrites: boolean; maskNumbers: boolean; shareMedia: boolean
+  anthropicOnly: boolean; allowUsers: boolean; disabledTools: string[]
+}
+export type McpOverview = {
+  enabled: boolean; allowUsers: boolean; endpoint: string; version: string; internet: boolean; scopes: McpScope[]
+  defaultRead: boolean; maxRole: 'admin' | 'reception' | 'user'; canConnect: boolean
+  settings?: McpSettings
+  stats?: { connections: number; oauth: number; tokens: number; calls: number; changes: number; denied: number }
+}
+export type McpConnection = {
+  id: number; name: string; kind: 'token' | 'oauth'; clientId: string; userId: number; username: string; role: string
+  scopes: string[]; allowedIps: string[]; prefix: string; expiresAt: string; lastUsedAt: string; lastIp: string; createdAt: string; callsToday: number
+}
+export type McpTool = { name: string; scope: string; kind: McpKind; minRole: string; disabled: boolean; description: string }
+export type McpCall = {
+  id: number; at: string; connId: number; connName: string; username: string; tool: string; kind: McpKind
+  input: string; result: string; status: 'ok' | 'proposal' | 'denied' | 'error'; ip: string
+}

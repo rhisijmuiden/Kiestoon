@@ -116,6 +116,13 @@ func serve(log *slog.Logger) error {
 	mux.Handle("/prov/", srv.ProvisioningHandler())
 	mux.Handle("/download/", srv.SoftphoneDownload())
 	mux.Handle("GET /metrics", srv.MetricsHandler())
+	// MCP server for AI assistants, with its OAuth endpoints.
+	mcp := srv.MCPHandler()
+	for _, p := range []string{"/mcp", "/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp",
+		"/.well-known/oauth-authorization-server", "/.well-known/oauth-authorization-server/mcp",
+		"/oauth/authorize", "/oauth/token", "/oauth/register", "/oauth/revoke"} {
+		mux.Handle(p, mcp)
+	}
 	mux.Handle("/", web.Handler())
 
 	return listen(ctx, cfg, log, mux)

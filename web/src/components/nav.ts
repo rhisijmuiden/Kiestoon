@@ -1,5 +1,5 @@
 import {
-  Sparkles,
+  Bot, Sparkles,
   Activity, Archive, Import, FileText, Gauge, Building2, Network, ServerCog, Sun, AudioLines, AudioWaveform, BookUser, Globe, Monitor, MonitorPlay, Plug, Printer, Clock, Disc3, GitBranch, Headset, History, KeyRound, LayoutGrid, ListOrdered, Mail, MonitorSmartphone,
   MessagesSquare, Phone, Presentation, ScrollText, Settings, Shield, ShieldAlert, Siren, Smartphone, TabletSmartphone, User, UserCog, UsersRound, Voicemail, Waypoints,
   type LucideIcon,
@@ -7,7 +7,7 @@ import {
 import { roleRank, type Role } from '../lib/api'
 
 /** min is the lowest role that sees the item (default admin). portal items need a linked extension. */
-export type NavItem = { key: string; path: string; icon: LucideIcon; phase?: number; min?: Role; portal?: boolean }
+export type NavItem = { key: string; path: string; icon: LucideIcon; phase?: number; min?: Role; max?: Role; portal?: boolean }
 export type NavGroup = { key?: string; items: NavItem[] }
 
 export const nav: NavGroup[] = [
@@ -21,6 +21,7 @@ export const nav: NavGroup[] = [
       { key: 'colleagues', path: '/me/colleagues', icon: UsersRound, min: 'user', portal: true },
       { key: 'myCalls', path: '/me/calls', icon: History, min: 'user', portal: true },
       { key: 'devices', path: '/me/devices', icon: MonitorSmartphone, min: 'user', portal: true },
+      { key: 'myAssistants', path: '/me/assistants', icon: Bot, min: 'user', max: 'reception' },
       { key: 'myOnCall', path: '/me/oncall', icon: Siren, min: 'user' },
       { key: 'phonebook', path: '/phonebook', icon: BookUser, min: 'user' },
     ],
@@ -72,6 +73,7 @@ export const nav: NavGroup[] = [
       { key: 'integrations', path: '/integrations', icon: Plug },
       { key: 'speech', path: '/speech', icon: AudioWaveform },
       { key: 'ai', path: '/ai', icon: Sparkles },
+      { key: 'mcp', path: '/mcp-server', icon: Bot },
       { key: 'mobileApp', path: '/mobile-app', icon: TabletSmartphone },
       { key: 'windowsSoftphone', path: '/softphone', icon: Monitor },
       { key: 'backups', path: '/backups', icon: Archive },
@@ -87,5 +89,5 @@ export const nav: NavGroup[] = [
 export const allItems = nav.flatMap((g) => g.items)
 
 export function visible(item: NavItem, role: Role | undefined, hasExtension: boolean) {
-  return roleRank(role) >= roleRank(item.min ?? 'admin') && (!item.portal || hasExtension)
+  return roleRank(role) >= roleRank(item.min ?? 'admin') && (!item.max || roleRank(role) <= roleRank(item.max)) && (!item.portal || hasExtension)
 }

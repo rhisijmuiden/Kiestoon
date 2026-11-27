@@ -902,6 +902,47 @@ var migrations = []string{
 	);
 	CREATE INDEX extension_group_members_group ON extension_group_members(group_id);
 	ALTER TABLE outbound_routes ADD COLUMN group_ids TEXT NOT NULL DEFAULT '[]';`,
+	// MCP server: AI assistants (Claude and other MCP clients) connected by token or OAuth.
+	`CREATE TABLE mcp_oauth_clients (
+		id            TEXT PRIMARY KEY,
+		name          TEXT NOT NULL DEFAULT '',
+		redirect_uris TEXT NOT NULL DEFAULT '[]',
+		created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+	CREATE TABLE mcp_connections (
+		id             INTEGER PRIMARY KEY AUTOINCREMENT,
+		name           TEXT NOT NULL,
+		kind           TEXT NOT NULL CHECK (kind IN ('token','oauth')),
+		client_id      TEXT NOT NULL DEFAULT '',
+		user_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		role           TEXT NOT NULL CHECK (role IN ('admin','reception','user')),
+		scopes         TEXT NOT NULL DEFAULT '[]',
+		allowed_ips    TEXT NOT NULL DEFAULT '[]',
+		prefix         TEXT NOT NULL DEFAULT '',
+		token_hash     TEXT NOT NULL UNIQUE,
+		access_expires TEXT NOT NULL DEFAULT '',
+		refresh_hash   TEXT NOT NULL DEFAULT '',
+		expires_at     TEXT NOT NULL DEFAULT '',
+		last_used_at   TEXT NOT NULL DEFAULT '',
+		last_ip        TEXT NOT NULL DEFAULT '',
+		created_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+	);
+	CREATE INDEX mcp_connections_refresh ON mcp_connections(refresh_hash);
+	CREATE TABLE mcp_calls (
+		id        INTEGER PRIMARY KEY AUTOINCREMENT,
+		at        TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+		conn_id   INTEGER,
+		conn_name TEXT NOT NULL DEFAULT '',
+		user_id   INTEGER,
+		username  TEXT NOT NULL DEFAULT '',
+		tool      TEXT NOT NULL,
+		kind      TEXT NOT NULL DEFAULT 'read',
+		input     TEXT NOT NULL DEFAULT '',
+		result    TEXT NOT NULL DEFAULT '',
+		status    TEXT NOT NULL,
+		ip        TEXT NOT NULL DEFAULT ''
+	);
+	CREATE INDEX mcp_calls_at ON mcp_calls(at);`,
 }
 
 // fkOff marks a migration that rebuilds tables: it runs with foreign key enforcement off, so

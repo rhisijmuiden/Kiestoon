@@ -187,7 +187,13 @@
     "damaged_file": "Het bestand is beschadigd of onvolledig.",
     "too_many_files": "Upload hooguit 50 bestanden tegelijk, of zet ze in een zip.",
     "not_read": "Lees eerst de backup in.",
-    "encrypted_backup": "Deze backup is versleuteld. Maak een backup zonder wachtwoord en upload die."
+    "encrypted_backup": "Deze backup is versleuteld. Maak een backup zonder wachtwoord en upload die.",
+    "mcp_disabled": "De MCP-server staat uit.",
+    "mcp_users_not_allowed": "Gebruikers mogen op deze centrale geen AI-assistenten koppelen.",
+    "oauth_invalid_client": "Onbekende client: voeg de connector opnieuw toe.",
+    "oauth_invalid_redirect_uri": "Onbekend terugkeeradres: voeg de connector opnieuw toe.",
+    "oauth_invalid_request": "Ongeldig aanmeldverzoek.",
+    "oauth_unsupported_response_type": "Ongeldig aanmeldverzoek."
   },
   "setup": {
     "title": "Welkom bij Kiestoon",
@@ -307,7 +313,9 @@
     "onCall": "Storingsdienst",
     "myOnCall": "Mijn storingsdiensten",
     "logs": "Logboeken",
-    "import": "Importeren"
+    "import": "Importeren",
+    "mcp": "MCP-server",
+    "myAssistants": "AI-assistenten"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -607,7 +615,10 @@
     "defaultEngine": "engine",
     "stability": "stabiliteit",
     "speed": "snelheid",
-    "numbers": "telefoonnummers"
+    "numbers": "telefoonnummers",
+    "scopes": "rechten",
+    "allowedIps": "toegestane adressen",
+    "days": "geldigheid"
   },
   "extensions": {
     "title": "Toestellen",
@@ -5022,6 +5033,202 @@
       "too_many_files": "Upload hooguit 50 bestanden tegelijk, of zet ze in een zip.",
       "not_read": "Lees eerst de backup in.",
       "encrypted_backup": "Deze backup is versleuteld. Maak een backup zonder wachtwoord en upload die."
+    }
+  },
+  "mcp": {
+    "title": "MCP-server",
+    "subtitle": "Laat AI-assistenten zoals Claude veilig met je telefooncentrale werken: opzoeken, rapporteren en, als je dat toestaat, dingen aanpassen.",
+    "mineTitle": "AI-assistenten",
+    "mineSubtitle": "Koppel een AI-assistent zoals Claude aan je eigen toestel: je gesprekken, voicemail, doorschakelen en bellen.",
+    "active": "Actief",
+    "off": "Uit",
+    "switchOn": "Aanzetten",
+    "switchOff": "Uitzetten",
+    "offText": "De MCP-server staat uit. Zet hem aan om AI-assistenten te koppelen.",
+    "offUser": "Je beheerder heeft AI-assistenten (nog) niet aangezet.",
+    "usersOff": "Je beheerder staat niet toe dat gebruikers zelf AI-assistenten koppelen.",
+    "tabs": {
+      "overview": "Overzicht",
+      "connections": "Verbindingen",
+      "tools": "Tools & rechten",
+      "activity": "Activiteit",
+      "connect": "Koppelen"
+    },
+    "newConnection": "Nieuwe verbinding",
+    "stats": {
+      "connections": "Verbindingen",
+      "connectionsSub": "{{oauth}} OAuth · {{tokens}} tokens",
+      "calls": "Tool-aanroepen (24 u)",
+      "changes": "Wijzigingen en acties (24 u)",
+      "denied": "Geweigerd (24 u)",
+      "deniedSub": "buiten scope, fout token of adres"
+    },
+    "activeConnections": "Actieve verbindingen",
+    "viewAll": "Alles bekijken",
+    "client": "Client",
+    "userRole": "Gebruiker / rol",
+    "scopes": "Rechten",
+    "lastUsed": "Laatst gebruikt",
+    "never": "nooit",
+    "callsToday": "{{count}} aanroepen in 24 u",
+    "revoke": "Intrekken",
+    "confirmRevoke": "{{name}} intrekken? De assistent verliest direct de toegang.",
+    "noConnections": "Nog geen verbindingen",
+    "noConnectionsText": "Voeg een verbinding toe vanuit Claude (claude.ai of Claude Desktop) of maak een token voor Claude Code.",
+    "serverAddress": "Adres van de server",
+    "transport": "Transport",
+    "protocol": "Protocol",
+    "signIn": "Aanmelden",
+    "signInValue": "OAuth 2.1 + tokens",
+    "reachable": "Bereikbaar vanaf internet",
+    "reachableYes": "Ja, via HTTPS",
+    "reachableNo": "Nog niet: alleen op je eigen netwerk",
+    "policy": "Beleid",
+    "policyItems": {
+      "defaultReadOnly": [
+        "Nieuwe verbindingen standaard alleen lezen",
+        "Wijzigen en acties moeten per verbinding aan."
+      ],
+      "confirmWrites": [
+        "Wijzigingen eerst als voorstel",
+        "De assistent toont wat er verandert; pas na jouw ja wordt het opgeslagen."
+      ],
+      "maskNumbers": [
+        "Telefoonnummers maskeren",
+        "Verbergt de middelste cijfers van nummers in gespreksgeschiedenis en voicemail voor de AI."
+      ],
+      "shareMedia": [
+        "Voicemail en opnames delen",
+        "Uit: de assistent kan geen voicemail, opnames of transcripties lezen."
+      ],
+      "anthropicOnly": [
+        "OAuth alleen vanaf Anthropic-adressen",
+        "Voor claude.ai- en Claude Desktop-connectors: andere adressen worden geweigerd (je eigen netwerk blijft werken)."
+      ],
+      "allowUsers": [
+        "Gebruikers mogen hun eigen toestel koppelen",
+        "Medewerkers zonder beheerrechten kunnen een assistent aan hun eigen toestel koppelen."
+      ]
+    },
+    "kind": {
+      "read": "Lezen",
+      "act": "Acties",
+      "write": "Wijzigen"
+    },
+    "scope": {
+      "pbx_read": [
+        "Centrale bekijken",
+        "Toestellen, belgroepen, wachtrijen, IVR, tijdschema's, trunks en hun status."
+      ],
+      "calls_read": [
+        "Gesprekken en statistieken",
+        "Gespreksgeschiedenis, gespreksverloop, live wachtrijen, wallboardcijfers, gesprekskwaliteit."
+      ],
+      "phones_read": [
+        "Telefoons en provisioning",
+        "Bureautelefoons, firmware, registratie, laatst gezien."
+      ],
+      "media_read": [
+        "Voicemail en opnames",
+        "Berichten en opnames met transcriptie en AI-samenvatting. Gevoelig."
+      ],
+      "calls_act": [
+        "Gesprekken starten en sturen",
+        "Bellen, niet storen, doorschakelen, aanmelden en pauze in wachtrijen, nachtstand."
+      ],
+      "pbx_write": [
+        "Configuratie wijzigen",
+        "Toestellen, groepen, wachtrijen, IVR en routes aanmaken, aanpassen of verwijderen; telefoons koppelen."
+      ],
+      "system_write": [
+        "Systeem en onderhoud",
+        "Backups (geen terugzetten), op updates controleren, configuratie naar telefoons sturen, auditlog."
+      ]
+    },
+    "mediaOff": "Uitgezet in het beleid",
+    "form": {
+      "name": "Naam",
+      "namePlaceholder": "Claude Code – mijn laptop",
+      "role": "Rechten",
+      "roleHint": "De verbinding krijgt nooit meer rechten dan jij hebt.",
+      "expires": "Geldig",
+      "days": "{{count}} dagen",
+      "allowedIps": "Toegestaan vanaf (optioneel)",
+      "allowedIpsHint": "Adressen of netwerken, één per regel, bijvoorbeeld 192.168.10.0/24. Leeg: overal.",
+      "scopes": "Rechten",
+      "never": "Nooit via MCP: gebruikers en tokens beheren, een backup terugzetten, updates installeren, wachtwoorden of API-sleutels uitlezen.",
+      "create": "Token aanmaken",
+      "oauthNote": "Claude op claude.ai en Claude Desktop koppelen zelf via OAuth: zie Koppelen. Een token hier is voor Claude Code en andere clients."
+    },
+    "tokenOnce": "Kopieer het token nu: het wordt maar één keer getoond.",
+    "token": "Token",
+    "command": "Commando voor Claude Code",
+    "tools": {
+      "intro": "Elke tool hoort bij een scope. Zet tools uit die een assistent nooit mag gebruiken, welke rechten hij ook heeft.",
+      "minRole": "Vanaf rol",
+      "enabled": "Aan"
+    },
+    "activity": {
+      "search": "Zoek op tool, gebruiker of client…",
+      "all": "Alles",
+      "read": "Lezen",
+      "change": "Wijzigingen & acties",
+      "denied": "Geweigerd",
+      "export": "Exporteren (CSV)",
+      "time": "Tijd",
+      "user": "Gebruiker",
+      "tool": "Tool",
+      "input": "Invoer (geschoond)",
+      "result": "Resultaat",
+      "status": "Status",
+      "empty": "Nog geen tool-aanroepen",
+      "note": "Elke aanroep wordt 90 dagen bewaard. Wachtwoorden en tokens worden nooit gelogd; wijzigingen staan ook in het auditlog onder de naam van de gebruiker.",
+      "st": {
+        "ok": "Gelukt",
+        "proposal": "Voorstel",
+        "denied": "Geweigerd",
+        "error": "Fout"
+      }
+    },
+    "connect": {
+      "claudeAi": "claude.ai & Claude Desktop",
+      "claudeAiSub": "Aangepaste connector, inloggen met je Kiestoon-account",
+      "step1": "Open Instellingen → Connectors → Aangepaste connector toevoegen.",
+      "step2": "Plak dit adres:",
+      "step3": "Log in bij Kiestoon (met MFA of passkey) en kies wat Claude mag.",
+      "step4": "Klaar. De verbinding verschijnt onder Verbindingen.",
+      "internetWarn": "claude.ai maakt verbinding vanuit de cloud: Kiestoon moet via HTTPS met een eigen domein bereikbaar zijn (internetmodus).",
+      "code": "Claude Code",
+      "codeSub": "Eén commando, met een token",
+      "codeText": "Maak eerst een token aan onder Verbindingen. Dan in je terminal:",
+      "codeLan": "Werkt ook op je lokale netwerk, zonder internetmodus.",
+      "other": "Andere MCP-clients",
+      "otherSub": "JSON-configuratie, bijvoorbeeld n8n, Cursor of je eigen agent",
+      "copyCommand": "Commando kopiëren",
+      "copyJson": "JSON kopiëren",
+      "copied": "Gekopieerd",
+      "try": "Probeer bijvoorbeeld",
+      "examples": [
+        "Hoeveel gesprekken hebben we gisteren gemist en waarom?",
+        "Maak een toestel aan voor Lisa, nummer 214, en koppel de Yealink T54W",
+        "Welke trunk had deze week de slechtste gesprekskwaliteit?",
+        "Zet de nachtstand aan tot morgen 8:00",
+        "Bel 020 123 4567 vanaf mijn toestel",
+        "Maak een weekrapport van de klantenservice-wachtrij"
+      ]
+    },
+    "consent": {
+      "title": "{{client}} wil verbinden met Kiestoon",
+      "signedInAs": "Ingelogd als",
+      "via": "Gaat terug naar",
+      "may": "{{client}} mag",
+      "valid": "Geldig",
+      "note": "Je kunt dit altijd intrekken in Kiestoon. De assistent ziet nooit wachtwoorden of API-sleutels, en wijzigingen krijg je eerst als voorstel te zien.",
+      "deny": "Weigeren",
+      "allow": "Toestaan",
+      "invalid": "Dit aanmeldverzoek is ongeldig of verlopen. Verwijder de connector in je AI-assistent en voeg hem opnieuw toe.",
+      "redirecting": "Terug naar {{client}}…",
+      "pick": "Kies minstens één recht."
     }
   }
 }

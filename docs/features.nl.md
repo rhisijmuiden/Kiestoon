@@ -235,6 +235,12 @@ REST-API met tokens, ondertekende webhooks en Prometheus-metrics.
 
 ![API, webhooks en metrics](shot:integrations)
 
+### [MCP-server voor AI-assistenten](mcp.md)
+
+Laat Claude en andere AI-assistenten opzoeken, rapporteren en, als je dat toestaat, dingen aanpassen, met OAuth, rechten en een voorstel vóór elke wijziging.
+
+![MCP-server](shot:mcp)
+
 ### [Back-ups en herstel](backups.md)
 
 Volledige en incrementele back-ups naar FTP, FTPS, SFTP, SCP en meer, en herstel van daaruit.

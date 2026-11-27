@@ -272,6 +272,43 @@ db.prepare(`INSERT INTO settings(key, value) VALUES ('mobile', ?) ON CONFLICT(ke
     phone: { enabled: true, minutes: 60, count: 3 }, eachCall: false, recovered: true, email: true, recipients: ['it@noordkade.example'], quiet: 30, keepDays: 90 }))
 }
 
+// MCP server: connections made with OAuth from Claude and a day of tool calls.
+{
+  const uid = (u) => db.prepare('SELECT id FROM users WHERE username = ?').get(u)?.id
+  const hash = (s) => crypto.createHash('sha256').update(s).digest('hex')
+  const fut = (days) => new Date(Date.now() + days * 864e5).toISOString().replace(/\.\d+Z$/, 'Z')
+  db.prepare(`INSERT INTO mcp_oauth_clients(id, name, redirect_uris) VALUES ('kmc_docs1', 'Claude', '["https://claude.ai/api/mcp/auth_callback"]')`).run()
+  const conn = db.prepare(`INSERT INTO mcp_connections(name, kind, client_id, user_id, role, scopes, prefix, token_hash, access_expires, refresh_hash, expires_at, last_used_at, last_ip, created_at)
+    VALUES ('Claude', 'oauth', 'kmc_docs1', ?, ?, ?, 'OAuth', ?, ?, ?, ?, ?, ?, ?)`)
+  conn.run(uid('admin'), 'admin', JSON.stringify(['pbx:read', 'calls:read', 'phones:read', 'calls:act', 'pbx:write']), hash('docs-a1'), fut(0.04), hash('docs-r1'), fut(28), iso(2 * 60000), '160.79.106.21', iso(2 * 864e5))
+  conn.run(uid('sanne.bakker'), 'reception', JSON.stringify(['calls:read', 'calls:act']), hash('docs-a2'), fut(0.04), hash('docs-r2'), fut(25), iso(3 * 3600e3), '160.79.105.4', iso(5 * 864e5))
+  conn.run(uid('thomas.jansen'), 'user', JSON.stringify(['calls:read', 'calls:act']), hash('docs-a3'), fut(0.04), hash('docs-r3'), fut(20), iso(26 * 3600e3), '160.79.104.77', iso(9 * 864e5))
+  db.prepare(`UPDATE mcp_connections SET last_used_at = ?, last_ip = '192.168.10.42' WHERE name LIKE 'Claude Code%'`).run(iso(55 * 60000))
+  db.prepare(`UPDATE mcp_connections SET last_used_at = ?, last_ip = '192.168.10.5' WHERE name LIKE 'n8n%'`).run(iso(5 * 3600e3))
+  const id = (name, user) => db.prepare(`SELECT c.id FROM mcp_connections c JOIN users u ON u.id = c.user_id WHERE c.name LIKE ? AND u.username = ?`).get(name, user)?.id
+  const call = db.prepare(`INSERT INTO mcp_calls(at, conn_id, conn_name, user_id, username, tool, kind, input, result, status, ip) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+  const rows = [
+    [3, 'Claude', 'admin', 'search_calls', 'read', '{"direction":"inbound","disposition":"NO ANSWER","from":"2026-11-26"}', '38 records', 'ok', '160.79.106.21'],
+    [2.6, 'Claude', 'admin', 'get_call_journey', 'read', '{"id":"1731644.1"}', '{events, call}', 'ok', '160.79.106.21'],
+    [2.4, 'Claude', 'admin', 'wallboard_figures', 'read', '{}', '{agents, queues, totals}', 'ok', '160.79.106.21'],
+    [2.2, 'Claude', 'admin', 'update_config', 'write', '{"changes":{"timeout":20},"id":1,"kind":"queues"}', 'proposal p8f2a91c', 'proposal', '160.79.106.21'],
+    [2.1, 'Claude', 'admin', 'update_config', 'write', '{"changes":{"timeout":20},"id":1,"kind":"queues"}', '{id, name, number}', 'ok', '160.79.106.21'],
+    [180, 'Claude', 'sanne.bakker', 'click_to_call', 'act', '{"number":"+31 20 555 0147"}', 'ok=true', 'ok', '160.79.105.4'],
+    [182, 'Claude', 'sanne.bakker', 'queue_status', 'read', '{}', '3 items', 'ok', '160.79.105.4'],
+    [55, 'Claude Code – IT laptop', 'admin', 'list_config', 'read', '{"kind":"extensions"}', 'total 14', 'ok', '192.168.10.42'],
+    [56, 'Claude Code – IT laptop', 'admin', 'delete_config', 'write', '{"id":9,"kind":"extensions"}', 'this tool is switched off by the administrator', 'denied', '192.168.10.42'],
+    [300, 'n8n weekly report', 'admin', 'search_calls', 'read', '{"from":"2026-11-20","to":"2026-11-26"}', '100 records', 'ok', '192.168.10.5'],
+    [420, '', '', 'connect', 'read', '', 'invalid token', 'denied', '45.83.12.9'],
+    [1560, 'Claude', 'thomas.jansen', 'set_call_forwarding', 'act', '{"forwardAlways":"+31 6 5555 0123"}', '{dnd, forwardAlways}', 'ok', '160.79.104.77'],
+  ]
+  for (const [mins, name, user, tool, kind, input, result, status, ip] of rows.sort((a, b) => b[0] - a[0])) {
+    const cid = name ? id(name + '%', user === 'admin' && name.startsWith('n8n') ? 'admin' : user) : null
+    call.run(iso(mins * 60000), cid ?? null, name, name ? uid(user) : null, user, tool, kind, input, result, status, ip)
+  }
+  db.prepare(`UPDATE settings SET value = ? WHERE key = 'mcp_settings'`).run(JSON.stringify({ enabled: true, defaultReadOnly: true, confirmWrites: true, maskNumbers: false,
+    shareMedia: false, anthropicOnly: true, allowUsers: true, disabledTools: ['delete_config'] }))
+}
+
 // A backup history through the (fake) helper.
 const c = new Client(base)
 await loginAdmin(c, fs.readFileSync(path.join(dataDir, '..', 'mfa-secret'), 'utf8').trim())

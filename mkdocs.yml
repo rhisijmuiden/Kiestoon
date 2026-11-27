@@ -138,6 +138,7 @@ plugins:
             Mail server: Mailserver
             CRM integrations and call pop-up: CRM-koppelingen en belpop-up
             API, webhooks and metrics: API, webhooks en metrics
+            MCP server (AI assistants): MCP-server (AI-assistenten)
             Updates and channels: Updates en kanalen
             Settings: Instellingen
             Troubleshooting: Problemen oplossen
@@ -203,6 +204,7 @@ nav:
       - Mail server: mail.md
       - CRM integrations and call pop-up: crm.md
       - API, webhooks and metrics: api.md
+      - MCP server (AI assistants): mcp.md
       - Updates and channels: updates.md
       - Settings: settings.md
       - Logs: logs.md

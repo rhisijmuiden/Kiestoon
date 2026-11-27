@@ -235,6 +235,12 @@ REST API with tokens, signed webhooks and Prometheus metrics.
 
 ![API, webhooks and metrics](shot:integrations)
 
+### [MCP server for AI assistants](mcp.md)
+
+Let Claude and other AI assistants look things up, report and, if you allow it, change things, with OAuth, scopes and a proposal before every change.
+
+![MCP server](shot:mcp)
+
 ### [Backups and restore](backups.md)
 
 Full and incremental backups to FTP, FTPS, SFTP, SCP and more, and restore from there.

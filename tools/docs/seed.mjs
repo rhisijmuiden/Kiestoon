@@ -332,4 +332,8 @@ await c.put('/api/pbx/features', {
   parkingSlots: 8, parkingTimeout: 120, recordingDays: 90, recordingBeep: true,
   fraud: { premiumPrefixes: ['0900', '0906', '0909', '084', '087', '18'], blockedCountries: ['53', '850'], maxOutbound: 10, alertEmail: 'it@noordkade.example', alertOutboundPerHour: 60, alertInternationalPerHour: 10, blockOnAlert: true },
 })
+// ---- MCP server: switched on, with a token for Claude Code and a read-only one for a report workflow ----
+await c.put('/api/mcp/settings', { enabled: true, defaultReadOnly: true, confirmWrites: true, maskNumbers: false, shareMedia: false, anthropicOnly: true, allowUsers: true, disabledTools: [] })
+await c.post('/api/mcp/connections', { name: 'Claude Code – IT laptop', role: 'admin', scopes: ['pbx:read', 'calls:read', 'phones:read', 'pbx:write'], expiresDays: 90, allowedIps: ['192.168.10.0/24'] })
+await c.post('/api/mcp/connections', { name: 'n8n weekly report', role: 'reception', scopes: ['calls:read'], expiresDays: 30, allowedIps: [] })
 console.log('seeded')

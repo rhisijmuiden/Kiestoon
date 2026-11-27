@@ -187,7 +187,13 @@
     "damaged_file": "The file is damaged or incomplete.",
     "too_many_files": "Upload at most 50 files at once, or put them in a zip.",
     "not_read": "Read the backup first.",
-    "encrypted_backup": "This backup is encrypted. Make a backup without a password and upload that one."
+    "encrypted_backup": "This backup is encrypted. Make a backup without a password and upload that one.",
+    "mcp_disabled": "The MCP server is switched off.",
+    "mcp_users_not_allowed": "Users may not connect AI assistants on this phone system.",
+    "oauth_invalid_client": "Unknown client: add the connector again.",
+    "oauth_invalid_redirect_uri": "Unknown return address: add the connector again.",
+    "oauth_invalid_request": "Invalid sign-in request.",
+    "oauth_unsupported_response_type": "Invalid sign-in request."
   },
   "setup": {
     "title": "Welcome to Kiestoon",
@@ -307,7 +313,9 @@
     "onCall": "On-call",
     "myOnCall": "My on-call shifts",
     "logs": "Logs",
-    "import": "Import"
+    "import": "Import",
+    "mcp": "MCP server",
+    "myAssistants": "AI assistants"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -607,7 +615,10 @@
     "defaultEngine": "engine",
     "stability": "stability",
     "speed": "speed",
-    "numbers": "phone numbers"
+    "numbers": "phone numbers",
+    "scopes": "scopes",
+    "allowedIps": "allowed addresses",
+    "days": "validity"
   },
   "extensions": {
     "title": "Extensions",
@@ -5022,6 +5033,202 @@
       "too_many_files": "Upload at most 50 files at once, or put them in a zip.",
       "not_read": "Read the backup first.",
       "encrypted_backup": "This backup is encrypted. Make a backup without a password and upload that one."
+    }
+  },
+  "mcp": {
+    "title": "MCP server",
+    "subtitle": "Let AI assistants such as Claude work with your phone system safely: look things up, report and, if you allow it, change things.",
+    "mineTitle": "AI assistants",
+    "mineSubtitle": "Connect an AI assistant such as Claude to your own phone: your calls, voicemail, forwarding and click-to-call.",
+    "active": "Active",
+    "off": "Off",
+    "switchOn": "Switch on",
+    "switchOff": "Switch off",
+    "offText": "The MCP server is switched off. Switch it on to connect AI assistants.",
+    "offUser": "Your administrator has not switched on AI assistants (yet).",
+    "usersOff": "Your administrator does not allow users to connect AI assistants.",
+    "tabs": {
+      "overview": "Overview",
+      "connections": "Connections",
+      "tools": "Tools & scopes",
+      "activity": "Activity",
+      "connect": "Connect"
+    },
+    "newConnection": "New connection",
+    "stats": {
+      "connections": "Connections",
+      "connectionsSub": "{{oauth}} OAuth · {{tokens}} tokens",
+      "calls": "Tool calls (24 h)",
+      "changes": "Changes and actions (24 h)",
+      "denied": "Denied (24 h)",
+      "deniedSub": "out of scope, wrong token or address"
+    },
+    "activeConnections": "Active connections",
+    "viewAll": "View all",
+    "client": "Client",
+    "userRole": "User / role",
+    "scopes": "Scopes",
+    "lastUsed": "Last used",
+    "never": "never",
+    "callsToday": "{{count}} calls in 24 h",
+    "revoke": "Revoke",
+    "confirmRevoke": "Revoke {{name}}? The assistant loses access immediately.",
+    "noConnections": "No connections yet",
+    "noConnectionsText": "Add a connection from Claude (claude.ai or Claude Desktop) or create a token for Claude Code.",
+    "serverAddress": "Server address",
+    "transport": "Transport",
+    "protocol": "Protocol",
+    "signIn": "Sign-in",
+    "signInValue": "OAuth 2.1 + tokens",
+    "reachable": "Reachable from the internet",
+    "reachableYes": "Yes, via HTTPS",
+    "reachableNo": "Not yet: only on your network",
+    "policy": "Policy",
+    "policyItems": {
+      "defaultReadOnly": [
+        "New connections read-only by default",
+        "Changes and actions must be switched on per connection."
+      ],
+      "confirmWrites": [
+        "Changes as a proposal first",
+        "The assistant shows what will change; it is saved only after your yes."
+      ],
+      "maskNumbers": [
+        "Mask phone numbers",
+        "Hides the middle digits of numbers in call history and voicemail for the AI."
+      ],
+      "shareMedia": [
+        "Share voicemail and recordings",
+        "Off: the assistant cannot read voicemail, recordings or their transcripts."
+      ],
+      "anthropicOnly": [
+        "OAuth only from Anthropic addresses",
+        "For claude.ai and Claude Desktop connectors: other addresses are refused (your own network keeps working)."
+      ],
+      "allowUsers": [
+        "Users may connect their own phone",
+        "Employees without admin rights can connect an assistant to their own extension."
+      ]
+    },
+    "kind": {
+      "read": "Read",
+      "act": "Actions",
+      "write": "Change"
+    },
+    "scope": {
+      "pbx_read": [
+        "View PBX",
+        "Extensions, ring groups, queues, IVR, time conditions, trunks and their status."
+      ],
+      "calls_read": [
+        "Calls and statistics",
+        "Call history, call journeys, live queues, wallboard figures, call quality."
+      ],
+      "phones_read": [
+        "Phones and provisioning",
+        "Desk phones, firmware, registration, last seen."
+      ],
+      "media_read": [
+        "Voicemail and recordings",
+        "Messages and recordings with transcript and AI summary. Sensitive."
+      ],
+      "calls_act": [
+        "Start and steer calls",
+        "Click-to-call, do not disturb, forwarding, queue login and pause, night mode."
+      ],
+      "pbx_write": [
+        "Change configuration",
+        "Create, change or delete extensions, groups, queues, IVR, routes; link phones."
+      ],
+      "system_write": [
+        "System and maintenance",
+        "Backups (no restore), check for updates, push config to phones, audit log."
+      ]
+    },
+    "mediaOff": "Switched off in the policy",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Claude Code – my laptop",
+      "role": "Rights",
+      "roleHint": "The connection never gets more rights than you have.",
+      "expires": "Valid for",
+      "days": "{{count}} days",
+      "allowedIps": "Allowed from (optional)",
+      "allowedIpsHint": "Addresses or networks, one per line, for example 192.168.10.0/24. Empty: everywhere.",
+      "scopes": "Scopes",
+      "never": "Never via MCP: manage users and tokens, restore a backup, install updates, read passwords or API keys.",
+      "create": "Create token",
+      "oauthNote": "Claude on claude.ai and Claude Desktop connect themselves via OAuth: see Connect. A token here is for Claude Code and other clients."
+    },
+    "tokenOnce": "Copy the token now: it is shown only once.",
+    "token": "Token",
+    "command": "Command for Claude Code",
+    "tools": {
+      "intro": "Every tool belongs to a scope. Switch off tools you never want an assistant to use, whatever its scopes.",
+      "minRole": "From role",
+      "enabled": "Enabled"
+    },
+    "activity": {
+      "search": "Search tool, user or client…",
+      "all": "All",
+      "read": "Read",
+      "change": "Changes & actions",
+      "denied": "Denied",
+      "export": "Export (CSV)",
+      "time": "Time",
+      "user": "User",
+      "tool": "Tool",
+      "input": "Input (redacted)",
+      "result": "Result",
+      "status": "Status",
+      "empty": "No tool calls yet",
+      "note": "Every call is kept 90 days. Passwords and tokens are never logged; changes are also in the audit log under the user's name.",
+      "st": {
+        "ok": "OK",
+        "proposal": "Proposal",
+        "denied": "Denied",
+        "error": "Error"
+      }
+    },
+    "connect": {
+      "claudeAi": "claude.ai & Claude Desktop",
+      "claudeAiSub": "Custom connector, sign in with your Kiestoon account",
+      "step1": "Open Settings → Connectors → Add custom connector.",
+      "step2": "Paste this address:",
+      "step3": "Sign in to Kiestoon (with MFA or passkey) and choose what Claude may do.",
+      "step4": "Done. The connection appears under Connections.",
+      "internetWarn": "claude.ai connects from the cloud: Kiestoon must be reachable via HTTPS with its own domain (Internet mode).",
+      "code": "Claude Code",
+      "codeSub": "One command, with a token",
+      "codeText": "Create a token under Connections first. Then in your terminal:",
+      "codeLan": "Also works on your local network, without internet mode.",
+      "other": "Other MCP clients",
+      "otherSub": "JSON configuration, for example n8n, Cursor or your own agent",
+      "copyCommand": "Copy command",
+      "copyJson": "Copy JSON",
+      "copied": "Copied",
+      "try": "Try for example",
+      "examples": [
+        "How many calls did we miss yesterday and why?",
+        "Create an extension for Lisa, number 214, and link the Yealink T54W",
+        "Which trunk had the worst call quality this week?",
+        "Turn on night mode until 8:00 tomorrow",
+        "Call 020 123 4567 from my phone",
+        "Make a weekly report of the customer service queue"
+      ]
+    },
+    "consent": {
+      "title": "{{client}} wants to connect to Kiestoon",
+      "signedInAs": "Signed in as",
+      "via": "Goes back to",
+      "may": "{{client}} may",
+      "valid": "Valid for",
+      "note": "You can revoke this at any time in Kiestoon. The assistant never sees passwords or API keys, and changes are shown to you as a proposal first.",
+      "deny": "Deny",
+      "allow": "Allow",
+      "invalid": "This sign-in request is invalid or has expired. Remove the connector in your AI assistant and add it again.",
+      "redirecting": "Going back to {{client}}…",
+      "pick": "Choose at least one scope."
     }
   }
 }

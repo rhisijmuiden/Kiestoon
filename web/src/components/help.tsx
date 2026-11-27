@@ -55,6 +55,8 @@ const topics: Record<string, Topic> = {
   '/integrations': { page: 'crm' },
   '/speech': { page: 'prompts', en: 'speech', nl: 'spraak' },
   '/ai': { page: 'ai' },
+  '/mcp-server': { page: 'mcp' },
+  '/me/assistants': { page: 'mcp', en: 'connect-your-own-phone', nl: 'je-eigen-toestel-koppelen' },
   '/mobile-app': { page: 'mobile-app' },
   '/softphone': { page: 'softphone' },
   '/backups': { page: 'backups' },

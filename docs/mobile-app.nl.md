@@ -137,7 +137,9 @@ een debug-APK voor Android en een simulatorbuild voor de iPhone. Voor een eigen 
 
 - **Android:** een Firebase-project met een Android-app `nl.rhis.kiestoon` (of je eigen id). Zet de
   `google-services.json` daarvan in `mobile/src-tauri/gen/android/app/`; zonder dat bestand wordt de app gebouwd
-  zonder push. Onderteken de release-APK of -bundle met je uploadsleutel.
+  zonder push. Onderteken de release-APK of -bundle met je uploadsleutel. De workflow **Mobile app (Google Play)** doet dit
+  voor de release van RHIS: hij bouwt de ondertekende App Bundle en uploadt die naar Google Play, zie
+  `mobile/store/README.nl.md`.
 - **iPhone:** een Apple-ontwikkelaarsaccount, een Mac met Xcode, en de capabilities **Push Notifications** en
   **Background Modes** (Voice over IP, Audio, Remote notifications). Voer in `mobile/` eerst `npx tauri ios init`
   en dan `./ios-setup.sh` uit; dat voegt de achtergrondmodi, de microfoontekst en de push-entitlement toe.

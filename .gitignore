@@ -11,3 +11,8 @@ docs/assets/screenshots/
 /site/
 tools/docs/node_modules/
 __pycache__/
+# Signing keys of the mobile app never go into git (see mobile/store/README.md).
+*.p12
+*.jks
+*.keystore
+*.p12.base64

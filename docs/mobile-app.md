@@ -130,7 +130,8 @@ debug APK for Android and a simulator build for iPhone. For your own store build
 
 - **Android:** a Firebase project with an Android app `nl.rhis.kiestoon` (or your own id). Put its
   `google-services.json` in `mobile/src-tauri/gen/android/app/`; without it the app builds without push. Sign the
-  release APK or bundle with your upload key.
+  release APK or bundle with your upload key. The workflow **Mobile app (Google Play)** does this for the RHIS
+  release: it builds the signed App Bundle and uploads it to Google Play, see `mobile/store/README.md`.
 - **iPhone:** an Apple developer account, a Mac with Xcode, and the capabilities **Push Notifications** and
   **Background Modes** (Voice over IP, Audio, Remote notifications). Run `npx tauri ios init` and then
   `./ios-setup.sh` in `mobile/`, which adds the background modes, the microphone text and the push entitlement.

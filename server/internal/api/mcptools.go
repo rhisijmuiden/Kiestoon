@@ -135,7 +135,9 @@ func (e *mcpErr) Error() string {
 	return s
 }
 
-func argErr(field, msg string) error { return &mcpErr{Code: "invalid_argument", Field: field, Msg: msg} }
+func argErr(field, msg string) error {
+	return &mcpErr{Code: "invalid_argument", Field: field, Msg: msg}
+}
 
 // ---- in-process API calls --------------------------------------------------------------
 
@@ -188,7 +190,9 @@ func (c *mcpCall) do(method, path string, q url.Values, body any) (any, error) {
 	return out, nil
 }
 
-func (c *mcpCall) get(path string, q url.Values) (any, error) { return c.do(http.MethodGet, path, q, nil) }
+func (c *mcpCall) get(path string, q url.Values) (any, error) {
+	return c.do(http.MethodGet, path, q, nil)
+}
 
 // ---- tool calls ----------------------------------------------------------------------------
 
@@ -602,9 +606,13 @@ func hasExtension(c *mcpCall) bool { return c.sess.User.ExtensionID != nil }
 
 func str(desc string) map[string]any { return map[string]any{"type": "string", "description": desc} }
 
-func integer(desc string) map[string]any { return map[string]any{"type": "integer", "description": desc} }
+func integer(desc string) map[string]any {
+	return map[string]any{"type": "integer", "description": desc}
+}
 
-func boolean(desc string) map[string]any { return map[string]any{"type": "boolean", "description": desc} }
+func boolean(desc string) map[string]any {
+	return map[string]any{"type": "boolean", "description": desc}
+}
 
 func enum(desc string, vals ...string) map[string]any {
 	return map[string]any{"type": "string", "description": desc, "enum": vals}
@@ -834,8 +842,8 @@ func init() {
 
 		// calls:act
 		{Name: "click_to_call", Title: "Call a number", Scope: "calls:act", MinRole: "user",
-			Desc: "Ring a phone and, once it is answered, call the number. Without extension it rings the user's own phone; reception and administrators can name another extension number.",
-			Props: map[string]any{"number": str("Number to call."), "extension": str("Extension number that should make the call (reception/admin).")},
+			Desc:     "Ring a phone and, once it is answered, call the number. Without extension it rings the user's own phone; reception and administrators can name another extension number.",
+			Props:    map[string]any{"number": str("Number to call."), "extension": str("Extension number that should make the call (reception/admin).")},
 			Required: []string{"number"},
 			Run: func(c *mcpCall, a mcpArgs) (any, error) {
 				if a.str("number") == "" {
@@ -904,8 +912,8 @@ func init() {
 
 		// pbx:write
 		{Name: "create_config", Title: "Create configuration object", Scope: "pbx:write", MinRole: "admin",
-			Desc: "Create an object of a kind (" + strings.Join(kindsWrite, ", ") + "). Look at an existing object with get_config for the fields; fields you leave out get their defaults.",
-			Props: map[string]any{"kind": enum("Kind of object.", kindsWrite...), "fields": map[string]any{"type": "object", "description": "The fields of the new object."}},
+			Desc:     "Create an object of a kind (" + strings.Join(kindsWrite, ", ") + "). Look at an existing object with get_config for the fields; fields you leave out get their defaults.",
+			Props:    map[string]any{"kind": enum("Kind of object.", kindsWrite...), "fields": map[string]any{"type": "object", "description": "The fields of the new object."}},
 			Required: []string{"kind", "fields"},
 			Preview: func(c *mcpCall, a mcpArgs) (any, error) {
 				ck, err := c.kind(a, true)
@@ -1024,7 +1032,9 @@ func init() {
 			}},
 		{Name: "check_updates", Title: "Check for updates", Scope: "system:write", MinRole: "admin", Kind: "read",
 			Desc: "Check whether a newer Kiestoon version is available on the update channel. Installing is only possible in the portal.",
-			Run:  func(c *mcpCall, a mcpArgs) (any, error) { return c.do(http.MethodPost, "/api/system/updates/check", nil, map[string]any{}) }},
+			Run: func(c *mcpCall, a mcpArgs) (any, error) {
+				return c.do(http.MethodPost, "/api/system/updates/check", nil, map[string]any{})
+			}},
 		{Name: "resync_phone", Title: "Push configuration to a phone", Scope: "system:write", MinRole: "admin", Kind: "act",
 			Desc:  "Make a desk phone fetch its configuration again (it may restart).",
 			Props: map[string]any{"phone_id": integer("Phone id.")}, Required: []string{"phone_id"},

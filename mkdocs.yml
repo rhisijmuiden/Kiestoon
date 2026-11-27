@@ -120,6 +120,7 @@ plugins:
             User portal: Gebruikersportaal
             Windows softphone: Windows-softphone
             Mobile app: Mobiele app
+            Mobile app privacy: Privacy mobiele app
             Multi-site and HA: Meerdere locaties en HA
             Branch offices (Edge): Vestigingen (Edge)
             Linked systems: Gekoppelde systemen
@@ -184,6 +185,7 @@ nav:
       - User portal: portal.md
       - Windows softphone: softphone.md
       - Mobile app: mobile-app.md
+      - Mobile app privacy: app-privacy.md
   - Multi-site and HA:
       - Branch offices (Edge): edge.md
       - Linked systems: multi-site.md

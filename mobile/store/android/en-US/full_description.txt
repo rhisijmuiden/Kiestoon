@@ -1,0 +1,29 @@
+Kiestoon takes your office extension with you. The app rings for the calls of your extension, also when the app is closed and your phone is locked, and you call out with your business number.
+
+The app works with a Kiestoon phone system. Your employer or IT partner runs that phone system; the app connects to it directly. Ask your administrator for access.
+
+WHAT YOU CAN DO
+• Answer business calls on the call screen of your phone, also on the lock screen
+• Call out with your business number instead of your own mobile number
+• See your colleagues with their live status: available, busy or ringing
+• Search the company phone book
+• Sign in to and out of the queues you are a member of
+• Listen to voicemail, with the AI summary when your phone system has it switched on
+• Look back at your call history
+• Set yourself to do not disturb in one tap
+
+LINK IN SECONDS
+In the Kiestoon portal, open My devices, choose Link mobile app and scan the QR code with the camera of your phone. The app links itself to your extension. It works with your normal sign-in, including MFA, passkeys and single sign-on; the app never sees your password.
+
+PRIVATE BY DESIGN
+• Calls go straight from the app to the phone system of your organisation, with encrypted audio (DTLS-SRTP).
+• Incoming call notifications are encrypted end to end between your phone system and your phone. The push service in between cannot read who is calling.
+• No ads, no tracking, no analytics.
+• Kiestoon is open source software.
+
+REQUIREMENTS
+• A Kiestoon phone system with the mobile app allowed by your administrator
+• Android 10 or later
+• Allow notifications and the microphone, so the app can ring and you can be heard
+
+Kiestoon is made by RHIS.

@@ -21,8 +21,26 @@ android {
         applicationId = "nl.rhis.kiestoon"
         minSdk = 29
         targetSdk = 36
-        versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
-        versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
+        // Store builds set both from VERSION (see .github/workflows/mobile-release.yml): Google Play needs a
+        // higher versionCode for every upload, also between release candidates of the same version.
+        versionCode = (System.getenv("KIESTOON_VERSION_CODE")
+            ?: tauriProperties.getProperty("tauri.android.versionCode", "1")).toInt()
+        versionName = System.getenv("KIESTOON_VERSION_NAME")
+            ?: tauriProperties.getProperty("tauri.android.versionName", "1.0")
+    }
+    // The upload key for Google Play. It is never in the repository: CI writes it from the secret
+    // ANDROID_UPLOAD_KEYSTORE to a temporary file and passes the path and passwords as environment
+    // variables. Without them the release build is unsigned (fine for a test build, not for Play).
+    val uploadKeystore = System.getenv("KIESTOON_UPLOAD_KEYSTORE")?.takeIf { it.isNotBlank() }?.let { file(it) }
+    signingConfigs {
+        if (uploadKeystore != null) {
+            create("upload") {
+                storeFile = uploadKeystore
+                storePassword = System.getenv("KIESTOON_UPLOAD_STORE_PASSWORD")
+                keyAlias = System.getenv("KIESTOON_UPLOAD_KEY_ALIAS") ?: "upload"
+                keyPassword = System.getenv("KIESTOON_UPLOAD_KEY_PASSWORD") ?: System.getenv("KIESTOON_UPLOAD_STORE_PASSWORD")
+            }
+        }
     }
     buildTypes {
         getByName("debug") {
@@ -37,6 +55,7 @@ android {
             }
         }
         getByName("release") {
+            if (uploadKeystore != null) signingConfig = signingConfigs.getByName("upload")
             isMinifyEnabled = true
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }

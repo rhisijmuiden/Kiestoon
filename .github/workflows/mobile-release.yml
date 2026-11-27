@@ -1,0 +1,184 @@
+name: Mobile app (Google Play)
+
+# Builds the signed Android App Bundle (.aab) of the Kiestoon app and uploads it to Google Play.
+#
+#   - After every release (workflow "Release"): upload to the internal test track.
+#   - By hand (Actions > Mobile app (Google Play) > Run workflow): choose the track yourself.
+#   - On a pull request that changes the Android build: only build an unsigned bundle, as a check.
+#
+# Secrets (Settings > Secrets and variables > Actions), see mobile/store/README.md:
+#   ANDROID_UPLOAD_KEYSTORE        the upload key (.p12/.jks file) as base64
+#   ANDROID_UPLOAD_STORE_PASSWORD  its password
+#   ANDROID_UPLOAD_KEY_PASSWORD    password of the key itself (leave out when it is the same)
+#   GOOGLE_SERVICES_JSON           google-services.json of the Firebase project (push)
+#   PLAY_SERVICE_ACCOUNT_JSON      the JSON key of the Google Play service account
+# Variable: ANDROID_UPLOAD_KEY_ALIAS (default "upload").
+#
+# Without the keystore secret the bundle is built unsigned and not uploaded. Without the service account
+# the signed bundle is only kept as a workflow artifact (needed for the very first upload, which Google
+# Play only accepts by hand in Play Console).
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      track:
+        description: Google Play track
+        type: choice
+        options: [internal, alpha, beta, production]
+        default: internal
+      status:
+        description: Release status (use draft while the app has not been reviewed yet)
+        type: choice
+        options: [completed, draft]
+        default: completed
+  pull_request:
+    paths:
+      - 'mobile/src-tauri/gen/android/**'
+      - 'mobile/store/**'
+      - '.github/workflows/mobile-release.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  bundle:
+    name: Android App Bundle
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      PACKAGE: nl.rhis.kiestoon
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # After a release: exactly the released commit.
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || '' }}
+      - name: Which secrets are there
+        id: has
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_UPLOAD_KEYSTORE }}
+          PLAY: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          FIREBASE: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          sign=false; upload=false
+          if [ "${{ github.event_name }}" != pull_request ] && [ -n "$KEYSTORE" ]; then sign=true; fi
+          if [ "$sign" = true ] && [ -n "$PLAY" ]; then upload=true; fi
+          echo "sign=$sign" >> "$GITHUB_OUTPUT"; echo "upload=$upload" >> "$GITHUB_OUTPUT"
+          [ "${{ github.event_name }}" = pull_request ] && exit 0
+          [ "$sign" = true ] || echo "::warning::ANDROID_UPLOAD_KEYSTORE is not set: building an unsigned bundle, nothing is uploaded."
+          [ -n "$FIREBASE" ] || echo "::warning::GOOGLE_SERVICES_JSON is not set: this build has no push, the app only rings while it is open."
+          [ "$upload" = true ] || [ "$sign" != true ] || echo "::notice::PLAY_SERVICE_ACCOUNT_JSON is not set: the signed bundle is kept as an artifact, upload it by hand in Play Console."
+      - name: Version
+        id: version
+        run: |
+          # VERSION is vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-rc.N. Google Play needs a higher versionCode for
+          # every upload: MMmmpp * 1000 + N for a release candidate, + 999 for the release itself, so
+          # 0.7.0-rc.35 = 700035 and 0.7.0 = 700999 (always above its candidates).
+          full="$(tr -d '[:space:]' < ../VERSION | sed 's/^v//')"
+          base="${full%%-*}"
+          IFS=. read -r ma mi pa <<< "$base"
+          if [[ "$full" =~ -rc\.([0-9]+)$ ]]; then n="${BASH_REMATCH[1]}"; else n=999; fi
+          code=$(( (ma * 10000 + mi * 100 + pa) * 1000 + n ))
+          echo "KIESTOON_VERSION_CODE=$code" >> "$GITHUB_ENV"
+          echo "KIESTOON_VERSION_NAME=$full" >> "$GITHUB_ENV"
+          echo "name=$full" >> "$GITHUB_OUTPUT"
+          jq --arg v "$base" '.version = $v' src-tauri/tauri.conf.json > c.json && mv c.json src-tauri/tauri.conf.json
+          echo "Kiestoon $full, versionCode $code"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: mobile/src-tauri
+          key: release
+      - name: Android NDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;27.2.12479018" "platforms;android-36" "build-tools;36.0.0" > /dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+      - name: Firebase configuration
+        if: github.event_name != 'pull_request'
+        env:
+          FIREBASE: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          [ -n "$FIREBASE" ] || exit 0
+          printf '%s' "$FIREBASE" > src-tauri/gen/android/app/google-services.json
+          jq -e --arg p "$PACKAGE" '.client[] | select(.client_info.android_client_info.package_name == $p)' \
+            src-tauri/gen/android/app/google-services.json > /dev/null \
+            || { echo "::error::google-services.json has no Android app $PACKAGE. Add it in the Firebase project."; exit 1; }
+      - name: Upload key
+        if: steps.has.outputs.sign == 'true'
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_UPLOAD_KEYSTORE }}
+        run: |
+          # Outside the repository and removed at the end of the job, see the last step.
+          f="$RUNNER_TEMP/upload-key.p12"
+          printf '%s' "$KEYSTORE" | base64 -d > "$f"
+          chmod 600 "$f"
+          echo "KIESTOON_UPLOAD_KEYSTORE=$f" >> "$GITHUB_ENV"
+      - run: npm ci
+      - name: Build the bundle
+        env:
+          KIESTOON_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          KIESTOON_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          KIESTOON_UPLOAD_KEY_ALIAS: ${{ vars.ANDROID_UPLOAD_KEY_ALIAS || 'upload' }}
+        run: npx tauri android build --aab true --apk false --target aarch64 --target armv7 --target x86_64
+      - name: Check the bundle
+        id: aab
+        run: |
+          aab="$(find src-tauri/gen/android/app/build/outputs/bundle -name '*.aab' | head -1)"
+          [ -n "$aab" ] || { echo "::error::No .aab was built"; exit 1; }
+          echo "path=mobile/$aab" >> "$GITHUB_OUTPUT"
+          mapping="$(find src-tauri/gen/android/app/build/outputs/mapping -name mapping.txt 2>/dev/null | head -1)"
+          echo "mapping=${mapping:+mobile/$mapping}" >> "$GITHUB_OUTPUT"
+          if [ "${{ steps.has.outputs.sign }}" = true ]; then
+            jarsigner -verify "$aab" > /dev/null || { echo "::error::The bundle is not signed"; exit 1; }
+          fi
+          ls -l "$aab"
+      - name: Release notes
+        run: |
+          mkdir -p "$RUNNER_TEMP/whatsnew"
+          for lang in en-US nl-NL; do
+            sed "s/{version}/${{ steps.version.outputs.name }}/" "store/android/$lang/changelogs/default.txt" > "$RUNNER_TEMP/whatsnew/whatsnew-$lang"
+          done
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: kiestoon-${{ steps.version.outputs.name }}-play
+          path: |
+            ${{ steps.aab.outputs.path }}
+            ${{ steps.aab.outputs.mapping }}
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload to Google Play
+        if: steps.has.outputs.upload == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ env.PACKAGE }}
+          releaseFiles: ${{ steps.aab.outputs.path }}
+          releaseName: ${{ steps.version.outputs.name }}
+          track: ${{ inputs.track || 'internal' }}
+          status: ${{ inputs.status || 'completed' }}
+          whatsNewDirectory: ${{ runner.temp }}/whatsnew
+          mappingFile: ${{ steps.aab.outputs.mapping }}
+      - name: Remove the upload key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload-key.p12" src-tauri/gen/android/app/google-services.json

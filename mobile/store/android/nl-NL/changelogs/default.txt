@@ -1,0 +1,2 @@
+Kiestoon {version}
+Verbeteringen en oplossingen. Alles wat er veranderd is staat in de release notes op GitHub.

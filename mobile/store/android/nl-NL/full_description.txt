@@ -1,0 +1,29 @@
+Met Kiestoon neem je je toestel van kantoor overal mee naartoe. De app gaat over bij gesprekken voor jouw toestel, ook als de app dicht is en je telefoon op slot zit, en je belt uit met je zakelijke nummer.
+
+De app werkt met een Kiestoon-telefooncentrale. Die wordt beheerd door je werkgever of IT-partner; de app maakt er rechtstreeks verbinding mee. Vraag je beheerder om toegang.
+
+WAT JE ERMEE DOET
+• Zakelijke gesprekken aannemen op het belscherm van je telefoon, ook op het vergrendelscherm
+• Uitbellen met je zakelijke nummer in plaats van je eigen mobiele nummer
+• Je collega's zien met hun live status: beschikbaar, in gesprek of gaat over
+• Zoeken in het telefoonboek van je bedrijf
+• Aan- en afmelden bij de wachtrijen waar je in zit
+• Voicemail beluisteren, met de AI-samenvatting als je centrale die aan heeft staan
+• Terugkijken in je gespreksgeschiedenis
+• Met één tik op niet storen
+
+IN SECONDEN GEKOPPELD
+Open in het Kiestoon-portaal Mijn apparaten, kies Mobiele app koppelen en scan de QR-code met de camera van je telefoon. De app koppelt zichzelf aan je toestel. Dat werkt met je gewone inlog, ook met MFA, passkeys en single sign-on; de app ziet je wachtwoord nooit.
+
+PRIVACY VOOROP
+• Gesprekken gaan rechtstreeks van de app naar de telefooncentrale van je organisatie, met versleuteld geluid (DTLS-SRTP).
+• Meldingen van inkomende gesprekken zijn end-to-end versleuteld tussen je telefooncentrale en je telefoon. De pushdienst ertussen kan niet zien wie er belt.
+• Geen advertenties, geen tracking, geen analytics.
+• Kiestoon is open source software.
+
+VEREISTEN
+• Een Kiestoon-telefooncentrale waarop je beheerder de mobiele app heeft toegestaan
+• Android 10 of nieuwer
+• Sta meldingen en de microfoon toe, zodat de app kan overgaan en je verstaanbaar bent
+
+Kiestoon is gemaakt door RHIS.
